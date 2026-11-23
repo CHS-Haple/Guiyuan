@@ -38,7 +38,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -52,9 +51,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -315,15 +311,8 @@ private fun RailWindowTrailingAction(
     liquid: Boolean,
     actionProgress: State<Float>,
 ) {
-    // A single upstream show/hide clock now also owns the collapsed group's centering.
-    val retainedAction = remember { mutableStateOf(action) }
-    SideEffect {
-        if (action != null || actionProgress.value == 0f) {
-            retainedAction.value = action
-        }
-    }
-    val presentedAction = action ?:
-        retainedAction.value.takeIf { actionProgress.value > 0f }
+    // Keep the exiting content mounted until the shared native show/hide clock finishes.
+    val presentedAction = rememberNavigationTrailingAction(action, actionProgress)
     if (presentedAction != null) {
         val actionSize = GlassNavigationRailDefaults.CollapsedHeight
         val density = LocalDensity.current
@@ -348,14 +337,7 @@ private fun RailWindowTrailingAction(
                 }
                 .then(
                     if (action == null) {
-                        Modifier.clearAndSetSemantics { }.pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    awaitPointerEvent(PointerEventPass.Initial)
-                                        .changes.forEach { it.consume() }
-                                }
-                            }
-                        }
+                        Modifier.blockRetiringNavigationActionInput()
                     } else Modifier,
                 ),
         ) { presentedAction() }

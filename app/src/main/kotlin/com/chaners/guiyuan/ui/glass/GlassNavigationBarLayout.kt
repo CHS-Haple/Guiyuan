@@ -9,19 +9,12 @@ import top.yukonga.miuix.kmp.glass.GlassMotion
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.computedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
@@ -49,19 +42,12 @@ internal fun GlassNavigationBarLayout(
 ) {
     val density = LocalDensity.current
     val shadowOutsets = remember(density) { with(density) { popupShadowOutsets(GlassShadows.Regular) } }
-    val retainedAction = remember { mutableStateOf(trailingAction) }
     val actionProgress = animateFloatAsState(
         targetValue = if (trailingAction != null) 1f else 0f,
         animationSpec = GlassMotion.navShowHide(),
         label = "glassNavigationAction",
     )
-    SideEffect {
-        if (trailingAction != null || actionProgress.value == 0f) retainedAction.value = trailingAction
-    }
-    val showRetainedAction by remember(actionProgress) {
-        computedStateOf { actionProgress.value > 0f }
-    }
-    val presentedAction = trailingAction ?: retainedAction.value.takeIf { showRetainedAction }
+    val presentedAction = rememberNavigationTrailingAction(trailingAction, actionProgress)
     Layout(
         modifier = modifier,
         content = {
@@ -77,9 +63,7 @@ internal fun GlassNavigationBarLayout(
                         alpha = fraction
                     }.then(
                         if (trailingAction == null) {
-                            Modifier.clearAndSetSemantics { }.pointerInput(Unit) {
-                                awaitPointerEventScope { while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
-                            }
+                            Modifier.blockRetiringNavigationActionInput()
                         } else {
                             Modifier
                         },
