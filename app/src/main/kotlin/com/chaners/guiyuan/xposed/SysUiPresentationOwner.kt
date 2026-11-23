@@ -1049,10 +1049,18 @@ internal object SysUiPresentationOwner {
 
     @Synchronized
     fun onCcVisibilityChanged(visible: Boolean): Boolean {
-        if (visible && controlCenterSourceScene == SourceScene.HOME &&
-            controlCenterCurrent != null
-        ) {
-            // Keep the pre-gesture Home peer set across native island re-layouts.
+        if (visible && controlCenterSourceScene == SourceScene.HOME && current != null) {
+            if (!steadyPeerMirrorFrozen) {
+                // Capture the Home peer state before the native CC island relayout.
+                val snapshot = current?.captureSteadyPeerMirror()
+                    ?: SteadyPeerMirrorSnapshot(false, emptySet())
+                steadyPeerMirrorActive = snapshot.active
+                steadyPeerMirrorHiddenSlots = snapshot.hiddenSlots
+                controlCenterCurrent?.updateSteadyPeerMirror(
+                    active = snapshot.active,
+                    hiddenSlots = snapshot.hiddenSlots,
+                )
+            }
             steadyPeerMirrorFrozen = true
         } else if (!visible) {
             steadyPeerMirrorFrozen = false
@@ -1595,17 +1603,6 @@ internal object SysUiPresentationOwner {
         private var steadyPeerMirrorActive = false
         private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
         private var mirrorIslandSuppressionLogged = false
-        private var peerCapacityClampLogged = false
-        private val fakePeerMetrics =
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                statusIcons.javaClass.name == STATUS_ICON_CONTAINER
-            ) {
-                optionalNativeRead {
-                    val cls = statusIcons.javaClass
-                    cls.getDeclaredField("measureViews").apply { isAccessible = true } to
-                        cls.getDeclaredField("iconSpacing").apply { isAccessible = true }
-                }
-            } else null
         private var nativePadding: PaddingState? = null
         private var appliedPadding: PaddingState? = null
         // Native SystemUI is the only writer of QS_FAKE host width.
@@ -2358,25 +2355,6 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
-        private fun measuredNativePeerWidth(group: ViewGroup): Int? {
-            val (viewsField, spacingField) = fakePeerMetrics ?: return null
-            val views = optionalNativeRead { viewsField.get(group) as? List<*> } ?: return null
-            val spacing = optionalNativeRead { spacingField.getInt(group) } ?: return null
-            if (spacing < 0 || views.size > group.childCount) return null
-            var width = group.paddingStart.toLong()
-            views.forEachIndexed { index, item ->
-                val view = item as? View ?: return null
-                if (view.parent !== group || view.measuredWidth < 0) return null
-                val measured = view.measuredWidth.toLong() + view.paddingStart + view.paddingEnd
-                if (measured < 0L) return null
-                if (measured > 0L) {
-                    width += measured
-                    if (index > 0) width += spacing
-                }
-            }
-            return width.takeIf { it >= 0L && it <= Int.MAX_VALUE }?.toInt()
-        }
-
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) return true
@@ -2471,35 +2449,9 @@ internal object SysUiPresentationOwner {
                     actualBatteryWidthPx = actualBatteryWidthPx,
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
-            // Keep the native measured peers admitted at the Home steady boundary.
-            // Only the QS_FAKE end padding is ours; its host width remains native.
-            val reservationDelta =
-                if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
-                    val peerWidth = measuredNativePeerWidth(group)
-                        ?: run { onFailNative("fake-native-peer-measure-unavailable"); return false }
-                    val compactDelta = EndReservationPolicy.resolvePaddingEndDelta(
-                        nativeHide = nativeHide,
-                        actualBatteryWidthPx = actualBatteryWidthPx,
-                        requestedSlotWidthPx = compactSlotWidthPx,
-                    )
-                    val safeEnd = EndReservationPolicy.limitFakePeerPaddingEnd(
-                        rowWidthPx = group.width,
-                        peerContentWidthPx = peerWidth,
-                        compactPaddingEndPx = baseline.end + compactDelta,
-                        requestedPaddingEndPx = baseline.end + requestedReservationDelta,
-                    ) ?: run { onFailNative("fake-native-peer-compact-overflow"); return false }
-                    if (safeEnd < baseline.end + requestedReservationDelta &&
-                        !peerCapacityClampLogged && isDetailedDiagnosticsEnabled()
-                    ) {
-                        peerCapacityClampLogged = true
-                        onEvent(eventPrefix + " peerCapacity bounded" +
-                            " rowWidth=" + group.width +
-                            " measuredPeers=" + peerWidth +
-                            " requestedEnd=" + (baseline.end + requestedReservationDelta) +
-                            " grantedEnd=" + safeEnd)
-                    }
-                    safeEnd - baseline.end
-                } else requestedReservationDelta
+            // Keep B1921's native FAKE row geometry unchanged; the peer mirror
+            // is the only behavior under investigation here.
+            val reservationDelta = requestedReservationDelta
             val target =
                 PaddingState(
                     baseline.start,
