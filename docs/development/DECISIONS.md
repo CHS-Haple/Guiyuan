@@ -391,6 +391,33 @@ dimensions change; the native View tree, final coordinates and
 original interpolation remain authoritative. Unit tests cover
 portrait→landscape and landscape→portrait reuse rejection.
 
+## QS_FAKE rotation reflow reacquires only settled native capacity
+
+**Decision:** The Control Center FAKE host's native width is a separate
+layout event from its battery and status-icon children. A real FAKE host
+width change may replace the module's temporary width receipt. Reconcile
+only after the host, its parent and its peer row complete the native
+layout/pre-draw pass. Yield to any newer SystemUI writer first; a fresh
+lease may be considered only in a subsequent settled frame.
+
+**Evidence:** B1930 device recording shows the combined glyph absent
+briefly on the first landscape-to-portrait CC close while native peer
+icons remain. At the abnormal closing frame, the FAKE header root still
+measured 819 px, but its native `system_icon_area` was 587 px against
+an 819-px parent; a normal closing frame had an 819-px FAKE host. The
+existing width receipt had yielded to a native rotation write, and the
+next `lease=active` event was not recorded until a later CC action.
+Battery/network hook installation remained ready. This is strong
+geometry-timing evidence, **not yet proof of on-device repair**.
+
+**Consequence:** Observe only the CC FAKE host's actual width changes,
+coalesce the callback at a completed native pre-draw, reuse the existing
+single receipt owner and remove the observer on session release or
+native ViewTreeObserver replacement. Do not add a timer, a forced
+819-px width, a new native writer, a Home-fallback guess or a second
+CC animation. B1931 must be checked on the exact device for the
+first rotation-close, normal close, reverse rotation and repeated pulls.
+
 ## Native resource identity is preferred
 
 **Decision:** when a verified native drawable/resource expresses the needed
