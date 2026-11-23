@@ -49,6 +49,9 @@ internal object CcTransitionOwner {
     private const val MOBILE_SLOT = "mobile"
     private const val WIFI_SLOT = "wifi"
     private const val STACKED_MOBILE_SLOT = "stacked_mobile"
+    private val replacedNetworkSlots = setOf(
+        WIFI_SLOT, MOBILE_SLOT, STACKED_MOBILE_SLOT, AIRPLANE_SLOT, NO_SIM_SLOT,
+    )
     private const val BATTERY_NUMBER_PROBE_MAX_VIEWS = 16
     private const val BATTERY_NUMBER_PROBE_MAX_DEPTH = 4
     private const val BATTERY_NUMBER_PROBE_MAX_PAINTS = 8
@@ -62,6 +65,7 @@ internal object CcTransitionOwner {
     private var nativeAppearanceAnimated = false
     private var nativeBatteryIslandActive: Boolean? = null
     private var sourceScene = SourceScene.UNKNOWN
+    private var nativeCrossfadeOnlyCycle = false
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
 
@@ -70,6 +74,7 @@ internal object CcTransitionOwner {
         update.visible?.let { nextVisible ->
             visible = nextVisible
             if (!nextVisible) {
+                nativeCrossfadeOnlyCycle = false
                 nativeProgress = null
                 nativeAppearance = false
                 nativeAppearanceAnimated = false
@@ -117,7 +122,8 @@ internal object CcTransitionOwner {
         "visible=" + visible +
             ":eligible=" + sceneEligible +
             ":progress=" + (nativeProgress ?: "none") +
-            ":drawable=" + (current?.visualState() ?: "none")
+            ":drawable=" + (current?.visualState() ?: "none") +
+            ":nativeCrossfadeOnly=" + nativeCrossfadeOnlyCycle
 
     @Synchronized
     fun latestBatteryNumberProbeDiagnostic(): String? =
@@ -141,6 +147,7 @@ internal object CcTransitionOwner {
         nativeAppearanceAnimated = false
         nativeBatteryIslandActive = null
         sourceScene = SourceScene.UNKNOWN
+        nativeCrossfadeOnlyCycle = false
         endpoints = null
     }
 
@@ -161,8 +168,12 @@ internal object CcTransitionOwner {
         if (!shouldRun) {
             current?.stop("inactive:" + source)
             current = null
+            if (!visible || progress == null || progress <= 0f) {
+                nativeCrossfadeOnlyCycle = false
+            }
             return
         }
+        if (nativeCrossfadeOnlyCycle) return
 
         val sourceSnapshot =
             CcRenderSession.transitionSourceSnapshot()
@@ -222,6 +233,13 @@ internal object CcTransitionOwner {
                     current = null
                     return
                 }
+            if (created.hasProjectedPeerOverlap()) {
+                // The native FAKE row stays in its steady layout. Its own
+                // FAKE→FINAL alpha handoff must own this crowded transition.
+                nativeCrossfadeOnlyCycle = true
+                current = null
+                return
+            }
             current = created
             if (!created.start()) {
                 current = null
@@ -229,6 +247,12 @@ internal object CcTransitionOwner {
             }
         }
 
+        if (current?.hasProjectedPeerOverlap() == true) {
+            current?.stop("native-peer-reveal-overlap")
+            current = null
+            nativeCrossfadeOnlyCycle = true
+            return
+        }
         current?.update(
             progress = progress,
             sourceSnapshot = sourceSnapshot,
@@ -687,6 +711,56 @@ internal object CcTransitionOwner {
                 " finalChildren=${finalStatusIcons.childCount}" +
                 " fakePeers=[${peers(fakeStatusIcons)}]" +
                 " finalPeers=[${peers(finalStatusIcons)}]"
+        }
+
+        // FAKE and FINAL are sampled in the same native root coordinates.
+        // Do not paint an expanding projection through a still-visible peer.
+        // In that case retain the compact FAKE source and OEM crossfade.
+        fun hasProjectedPeerOverlap(): Boolean {
+            val root = rootRef.get() ?: return true
+            val peers = (0 until fakeStatusIcons.childCount)
+                .map(fakeStatusIcons::getChildAt)
+                .filter { peer ->
+                    NativeStatusSlots.slotOf(peer) !in replacedNetworkSlots &&
+                        peer.isShown && peer.width > 0 && peer.height > 0 &&
+                        peer.alpha > 0f &&
+                        peer.clipBounds?.let { it.width() <= 0 || it.height() <= 0 } != true
+                }
+            if (peers.isEmpty()) return false
+
+            val batteryBounds = sampledBounds(finalBattery, root) ?: return true
+            val corridor = RectF(batteryBounds)
+            var finalNetworkObserved = false
+            for (index in 0 until finalStatusIcons.childCount) {
+                val target = finalStatusIcons.getChildAt(index)
+                if (NativeStatusSlots.slotOf(target) !in replacedNetworkSlots ||
+                    target.visibility != View.VISIBLE ||
+                    target.width <= 0 || target.height <= 0
+                ) continue
+                val bounds = sampledBounds(target, root) ?: return true
+                corridor.union(bounds)
+                finalNetworkObserved = true
+            }
+            if (!finalNetworkObserved) return true
+            return peers.any { peer ->
+                val bounds = sampledBounds(peer, root) ?: return true
+                RectF.intersects(corridor, bounds)
+            }
+        }
+
+        private fun sampledBounds(view: View, root: View): RectF? {
+            val geometry = sample(view, root) ?: return null
+            if (!geometry.all(Float::isFinite)) return null
+            val halfWidth =
+                (kotlin.math.abs(geometry[2]) + kotlin.math.abs(geometry[4])) * 0.5f
+            val halfHeight =
+                (kotlin.math.abs(geometry[3]) + kotlin.math.abs(geometry[5])) * 0.5f
+            return RectF(
+                geometry[0] - halfWidth,
+                geometry[1] - halfHeight,
+                geometry[0] + halfWidth,
+                geometry[1] + halfHeight,
+            )
         }
 
         fun isStarted(): Boolean = started
