@@ -5,6 +5,50 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CcHomeHandoffPolicyTest {
+    @Test
+    fun rotatedPortraitHeaderOutsideSteadySlotMayRevealHomeWithoutReleasingCc() {
+        // B1931: Home source y=85..254, both native CC headers y=387
+        // on closing. The window contains no CC header over the Home slot.
+        assertTrue(CcHomeCloseUnderlayPolicy.shouldShow(
+            nativePanelVisible = true,
+            closing = true,
+            homeSlotBottomPx = 254,
+            fakeHeaderTopPx = 387,
+            finalHeaderTopPx = 387,
+        ))
+        assertTrue(CcHomeCloseUnderlayPolicy.shouldShow(
+            nativePanelVisible = true,
+            closing = true,
+            homeSlotBottomPx = 254,
+            fakeHeaderTopPx = 260,
+            finalHeaderTopPx = 260,
+        ))
+    }
+
+    @Test
+    fun nativeOverlapOrNonClosingNeverCreatesASecondHomeGlyph() {
+        fun show(
+            closing: Boolean = true,
+            fake: Int? = 387,
+            final: Int? = 387,
+            home: Int? = 254,
+            nativeVisible: Boolean = true,
+        ) = CcHomeCloseUnderlayPolicy.shouldShow(
+            nativePanelVisible = nativeVisible,
+            closing = closing,
+            homeSlotBottomPx = home,
+            fakeHeaderTopPx = fake,
+            finalHeaderTopPx = final,
+        )
+        assertFalse(show(closing = false))
+        assertFalse(show(fake = 181, final = 181))
+        assertFalse(show(fake = 387, final = 181))
+        assertFalse(show(fake = 94, final = 94))
+        assertFalse(show(nativeVisible = false))
+        assertFalse(show(fake = null))
+        assertFalse(show(home = null))
+    }
+
     private fun yieldToCc(
         visible: Boolean,
         fraction: Float,

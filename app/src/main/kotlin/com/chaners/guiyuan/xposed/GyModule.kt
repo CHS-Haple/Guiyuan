@@ -12,6 +12,7 @@ import com.chaners.guiyuan.settings.NativeFontAxisPolicy
 import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.FileChannel
+import java.lang.ref.WeakReference
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
@@ -95,6 +96,12 @@ class GyModule : XposedModule() {
     private var ccExpansion = 0f
     private var ccProjectionReadyForHandoff = false
     private var ccHomeYieldedToPanel = false
+    // A closing FAKE header can leave the steady status-bar area exposed
+    // after rotation. These are observations, not additional native writers.
+    private var ccClosingVisualFrame = false
+    private var ccFakeRootRef = WeakReference<ViewGroup>(null)
+    private var ccFinalRootRef = WeakReference<ViewGroup>(null)
+    private val ccHeaderScreenLocation = IntArray(2)
     // onExpansionChanged is intercepted BEFORE SystemUI's native body.
     // The zero handoff must commit AFTER native updates its scene visuals.
     private var ccNativeZeroAwaitingCommit = false
@@ -1042,6 +1049,7 @@ class GyModule : XposedModule() {
                             ccNativeZeroAwaitingCommit = false
                             reconcileCcHomeAuthority("native-fraction-after-proceed")
                         }
+                        updateCcClosingHomeUnderlay(progress)
                         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
                             onCcNativeGeometry(progress)
                         }
@@ -1124,6 +1132,16 @@ class GyModule : XposedModule() {
     private fun onCcUpdate(
         update: SysUiCcSource.Update,
     ) {
+        update.transitionEndpoints?.let { endpoints ->
+            ccFakeRootRef = WeakReference(endpoints.fakeRoot)
+            ccFinalRootRef = WeakReference(endpoints.finalRoot)
+        }
+        if (update.visible == false) {
+            ccClosingVisualFrame = false
+            HomeRenderSession.setCcClosingUnderlayVisible(false)
+            ccFakeRootRef = WeakReference(null)
+            ccFinalRootRef = WeakReference(null)
+        }
         val effectiveSourceScene = handleCcUpdate(update)
         val transitionUpdate =
             if (effectiveSourceScene != null) {
@@ -1389,6 +1407,7 @@ class GyModule : XposedModule() {
         val fraction = rawFraction.coerceIn(0f, 1f)
         val previous = ccExpansion
         ccExpansion = fraction
+        ccClosingVisualFrame = fraction > 0f && fraction < previous
         ccNativeZeroAwaitingCommit =
             CcHomeHandoffPolicy.awaitNativeZeroCommit(
                 nativePanelVisible = controlCenterSceneVisible,
@@ -1427,6 +1446,35 @@ class GyModule : XposedModule() {
                 reconcileReadiness = true,
             )
         }
+    }
+
+    // The native CC header may be physically below Home during an upward
+    // close after rotation (B1931: both header roots 387px; Home ends at 254px).
+    // Only show Home's own overlay while both native header roots are entirely
+    // outside its slot. CC remains the native owner until its fraction-zero
+    // callback completes; this never changes ignored slots or CC peer motion.
+    private fun updateCcClosingHomeUnderlay(progress: Float) {
+        val eligible =
+            ccClosingVisualFrame && progress > 0f &&
+                controlCenterSceneVisible && controlCenterSceneEligible &&
+                controlCenterSourceScene == SourceScene.HOME
+        val homeBottom = if (eligible) HomeRenderSession.homeSlotBottomScreenY() else null
+        fun nativeTop(root: ViewGroup?): Int? {
+            if (root?.isAttachedToWindow != true || !root.isLaidOut) return null
+            return SysUiPresentationRuntime.optionalNativeRead {
+                root.getLocationOnScreen(ccHeaderScreenLocation)
+                ccHeaderScreenLocation[1]
+            }
+        }
+        val show =
+            CcHomeCloseUnderlayPolicy.shouldShow(
+                nativePanelVisible = controlCenterSceneVisible,
+                closing = eligible,
+                homeSlotBottomPx = homeBottom,
+                fakeHeaderTopPx = if (eligible) nativeTop(ccFakeRootRef.get()) else null,
+                finalHeaderTopPx = if (eligible) nativeTop(ccFinalRootRef.get()) else null,
+            )
+        HomeRenderSession.setCcClosingUnderlayVisible(show)
     }
 
     private fun acquireKeyguardCcLease(source: String) {
@@ -1719,6 +1767,10 @@ class GyModule : XposedModule() {
 
     private fun onCcRuntimeFailure(error: Throwable) {
         if (retiredForHotReload) return
+        ccClosingVisualFrame = false
+        HomeRenderSession.setCcClosingUnderlayVisible(false)
+        ccFakeRootRef = WeakReference(null)
+        ccFinalRootRef = WeakReference(null)
         val cleanupFailures = mutableListOf<String>()
         fun safely(step: String, block: () -> Unit) {
             try {

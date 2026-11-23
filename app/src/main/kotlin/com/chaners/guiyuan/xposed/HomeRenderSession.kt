@@ -146,6 +146,14 @@ internal object HomeRenderSession {
     }
 
     @Synchronized
+    fun setCcClosingUnderlayVisible(visible: Boolean) {
+        current?.setCcClosingUnderlayVisible(visible)
+    }
+
+    @Synchronized
+    fun homeSlotBottomScreenY(): Int? = current?.homeSlotBottomScreenY()
+
+    @Synchronized
     fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
 
     // Native owner readiness is insufficient during scene return: the Home
@@ -343,6 +351,7 @@ internal object HomeRenderSession {
         // Home eligibility follows native CC ownership independently of the
         // separate QS_FAKE projection readiness.
         private var controlCenterAllowsHome = initialControlCenterAllowsHome
+        private var ccClosingUnderlayVisible = false
         private var nativeHandoffActive = initialNativeHandoffActive
         private var featureEnabled = initialFeatureEnabled
         private var modelReady = false
@@ -513,6 +522,30 @@ internal object HomeRenderSession {
                     " visible=" + visible
             }
             dispatchPresentationReadiness("control-center:" + source)
+        }
+
+        fun homeSlotBottomScreenY(): Int? {
+            val root = host.get() ?: return null
+            if (!root.isAttachedToWindow || !root.isShown ||
+                !root.isLaidOut || root.height <= 0 ||
+                !featureEnabled || !modelReady || !tintReady || !layoutReady
+            ) return null
+            root.getLocationOnScreen(hostWindowLocation)
+            return hostWindowLocation[1] + root.height
+        }
+
+        fun setCcClosingUnderlayVisible(visible: Boolean) {
+            if (ccClosingUnderlayVisible == visible) return
+            ccClosingUnderlayVisible = visible
+            if (visible) layoutProbe("cc-close-native-geometry")
+            val rendered = applyResolvedVisibility()
+            emitEvent {
+                "homeRenderControlCenterUnderlay visible=" + rendered +
+                    " permitted=" + ccClosingUnderlayVisible +
+                    " homeOwner=" + controlCenterAllowsHome +
+                    " nativeHandoff=" + nativeHandoffActive +
+                    " authority=home-render-only"
+            }
         }
 
         fun isOverlayShown(): Boolean = probeView.isShown
@@ -789,7 +822,10 @@ internal object HomeRenderSession {
             val visible =
                 resolveOverlayVisible(
                     featureEnabled = featureEnabled,
-                    controlCenterAllowsHome = controlCenterAllowsHome,
+                    controlCenterAllowsHome =
+                        controlCenterAllowsHome ||
+                            (ccClosingUnderlayVisible && modelReady && tintReady &&
+                                layoutReady && host.get()?.isShown == true),
                     nativeHandoffActive = nativeHandoffActive,
                 )
             probeView.updateRenderVisibility(visible)
