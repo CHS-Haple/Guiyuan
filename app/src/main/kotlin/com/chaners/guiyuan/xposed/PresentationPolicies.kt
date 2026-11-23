@@ -61,12 +61,14 @@ internal object CcHomeCloseUnderlayPolicy {
         homeSlotBottomPx: Int?,
         fakeHeaderTopPx: Int?,
         finalHeaderTopPx: Int?,
+        fakeBatteryOpticalTopPx: Int? = null,
+        finalBatteryOpticalTopPx: Int? = null,
     ): Boolean =
         nativePanelVisible && closing &&
             homeSlotBottomPx != null &&
             fakeHeaderTopPx != null && finalHeaderTopPx != null &&
-            fakeHeaderTopPx >= homeSlotBottomPx &&
-            finalHeaderTopPx >= homeSlotBottomPx
+            (fakeBatteryOpticalTopPx ?: fakeHeaderTopPx) >= homeSlotBottomPx &&
+            (finalBatteryOpticalTopPx ?: finalHeaderTopPx) >= homeSlotBottomPx
 }
 
 internal object VisualMaskPolicy {

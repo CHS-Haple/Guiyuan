@@ -26,6 +26,40 @@ class CcHomeHandoffPolicyTest {
     }
 
     @Test
+    fun actualNativeBatteryOpticalTargetAvoidsPrematureHeaderOverlapRejection() {
+        // B1936: at closing p=.366, the header root entered the Home
+        // viewport (119 < 146), but that is not its battery glyph top.
+        // Only a live measured native optical target may relax the gate.
+        assertTrue(CcHomeCloseUnderlayPolicy.shouldShow(
+            nativePanelVisible = true,
+            closing = true,
+            homeSlotBottomPx = 146,
+            fakeHeaderTopPx = 119,
+            finalHeaderTopPx = 119,
+            fakeBatteryOpticalTopPx = 167,
+            finalBatteryOpticalTopPx = 167,
+        ))
+        assertFalse(CcHomeCloseUnderlayPolicy.shouldShow(
+            nativePanelVisible = true,
+            closing = true,
+            homeSlotBottomPx = 146,
+            fakeHeaderTopPx = 119,
+            finalHeaderTopPx = 119,
+            fakeBatteryOpticalTopPx = null,
+            finalBatteryOpticalTopPx = 167,
+        ))
+        assertFalse(CcHomeCloseUnderlayPolicy.shouldShow(
+            nativePanelVisible = true,
+            closing = true,
+            homeSlotBottomPx = 146,
+            fakeHeaderTopPx = 119,
+            finalHeaderTopPx = 119,
+            fakeBatteryOpticalTopPx = 145,
+            finalBatteryOpticalTopPx = 167,
+        ))
+    }
+
+    @Test
     fun nativeHeaderOverlapOrNonClosingRejectsHomeUnderlay() {
         fun show(
             closing: Boolean = true,

@@ -1475,6 +1475,8 @@ class GyModule : XposedModule() {
         }
         val fakeTop = if (eligible) nativeTop(ccFakeRootRef.get()) else null
         val finalTop = if (eligible) nativeTop(ccFinalRootRef.get()) else null
+        val opticalTop =
+            if (eligible) CcTransitionOwner.nativeBatteryOpticalScreenTops() else null
         val show =
             CcHomeCloseUnderlayPolicy.shouldShow(
                 nativePanelVisible = controlCenterSceneVisible,
@@ -1482,6 +1484,8 @@ class GyModule : XposedModule() {
                 homeSlotBottomPx = homeBottom,
                 fakeHeaderTopPx = fakeTop,
                 finalHeaderTopPx = finalTop,
+                fakeBatteryOpticalTopPx = opticalTop?.first,
+                finalBatteryOpticalTopPx = opticalTop?.second,
             )
         HomeRenderSession.setCcClosingUnderlayVisible(show)
         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
@@ -1506,6 +1510,8 @@ class GyModule : XposedModule() {
                         "homeVisibility" to HomeRenderSession.visibilityWitness(),
                         "fakeTopPx" to fakeTop,
                         "finalTopPx" to finalTop,
+                        "fakeBatteryOpticalTopPx" to opticalTop?.first,
+                        "finalBatteryOpticalTopPx" to opticalTop?.second,
                         "geometryAdmitted" to show,
                     )
                 }

@@ -133,6 +133,12 @@ internal object CcTransitionOwner {
     @Synchronized
     fun capacityGeometryProbe(): String? = current?.capacityGeometryProbe()
 
+    // Read the existing native battery optical targets of the active CC
+    // transition. Header root bounds are not the indicator's paint bounds.
+    @Synchronized
+    fun nativeBatteryOpticalScreenTops(): Pair<Int?, Int?>? =
+        current?.nativeBatteryOpticalScreenTops()
+
     @Synchronized
     fun detach(source: String = "detach") {
         current?.stop(source)
@@ -270,6 +276,18 @@ internal object CcTransitionOwner {
             nativeClip = sourceView.clipBounds?.let(::Rect),
             appliedClip = Rect(0, 0, 0, 0),
         )
+        // Resolve through the same verified native battery target accessor
+        // used by the transition painter; no new reflection or property writer.
+        private val fakeBatteryOptical by lazy(LazyThreadSafetyMode.NONE) {
+            fakeRootRef.get()
+                ?.let { uniqueDescendantView(it, BATTERY_VIEW_CLASS_NAME) }
+                ?.let(::resolveBatteryIconTarget)
+        }
+        private val finalBatteryOptical by lazy(LazyThreadSafetyMode.NONE) {
+            resolveBatteryIconTarget(finalBattery)
+        }
+        private val opticalScreenLocation = IntArray(2)
+
         private val mobileSubIdFields = HashMap<Class<*>, Field?>()
         private val targetCache = HashMap<TargetCacheKey, TargetWitness>()
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
@@ -844,6 +862,19 @@ internal object CcTransitionOwner {
         )
 
         fun isStarted(): Boolean = started
+
+        fun nativeBatteryOpticalScreenTops(): Pair<Int?, Int?> {
+            fun screenTop(view: View?): Int? {
+                if (view?.isAttachedToWindow != true || !view.isLaidOut ||
+                    view.height <= 0 || !view.isShown
+                ) return null
+                return readOrNull {
+                    view.getLocationOnScreen(opticalScreenLocation)
+                    opticalScreenLocation[1]
+                }
+            }
+            return screenTop(fakeBatteryOptical) to screenTop(finalBatteryOptical)
+        }
 
         fun start(): Boolean {
             if (started) return true
