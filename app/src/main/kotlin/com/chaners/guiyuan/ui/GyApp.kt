@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,13 +35,8 @@ import com.chaners.guiyuan.ui.screens.AppearanceStyleActions
 import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
 import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
-import com.chaners.guiyuan.ui.screens.PreviewBatteryMode
-import com.chaners.guiyuan.ui.screens.PreviewChargingState
-import com.chaners.guiyuan.ui.screens.PreviewDataSim
-import com.chaners.guiyuan.ui.screens.PreviewSimCards
 import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
 import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
-import com.chaners.guiyuan.ui.screens.PreviewNetworkActivity
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxBatteryActions
 import com.chaners.guiyuan.ui.screens.PreviewSandboxSimSelectionActions
@@ -54,7 +48,9 @@ import com.chaners.guiyuan.ui.screens.PreviewSandboxUiActions
 import com.chaners.guiyuan.ui.screens.PreviewSandboxActions
 import com.chaners.guiyuan.ui.screens.PreviewSandboxDisplay
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
-import com.chaners.guiyuan.ui.screens.PreviewWifiState
+import com.chaners.guiyuan.ui.screens.PreviewSandboxUiStateSaver
+import com.chaners.guiyuan.ui.screens.previewForPresentation
+import com.chaners.guiyuan.ui.screens.selectPreviewNetworkMode
 import com.chaners.guiyuan.ui.theme.GyTheme
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
@@ -121,103 +117,12 @@ internal fun GyApp(
             return@GyTheme
         }
         var lastDiagSnapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
-        var previewAirplaneMode by rememberSaveable { mutableStateOf(false) }
-        var previewNetworkModeIndex by rememberSaveable {
-            mutableIntStateOf(PreviewNetworkMode.WIFI.ordinal)
+        // A single writer owns the preview-only edit state; the display projection does not
+        // overwrite the saved selection (notably SIM1-only with no selected network type).
+        var previewSelection by rememberSaveable(stateSaver = PreviewSandboxUiStateSaver) {
+            mutableStateOf(PreviewSandboxUiState())
         }
-        var previewMobileNetworkIndex by rememberSaveable {
-            mutableIntStateOf(PreviewMobileNetwork.FIVE_G.ordinal)
-        }
-        var previewMobileSignalLevel by rememberSaveable { mutableIntStateOf(4) }
-        var previewSim2SignalLevel by rememberSaveable { mutableIntStateOf(4) }
-        var previewSim2NetworkIndex by rememberSaveable {
-            mutableIntStateOf(PreviewMobileNetwork.FOUR_G.ordinal)
-        }
-        var previewDataSimIndex by rememberSaveable {
-            mutableIntStateOf(PreviewDataSim.SIM1.ordinal)
-        }
-        var previewSimCardsIndex by rememberSaveable {
-            mutableIntStateOf(PreviewSimCards.BOTH.ordinal)
-        }
-        var previewWifiStateIndex by rememberSaveable {
-            mutableIntStateOf(PreviewWifiState.CONNECTED.ordinal)
-        }
-        var previewWifiSignalLevel by rememberSaveable { mutableIntStateOf(3) }
-        var previewNetworkActivityIndex by rememberSaveable {
-            mutableIntStateOf(PreviewNetworkActivity.BOTH.ordinal)
-        }
-        var previewBatteryPercent by rememberSaveable { mutableIntStateOf(87) }
-        var previewBatteryModeIndex by rememberSaveable {
-            mutableIntStateOf(PreviewBatteryMode.BALANCED.ordinal)
-        }
-        var previewChargingStateIndex by rememberSaveable {
-            mutableIntStateOf(PreviewChargingState.NOT_CHARGING.ordinal)
-        }
-        val savedNetworkMode =
-            PreviewNetworkMode.entries[
-                previewNetworkModeIndex.coerceIn(0, PreviewNetworkMode.entries.lastIndex)
-            ]
-        val savedMobileNetwork =
-            PreviewMobileNetwork.entries[
-                previewMobileNetworkIndex.coerceIn(0, PreviewMobileNetwork.entries.lastIndex)
-            ]
-        val previewState =
-            PreviewSandboxUiState(
-                airplaneMode = previewAirplaneMode,
-                networkMode =
-                    if (
-                        savedNetworkMode == PreviewNetworkMode.MOBILE &&
-                        previewSimCardsIndex == PreviewSimCards.SIM1_ONLY.ordinal &&
-                        savedMobileNetwork == PreviewMobileNetwork.NONE
-                    ) {
-                        PreviewNetworkMode.NONE
-                    } else {
-                        savedNetworkMode
-                    },
-                mobileNetwork = savedMobileNetwork,
-                mobileSignalLevel = previewMobileSignalLevel,
-                sim2SignalLevel = previewSim2SignalLevel,
-                sim2MobileNetwork =
-                    PreviewMobileNetwork.entries[
-                        previewSim2NetworkIndex.coerceIn(
-                            0, PreviewMobileNetwork.entries.lastIndex,
-                        )
-                    ],
-                dataSim =
-                    PreviewDataSim.entries[
-                        previewDataSimIndex.coerceIn(0, PreviewDataSim.entries.lastIndex)
-                    ],
-                simCards =
-                    PreviewSimCards.entries[
-                        previewSimCardsIndex.coerceIn(0, PreviewSimCards.entries.lastIndex)
-                    ],
-                wifiState =
-                    PreviewWifiState.entries[
-                        previewWifiStateIndex.coerceIn(
-                            0,
-                            PreviewWifiState.entries.lastIndex,
-                        )
-                    ],
-                wifiSignalLevel = previewWifiSignalLevel,
-                networkActivity = PreviewNetworkActivity.entries[
-                    previewNetworkActivityIndex.coerceIn(0, PreviewNetworkActivity.entries.lastIndex)
-                ],
-                batteryPercent = previewBatteryPercent,
-                batteryMode =
-                    PreviewBatteryMode.entries[
-                        previewBatteryModeIndex.coerceIn(
-                            0,
-                            PreviewBatteryMode.entries.lastIndex,
-                        )
-                    ],
-                chargingState =
-                    PreviewChargingState.entries[
-                        previewChargingStateIndex.coerceIn(
-                            0,
-                            PreviewChargingState.entries.lastIndex,
-                        )
-                    ],
-            )
+        val previewState = previewSelection.previewForPresentation()
 
         // Only a changed preview updates an active lease; start() owns its first snapshot.
         LaunchedEffect(previewState) {
@@ -324,38 +229,30 @@ internal fun GyApp(
                                 },
                             ),
                             network = PreviewSandboxNetworkActions(
-                                onAirplaneModeChange = { previewAirplaneMode = it },
-                                onNetworkModeChange = {
-                                    if (
-                                        it == PreviewNetworkMode.MOBILE &&
-                                        previewMobileNetworkIndex == PreviewMobileNetwork.NONE.ordinal
-                                    ) {
-                                        previewMobileNetworkIndex = PreviewMobileNetwork.FIVE_G.ordinal
-                                    }
-                                    previewNetworkModeIndex = it.ordinal
-                                },
-                                onWifiStateChange = { previewWifiStateIndex = it.ordinal },
-                                onWifiSignalLevelChange = { previewWifiSignalLevel = it },
-                                onNetworkActivityChange = { previewNetworkActivityIndex = it.ordinal },
+                                onAirplaneModeChange = { previewSelection = previewSelection.copy(airplaneMode = it) },
+                                onNetworkModeChange = { previewSelection = previewSelection.selectPreviewNetworkMode(it) },
+                                onWifiStateChange = { previewSelection = previewSelection.copy(wifiState = it) },
+                                onWifiSignalLevelChange = { previewSelection = previewSelection.copy(wifiSignalLevel = it) },
+                                onNetworkActivityChange = { previewSelection = previewSelection.copy(networkActivity = it) },
                             ),
                             sims = PreviewSandboxSimActions(
                                 first = PreviewSandboxSim1Actions(
-                                    onMobileNetworkChange = { previewMobileNetworkIndex = it.ordinal },
-                                    onMobileSignalLevelChange = { previewMobileSignalLevel = it },
+                                    onMobileNetworkChange = { previewSelection = previewSelection.copy(mobileNetwork = it) },
+                                    onMobileSignalLevelChange = { previewSelection = previewSelection.copy(mobileSignalLevel = it) },
                                 ),
                                 second = PreviewSandboxSim2Actions(
-                                    onSim2SignalLevelChange = { previewSim2SignalLevel = it },
-                                    onSim2NetworkChange = { previewSim2NetworkIndex = it.ordinal },
+                                    onSim2SignalLevelChange = { previewSelection = previewSelection.copy(sim2SignalLevel = it) },
+                                    onSim2NetworkChange = { previewSelection = previewSelection.copy(sim2MobileNetwork = it) },
                                 ),
                                 selection = PreviewSandboxSimSelectionActions(
-                                    onDataSimChange = { previewDataSimIndex = it.ordinal },
-                                    onSimCardsChange = { previewSimCardsIndex = it.ordinal },
+                                    onDataSimChange = { previewSelection = previewSelection.copy(dataSim = it) },
+                                    onSimCardsChange = { previewSelection = previewSelection.copy(simCards = it) },
                                 ),
                             ),
                             battery = PreviewSandboxBatteryActions(
-                                onBatteryPercentChange = { previewBatteryPercent = it },
-                                onBatteryModeChange = { previewBatteryModeIndex = it.ordinal },
-                                onChargingStateChange = { previewChargingStateIndex = it.ordinal },
+                                onBatteryPercentChange = { previewSelection = previewSelection.copy(batteryPercent = it) },
+                                onBatteryModeChange = { previewSelection = previewSelection.copy(batteryMode = it) },
+                                onChargingStateChange = { previewSelection = previewSelection.copy(chargingState = it) },
                             ),
                         ),
                     )
