@@ -99,6 +99,8 @@ class GyModule : XposedModule() {
     // A closing FAKE header can leave the steady status-bar area exposed
     // after rotation. These are observations, not additional native writers.
     private var ccClosingVisualFrame = false
+    // At most two non-terminal geometry witnesses per native gesture.
+    private var lastCcUnderlayProbeStage = -1
     private var ccFakeRootRef = WeakReference<ViewGroup>(null)
     private var ccFinalRootRef = WeakReference<ViewGroup>(null)
     private val ccHeaderScreenLocation = IntArray(2)
@@ -613,6 +615,10 @@ class GyModule : XposedModule() {
         ccExpansion = 0f
         ccProjectionReadyForHandoff = false
         ccHomeYieldedToPanel = false
+        ccClosingVisualFrame = false
+        lastCcUnderlayProbeStage = -1
+        ccFakeRootRef = WeakReference(null)
+        ccFinalRootRef = WeakReference(null)
         ccNativeZeroAwaitingCommit = false
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyStatusSourceScene = SourceScene.UNKNOWN
@@ -1138,6 +1144,7 @@ class GyModule : XposedModule() {
         }
         if (update.visible == false) {
             ccClosingVisualFrame = false
+            lastCcUnderlayProbeStage = -1
             HomeRenderSession.setCcClosingUnderlayVisible(false)
             ccFakeRootRef = WeakReference(null)
             ccFinalRootRef = WeakReference(null)
@@ -1466,15 +1473,42 @@ class GyModule : XposedModule() {
                 ccHeaderScreenLocation[1]
             }
         }
+        val fakeTop = if (eligible) nativeTop(ccFakeRootRef.get()) else null
+        val finalTop = if (eligible) nativeTop(ccFinalRootRef.get()) else null
         val show =
             CcHomeCloseUnderlayPolicy.shouldShow(
                 nativePanelVisible = controlCenterSceneVisible,
                 closing = eligible,
                 homeSlotBottomPx = homeBottom,
-                fakeHeaderTopPx = if (eligible) nativeTop(ccFakeRootRef.get()) else null,
-                finalHeaderTopPx = if (eligible) nativeTop(ccFinalRootRef.get()) else null,
+                fakeHeaderTopPx = fakeTop,
+                finalHeaderTopPx = finalTop,
             )
         HomeRenderSession.setCcClosingUnderlayVisible(show)
+        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
+            if (progress <= 0f || progress >= 1f) {
+                lastCcUnderlayProbeStage = -1
+            } else {
+                val stage = if (progress > 0.8f) 1 else if (progress < 0.4f) 0 else -1
+                if (stage >= 0 && stage != lastCcUnderlayProbeStage) {
+                    lastCcUnderlayProbeStage = stage
+                    logDiagnostic(
+                        level = Log.INFO,
+                        event = "underlay.admission",
+                        component = "controlCenterProjection",
+                        state = if (show) "accepted" else "rejected",
+                        "fraction" to progress,
+                        "closing" to ccClosingVisualFrame,
+                        "nativePanelVisible" to controlCenterSceneVisible,
+                        "sceneEligible" to controlCenterSceneEligible,
+                        "sourceScene" to controlCenterSourceScene.name,
+                        "homeRenderBottomPx" to homeBottom,
+                        "fakeTopPx" to fakeTop,
+                        "finalTopPx" to finalTop,
+                        "homeRendered" to show,
+                    )
+                }
+            }
+        }
     }
 
     private fun acquireKeyguardCcLease(source: String) {
@@ -1768,6 +1802,7 @@ class GyModule : XposedModule() {
     private fun onCcRuntimeFailure(error: Throwable) {
         if (retiredForHotReload) return
         ccClosingVisualFrame = false
+        lastCcUnderlayProbeStage = -1
         HomeRenderSession.setCcClosingUnderlayVisible(false)
         ccFakeRootRef = WeakReference(null)
         ccFinalRootRef = WeakReference(null)

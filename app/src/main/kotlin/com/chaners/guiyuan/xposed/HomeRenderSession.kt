@@ -526,13 +526,18 @@ internal object HomeRenderSession {
 
         fun homeSlotBottomScreenY(): Int? {
             val root = host.get() ?: return null
+            // The independent OverlayViewGroup child, not the SystemUI
+            // container, defines the pixels that Guiyuan may draw. This
+            // RenderView is also the live CC transition source (sw2).
+            // An Overlay child may report isShown=false despite native draw.
             if (!root.isAttachedToWindow || !root.isShown ||
-                !root.isLaidOut || root.height <= 0 ||
-                !featureEnabled || !modelReady || !tintReady || !layoutReady
+                !probeView.isAttachedToWindow || probeView.width <= 0 ||
+                probeView.height <= 0 || !featureEnabled ||
+                !modelReady || !tintReady || !layoutReady
             ) return null
             return SysUiPresentationRuntime.optionalNativeRead {
-                root.getLocationOnScreen(hostWindowLocation)
-                hostWindowLocation[1] + root.height
+                probeView.getLocationOnScreen(hostWindowLocation)
+                hostWindowLocation[1] + probeView.height
             }
         }
 
