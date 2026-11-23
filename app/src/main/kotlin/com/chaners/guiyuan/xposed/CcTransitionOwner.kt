@@ -128,9 +128,6 @@ internal object CcTransitionOwner {
         current?.mobileTargetProbe()
 
     @Synchronized
-    fun wifiMotionProbe(): String? = current?.wifiMotionProbe()
-
-    @Synchronized
     fun capacityGeometryProbe(): String? = current?.capacityGeometryProbe()
 
     @Synchronized
@@ -607,11 +604,6 @@ internal object CcTransitionOwner {
 
         // Sample both native carriers in one frame; neither layer is a stable
         // proxy for the other while HyperOS switches CC presentation.
-        fun wifiMotionProbe(): String? =
-            if (currentSnapshot.model.centerIndicator is CenterIndicator.Wifi) {
-                capacityGeometryProbe()
-            } else null
-
         fun capacityGeometryProbe(): String? {
             val root = rootRef.get() ?: return null
             val source = sourceViewRef.get() ?: return null
@@ -645,8 +637,10 @@ internal object CcTransitionOwner {
                         val mask = clip?.let {
                             "${it.left}/${it.top}/${it.right}/${it.bottom}"
                         } ?: "-"
+                        val state = NativeStatusObserver.readIslandVisibilityState(group, child)
                         "$index:$slot:" + viewPos(child) +
-                            ":shown=${child.isShown}:clip=$mask"
+                            ":shown=${child.isShown}:clip=$mask" +
+                            ":native=${state?.visibleState}/${state?.inIslandState}/${state?.hiddenBySpace}"
                     }
 
             val fakeWifi = slotViews(fakeStatusIcons, WIFI_SLOT).firstOrNull {

@@ -91,7 +91,6 @@ internal object SysUiPresentationOwner {
     private var controlCenterSourceScene = SourceScene.UNKNOWN
     private var steadyPeerMirrorActive = false
     private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
-    private var steadyPeerMirrorFrozen = false
 
     private fun stopHome(session: Session, source: String, requestLayout: Boolean = true): Int =
         homeRetirement.release(session) { session.stop(source, requestLayout) }
@@ -265,7 +264,6 @@ internal object SysUiPresentationOwner {
         // The steady-peer mirror samples Home native island state, so it is valid
         // only while Home is the authoritative Control Center source.
         if (sourceScene != SourceScene.HOME) {
-            steadyPeerMirrorFrozen = false
             steadyPeerMirrorActive = false
             steadyPeerMirrorHiddenSlots = emptySet()
             controlCenterCurrent?.updateSteadyPeerMirror(
@@ -1028,7 +1026,6 @@ internal object SysUiPresentationOwner {
 
     @Synchronized
     fun deactivateCc(source: String): Result {
-        steadyPeerMirrorFrozen = false
         val session =
             controlCenterCurrent
                 ?: return Result.Inactive(0)
@@ -1048,27 +1045,8 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    fun onCcVisibilityChanged(visible: Boolean): Boolean {
-        if (visible && controlCenterSourceScene == SourceScene.HOME &&
-            current != null && controlCenterCurrent != null
-        ) {
-            if (!steadyPeerMirrorFrozen) {
-                // Capture the Home peer state before the native CC island relayout.
-                val snapshot = current?.captureSteadyPeerMirror()
-                    ?: SteadyPeerMirrorSnapshot(false, emptySet())
-                steadyPeerMirrorActive = snapshot.active
-                steadyPeerMirrorHiddenSlots = snapshot.hiddenSlots
-                controlCenterCurrent?.updateSteadyPeerMirror(
-                    active = snapshot.active,
-                    hiddenSlots = snapshot.hiddenSlots,
-                )
-            }
-            steadyPeerMirrorFrozen = true
-        } else if (!visible) {
-            steadyPeerMirrorFrozen = false
-        }
-        return controlCenterCurrent?.onCcVisibilityChanged(visible) ?: true
-    }
+    fun onCcVisibilityChanged(visible: Boolean): Boolean =
+        controlCenterCurrent?.onCcVisibilityChanged(visible) ?: true
 
     @Synchronized
     fun updateCcTransitionReservation(
@@ -1097,7 +1075,6 @@ internal object SysUiPresentationOwner {
         current = null
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
-        steadyPeerMirrorFrozen = false
         controlCenterCurrent?.updateSteadyPeerMirror(active = false, hiddenSlots = emptySet())
         val restored = stopHome(session, source)
         eventSink?.invoke(
@@ -1327,10 +1304,7 @@ internal object SysUiPresentationOwner {
             } ?: return false
 
         if (role == HOME_SURFACE) {
-            if (synchronized(this) {
-                    controlCenterSourceScene != SourceScene.HOME || steadyPeerMirrorFrozen
-                }
-            ) return false
+            if (synchronized(this) { controlCenterSourceScene != SourceScene.HOME }) return false
 
             val snapshot = session.captureSteadyPeerMirror()
             var changed = false
@@ -1402,7 +1376,6 @@ internal object SysUiPresentationOwner {
         current = null
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
-        steadyPeerMirrorFrozen = false
         releaseAll(
             { controlCenterCurrent?.updateSteadyPeerMirror(active = false, hiddenSlots = emptySet()) },
             { stopHome(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
@@ -1502,7 +1475,6 @@ internal object SysUiPresentationOwner {
     private fun onCcSessionFailure(session: Session, reason: String) {
         if (controlCenterCurrent !== session) return
         controlCenterCurrent = null
-        steadyPeerMirrorFrozen = false
         try {
             releaseAll(
                 { stopCc(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
@@ -1542,7 +1514,6 @@ internal object SysUiPresentationOwner {
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
-        steadyPeerMirrorFrozen = false
     }
 
     private fun clearInstallState() {
@@ -2451,8 +2422,8 @@ internal object SysUiPresentationOwner {
                     actualBatteryWidthPx = actualBatteryWidthPx,
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
-            // Keep B1921's native FAKE row geometry unchanged; the peer mirror
-            // is the only behavior under investigation here.
+            // Native status-icon onMeasure/onLayout owns peer underflow.
+            // Lease only the current projected occupancy via paddingEnd.
             val reservationDelta = requestedReservationDelta
             val target =
                 PaddingState(

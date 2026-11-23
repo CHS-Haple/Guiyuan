@@ -106,8 +106,8 @@ class GyModule : XposedModule() {
     private var keyguardCcLeaseActive = false
     private var lastBatteryNumberProbeSummary: String? = null
     private var lastMobileTargetProbeSummary: String? = null
-    private var ccWifiGeometryStage = -1
-    private var ccWifiGeometrySamples = 0
+    private var ccPeerGeometryStage = -1
+    private var ccPeerGeometrySamples = 0
     // Queued old-loader preference work must not regain native ownership after API 102 retirement.
     @Volatile private var retiredForHotReload = false
     private var runtimeSessionId = newRuntimeSessionId()
@@ -1100,19 +1100,21 @@ class GyModule : XposedModule() {
             fraction >= 0.3f -> 1
             else -> 0
         }
-        if (stage == ccWifiGeometryStage || ccWifiGeometrySamples >= 12) return
-        CcTransitionOwner.wifiMotionProbe()?.let { snapshot ->
-            val direction = if (stage < ccWifiGeometryStage) "closing" else "opening"
-            ccWifiGeometryStage = stage
-            ccWifiGeometrySamples++
+        if (stage == ccPeerGeometryStage || ccPeerGeometrySamples >= 12) return
+        CcTransitionOwner.capacityGeometryProbe()?.let { snapshot ->
+            val direction = if (stage < ccPeerGeometryStage) "closing" else "opening"
+            ccPeerGeometryStage = stage
+            ccPeerGeometrySamples++
             logDiagnostic(
                 level = Log.INFO,
-                event = "transition.geometry",
-                component = "ccWifi",
+                event = "transition.peerGeometry",
+                component = "ccNativePeers",
                 state = "sampled",
                 "sample" to stage,
                 "direction" to direction,
                 "phase" to "after-native-expansion",
+                "homeIslandShowing" to SysUiIslandSource.currentShowing(),
+                "nativeVisual" to SysUiCcSource.nativeVisualState(),
                 "snapshot" to snapshot,
             )
         }
@@ -1131,8 +1133,8 @@ class GyModule : XposedModule() {
         CcTransitionOwner.onSourceUpdate(transitionUpdate)
         if (update.visible == false) {
             lastMobileTargetProbeSummary = null
-            ccWifiGeometryStage = -1
-            ccWifiGeometrySamples = 0
+            ccPeerGeometryStage = -1
+            ccPeerGeometrySamples = 0
         }
         if (
             deepDiagnosticsEnabled &&
@@ -5036,8 +5038,8 @@ class GyModule : XposedModule() {
         renderTraceSequence.set(0L)
         lastBatteryNumberProbeSummary = null
         lastMobileTargetProbeSummary = null
-        ccWifiGeometryStage = -1
-        ccWifiGeometrySamples = 0
+        ccPeerGeometryStage = -1
+        ccPeerGeometrySamples = 0
     }
 
     private fun beginRenderTrace(source: String): RuntimeRenderTrace? {
