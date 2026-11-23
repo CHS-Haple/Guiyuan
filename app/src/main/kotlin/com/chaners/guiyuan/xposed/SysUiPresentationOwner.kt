@@ -1049,7 +1049,9 @@ internal object SysUiPresentationOwner {
 
     @Synchronized
     fun onCcVisibilityChanged(visible: Boolean): Boolean {
-        if (visible && controlCenterSourceScene == SourceScene.HOME && current != null) {
+        if (visible && controlCenterSourceScene == SourceScene.HOME &&
+            current != null && controlCenterCurrent != null
+        ) {
             if (!steadyPeerMirrorFrozen) {
                 // Capture the Home peer state before the native CC island relayout.
                 val snapshot = current?.captureSteadyPeerMirror()
