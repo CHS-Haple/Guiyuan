@@ -35,8 +35,6 @@ import com.chaners.guiyuan.ui.screens.AppearanceStyleActions
 import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
 import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import com.chaners.guiyuan.ui.screens.DiagnosticsScreen
-import com.chaners.guiyuan.ui.screens.PreviewMobileNetwork
-import com.chaners.guiyuan.ui.screens.PreviewNetworkMode
 import com.chaners.guiyuan.ui.screens.PreviewSandboxScreen
 import com.chaners.guiyuan.ui.screens.PreviewSandboxBatteryActions
 import com.chaners.guiyuan.ui.screens.PreviewSandboxSimSelectionActions
