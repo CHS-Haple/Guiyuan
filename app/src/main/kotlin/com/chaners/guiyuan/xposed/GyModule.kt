@@ -99,8 +99,8 @@ class GyModule : XposedModule() {
     // A closing FAKE header can leave the steady status-bar area exposed
     // after rotation. These are observations, not additional native writers.
     private var ccClosingVisualFrame = false
-    // At most two non-terminal geometry witnesses per native gesture.
-    private var lastCcUnderlayProbeStage = -1
+    // One witness per geometry stage in a native gesture (never per frame).
+    private var ccUnderlayProbeStageMask = 0
     private var ccFakeRootRef = WeakReference<ViewGroup>(null)
     private var ccFinalRootRef = WeakReference<ViewGroup>(null)
     private val ccHeaderScreenLocation = IntArray(2)
@@ -616,7 +616,7 @@ class GyModule : XposedModule() {
         ccProjectionReadyForHandoff = false
         ccHomeYieldedToPanel = false
         ccClosingVisualFrame = false
-        lastCcUnderlayProbeStage = -1
+        ccUnderlayProbeStageMask = 0
         ccFakeRootRef = WeakReference(null)
         ccFinalRootRef = WeakReference(null)
         ccNativeZeroAwaitingCommit = false
@@ -1144,7 +1144,7 @@ class GyModule : XposedModule() {
         }
         if (update.visible == false) {
             ccClosingVisualFrame = false
-            lastCcUnderlayProbeStage = -1
+            ccUnderlayProbeStageMask = 0
             HomeRenderSession.setCcClosingUnderlayVisible(false)
             ccFakeRootRef = WeakReference(null)
             ccFinalRootRef = WeakReference(null)
@@ -1486,11 +1486,12 @@ class GyModule : XposedModule() {
         HomeRenderSession.setCcClosingUnderlayVisible(show)
         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
             if (progress <= 0f || progress >= 1f) {
-                lastCcUnderlayProbeStage = -1
+                ccUnderlayProbeStageMask = 0
             } else {
                 val stage = if (progress > 0.8f) 1 else if (progress < 0.4f) 0 else -1
-                if (stage >= 0 && stage != lastCcUnderlayProbeStage) {
-                    lastCcUnderlayProbeStage = stage
+                val stageBit = if (stage >= 0) 1 shl stage else 0
+                if (stageBit != 0 && ccUnderlayProbeStageMask and stageBit == 0) {
+                    ccUnderlayProbeStageMask = ccUnderlayProbeStageMask or stageBit
                     logDiagnostic(
                         level = Log.INFO,
                         event = "underlay.admission",
@@ -1504,7 +1505,7 @@ class GyModule : XposedModule() {
                         "homeRenderBottomPx" to homeBottom,
                         "fakeTopPx" to fakeTop,
                         "finalTopPx" to finalTop,
-                        "homeRendered" to show,
+                        "geometryAdmitted" to show,
                     )
                 }
             }
@@ -1802,7 +1803,7 @@ class GyModule : XposedModule() {
     private fun onCcRuntimeFailure(error: Throwable) {
         if (retiredForHotReload) return
         ccClosingVisualFrame = false
-        lastCcUnderlayProbeStage = -1
+        ccUnderlayProbeStageMask = 0
         HomeRenderSession.setCcClosingUnderlayVisible(false)
         ccFakeRootRef = WeakReference(null)
         ccFinalRootRef = WeakReference(null)
