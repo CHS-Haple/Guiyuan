@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.xposed
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -22,8 +24,17 @@ class PresentationNativeGeometryTest {
     )
 
     @Test
+    fun fakeWidthLeaseOnlyBorrowsVerifiedUnusedParentCapacity() {
+        assertEquals(818, FakeCarrierNativeGeometryPolicy.leaseWidth(587, 818, true))
+        assertNull(FakeCarrierNativeGeometryPolicy.leaseWidth(1361, 1309, true))
+        assertNull(FakeCarrierNativeGeometryPolicy.leaseWidth(587, 587, true))
+        assertNull(FakeCarrierNativeGeometryPolicy.leaseWidth(587, 818, false))
+        assertNull(FakeCarrierNativeGeometryPolicy.leaseWidth(0, 818, true))
+    }
+
+    @Test
     fun portraitNativeNarrowCarrierRemainsSystemUiOwned() {
-        // B1899: QS_FAKE 587 within an 818-wide parent. No width mutation required.
+        // Native ownership establishes the 587px baseline before any lease.
         assertTrue(settled(nativeWidth = 587))
     }
 

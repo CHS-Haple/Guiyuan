@@ -72,6 +72,9 @@ internal object VisualMaskPolicy {
 // For QS_FAKE, SystemUI owns the host width. Both normal and native
 // end-overhanging layouts are valid once the native layout has completed.
 internal object FakeCarrierNativeGeometryPolicy {
+    fun leaseWidth(nativeWidthPx: Int, parentContentWidthPx: Int, clearMargins: Boolean): Int? =
+        parentContentWidthPx.takeIf { clearMargins && nativeWidthPx > 0 && it > nativeWidthPx }
+
     fun isSettled(
         nativeWidthPx: Int,
         laidOutWidthPx: Int,

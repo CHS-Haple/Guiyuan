@@ -1560,7 +1560,9 @@ internal object SysUiPresentationOwner {
         private var mirrorIslandSuppressionLogged = false
         private var nativePadding: PaddingState? = null
         private var appliedPadding: PaddingState? = null
-        // Native SystemUI is the only writer of QS_FAKE host width.
+        // One temporary FAKE width receipt; native owns every unleased epoch.
+        private var ccNativeWidthPx: Int? = null
+        private var ccAppliedWidthPx: Int? = null
         private var lastObservedNativeFakeWidthPx: Int? = null
         private var batteryWidthUnavailable = false
         private var aodPeersReleased = false
@@ -1712,7 +1714,8 @@ internal object SysUiPresentationOwner {
                     ownedPersistentIgnoredSlots != null ||
                         aodBatteryReleased ||
                         clipStates.isNotEmpty() ||
-                        appliedPadding != null
+                        appliedPadding != null ||
+                        ccAppliedWidthPx != null
                 )
 
         fun nativeHomeBatteryHidden(): Boolean? {
@@ -2027,6 +2030,11 @@ internal object SysUiPresentationOwner {
             if (ownedPersistentIgnoredSlots != null) {
                 failures += IllegalStateException("native-ignored-slots-restore-incomplete")
             }
+            releaseAttempt(failures) {
+                if (!restoreCcFakeCapacityLease()) {
+                    failures += IllegalStateException("cc-fake-width-restore-incomplete")
+                }
+            }
             releaseAttempt(failures) { restored += restoreClipMasks(clipStates, failures) }
             releaseAttempt(failures) {
                 restored += restoreClipMasks(mirroredPeerClipStates, failures)
@@ -2284,6 +2292,7 @@ internal object SysUiPresentationOwner {
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) return true
+            if (!ensureCcFakeCapacityLease()) return false
             val group = statusIcons.get() ?: run { onFailNative(REASON_STATUS_ICON_GROUP_RELEASED); return false }
             val container = batteryContainer.get() ?: run { onFailNative("battery-container-released"); return false }
             val batteryView = battery.get() ?: run { onFailNative("battery-view-released"); return false }
@@ -2459,8 +2468,63 @@ internal object SysUiPresentationOwner {
             return paddingRestored
         }
 
-        // The native controller updates QS_FAKE width from realSystemIcons
-        // on scene and orientation changes; Guiyuan never leases that property.
+        // Lease only unused native parent capacity after the FAKE host settles.
+        private fun ensureCcFakeCapacityLease(): Boolean {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
+            val fake = host.get() ?: return true
+            val params = fake.layoutParams ?: return true
+            val applied = ccAppliedWidthPx
+            if (applied != null) {
+                if (params.width == applied) return true
+                onFailNative("fake-carrier-width-writer-conflict")
+                return false
+            }
+            if (!nativeFakeCarrierLayoutSettled()) return true
+            val parent = fake.parent as? ViewGroup ?: return true
+            val margins = params as? ViewGroup.MarginLayoutParams
+            val clearMargins = margins == null ||
+                (margins.leftMargin == 0 && margins.rightMargin == 0 &&
+                    margins.marginStart == 0 && margins.marginEnd == 0)
+            val targetWidth = FakeCarrierNativeGeometryPolicy.leaseWidth(
+                nativeWidthPx = params.width,
+                parentContentWidthPx = parent.width - parent.paddingLeft - parent.paddingRight,
+                clearMargins = clearMargins,
+            ) ?: return true
+            ccNativeWidthPx = params.width
+            // The setter may reenter or throw after mutating LayoutParams in place.
+            ccAppliedWidthPx = targetWidth
+            params.width = targetWidth
+            fake.layoutParams = params
+            if (fake.layoutParams?.width != targetWidth) {
+                onFailNative("fake-carrier-width-lease-apply-failed")
+                return false
+            }
+            onEvent(eventPrefix + " fakeCarrierCapacity lease=active" +
+                " nativeWidth=" + ccNativeWidthPx + " leasedWidth=" + targetWidth +
+                " source=parent-native-capacity")
+            return true
+        }
+
+        private fun restoreCcFakeCapacityLease(): Boolean {
+            val applied = ccAppliedWidthPx ?: return true
+            val original = ccNativeWidthPx ?: return false
+            val fake = host.get() ?: return false
+            val params = fake.layoutParams ?: return false
+            if (params.width == applied) {
+                params.width = original
+                fake.layoutParams = params
+                if (fake.layoutParams?.width != original) return false
+            } else {
+                // Never overwrite SystemUI's newer width at a scene boundary.
+                onEvent(eventPrefix + " fakeCarrierCapacity lease=yield-native" +
+                    " liveWidth=" + params.width + " appliedWidth=" + applied)
+            }
+            ccAppliedWidthPx = null
+            ccNativeWidthPx = null
+            return true
+        }
+
+        // The native controller updates QS_FAKE width from realSystemIcons.
         private fun nativeFakeCarrierLayoutSettled(): Boolean {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             val nativeHost = host.get() ?: return false
