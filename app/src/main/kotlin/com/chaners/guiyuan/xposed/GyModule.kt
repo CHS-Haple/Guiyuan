@@ -101,6 +101,8 @@ class GyModule : XposedModule() {
     private var ccClosingVisualFrame = false
     // One witness per geometry stage in a native gesture (never per frame).
     private var ccUnderlayProbeStageMask = 0
+    // Passive one-shot paint chain observation, four stage receipts per close.
+    private var ccPaintChainStageMask = 0
     private var ccFakeRootRef = WeakReference<ViewGroup>(null)
     private var ccFinalRootRef = WeakReference<ViewGroup>(null)
     private val ccHeaderScreenLocation = IntArray(2)
@@ -617,6 +619,7 @@ class GyModule : XposedModule() {
         ccHomeYieldedToPanel = false
         ccClosingVisualFrame = false
         ccUnderlayProbeStageMask = 0
+        ccPaintChainStageMask = 0
         ccFakeRootRef = WeakReference(null)
         ccFinalRootRef = WeakReference(null)
         ccNativeZeroAwaitingCommit = false
@@ -1058,6 +1061,7 @@ class GyModule : XposedModule() {
                         updateCcClosingHomeUnderlay(progress)
                         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
                             onCcNativeGeometry(progress)
+                            onCcPaintChainWitness(progress)
                         }
                     }
                 },
@@ -1106,6 +1110,38 @@ class GyModule : XposedModule() {
         }
     }
 
+    private fun onCcPaintChainWitness(progress: Float) {
+        // Four post-native receipts per closing gesture; never a new frame
+        // listener or native property writer.
+        if (!ccClosingVisualFrame && progress > 0f) return
+        val stage =
+            when {
+                progress <= 0f -> 3
+                progress > 0.8f -> 0
+                progress >= 0.45f -> 1
+                else -> 2
+            }
+        val bit = 1 shl stage
+        if (ccPaintChainStageMask and bit != 0) return
+        ccPaintChainStageMask = ccPaintChainStageMask or bit
+        logDiagnostic(
+            level = Log.INFO,
+            event = "paint.chain",
+            component = "controlCenterProjection",
+            state = "after-native-expansion",
+            "fraction" to progress,
+            "closing" to ccClosingVisualFrame,
+            "scene" to controlCenterSourceScene.name,
+            "nativeVisible" to controlCenterSceneVisible,
+            "homeYielded" to ccHomeYieldedToPanel,
+            "home" to HomeRenderSession.frameWitness(),
+            "fake" to CcRenderSession.frameWitness(),
+            "transition" to CcTransitionOwner.frameWitness(),
+            "native" to SysUiCcSource.nativeVisualState(),
+        )
+        if (progress <= 0f) ccPaintChainStageMask = 0
+    }
+
     private fun onCcNativeGeometry(progress: Float) {
         val fraction = progress.coerceIn(0f, 1f)
         val stage = when {
@@ -1145,6 +1181,7 @@ class GyModule : XposedModule() {
         if (update.visible == false) {
             ccClosingVisualFrame = false
             ccUnderlayProbeStageMask = 0
+            ccPaintChainStageMask = 0
             HomeRenderSession.setCcClosingUnderlayVisible(false)
             ccFakeRootRef = WeakReference(null)
             ccFinalRootRef = WeakReference(null)
@@ -1491,6 +1528,7 @@ class GyModule : XposedModule() {
         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
             if (progress <= 0f || progress >= 1f) {
                 ccUnderlayProbeStageMask = 0
+                ccPaintChainStageMask = 0
             } else {
                 val stage = if (progress > 0.8f) 1 else if (progress < 0.4f) 0 else -1
                 val stageBit = if (stage >= 0) 1 shl stage else 0
@@ -1811,6 +1849,7 @@ class GyModule : XposedModule() {
         if (retiredForHotReload) return
         ccClosingVisualFrame = false
         ccUnderlayProbeStageMask = 0
+        ccPaintChainStageMask = 0
         HomeRenderSession.setCcClosingUnderlayVisible(false)
         ccFakeRootRef = WeakReference(null)
         ccFinalRootRef = WeakReference(null)
