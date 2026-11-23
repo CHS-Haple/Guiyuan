@@ -65,7 +65,6 @@ internal object CcTransitionOwner {
     private var nativeAppearanceAnimated = false
     private var nativeBatteryIslandActive: Boolean? = null
     private var sourceScene = SourceScene.UNKNOWN
-    private var nativeCrossfadeOnlyCycle = false
     private var endpoints: SysUiCcSource.TransitionEndpoints? = null
     private var current: Session? = null
 
@@ -74,7 +73,6 @@ internal object CcTransitionOwner {
         update.visible?.let { nextVisible ->
             visible = nextVisible
             if (!nextVisible) {
-                nativeCrossfadeOnlyCycle = false
                 nativeProgress = null
                 nativeAppearance = false
                 nativeAppearanceAnimated = false
@@ -122,8 +120,7 @@ internal object CcTransitionOwner {
         "visible=" + visible +
             ":eligible=" + sceneEligible +
             ":progress=" + (nativeProgress ?: "none") +
-            ":drawable=" + (current?.visualState() ?: "none") +
-            ":nativeCrossfadeOnly=" + nativeCrossfadeOnlyCycle
+            ":drawable=" + (current?.visualState() ?: "none")
 
     @Synchronized
     fun latestBatteryNumberProbeDiagnostic(): String? =
@@ -147,7 +144,6 @@ internal object CcTransitionOwner {
         nativeAppearanceAnimated = false
         nativeBatteryIslandActive = null
         sourceScene = SourceScene.UNKNOWN
-        nativeCrossfadeOnlyCycle = false
         endpoints = null
     }
 
@@ -168,12 +164,8 @@ internal object CcTransitionOwner {
         if (!shouldRun) {
             current?.stop("inactive:" + source)
             current = null
-            if (!visible || progress == null || progress <= 0f) {
-                nativeCrossfadeOnlyCycle = false
-            }
             return
         }
-        if (nativeCrossfadeOnlyCycle) return
 
         val sourceSnapshot =
             CcRenderSession.transitionSourceSnapshot()
@@ -233,13 +225,6 @@ internal object CcTransitionOwner {
                     current = null
                     return
                 }
-            if (created.hasProjectedPeerOverlap()) {
-                // The native FAKE row stays in its steady layout. Its own
-                // FAKE→FINAL alpha handoff must own this crowded transition.
-                nativeCrossfadeOnlyCycle = true
-                current = null
-                return
-            }
             current = created
             if (!created.start()) {
                 current = null
@@ -247,12 +232,6 @@ internal object CcTransitionOwner {
             }
         }
 
-        if (current?.hasNewPeerOverlap() == true) {
-            current?.stop("native-peer-reveal-overlap")
-            current = null
-            nativeCrossfadeOnlyCycle = true
-            return
-        }
         current?.update(
             progress = progress,
             sourceSnapshot = sourceSnapshot,
@@ -296,12 +275,13 @@ internal object CcTransitionOwner {
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private val mobileTargetsDirty = AtomicBoolean(false)
         private val nativeChildren = ArrayList<View>()
-        private var nativePeerLayoutChanged = false
+        private var nativePeerMaskDirty = true
+        private var nativePeerMaskMembers = emptyList<View>()
         // Native children can change while the icon container keeps the same bounds.
         private val nativeMembershipListener =
             ViewTreeObserver.OnGlobalLayoutListener {
                 if (started) {
-                    nativePeerLayoutChanged = true
+                    nativePeerMaskDirty = true
                     if (
                         captureNativeChildren() &&
                         currentSnapshot.model.dualMobileLevels == null
@@ -715,47 +695,28 @@ internal object CcTransitionOwner {
                 " finalPeers=[${peers(finalStatusIcons)}]"
         }
 
-        // FAKE and FINAL are sampled in the same native root coordinates.
-        // Do not paint an expanding projection through a still-visible peer.
-        // In that case retain the compact FAKE source and OEM crossfade.
-        fun hasNewPeerOverlap(): Boolean {
-            if (!nativePeerLayoutChanged) return false
-            nativePeerLayoutChanged = false
-            return hasProjectedPeerOverlap()
-        }
-
-        fun hasProjectedPeerOverlap(): Boolean {
-            val root = rootRef.get() ?: return true
-            val peers = (0 until fakeStatusIcons.childCount)
-                .map(fakeStatusIcons::getChildAt)
-                .filter { peer ->
-                    NativeStatusSlots.slotOf(peer) !in replacedNetworkSlots &&
-                        peer.isShown && peer.width > 0 && peer.height > 0 &&
-                        peer.alpha > 0f &&
-                        NativeStatusObserver
-                            .readIslandVisibilityState(fakeStatusIcons, peer)
-                            ?.hiddenBySpace != true &&
-                        peer.clipBounds?.let { it.width() <= 0 || it.height() <= 0 } != true
-                }
-            if (peers.isEmpty()) return false
-
-            val batteryBounds = sampledBounds(finalBattery, root) ?: return true
-            val corridor = RectF(batteryBounds)
-            var finalNetworkObserved = false
-            for (index in 0 until finalStatusIcons.childCount) {
-                val target = finalStatusIcons.getChildAt(index)
-                if (NativeStatusSlots.slotOf(target) !in replacedNetworkSlots ||
-                    target.visibility != View.VISIBLE ||
-                    target.width <= 0 || target.height <= 0
-                ) continue
-                val bounds = sampledBounds(target, root) ?: return true
-                corridor.union(bounds)
-                finalNetworkObserved = true
+        // The root overlay draws above SystemUI's native icon row. Keep visible
+        // peers unobstructed without changing their native layout or alpha.
+        private fun clipNativeFakePeers(canvas: Canvas, root: View) {
+            if (nativePeerMaskDirty) {
+                nativePeerMaskMembers = (0 until fakeStatusIcons.childCount)
+                    .map(fakeStatusIcons::getChildAt)
+                    .filter { peer ->
+                        NativeStatusSlots.slotOf(peer) !in replacedNetworkSlots &&
+                            NativeStatusObserver.readIslandVisibilityState(
+                                fakeStatusIcons,
+                                peer,
+                            )?.hiddenBySpace != true
+                    }
+                nativePeerMaskDirty = false
             }
-            if (!finalNetworkObserved) return true
-            return peers.any { peer ->
-                val bounds = sampledBounds(peer, root) ?: return true
-                RectF.intersects(corridor, bounds)
+            for (peer in nativePeerMaskMembers) {
+                if (!peer.isShown || peer.alpha <= 0f ||
+                    peer.width <= 0 || peer.height <= 0 ||
+                    peer.clipBounds?.let { it.width() <= 0 || it.height() <= 0 } == true
+                ) continue
+                val bounds = sampledBounds(peer, root) ?: continue
+                canvas.clipOutRect(bounds)
             }
         }
 
@@ -898,6 +859,7 @@ internal object CcTransitionOwner {
                 nativeBatteryIslandActive = false
                 wifiAnchor = null
                 nativeChildren.clear()
+                nativePeerMaskMembers = emptyList()
                 val registered = registeredObserver
                 val rootView = rootRef.get()
                 releaseAll(
@@ -976,6 +938,9 @@ internal object CcTransitionOwner {
             val sourceHeight = frozenSource?.height ?: sourceView.height
             val opacity = endpointAlpha(fake)
             if (opacity <= 0f) return
+            // This root overlay paints above native icons. Leave their occupied
+            // pixels to SystemUI without modifying its layout or alpha.
+            clipNativeFakePeers(canvas, rootView)
             val finalOpacity =
                 finalRootRef.get()
                     ?.let(::endpointAlpha)
