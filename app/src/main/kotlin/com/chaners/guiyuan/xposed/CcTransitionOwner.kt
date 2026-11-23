@@ -697,6 +697,12 @@ internal object CcTransitionOwner {
                 " peerTravelSlot=${nativePeerAnchor?.slot}" +
                 " peerTravelLocalX=${fakeStatusIcons.translationX - peerMotionBaseTranslationX}" +
                 " peerTravelTargetX=$lastNativePeerTargetTravelX" +
+                " peerTravelAnchor=${nativePeerAnchor?.let { anchor ->
+                    "${viewPos(anchor.fake)}->${viewPos(anchor.final)}"
+                } ?: "none"}" +
+                " peerClipChildren=${fakeStatusIcons.clipChildren}," +
+                "${(fakeStatusIcons.parent as? ViewGroup)?.clipChildren}," +
+                "${fakeRootRef.get()?.clipChildren}" +
                 " cachedCarrierRootX=$fakeCarrierRootOffsetX" +
                 " liveCarrierRootX=$liveRootOffsetX" +
                 " cachedFakeHostWidth=$fakeCarrierHostWidthPx" +
