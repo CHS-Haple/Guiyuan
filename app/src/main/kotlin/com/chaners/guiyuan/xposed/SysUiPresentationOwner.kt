@@ -1028,6 +1028,7 @@ internal object SysUiPresentationOwner {
 
     @Synchronized
     fun deactivateCc(source: String): Result {
+        steadyPeerMirrorFrozen = false
         val session =
             controlCenterCurrent
                 ?: return Result.Inactive(0)
@@ -1048,7 +1049,9 @@ internal object SysUiPresentationOwner {
 
     @Synchronized
     fun onCcVisibilityChanged(visible: Boolean): Boolean {
-        if (visible && controlCenterSourceScene == SourceScene.HOME) {
+        if (visible && controlCenterSourceScene == SourceScene.HOME &&
+            controlCenterCurrent != null
+        ) {
             // Keep the pre-gesture Home peer set across native island re-layouts.
             steadyPeerMirrorFrozen = true
         } else if (!visible) {
@@ -1489,6 +1492,7 @@ internal object SysUiPresentationOwner {
     private fun onCcSessionFailure(session: Session, reason: String) {
         if (controlCenterCurrent !== session) return
         controlCenterCurrent = null
+        steadyPeerMirrorFrozen = false
         try {
             releaseAll(
                 { stopCc(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
