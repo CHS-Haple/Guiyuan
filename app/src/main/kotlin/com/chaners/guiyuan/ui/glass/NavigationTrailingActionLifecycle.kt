@@ -4,7 +4,6 @@
 
 package com.chaners.guiyuan.ui.glass
 
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
@@ -34,8 +33,8 @@ internal fun rememberNavigationTrailingAction(
             retainedAction.value = action
         }
     }
-    val isExiting by remember(progress) { computedStateOf { progress.value > 0f } }
-    return action ?: retainedAction.value.takeIf { isExiting }
+    val keepRetiringAction by remember(progress) { computedStateOf { progress.value > 0f } }
+    return action ?: retainedAction.value.takeIf { keepRetiringAction }
 }
 
 /** Exiting controls may paint their last frame but must not receive input or semantics. */
