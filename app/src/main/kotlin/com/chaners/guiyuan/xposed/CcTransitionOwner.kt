@@ -133,6 +133,14 @@ internal object CcTransitionOwner {
     @Synchronized
     fun capacityGeometryProbe(): String? = current?.capacityGeometryProbe()
 
+    // The transition session is the sole writer of its source clip receipt.
+    // Home visibility alone cannot reveal a source clipped to an empty rect.
+    @Synchronized
+    fun releaseHomeSourceClipForUnderlay(expose: Boolean): Boolean {
+        if (expose && sourceScene != SourceScene.HOME) return false
+        return current?.releaseSourceClipForUnderlay(expose) ?: !expose
+    }
+
     @Synchronized
     fun detach(source: String = "detach") {
         current?.stop(source)
@@ -844,6 +852,23 @@ internal object CcTransitionOwner {
         )
 
         fun isStarted(): Boolean = started
+
+        // Guiyuan's own source RenderView has a scoped zero-rect clip during
+        // the CC morph. Release that exact receipt only while the native
+        // FAKE and FINAL headers are physically outside the Home slot.
+        // Any newer/foreign clip writer wins, with no overwrite.
+        fun releaseSourceClipForUnderlay(expose: Boolean): Boolean {
+            if (!started || !sourceMaskApplied) return !expose
+            val source = sourceViewRef.get() ?: return !expose
+            val original = sourceMask.nativeClip
+            if (expose && original?.isEmpty == true) return false
+            val desired = if (expose) original else sourceMask.appliedClip
+            if (source.clipBounds == desired) return true
+            val expected = if (expose) sourceMask.appliedClip else original
+            if (source.clipBounds != expected) return false
+            source.clipBounds = desired?.let(::Rect)
+            return source.clipBounds == desired
+        }
 
         fun start(): Boolean {
             if (started) return true

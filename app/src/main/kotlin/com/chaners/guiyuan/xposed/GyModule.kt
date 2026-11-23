@@ -1146,6 +1146,7 @@ class GyModule : XposedModule() {
             ccClosingVisualFrame = false
             ccUnderlayProbeStageMask = 0
             HomeRenderSession.setCcClosingUnderlayVisible(false)
+            CcTransitionOwner.releaseHomeSourceClipForUnderlay(false)
             ccFakeRootRef = WeakReference(null)
             ccFinalRootRef = WeakReference(null)
         }
@@ -1364,6 +1365,10 @@ class GyModule : XposedModule() {
                 reconcileReadiness = true,
             )
         }
+        if (sourceScene != SourceScene.HOME) {
+            HomeRenderSession.setCcClosingUnderlayVisible(false)
+            CcTransitionOwner.releaseHomeSourceClipForUnderlay(false)
+        }
         controlCenterSourceScene = sourceScene
         SysUiPresentationOwner.updateCcSourceScene(sourceScene)
         CcRenderSession.setSourceScene(sourceScene)
@@ -1483,7 +1488,11 @@ class GyModule : XposedModule() {
                 fakeHeaderTopPx = fakeTop,
                 finalHeaderTopPx = finalTop,
             )
-        HomeRenderSession.setCcClosingUnderlayVisible(show)
+        // Respect the existing CC transition clip owner: visibility without
+        // releasing its zero-rect source mask would still paint no pixels.
+        val clipAdmitted = CcTransitionOwner.releaseHomeSourceClipForUnderlay(show)
+        val visible = show && clipAdmitted
+        HomeRenderSession.setCcClosingUnderlayVisible(visible)
         if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
             if (progress <= 0f || progress >= 1f) {
                 ccUnderlayProbeStageMask = 0
@@ -1496,7 +1505,7 @@ class GyModule : XposedModule() {
                         level = Log.INFO,
                         event = "underlay.admission",
                         component = "controlCenterProjection",
-                        state = if (show) "accepted" else "rejected",
+                        state = if (visible) "accepted" else "rejected",
                         "fraction" to progress,
                         "closing" to ccClosingVisualFrame,
                         "nativePanelVisible" to controlCenterSceneVisible,
@@ -1506,6 +1515,7 @@ class GyModule : XposedModule() {
                         "fakeTopPx" to fakeTop,
                         "finalTopPx" to finalTop,
                         "geometryAdmitted" to show,
+                        "sourceClipAdmitted" to clipAdmitted,
                     )
                 }
             }
@@ -1805,6 +1815,7 @@ class GyModule : XposedModule() {
         ccClosingVisualFrame = false
         ccUnderlayProbeStageMask = 0
         HomeRenderSession.setCcClosingUnderlayVisible(false)
+        CcTransitionOwner.releaseHomeSourceClipForUnderlay(false)
         ccFakeRootRef = WeakReference(null)
         ccFinalRootRef = WeakReference(null)
         val cleanupFailures = mutableListOf<String>()
