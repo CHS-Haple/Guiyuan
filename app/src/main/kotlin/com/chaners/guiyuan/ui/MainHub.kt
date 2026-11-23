@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,16 +24,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerDefaults
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
@@ -49,24 +44,17 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
@@ -86,22 +74,9 @@ import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
-import com.chaners.guiyuan.ui.navigation.AppRoute
-import com.chaners.guiyuan.ui.screens.FeaturesScreen
 import com.chaners.guiyuan.ui.screens.PageSearch
 import com.chaners.guiyuan.ui.screens.rememberPageSearch
-import com.chaners.guiyuan.ui.screens.HomeScreen
-import com.chaners.guiyuan.ui.screens.HomeScreenLayout
-import com.chaners.guiyuan.ui.screens.HomeScreenRuntime
-import com.chaners.guiyuan.ui.screens.HomeScreenActions
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
-import com.chaners.guiyuan.ui.screens.SettingsHubScreen
-import com.chaners.guiyuan.ui.screens.SettingsHubSnapshot
-import com.chaners.guiyuan.ui.screens.SettingsHubActions
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.job
 import com.chaners.guiyuan.ui.glass.GlassNavigationBar
 import com.chaners.guiyuan.ui.glass.GlassNavigationBarLayout
 import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
@@ -115,10 +90,6 @@ import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
-import top.yukonga.miuix.kmp.basic.NavigationRail
-import top.yukonga.miuix.kmp.basic.NavigationRailState
-import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
-import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
@@ -135,123 +106,12 @@ import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
-import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
-import top.yukonga.miuix.kmp.utils.pagerGestureOverride
-import top.yukonga.miuix.kmp.utils.springAnimateToPage
 import kotlin.math.roundToInt
 
 private const val TopLevelPageCount = 3
 
 /** Read the shared rail morph in drawing/layout; non-rail routes remain fully visible. */
 internal val LocalGlassRailProgress = staticCompositionLocalOf<() -> Float> { { 1f } }
-
-/** Keep a full-width page beside the upstream expanded rail; insets are relative to logical start. */
-internal fun canPlaceGlassRail(
-    windowSize: androidx.compose.ui.unit.DpSize,
-    startInset: androidx.compose.ui.unit.Dp,
-    endInset: androidx.compose.ui.unit.Dp,
-    verticalInsets: androidx.compose.ui.unit.Dp,
-): Boolean {
-    val occupiedWidth = GlassNavigationRailDefaults.ExpandedWidth +
-        GlassNavigationRailDefaults.Margin * 2 + startInset
-    return windowSize.width >= occupiedWidth + endInset + 360.dp &&
-        windowSize.height >= verticalInsets + 320.dp
-}
-
-/** Native rail replaces the current bottom bar only when the whole page still fits. */
-internal fun canPlaceNativeRail(
-    window: DpSize,
-    startInset: Dp,
-    endInset: Dp,
-    verticalInsets: Dp,
-): Boolean = window.width >= NavigationRailDefaults.ExpandedWidth + startInset + endInset + 360.dp &&
-    window.height >= verticalInsets + 320.dp
-
-/** A style-level policy with no orientation or device-brand assumptions. */
-internal fun useNativeRailFor(
-    appearance: Appearance,
-    glassBackdropAvailable: Boolean,
-    window: DpSize,
-    safePadding: PaddingValues,
-    direction: LayoutDirection,
-): Boolean {
-    if (!appearance.navEnabled) return false
-    // OS4 Glass and Liquid share the original GlassRail layout; OS3 uses native Rail.
-    if (appearance.uiStyle == UiStyle.OS4 && glassBackdropAvailable &&
-        (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)
-    ) return false
-    return canPlaceNativeRail(
-        window,
-        safePadding.calculateStartPadding(direction),
-        safePadding.calculateEndPadding(direction),
-        safePadding.calculateTopPadding() + safePadding.calculateBottomPadding(),
-    )
-}
-
-/**
- * Follows MIUIX's main-pager example: commit a destination before page motion begins.
- * This owner writes selection, while PagerState owns the actual scroll position.
- */
-private class HubPagerSelection(
-    private val pagerState: PagerState,
-    private val scope: CoroutineScope,
-) {
-    var selectedPage by mutableIntStateOf(pagerState.currentPage)
-        private set
-
-    private var navigationJob: Job? = null
-
-    fun select(index: Int) {
-        if (index !in 0 until pagerState.pageCount || index == selectedPage) return
-        navigationJob?.cancel()
-        selectedPage = index
-
-        navigationJob = scope.launch {
-            val activeJob = coroutineContext.job
-            try {
-                pagerState.springAnimateToPage(index)
-            } finally {
-                if (navigationJob === activeJob) {
-                    navigationJob = null
-                    selectedPage = pagerState.currentPage
-                }
-            }
-        }
-    }
-
-    fun syncActualPage() {
-        if (navigationJob == null && selectedPage != pagerState.currentPage) {
-            selectedPage = pagerState.currentPage
-        }
-    }
-}
-
-private data class MainNavItem(
-    val label: String,
-    val icon: ImageVector,
-)
-
-/** Map app destinations to the MIUIX-native rail; no parallel press or selected lens. */
-@Composable
-private fun HubNativeRail(
-    state: NavigationRailState,
-    items: List<MainNavItem>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-) {
-    NavigationRail(state = state, modifier = Modifier.fillMaxHeight()) {
-        items.forEachIndexed { index, item ->
-            NavigationRailItem(
-                selected = selectedIndex == index,
-                onClick = { onSelect(index) },
-                icon = item.icon,
-                label = item.label,
-            )
-        }
-    }
-}
-
 
 @Composable
 internal fun MainHub(
@@ -800,100 +660,5 @@ internal fun MainHub(
         RestartFailureDialog(restartState)
 
         }
-    }
-}
-
-@Composable
-private fun TopLevelBackHandler(
-    selectedPage: Int,
-    onBackToHome: () -> Unit,
-) {
-    val isBackEnabled = selectedPage != 0
-    val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
-
-    NavigationBackHandler(
-        state = navigationEventState,
-        isBackEnabled = isBackEnabled,
-        onBackCompleted = onBackToHome,
-    )
-}
-
-@Composable
-private fun TopLevelPager(bindings: TopLevelPagerBindings) {
-    val pagerState = bindings.scope.pagerState
-    val flingBehavior = PagerDefaults.flingBehavior(
-        state = pagerState,
-        snapAnimationSpec = PagerNavigationSpringSpec,
-    )
-    HorizontalPager(
-        state = pagerState,
-        modifier = Modifier.fillMaxSize().pagerGestureOverride(
-            pagerState = pagerState,
-            flingBehavior = flingBehavior,
-        ),
-        verticalAlignment = Alignment.Top,
-        userScrollEnabled = false,
-        flingBehavior = flingBehavior,
-        pageNestedScrollConnection = PagerGestureNestedScrollConnection,
-    ) { page ->
-        TopLevelPagerContent(
-            page = page,
-            bottom = bindings.scope.bottomPadding.calculateBottomPadding(),
-            bindings = bindings,
-        )
-    }
-}
-
-@Composable
-private fun TopLevelPagerContent(
-    page: Int,
-    bottom: Dp,
-    bindings: TopLevelPagerBindings,
-) {
-    val scope = bindings.scope
-    val user = bindings.user
-    val runtime = bindings.runtime
-    val actions = bindings.runtimeActions
-    val settings = bindings.settingsActions
-    when (page) {
-        0 -> HomeScreen(
-            layout = HomeScreenLayout(bottomContentPadding = bottom, previewState = user.preview),
-            runtime = HomeScreenRuntime(
-                hotReloadInProgress = runtime.hotReloadInProgress,
-                restartInProgress = runtime.restartInProgress,
-                scopeRequestInProgress = runtime.scopeRequestInProgress,
-                hotReloadInNavigation = runtime.hotReloadInNavigation,
-            ),
-            actions = HomeScreenActions(
-                onRestart = actions.restart,
-                onRequestScope = actions.requestScope,
-                onHotReload = actions.hotReload,
-                onOpenPreviewSandbox = { settings.navigate(AppRoute.PreviewSandbox) },
-            ),
-        )
-        1 -> FeaturesScreen(
-            bottomContentPadding = bottom,
-            visible = scope.selectedPage == 1,
-            snackbarState = scope.snackbar,
-            search = scope.search.state,
-            searchInNavigationBar = scope.search.inNavigationBar,
-        )
-        2 -> SettingsHubScreen(
-            bottomContentPadding = bottom,
-            snapshot = SettingsHubSnapshot(
-                lang = user.lang,
-                iconHidden = user.iconHidden,
-                swipeBackEnabled = user.swipeBackEnabled,
-                runtimeBusy = runtime.restartInProgress ||
-                    runtime.hotReloadInProgress || runtime.scopeRequestInProgress,
-            ),
-            actions = SettingsHubActions(
-                onRestart = actions.restart,
-                onLangChange = settings.changeLang,
-                onIconHiddenChange = settings.changeIconHidden,
-                onSwipeBackChange = settings.changeSwipeBack,
-                onNavigate = settings.navigate,
-            ),
-        )
     }
 }
