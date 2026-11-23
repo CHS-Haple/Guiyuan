@@ -3,8 +3,6 @@
 
 package com.chaners.guiyuan.ui.glass
 
-import androidx.compose.foundation.layout.width
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
