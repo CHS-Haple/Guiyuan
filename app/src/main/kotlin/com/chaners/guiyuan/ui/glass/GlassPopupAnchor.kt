@@ -4,6 +4,8 @@
 package com.chaners.guiyuan.ui.glass
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
