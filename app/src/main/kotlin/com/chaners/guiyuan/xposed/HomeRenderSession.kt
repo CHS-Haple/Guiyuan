@@ -526,18 +526,20 @@ internal object HomeRenderSession {
 
         fun homeSlotBottomScreenY(): Int? {
             val root = host.get() ?: return null
-            // The independent OverlayViewGroup child, not the SystemUI
-            // container, defines the pixels that Guiyuan may draw. This
-            // RenderView is also the live CC transition source (sw2).
-            // An Overlay child may report isShown=false despite native draw.
+            // OverlayViewGroup is not a normal View parent: child isShown /
+            // attachment are not a reliable native drawing witness. The
+            // attached host owns screen position; layoutAtAnchor() places
+            // this RenderView in host-local coordinates, including optical
+            // top/bottom overflow. Its bottom, not root.height, is the
+            // actual paint envelope used for non-overlap admission.
             if (!root.isAttachedToWindow || !root.isShown ||
-                !probeView.isAttachedToWindow || probeView.width <= 0 ||
+                probeView.parent == null || probeView.width <= 0 ||
                 probeView.height <= 0 || !featureEnabled ||
                 !modelReady || !tintReady || !layoutReady
             ) return null
             return SysUiPresentationRuntime.optionalNativeRead {
-                probeView.getLocationOnScreen(hostWindowLocation)
-                hostWindowLocation[1] + probeView.height
+                root.getLocationOnScreen(hostWindowLocation)
+                hostWindowLocation[1] + probeView.bottom
             }
         }
 
@@ -588,6 +590,7 @@ internal object HomeRenderSession {
                 " renderClip=${probeView.clipBounds}" +
                 " modelReady=$modelReady tintReady=$tintReady" +
                 " renderBounds=${probeView.left}..${probeView.right}" +
+                " renderY=${probeView.top}..${probeView.bottom}" +
                 " overlayParent=${probeView.parent?.javaClass?.simpleName}" +
                 " rootShown=${root?.isShown}" +
                 " rootAlpha=${root?.alpha}" +
