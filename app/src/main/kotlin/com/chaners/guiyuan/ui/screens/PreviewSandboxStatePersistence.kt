@@ -49,7 +49,7 @@ internal fun decodePreviewSelection(values: List<Any>): PreviewSandboxUiState? {
 }
 
 internal val PreviewSandboxUiStateSaver: Saver<PreviewSandboxUiState, Any> =
-    listSaver(save = ::encodePreviewSelection, restore = ::decodePreviewSelection)
+    listSaver(save = { encodePreviewSelection(it) }, restore = ::decodePreviewSelection)
 
 /**
  * Only the rendered/native sandbox projection may become NONE. The user's saved MOBILE
