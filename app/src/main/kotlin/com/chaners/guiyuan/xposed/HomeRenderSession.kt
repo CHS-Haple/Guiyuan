@@ -157,9 +157,6 @@ internal object HomeRenderSession {
     fun visibilityWitness(): String = current?.visibilityWitness() ?: "home-session-unbound"
 
     @Synchronized
-    fun frameWitness(): String = current?.frameWitness() ?: "home-session-unbound"
-
-    @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
         current?.setNativeHandoffActive(active)
     }
@@ -286,7 +283,6 @@ internal object HomeRenderSession {
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
         private var lastCompletedDrawElapsedRealtimeMs = 0L
-        private var completedDrawCount = 0L
         private var lastDrawnCharging: Boolean? = null
         private var lastDrawnBatterySemantic: BatterySemanticState? = null
         private val probeView =
@@ -309,7 +305,6 @@ internal object HomeRenderSession {
                 },
                 onDrawn = {
                     lastCompletedDrawElapsedRealtimeMs = SystemClock.elapsedRealtime()
-                    if (com.chaners.guiyuan.BuildConfig.RUNTIME_DIAGNOSTICS) completedDrawCount++
                     if (
                         !homeFrameDrawnAfterPanel &&
                         HomeRenderSession.current === this &&
@@ -536,45 +531,6 @@ internal object HomeRenderSession {
                 batteryCarrier.get()?.isAttachedToWindow == true &&
                 host.get()?.isShown == true
 
-        fun frameWitness(): String {
-            val root = host.get()
-            val rootView = root?.rootView
-            val hostLocation = IntArray(2)
-            val hostScreen =
-                if (root?.isAttachedToWindow == true) {
-                    SysUiPresentationRuntime.optionalNativeRead {
-                        root.getLocationOnScreen(hostLocation)
-                        "${hostLocation[0]},${hostLocation[1]}"
-                    }
-                } else null
-            val hostRect = Rect()
-            val hostGlobalVisible = root?.getGlobalVisibleRect(hostRect)
-            val renderRect = Rect()
-            val renderGlobalVisible = probeView.getGlobalVisibleRect(renderRect)
-            val renderLocation = IntArray(2)
-            val renderScreen =
-                if (probeView.isAttachedToWindow) {
-                    SysUiPresentationRuntime.optionalNativeRead {
-                        probeView.getLocationOnScreen(renderLocation)
-                        "${renderLocation[0]},${renderLocation[1]}"
-                    }
-                } else null
-            return "homeRootId=" + rootView?.let { System.identityHashCode(it) } +
-                " homeWindowId=" + root?.windowToken?.let { System.identityHashCode(it) } +
-                " homeRootSize=" + rootView?.width + "x" + rootView?.height +
-                " homeHostScreen=$hostScreen homeHostVisible=$hostGlobalVisible:$hostRect" +
-                " homeRenderScreen=$renderScreen homeRenderVisible=$renderGlobalVisible:$renderRect" +
-                " homeDrawCount=$completedDrawCount" +
-                " homeLastDrawAgeMs=" +
-                    (if (lastCompletedDrawElapsedRealtimeMs > 0L) {
-                        SystemClock.elapsedRealtime() - lastCompletedDrawElapsedRealtimeMs
-                    } else "never") +
-                " homeRenderVisibility=" + probeView.visibility +
-                " homeOwner=$controlCenterAllowsHome" +
-                " homeHandoff=$nativeHandoffActive" +
-                " homeRenderClip=" + probeView.clipBounds
-        }
-
         fun visibilityWitness(): String {
             val root = host.get()
             val nativeContainer = batteryContainer.get()
@@ -587,11 +543,7 @@ internal object HomeRenderSession {
                     SystemClock.elapsedRealtime() - lastCompletedDrawElapsedRealtimeMs
                 } else "never") +
                 " renderAlpha=${probeView.alpha}" +
-                " renderAttached=${probeView.isAttachedToWindow}" +
-                " renderClip=${probeView.clipBounds}" +
-                " modelReady=$modelReady tintReady=$tintReady" +
                 " renderBounds=${probeView.left}..${probeView.right}" +
-                " renderY=${probeView.top}..${probeView.bottom}" +
                 " overlayParent=${probeView.parent?.javaClass?.simpleName}" +
                 " rootShown=${root?.isShown}" +
                 " rootAlpha=${root?.alpha}" +

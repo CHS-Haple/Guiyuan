@@ -176,9 +176,6 @@ internal object CcRenderSession {
     fun visualState(): String? = current?.visualState()
 
     @Synchronized
-    fun frameWitness(): String = current?.frameWitness() ?: "fake-projection-unbound"
-
-    @Synchronized
     fun setPanelVisualOwner(owned: Boolean) {
         if (panelVisualOwner == owned) return
         panelVisualOwner = owned
@@ -725,29 +722,6 @@ internal object CcRenderSession {
                 { if (notify) onProjectionReadinessChanged(false) },
             )
             emitEvent { "controlCenterProjection cleanup source=" + source }
-        }
-
-        fun frameWitness(): String {
-            val fake = host.get()
-            val root = fake?.rootView
-            val area = statusBarArea.get()
-            val bounds = Rect()
-            val fakeVisible = fake?.getGlobalVisibleRect(bounds)
-            return "fakeRootId=" + root?.let { System.identityHashCode(it) } +
-                " fakeWindowId=" + fake?.windowToken?.let { System.identityHashCode(it) } +
-                " fakeGlobalVisible=$fakeVisible:$bounds" +
-                " fakeRootSize=" + root?.width + "x" + root?.height +
-                " fakeRootAlpha=" + root?.alpha +
-                " fakeParentAlpha=" + (fake?.parent as? View)?.alpha +
-                " fakeHostAlpha=" + fake?.alpha +
-                " fakeHostShown=" + fake?.isShown +
-                " fakeAreaWidth=" + area?.width +
-                " fakeRenderVisibility=" + renderView.visibility +
-                " fakeRenderClip=" + renderView.clipBounds +
-                " fakeRenderAttached=" + renderView.isAttachedToWindow +
-                " fakeRenderBounds=" + renderView.left + ".." + renderView.right +
-                " fakeRenderParent=" + renderView.parent?.javaClass?.simpleName +
-                " fakePanelOwner=$panelVisualOwner projectionReady=" + projectionReady()
         }
 
         fun visualState(): String =

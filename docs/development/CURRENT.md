@@ -55,9 +55,13 @@ execution ownership is in [architecture](../architecture/README.md).
   longer writes extra native peer padding. The parallel all-candidate width
   cap and canvas clipping remain removed. Native FAKE host
   width, native FINAL, native alpha/motion and Hot Reload remain OEM-owned.
-  Crowded/rotated FAKE, charging/island states, visual handoff and exact
-  installed ROM404 binary parity still require focused acceptance.
-  No earlier B1917 APK certifies this source revision.
+  The rotated FAKE native capacity lease is reacquired only after settled
+  native layout; a virtual motion carrier may exceed the current physical
+  host width without relaxing physical slot admission. The signed B1939
+  Canary passed the reported landscape-to-portrait first upward-close
+  disappearance on the maintainer's device. This does not certify every
+  crowded peer, charging/island, slow-close or alternative ROM scenario.
+  See the PR for exact-source acceptance and remaining integration checks.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)

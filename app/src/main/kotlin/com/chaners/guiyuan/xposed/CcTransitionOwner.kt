@@ -8,8 +8,6 @@ import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
-import android.os.SystemClock
-import com.chaners.guiyuan.BuildConfig
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -134,10 +132,6 @@ internal object CcTransitionOwner {
 
     @Synchronized
     fun capacityGeometryProbe(): String? = current?.capacityGeometryProbe()
-
-    // Canary-only read of existing draw and native View state.
-    @Synchronized
-    fun frameWitness(): String = current?.frameWitness() ?: "transition-session=inactive"
 
     @Synchronized
     fun detach(source: String = "detach") {
@@ -351,16 +345,6 @@ internal object CcTransitionOwner {
         private var registeredObserver: ViewTreeObserver? = null
         private var overlayAdded = false
         private var sourceMaskApplied = false
-        // Passive paint receipts: no listener, invalidate or new render path.
-        private var lastDrawAttemptMs = 0L
-        private var lastDrawPaintMs = 0L
-        private var drawAttempts = 0L
-        private var lastDrawComponents = 0
-        private var lastDrawPhase = "never"
-        private var lastDrawOpacity = 0f
-        private val lastDrawClip = Rect()
-        private var lastBatteryDrawGeometry: FloatArray? = null
-        private var lastBatteryClipRejected: Boolean? = null
         private var cachedNativePeerTint: Int? = null
         private var frozenReservationSpans: List<CcReservationPolicy.ReservationSpan>? = null
         private var reservationLayout: ChargeLayout? = null
@@ -719,10 +703,6 @@ internal object CcTransitionOwner {
                 " peerClipChildren=${fakeStatusIcons.clipChildren}," +
                 "${(fakeStatusIcons.parent as? ViewGroup)?.clipChildren}," +
                 "${fakeRootRef.get()?.clipChildren}" +
-                " frozenCarrierWidth=${frozenSource?.motionCarrierWidth}" +
-                " frozenSourceGeometry=${frozenSource?.geometry?.contentToString()}" +
-                " frozenCarrierGeometry=${frozenSource?.motionCarrierGeometry?.contentToString()}" +
-                " liveCarrierGeometry=${liveCarrier?.contentToString()}" +
                 " cachedCarrierRootX=$fakeCarrierRootOffsetX" +
                 " liveCarrierRootX=$liveRootOffsetX" +
                 " cachedFakeHostWidth=$fakeCarrierHostWidthPx" +
@@ -864,45 +844,6 @@ internal object CcTransitionOwner {
         )
 
         fun isStarted(): Boolean = started
-
-        fun frameWitness(): String {
-            val fake = fakeRootRef.get()
-            val final = finalRootRef.get()
-            val root = rootRef.get()
-            val source = sourceViewRef.get()
-            fun hierarchy(view: View?): String {
-                if (view == null) return "missing"
-                val chain = ArrayList<String>(8)
-                var node: View? = view
-                while (node != null && chain.size < 8) {
-                    chain += node.javaClass.simpleName +
-                        "#" + System.identityHashCode(node) +
-                        "(v=" + node.visibility + ",a=" + node.alpha +
-                        ",clip=" + node.clipBounds + ")"
-                    if (node === root) break
-                    node = node.parent as? View
-                }
-                return chain.joinToString(">")
-            }
-            val now = SystemClock.elapsedRealtime()
-            return "started=$started drawAttempts=$drawAttempts" +
-                " drawAttemptAgeMs=" +
-                    (if (lastDrawAttemptMs == 0L) "never" else now - lastDrawAttemptMs) +
-                " drawPaintAgeMs=" +
-                    (if (lastDrawPaintMs == 0L) "never" else now - lastDrawPaintMs) +
-                " paintComponents=$lastDrawComponents phase=$lastDrawPhase" +
-                " drawOpacity=$lastDrawOpacity canvasClip=$lastDrawClip" +
-                " batteryGeometry=${lastBatteryDrawGeometry?.contentToString()}" +
-                " batteryClipRejected=$lastBatteryClipRejected" +
-                " sourceMaskApplied=$sourceMaskApplied sourceClip=" + source?.clipBounds +
-                " sourceVisible=" + source?.visibility +
-                " rootId=" + root?.let { System.identityHashCode(it.rootView) } +
-                " windowId=" + root?.windowToken?.let { System.identityHashCode(it) } +
-                " rootSize=" + root?.width + "x" + root?.height +
-                " fakeEffectiveAlpha=" + fake?.let(::endpointAlpha) +
-                " finalEffectiveAlpha=" + final?.let(::endpointAlpha) +
-                " fakeChain=" + hierarchy(fake) + " finalChain=" + hierarchy(final)
-        }
 
         fun start(): Boolean {
             if (started) return true
@@ -1074,42 +1015,12 @@ internal object CcTransitionOwner {
         }
 
         fun draw(canvas: Canvas) {
-            if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                drawAttempts++
-                lastDrawAttemptMs = SystemClock.elapsedRealtime()
-                lastDrawPhase = "entered"
-                lastDrawComponents = 0
-                lastDrawOpacity = 0f
-                canvas.getClipBounds(lastDrawClip)
-                lastBatteryDrawGeometry = null
-                lastBatteryClipRejected = null
-            }
-            if (!started) {
-                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "stopped"
-                return
-            }
-            val rootView = rootRef.get() ?: run {
-                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "root-missing"
-                return
-            }
-            val fake = fakeRootRef.get() ?: run {
-                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "fake-missing"
-                return
-            }
-            val sourceView = sourceViewRef.get()
-                ?: run {
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "source-missing"
-                    return
-                }
-            val sourceAnchor = sourceAnchorRef.get()
-                ?: run {
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "anchor-missing"
-                    return
-                }
-            if (sourceView.width <= 0 || sourceView.height <= 0) {
-                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "source-size-zero"
-                return
-            }
+            if (!started) return
+            val rootView = rootRef.get() ?: return
+            val fake = fakeRootRef.get() ?: return
+            val sourceView = sourceViewRef.get() ?: return
+            val sourceAnchor = sourceAnchorRef.get() ?: return
+            if (sourceView.width <= 0 || sourceView.height <= 0) return
 
             val liveSourceParentGeometry =
                 if (frozenSource == null) {
@@ -1131,22 +1042,11 @@ internal object CcTransitionOwner {
                     null
                 }
             val sourceParentGeometry =
-                frozenSource?.geometry ?: liveSourceParentGeometry
-                    ?: run {
-                        if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "source-geometry-missing"
-                        return
-                    }
+                frozenSource?.geometry ?: liveSourceParentGeometry ?: return
             val sourceWidth = frozenSource?.width ?: sourceView.width
             val sourceHeight = frozenSource?.height ?: sourceView.height
             val opacity = endpointAlpha(fake)
-            if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                lastDrawOpacity = opacity
-                lastDrawPhase = "alpha-checked"
-            }
-            if (opacity <= 0f) {
-                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "fake-alpha-zero"
-                return
-            }
+            if (opacity <= 0f) return
             val finalOpacity =
                 finalRootRef.get()
                     ?.let(::endpointAlpha)
@@ -1207,11 +1107,7 @@ internal object CcTransitionOwner {
                     model = model,
                     visual = currentSnapshot.visual,
                 )
-            if (baseSpecs.isEmpty()) {
-                if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "no-component-specs"
-                return
-            }
-            if (BuildConfig.RUNTIME_DIAGNOSTICS) lastDrawPhase = "component-specs-ready"
+            if (baseSpecs.isEmpty()) return
             val dualSpec =
                 baseSpecs.firstOrNull {
                     it.component == StatusPainter.TransitionComponent.MOBILE &&
@@ -1895,20 +1791,6 @@ internal object CcTransitionOwner {
                             return@forEach
                         }
                     canvas.clipRect(clip[0], clip[1], clip[2], clip[3])
-                }
-                if (BuildConfig.RUNTIME_DIAGNOSTICS) {
-                    lastDrawPhase = "painting"
-                    lastDrawComponents++
-                    lastDrawPaintMs = SystemClock.elapsedRealtime()
-                    if (spec.component == StatusPainter.TransitionComponent.BATTERY) {
-                        lastBatteryDrawGeometry = renderedGeometry
-                        lastBatteryClipRejected = SysUiPresentationRuntime.optionalNativeRead {
-                            canvas.quickReject(
-                                matrixBounds.left, matrixBounds.top,
-                                matrixBounds.right, matrixBounds.bottom,
-                            )
-                        }
-                    }
                 }
                 painter.drawTransitionComponent(
                     canvas = canvas,

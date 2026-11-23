@@ -415,8 +415,31 @@ coalesce the callback at a completed native pre-draw, reuse the existing
 single receipt owner and remove the observer on session release or
 native ViewTreeObserver replacement. Do not add a timer, a forced
 819-px width, a new native writer, a Home-fallback guess or a second
-CC animation. B1931 must be checked on the exact device for the
-first rotation-close, normal close, reverse rotation and repeated pulls.
+CC animation. The original B1931 correction alone did not resolve the first rotation-close
+disappearance. The integrated B1939 correction below passed the reported
+first-close scenario; other cases remain subject to focused evidence.
+
+## Virtual CC motion carrier is not a physical slot
+
+**Decision:** Separate end-anchored virtual motion geometry from actual
+native slot capacity. A frozen logical carrier may be wider than the new
+native viewport after rotation; project its end anchor without rejecting
+that virtual reference. Retain strict width admission for physical slots.
+
+**Evidence:** B1938 detailed reports show unavailable cached/live carrier
+offsets throughout the failing landscape-to-portrait close, unlike normal
+and reverse-direction gestures. The old policy applied physical slot
+capacity to the frozen motion reference. Regression tests cover both LTR
+and RTL contraction without relaxing physical allocation. B1939 integrated
+candidate passed the reported first upward-close disappearance on-device.
+The exact frozen width was not directly measured in the failing B1938
+report; do not attribute sole visual causation to an unobserved value.
+
+**Consequence:** Keep native FAKE/FINAL motion, the existing ownership and
+capacity receipt, and native Home handoff. Remove the unsuccessful early
+Home underlay and temporary cross-surface paint instrumentation after
+acceptance. No extra native writer, clipping fallback, time-based rule or
+new Build is needed for source-only diagnostic cleanup.
 
 ## Native resource identity is preferred
 
