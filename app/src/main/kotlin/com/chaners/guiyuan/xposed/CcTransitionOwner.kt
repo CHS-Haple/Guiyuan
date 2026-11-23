@@ -279,6 +279,7 @@ internal object CcTransitionOwner {
         private val nativeMembershipListener =
             ViewTreeObserver.OnGlobalLayoutListener {
                 if (started) {
+                    nativePeerAnchor = null
                     if (
                         captureNativeChildren() &&
                         currentSnapshot.model.dualMobileLevels == null
@@ -363,6 +364,11 @@ internal object CcTransitionOwner {
         private val sampleValues = FloatArray(9)
         private val boundsMatrix = Matrix()
         private val boundsValues = FloatArray(9)
+
+        private val peerMotionBaseTranslationX = fakeStatusIcons.translationX
+        private var appliedPeerTranslationX: Float? = null
+        private var nativePeerAnchor: NativePeerAnchor? = null
+        private var lastNativePeerTargetTravelX: Float? = null
         private var lastObservedFakeAlpha = Float.NaN
         private var lastObservedFinalAlpha = Float.NaN
 
@@ -414,6 +420,10 @@ internal object CcTransitionOwner {
                 val previousTint = cachedNativePeerTint
                 refreshNativePeerTint()
                 syncRevealReservation()
+                if (!syncNativePeerMotion(rootView)) {
+                    CcTransitionOwner.detach("cc-native-peer-motion-writer-conflict")
+                    return@OnPreDrawListener true
+                }
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
                 val fakeAlpha = endpointAlpha(fake)
                 val finalAlpha = endpointAlpha(final)
@@ -657,7 +667,7 @@ internal object CcTransitionOwner {
             // Compare in the same end-anchored frame used by draw(), not
             // against the raw full-width status-icon container.
             val liveCarrier = frozenSource?.let { frozen ->
-                sample(fakeStatusIcons, root)?.let { full ->
+                unshiftedFakeCarrier(root)?.let { full ->
                     CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
                         carrierGeometry = full,
                         carrierWidth = fakeStatusIcons.width,
@@ -672,8 +682,6 @@ internal object CcTransitionOwner {
                     liveCarrier[0] - fakeFrame[0]
                 } else null
             val finalOpacity = finalRootRef.get()?.let(::endpointAlpha) ?: 0f
-            val spatialProgress =
-                CcTransitionPolicy.spatialHandoffProgress(progress, finalOpacity)
             val compactWidth = CompactReservationPolicy.resolveCenteredVisualWidth(
                 baseSlotWidthPx = frozenSource?.width ?: source.width,
                 userScale = currentSnapshot.visual.combinedScale,
@@ -682,11 +690,14 @@ internal object CcTransitionOwner {
                 CcReservationPolicy.resolveReservationWidth(
                     compactWidthPx = compactWidth,
                     spans = spans,
-                    progress = spatialProgress,
+                    progress = progress,
                 )
             }
-            return "progress=$progress spatialProgress=$spatialProgress" +
-                " projectedWidth=$projectedWidth cachedCarrierRootX=$fakeCarrierRootOffsetX" +
+            return "progress=$progress projectedWidth=$projectedWidth" +
+                " peerTravelSlot=${nativePeerAnchor?.slot}" +
+                " peerTravelLocalX=${fakeStatusIcons.translationX - peerMotionBaseTranslationX}" +
+                " peerTravelTargetX=$lastNativePeerTargetTravelX" +
+                " cachedCarrierRootX=$fakeCarrierRootOffsetX" +
                 " liveCarrierRootX=$liveRootOffsetX" +
                 " cachedFakeHostWidth=$fakeCarrierHostWidthPx" +
                 " liveFakeHostWidth=" + (fakeStatusIcons.parent as? View)?.width +
@@ -716,6 +727,115 @@ internal object CcTransitionOwner {
                 " fakePeers=[${peers(fakeStatusIcons)}]" +
                 " finalPeers=[${peers(finalStatusIcons)}]"
         }
+
+
+        // Only the FAKE icon row moves here. HyperOS retains its native
+        // FAKE/FINAL root translation, alpha, slot layout and visibility.
+        private fun syncNativePeerMotion(root: View): Boolean {
+            val live = fakeStatusIcons.translationX
+            val expected = appliedPeerTranslationX ?: peerMotionBaseTranslationX
+            if (kotlin.math.abs(live - expected) > 0.5f) return false
+
+            val pair = nativePeerAnchor?.takeIf { anchor ->
+                usableNativePeer(anchor.fake, fakeStatusIcons) &&
+                    usableNativePeer(anchor.final, finalStatusIcons)
+            } ?: resolveNativePeerAnchor(root).also { nativePeerAnchor = it }
+            if (pair == null) {
+                lastNativePeerTargetTravelX = null
+                restoreNativePeerMotion()
+                return true
+            }
+            val fake = sample(pair.fake, root) ?: return true
+            val final = sample(pair.final, root) ?: return true
+            val group = sample(fakeStatusIcons, root) ?: return true
+            if (fakeStatusIcons.width <= 0) return true
+            val scaleX = group[2] / fakeStatusIcons.width
+            val target = CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = peerMotionBaseTranslationX,
+                appliedX = live,
+                fakePeerRootX = fake[0],
+                finalPeerRootX = final[0],
+                localToRootScaleX = scaleX,
+                progress = progress,
+            ) ?: return true
+            lastNativePeerTargetTravelX =
+                (final[0] - fake[0] +
+                    (live - peerMotionBaseTranslationX) * scaleX) / scaleX
+            if (kotlin.math.abs(target - live) > 0.25f) {
+                fakeStatusIcons.translationX = target
+            }
+            appliedPeerTranslationX = target
+            return true
+        }
+
+        private fun usableNativePeer(view: View, group: ViewGroup): Boolean =
+            view.parent === group && view.isAttachedToWindow &&
+                view.isShown && view.width > 0 && view.height > 0 &&
+                view.clipBounds?.let { it.isEmpty } != true &&
+                NativeStatusObserver.readIslandVisibilityState(group, view)
+                    ?.hiddenBySpace != true
+
+        private fun resolveNativePeerAnchor(root: View): NativePeerAnchor? {
+            var best: NativePeerAnchor? = null
+            var bestX = if (fakeStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+                Float.POSITIVE_INFINITY
+            } else {
+                Float.NEGATIVE_INFINITY
+            }
+            for (index in 0 until fakeStatusIcons.childCount) {
+                val fake = fakeStatusIcons.getChildAt(index)
+                val slot = NativeStatusSlots.slotOf(fake) ?: continue
+                if (slot in replacedNetworkSlots ||
+                    !usableNativePeer(fake, fakeStatusIcons)
+                ) continue
+                val targets = (0 until finalStatusIcons.childCount)
+                    .map(finalStatusIcons::getChildAt)
+                    .filter { target ->
+                        NativeStatusSlots.slotOf(target) == slot &&
+                            usableNativePeer(target, finalStatusIcons)
+                    }
+                if (targets.size != 1) continue
+                val x = sample(fake, root)?.get(0) ?: continue
+                val nearest = if (fakeStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+                    x < bestX
+                } else {
+                    x > bestX
+                }
+                if (nearest) {
+                    best = NativePeerAnchor(slot, fake, targets[0])
+                    bestX = x
+                }
+            }
+            return best
+        }
+
+        private fun unshiftedFakeCarrier(root: View): FloatArray? {
+            val geometry = sample(fakeStatusIcons, root) ?: return null
+            val ownDelta =
+                (appliedPeerTranslationX ?: peerMotionBaseTranslationX) -
+                    peerMotionBaseTranslationX
+            if (ownDelta != 0f && fakeStatusIcons.width > 0) {
+                geometry[0] -= ownDelta * geometry[2] / fakeStatusIcons.width
+                geometry[1] -= ownDelta * geometry[3] / fakeStatusIcons.width
+            }
+            return geometry
+        }
+
+        private fun restoreNativePeerMotion() {
+            val owned = appliedPeerTranslationX ?: return
+            // A foreign writer wins; never overwrite its newer property.
+            if (kotlin.math.abs(fakeStatusIcons.translationX - owned) <= 0.5f) {
+                fakeStatusIcons.translationX = peerMotionBaseTranslationX
+            }
+            appliedPeerTranslationX = null
+            lastNativePeerTargetTravelX = null
+        }
+
+        private data class NativePeerAnchor(
+            val slot: String,
+            val fake: View,
+            val final: View,
+        )
 
         fun isStarted(): Boolean = started
 
@@ -840,10 +960,12 @@ internal object CcTransitionOwner {
                 started = false
                 nativeBatteryIslandActive = false
                 wifiAnchor = null
+                nativePeerAnchor = null
                 nativeChildren.clear()
                 val registered = registeredObserver
                 val rootView = rootRef.get()
                 releaseAll(
+                    { restoreNativePeerMotion() },
                     {
                         // Detached views can expose a different live observer.
                         releaseAll(
@@ -925,10 +1047,7 @@ internal object CcTransitionOwner {
                     ?: 0f
             val carrierFrames =
                 frozenSource?.let { frozen ->
-                    sample(
-                        view = fakeStatusIcons,
-                        root = rootView,
-                    )?.let { fullCurrentCarrier ->
+                    unshiftedFakeCarrier(rootView)?.let { fullCurrentCarrier ->
                         val currentCarrier =
                             CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
                                 carrierGeometry = fullCurrentCarrier,
@@ -1063,10 +1182,6 @@ internal object CcTransitionOwner {
                     finalAppearanceAlpha = finalOpacity,
                     finalAppearanceActive = nativeAppearance,
                 )
-            // Shape/opacity follow the gesture, while spatial travel also
-            // waits for the OEM FINAL row to become visible.
-            val spatialProgress =
-                CcTransitionPolicy.spatialHandoffProgress(nativeProgress, finalOpacity)
             syncChargeLayout(motionProgress)
             val mobileSignalShapeProgress =
                 CcTransitionPolicy.mobileSignalShapeProgress(motionProgress)
@@ -1292,7 +1407,7 @@ internal object CcTransitionOwner {
                             projectedExactGeometry(
                                 source = numberSource,
                                 target = adjustedTarget,
-                                progress = spatialProgress,
+                                progress = motionProgress,
                                 carrierFrames = carrierFrames,
                             )
                         } else {
@@ -1337,7 +1452,7 @@ internal object CcTransitionOwner {
                                                 target = target.second,
                                                 groupTravelX = dualRowTravel[0],
                                                 groupTravelY = dualRowTravel[1],
-                                                progress = spatialProgress,
+                                                progress = motionProgress,
                                                 scalePolicy = rowSpec.scalePolicy,
                                             )
                                         }
@@ -1349,7 +1464,7 @@ internal object CcTransitionOwner {
                                     projectedGeometry(
                                         source = mobileSource,
                                         target = aggregateTarget.first,
-                                        progress = spatialProgress,
+                                        progress = motionProgress,
                                         scalePolicy = mobileSpec.scalePolicy,
                                         carrierFrames = carrierFrames,
                                     )
@@ -1474,8 +1589,8 @@ internal object CcTransitionOwner {
                 val sourceGlyphLocked = clippedGlyph && sourceGlyphVisible > 0f
                 val componentMotionProgress =
                     if (clippedGlyph) {
-                        BatteryNumberFollowerPolicy.chargingMotionProgress(spatialProgress)
-                    } else spatialProgress
+                        BatteryNumberFollowerPolicy.chargingMotionProgress(motionProgress)
+                    } else motionProgress
                 val geometry =
                     when {
                         sourceGlyphLocked -> {
@@ -1509,7 +1624,7 @@ internal object CcTransitionOwner {
                                             progress = motionProgress,
                                         ),
                                 groupTravelY = dualRowTravel[1],
-                                progress = spatialProgress,
+                                progress = motionProgress,
                                 scalePolicy = spec.scalePolicy,
                             )
 
@@ -1780,7 +1895,7 @@ internal object CcTransitionOwner {
                     colors = transitionColors,
                     mobileSpec = mobileSpec,
                     preferredMobileSubId = preferredMobileSubId,
-                    motionProgress = spatialProgress,
+                    motionProgress = motionProgress,
                     shapeProgress = mobileSignalShapeProgress,
                     opacity = opacity,
                     carrierFrames = carrierFrames,
@@ -1794,7 +1909,7 @@ internal object CcTransitionOwner {
                 sourceHeight = sourceHeight,
                 model = model,
                 colors = transitionColors,
-                motionProgress = spatialProgress,
+                motionProgress = motionProgress,
                 opacity = opacity,
                 carrierFrames = carrierFrames,
             )
@@ -1806,7 +1921,7 @@ internal object CcTransitionOwner {
                 sourceHeight = sourceHeight,
                 model = model,
                 colors = transitionColors,
-                motionProgress = spatialProgress,
+                motionProgress = motionProgress,
                 opacity = opacity,
                 carrierFrames = carrierFrames,
             )

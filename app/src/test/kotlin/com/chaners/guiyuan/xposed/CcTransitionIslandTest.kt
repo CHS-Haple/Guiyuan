@@ -116,33 +116,4 @@ class CcTransitionIslandTest {
             0.0001f,
         )
     }
-
-    @Test
-    fun spatialHandoffRequiresBothExpansionAndNativeFinalAppearance() {
-        assertEquals(
-            0f,
-            CcTransitionPolicy.spatialHandoffProgress(0.85f, 0f),
-            0.0001f,
-        )
-        assertEquals(
-            0.30f,
-            CcTransitionPolicy.spatialHandoffProgress(0.60f, 0.50f),
-            0.0001f,
-        )
-        assertEquals(
-            0.8f,
-            CcTransitionPolicy.spatialHandoffProgress(0.8f, 1f),
-            0.0001f,
-        )
-        assertEquals(
-            0f,
-            CcTransitionPolicy.spatialHandoffProgress(Float.NaN, 0.7f),
-            0.0001f,
-        )
-        assertEquals(
-            0f,
-            CcTransitionPolicy.spatialHandoffProgress(0.7f, Float.NaN),
-            0.0001f,
-        )
-    }
 }
