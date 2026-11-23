@@ -26,7 +26,7 @@ class CcHomeHandoffPolicyTest {
     }
 
     @Test
-    fun nativeOverlapOrNonClosingNeverCreatesASecondHomeGlyph() {
+    fun nativeHeaderOverlapOrNonClosingRejectsHomeUnderlay() {
         fun show(
             closing: Boolean = true,
             fake: Int? = 387,

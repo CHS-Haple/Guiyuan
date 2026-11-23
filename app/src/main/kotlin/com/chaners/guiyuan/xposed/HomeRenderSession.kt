@@ -530,14 +530,17 @@ internal object HomeRenderSession {
                 !root.isLaidOut || root.height <= 0 ||
                 !featureEnabled || !modelReady || !tintReady || !layoutReady
             ) return null
-            root.getLocationOnScreen(hostWindowLocation)
-            return hostWindowLocation[1] + root.height
+            return SysUiPresentationRuntime.optionalNativeRead {
+                root.getLocationOnScreen(hostWindowLocation)
+                hostWindowLocation[1] + root.height
+            }
         }
 
         fun setCcClosingUnderlayVisible(visible: Boolean) {
             if (ccClosingUnderlayVisible == visible) return
             ccClosingUnderlayVisible = visible
-            if (visible) layoutProbe("cc-close-native-geometry")
+            // An already-ready Home anchor is sufficient; do not request a
+            // second layout while native Control Center is animating.
             val rendered = applyResolvedVisibility()
             emitEvent {
                 "homeRenderControlCenterUnderlay visible=" + rendered +
