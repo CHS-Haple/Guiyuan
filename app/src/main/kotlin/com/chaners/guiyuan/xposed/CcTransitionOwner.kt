@@ -275,13 +275,10 @@ internal object CcTransitionOwner {
         private var frozenAdditionalMobileTargets: List<TargetWitness>? = null
         private val mobileTargetsDirty = AtomicBoolean(false)
         private val nativeChildren = ArrayList<View>()
-        private var nativePeerMaskDirty = true
-        private var nativePeerMaskMembers = emptyList<View>()
         // Native children can change while the icon container keeps the same bounds.
         private val nativeMembershipListener =
             ViewTreeObserver.OnGlobalLayoutListener {
                 if (started) {
-                    nativePeerMaskDirty = true
                     if (
                         captureNativeChildren() &&
                         currentSnapshot.model.dualMobileLevels == null
@@ -366,6 +363,8 @@ internal object CcTransitionOwner {
         private val sampleValues = FloatArray(9)
         private val boundsMatrix = Matrix()
         private val boundsValues = FloatArray(9)
+        private var lastObservedFakeAlpha = Float.NaN
+        private var lastObservedFinalAlpha = Float.NaN
 
         private val preDrawListener =
             ViewTreeObserver.OnPreDrawListener {
@@ -416,9 +415,17 @@ internal object CcTransitionOwner {
                 refreshNativePeerTint()
                 syncRevealReservation()
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
+                val fakeAlpha = endpointAlpha(fake)
+                val finalAlpha = endpointAlpha(final)
+                val alphaChanged =
+                    fakeAlpha != lastObservedFakeAlpha ||
+                        finalAlpha != lastObservedFinalAlpha
+                lastObservedFakeAlpha = fakeAlpha
+                lastObservedFinalAlpha = finalAlpha
                 if (
                     currentSnapshot !== previousSnapshot ||
-                    cachedNativePeerTint != previousTint
+                    cachedNativePeerTint != previousTint ||
+                    alphaChanged
                 ) {
                     drawable.invalidateSelf()
                 }
@@ -695,46 +702,6 @@ internal object CcTransitionOwner {
                 " finalPeers=[${peers(finalStatusIcons)}]"
         }
 
-        // The root overlay draws above SystemUI's native icon row. Keep visible
-        // peers unobstructed without changing their native layout or alpha.
-        private fun clipNativeFakePeers(canvas: Canvas, root: View) {
-            if (nativePeerMaskDirty) {
-                nativePeerMaskMembers = (0 until fakeStatusIcons.childCount)
-                    .map(fakeStatusIcons::getChildAt)
-                    .filter { peer ->
-                        NativeStatusSlots.slotOf(peer) !in replacedNetworkSlots &&
-                            NativeStatusObserver.readIslandVisibilityState(
-                                fakeStatusIcons,
-                                peer,
-                            )?.hiddenBySpace != true
-                    }
-                nativePeerMaskDirty = false
-            }
-            for (peer in nativePeerMaskMembers) {
-                if (!peer.isShown || peer.alpha <= 0f ||
-                    peer.width <= 0 || peer.height <= 0 ||
-                    peer.clipBounds?.let { it.width() <= 0 || it.height() <= 0 } == true
-                ) continue
-                val bounds = sampledBounds(peer, root) ?: continue
-                canvas.clipOutRect(bounds)
-            }
-        }
-
-        private fun sampledBounds(view: View, root: View): RectF? {
-            val geometry = sample(view, root) ?: return null
-            if (!geometry.all(Float::isFinite)) return null
-            val halfWidth =
-                (kotlin.math.abs(geometry[2]) + kotlin.math.abs(geometry[4])) * 0.5f
-            val halfHeight =
-                (kotlin.math.abs(geometry[3]) + kotlin.math.abs(geometry[5])) * 0.5f
-            return RectF(
-                geometry[0] - halfWidth,
-                geometry[1] - halfHeight,
-                geometry[0] + halfWidth,
-                geometry[1] + halfHeight,
-            )
-        }
-
         fun isStarted(): Boolean = started
 
         fun start(): Boolean {
@@ -859,7 +826,6 @@ internal object CcTransitionOwner {
                 nativeBatteryIslandActive = false
                 wifiAnchor = null
                 nativeChildren.clear()
-                nativePeerMaskMembers = emptyList()
                 val registered = registeredObserver
                 val rootView = rootRef.get()
                 releaseAll(
@@ -938,9 +904,6 @@ internal object CcTransitionOwner {
             val sourceHeight = frozenSource?.height ?: sourceView.height
             val opacity = endpointAlpha(fake)
             if (opacity <= 0f) return
-            // This root overlay paints above native icons. Leave their occupied
-            // pixels to SystemUI without modifying its layout or alpha.
-            clipNativeFakePeers(canvas, rootView)
             val finalOpacity =
                 finalRootRef.get()
                     ?.let(::endpointAlpha)
@@ -1085,6 +1048,10 @@ internal object CcTransitionOwner {
                     finalAppearanceAlpha = finalOpacity,
                     finalAppearanceActive = nativeAppearance,
                 )
+            // Shape/opacity follow the gesture, while spatial travel also
+            // waits for the OEM FINAL row to become visible.
+            val spatialProgress =
+                CcTransitionPolicy.spatialHandoffProgress(nativeProgress, finalOpacity)
             syncChargeLayout(motionProgress)
             val mobileSignalShapeProgress =
                 CcTransitionPolicy.mobileSignalShapeProgress(motionProgress)
@@ -1310,7 +1277,7 @@ internal object CcTransitionOwner {
                             projectedExactGeometry(
                                 source = numberSource,
                                 target = adjustedTarget,
-                                progress = motionProgress,
+                                progress = spatialProgress,
                                 carrierFrames = carrierFrames,
                             )
                         } else {
@@ -1355,7 +1322,7 @@ internal object CcTransitionOwner {
                                                 target = target.second,
                                                 groupTravelX = dualRowTravel[0],
                                                 groupTravelY = dualRowTravel[1],
-                                                progress = motionProgress,
+                                                progress = spatialProgress,
                                                 scalePolicy = rowSpec.scalePolicy,
                                             )
                                         }
@@ -1367,7 +1334,7 @@ internal object CcTransitionOwner {
                                     projectedGeometry(
                                         source = mobileSource,
                                         target = aggregateTarget.first,
-                                        progress = motionProgress,
+                                        progress = spatialProgress,
                                         scalePolicy = mobileSpec.scalePolicy,
                                         carrierFrames = carrierFrames,
                                     )
@@ -1492,8 +1459,8 @@ internal object CcTransitionOwner {
                 val sourceGlyphLocked = clippedGlyph && sourceGlyphVisible > 0f
                 val componentMotionProgress =
                     if (clippedGlyph) {
-                        BatteryNumberFollowerPolicy.chargingMotionProgress(motionProgress)
-                    } else motionProgress
+                        BatteryNumberFollowerPolicy.chargingMotionProgress(spatialProgress)
+                    } else spatialProgress
                 val geometry =
                     when {
                         sourceGlyphLocked -> {
@@ -1527,7 +1494,7 @@ internal object CcTransitionOwner {
                                             progress = motionProgress,
                                         ),
                                 groupTravelY = dualRowTravel[1],
-                                progress = motionProgress,
+                                progress = spatialProgress,
                                 scalePolicy = spec.scalePolicy,
                             )
 
@@ -1798,7 +1765,7 @@ internal object CcTransitionOwner {
                     colors = transitionColors,
                     mobileSpec = mobileSpec,
                     preferredMobileSubId = preferredMobileSubId,
-                    motionProgress = motionProgress,
+                    motionProgress = spatialProgress,
                     shapeProgress = mobileSignalShapeProgress,
                     opacity = opacity,
                     carrierFrames = carrierFrames,
@@ -1812,7 +1779,7 @@ internal object CcTransitionOwner {
                 sourceHeight = sourceHeight,
                 model = model,
                 colors = transitionColors,
-                motionProgress = motionProgress,
+                motionProgress = spatialProgress,
                 opacity = opacity,
                 carrierFrames = carrierFrames,
             )
@@ -1824,7 +1791,7 @@ internal object CcTransitionOwner {
                 sourceHeight = sourceHeight,
                 model = model,
                 colors = transitionColors,
-                motionProgress = motionProgress,
+                motionProgress = spatialProgress,
                 opacity = opacity,
                 carrierFrames = carrierFrames,
             )

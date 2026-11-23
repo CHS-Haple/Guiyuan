@@ -36,6 +36,14 @@ internal object CcTransitionPolicy {
         return expansion + (1f - expansion) * appearance
     }
 
+    // The native FAKE peer row can remain fully opaque well into expansion.
+    // Do not move projected parts toward FINAL before it appears.
+    fun spatialHandoffProgress(
+        expansionProgress: Float,
+        finalAppearanceAlpha: Float,
+    ): Float =
+        geometryProgress(expansionProgress) * finalAppearanceAlpha.finiteIn(0f, 1f, 0f)
+
     fun mobileSignalShapeProgress(rawProgress: Float): Float {
         val p = geometryProgress(rawProgress)
         return p * p
