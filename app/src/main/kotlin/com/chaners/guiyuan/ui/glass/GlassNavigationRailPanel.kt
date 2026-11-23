@@ -5,44 +5,35 @@ package com.chaners.guiyuan.ui.glass
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 
-import top.yukonga.miuix.kmp.glass.glassPanel
-import top.yukonga.miuix.kmp.glass.glassShadow
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
 import com.chaners.guiyuan.ui.components.liquid.liquidRailVisibleLensOverhangPx
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.key.key
@@ -53,7 +44,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.util.lerp
@@ -66,11 +56,6 @@ import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyle
-import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlinx.coroutines.flow.first
-import kotlin.math.abs
-import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 
 /** Single selected-page owner and the interaction contract, independent of surface animation. */
@@ -261,71 +246,6 @@ internal fun GlassNavigationRailPanel(
     }
 }
 
-/** Keep the material/shadow in the same layout and draw phase as upstream. */
-@Composable
-private fun Modifier.railPanelSurfaceModifier(
-    state: GlassNavigationRailState,
-    geometry: RailPanelGeometry,
-    motion: RailPanelMotion,
-    surface: RailPanelSurface,
-    shape: GlassShape,
-): Modifier {
-    // Do not replace the MIUIX rail's layout, morph, input or lifecycle owner.
-    // Only the surface paint differs; the default Glass material path is unchanged.
-    val override = surface.material.replacement?.panel
-    val surfacePaint = if (override != null && surface.backdrop != null) {
-        // The visible panel material is a sibling child, recorded before the selected lens.
-        // Keep its original MIUIX Float shadow here, without double-painting the surface.
-        Modifier.glassShadow(shape, surface.shadow, alpha = 1f)
-    } else if (override != null) {
-        Modifier.glassShadow(shape, surface.shadow, alpha = 1f).then(override(surface.backdrop, shape))
-    } else {
-        Modifier.glassPanel(
-            backdrop = surface.backdrop,
-            shape = shape,
-            style = surface.style,
-            alpha = surface.alpha,
-            material = surface.material.glass,
-            stroke = surface.stroke,
-            shadow = surface.shadow,
-            shading = false,
-            fallback = if (surface.backdrop == null || !isRuntimeShaderSupported()) {
-                Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer)
-            } else {
-                null
-            },
-        )
-    }
-    return this
-        .layout { measurable, _ ->
-            val fraction = state.progress.fastCoerceIn(0f, 1f)
-            val width = lerp(geometry.endpoints.collapsedWidth.toPx(), geometry.endpoints.expandedWidth.toPx(), fraction).fastRoundToInt()
-            val height = motion.panelHeight().roundToPx().coerceAtLeast(0)
-            val placeable = measurable.measure(Constraints.fixed(width, height))
-            layout(width, height) { placeable.place(0, 0) }
-        }
-        .offset {
-            IntOffset(
-                x = motion.panelStart().roundToPx(),
-                y = lerp(geometry.endpoints.collapsedTop.toPx(), geometry.endpoints.expandedTop.toPx(), state.progress).fastRoundToInt(),
-            )
-        }
-        // Scale only the placed panel. An outer layer would scale its X offset as well.
-        .then(if (override != null) Modifier.graphicsLayer {
-            val scale = liquidPanelPressScale(
-                size.width, size.height,
-                com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec.PressedPanelGrowth.toPx(),
-                motion.liquid.press.value,
-            )
-            scaleX = scale
-            scaleY = scale
-        } else Modifier)
-        .then(surfacePaint)
-        // Liquid's material already uses the panel shape. Its pressed lens must
-        // extend past the idle panel; Glass keeps the original child clip.
-        .then(if (override == null) Modifier.clip(shape) else Modifier)
-}
-
 @Composable
 private fun RailPanelContents(
     context: RailPanelContext,
@@ -348,94 +268,6 @@ private fun RailPanelContents(
         scrollEnabled = scrollEnabled,
     )
     RailPanelScroll(context, geometry, motion, colors, pointer)
-}
-
-@Composable
-private fun RailLiquidIndicator(
-    context: RailPanelContext,
-    geometry: RailPanelGeometry,
-    motion: RailPanelMotion,
-    colors: RailPanelColors,
-    interaction: NavigationRailInteraction,
-) {
-    val pressedIndex = interaction.pressedIndex
-    val selectedIndex = context.selection.selectedIndex
-    val index = if (pressedIndex >= 0) pressedIndex else selectedIndex
-    // The existing indicator spring owns position; no separate optical velocity sampler.
-    val rowPosition = animateFloatAsState(
-        targetValue = if (context.state.expanded && pressedIndex >= 0) interaction.previewRow
-            else index.toFloat(),
-        animationSpec = spring(dampingRatio = 1f, stiffness = 1000f),
-        label = "liquidRailIndicatorRow",
-    )
-    val base = colors.indicator
-    // Preserve the visual press until the selected lens has settled.
-    var settlingPress by remember(interaction) { mutableStateOf(false) }
-    val pressing = pressedIndex >= 0
-    // The geometry writer changes the rail slot endpoints on resize. Restart the
-    // release-settle observer with those endpoints instead of awaiting a stale target.
-    LaunchedEffect(interaction, pressing, selectedIndex, context.state.expanded, geometry.tabWidths) {
-        if (pressing) {
-            settlingPress = true
-        } else {
-            if (context.state.expanded) {
-                val tolerance = (context.selection.items.size - 1) * 0.025f
-                snapshotFlow { rowPosition.value }
-                    .first { abs(it - selectedIndex.toFloat()) <= tolerance }
-            } else {
-                // Slot endpoints can change while the release spring is running.
-                // Compare against the live geometry on every animation observation.
-                snapshotFlow {
-                    val left = interaction.start(selectedIndex)
-                    val right = interaction.start(selectedIndex + 1)
-                    val tolerance = (interaction.width * 0.025f).coerceAtLeast(1f)
-                    abs(interaction.left.value - left) <= tolerance &&
-                        abs(interaction.right.value - right) <= tolerance
-                }.first { it }
-            }
-            settlingPress = false
-        }
-    }
-    NavigationRailIndicator(
-        selection = RailIndicatorSelection(index, interaction, pressing || settlingPress),
-        motion = RailIndicatorMotion(
-            progress = { motion.rowProgress[index].value },
-            scrollOffset = { context.scrollState.value },
-            expandedItemWidth = geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2,
-            rowPosition = { rowPosition.value },
-            outsideScrollViewport = true,
-        ),
-        appearance = GlassIndicatorAppearance(
-            color = base.color,
-            pressedColor = base.pressedColor,
-            scaleOnPress = base.scaleOnPress,
-            liquidPaint = base.liquidPaint,
-            lensTracking = railLensTracking(motion, geometry, index, interaction),
-        ),
-    )
-}
-
-/** Track the exact same horizontal lens bounds used by NavigationRailIndicator's layout. */
-@Composable
-private fun railLensTracking(
-    motion: RailPanelMotion,
-    geometry: RailPanelGeometry,
-    index: Int,
-    interaction: NavigationRailInteraction,
-): RailLensTracking {
-    val density = LocalDensity.current
-    return RailLensTracking(motion.liquid.lensEdge) {
-        with(density) {
-            val fraction = motion.rowProgress[index].value.fastCoerceIn(0f, 1f)
-            val bounds = navigationIndicatorBounds(
-                interaction.left.value, interaction.right.value, interaction.width,
-                interaction.contentStart, interaction.endPadding,
-            )
-            val expandedWidth = (geometry.endpoints.expandedWidth - RailItemHorizontalMargin * 2).toPx()
-            lerp(bounds.x, RailItemHorizontalMargin.toPx(), fraction) +
-                lerp(bounds.y - bounds.x, expandedWidth, fraction)
-        }
-    }
 }
 
 @Composable
