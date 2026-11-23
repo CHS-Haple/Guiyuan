@@ -32,12 +32,13 @@ import com.chaners.guiyuan.ui.components.navTouchExtension
 import com.chaners.guiyuan.ui.components.NavTouchStripGeometry
 import com.chaners.guiyuan.ui.components.NavTouchTrailingAction
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
