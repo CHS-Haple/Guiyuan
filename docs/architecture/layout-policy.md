@@ -160,8 +160,8 @@ The bridge observes native geometry in either portrait (native area narrower
 than its parent) or landscape (native end-anchored overhang). It waits for the
 native area to finish its own layout before cutover or end-reservation updates.
 Only `MiuiStatusIconContainer.paddingEnd` remains a reversible, owner-scoped
-transition occupancy writer. The current projected peer-side extent is reserved through the reversible
-native end-padding lease. On the fingerprinted ROM403,
+transition occupancy writer. The current projected peer-side extent is
+reserved through that native end-padding lease. On the fingerprinted ROM403,
 `MiuiStatusIconContainer.onMeasure/onLayout` owns native icon spacing,
 underflow, signal exceptions and hidden-by-space choices. Guiyuan must not
 apply a parallel all-candidate `measureViews` width cap or crop its canvas

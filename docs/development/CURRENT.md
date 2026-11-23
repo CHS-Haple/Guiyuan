@@ -78,7 +78,8 @@ execution ownership is in [architecture](../architecture/README.md).
   The current PR now requests actual projected FAKE peer-side occupancy
   through reversible end padding, without an all-candidate cap or canvas
   cutoff. Crowded native signals, FAKE/FINAL overlap, charge and rotation
-  still require signed on-device acceptance. The session-cached FAKE carrier-root offset is now recaptured only after a
+  still require signed on-device acceptance. The session-cached FAKE
+  carrier-root offset is now recaptured only after a
   completed native FAKE-host width reflow; an unfinished layout and peer-only
   relayout retain the previous motion anchor. The specific device-frame
   mismatch remains unverified. The user's ROM 4.0.4.0.D02 reports

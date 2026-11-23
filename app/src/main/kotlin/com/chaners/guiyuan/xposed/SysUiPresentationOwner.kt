@@ -2330,9 +2330,7 @@ internal object SysUiPresentationOwner {
 
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
-            if (nativeLayoutOwnershipDeferred) {
-                    return true
-            }
+            if (nativeLayoutOwnershipDeferred) return true
             val group = statusIcons.get() ?: run { onFailNative(REASON_STATUS_ICON_GROUP_RELEASED); return false }
             val container = batteryContainer.get() ?: run { onFailNative("battery-container-released"); return false }
             val batteryView = battery.get() ?: run { onFailNative("battery-view-released"); return false }
