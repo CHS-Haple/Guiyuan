@@ -619,6 +619,23 @@ class CcTransitionTopologyTest {
             )!!,
             0.001f,
         )
+        assertEquals(
+            -15f,
+            CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = 0f, appliedX = -10f,
+                fakePeerRootX = 1020f, finalPeerRootX = 1060f,
+                localToRootScaleX = -2f, progress = 0.5f,
+            )!!,
+            0.001f,
+        )
+        assertNull(
+            CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = 0f, appliedX = 0f,
+                fakePeerRootX = -Float.MAX_VALUE,
+                finalPeerRootX = Float.MAX_VALUE,
+                localToRootScaleX = 1f, progress = 0.5f,
+            ),
+        )
         assertNull(
             CcTransitionSpatialPolicy.nativePeerTranslationX(
                 baselineX = 0f, appliedX = 0f,

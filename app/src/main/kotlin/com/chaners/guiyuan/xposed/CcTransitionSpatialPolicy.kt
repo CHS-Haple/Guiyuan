@@ -31,7 +31,6 @@ internal object CcTransitionSpatialPolicy {
         }
     }
 
-
     // Work in the shared root frame, excluding the offset we own so
     // held/reversed gestures cannot accumulate translation each frame.
     fun nativePeerTranslationX(
@@ -49,7 +48,10 @@ internal object CcTransitionSpatialPolicy {
         val originalRootX =
             fakePeerRootX - (appliedX - baselineX) * localToRootScaleX
         val fullLocalTravel = (finalPeerRootX - originalRootX) / localToRootScaleX
-        return baselineX + fullLocalTravel * CcTransitionPolicy.geometryProgress(progress)
+        if (!fullLocalTravel.isFinite()) return null
+        return (
+            baselineX + fullLocalTravel * CcTransitionPolicy.geometryProgress(progress)
+        ).takeIf(Float::isFinite)
     }
 
     fun followBatteryAnchor(
