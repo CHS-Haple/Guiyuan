@@ -74,12 +74,11 @@ execution ownership is in [architecture](../architecture/README.md).
   measured native end without modifying native width/translation/alpha.
 - **Open SystemUI candidate:** [PR #1817](https://github.com/CHS-Haple/Guiyuan/pull/1817)
   carries the source-level corrections and bounded native geometry witnesses.
-  A capped native peer reservation and a requested animation span are
-  **not** interchangeable: constrained FAKE frames now clip every projected
-  component at the actual native-granted peer-side boundary; the native FINAL
-  side and island motion retain their separate ownership. The visual cutoff
-  and simultaneous FAKE/FINAL composition still require device acceptance. A
-  session-cached FAKE carrier-root offset is now recaptured only after a
+  The ROM403 peer-row native layout handles underflow and signals.
+  The current PR now requests actual projected FAKE peer-side occupancy
+  through reversible end padding, without an all-candidate cap or canvas
+  cutoff. Crowded native signals, FAKE/FINAL overlap, charge and rotation
+  still require signed on-device acceptance. The session-cached FAKE carrier-root offset is now recaptured only after a
   completed native FAKE-host width reflow; an unfinished layout and peer-only
   relayout retain the previous motion anchor. The specific device-frame
   mismatch remains unverified. The user's ROM 4.0.4.0.D02 reports

@@ -149,7 +149,7 @@ The reservation must:
 - fall back to native presentation if carrier, width, hide state, or writer
   ownership is ambiguous.
 
-## QS_FAKE native width and measured peer capacity
+## QS_FAKE native width and native peer layout
 
 SystemUI's `ControlCenterFakeViewController.updateFakeStatusIconsSize()`
 owns `QS_FAKE.system_icon_area.layoutParams.width` and updates it from the
@@ -160,10 +160,13 @@ The bridge observes native geometry in either portrait (native area narrower
 than its parent) or landscape (native end-anchored overhang). It waits for the
 native area to finish its own layout before cutover or end-reservation updates.
 Only `MiuiStatusIconContainer.paddingEnd` remains a reversible, owner-scoped
-transition occupancy writer. Reservations beyond the compact slot require a
-verified fit in the native measured peer row; an unverified or overflowing row
-fails its affected Control Center presentation native. No width write, timer,
-motion offset or native FINAL geometry change is an acceptable workaround.
+transition occupancy writer. The current projected peer-side extent is reserved through the reversible
+native end-padding lease. On the fingerprinted ROM403,
+`MiuiStatusIconContainer.onMeasure/onLayout` owns native icon spacing,
+underflow, signal exceptions and hidden-by-space choices. Guiyuan must not
+apply a parallel all-candidate `measureViews` width cap or crop its canvas
+to an inferred lane. Native owner/layout and restore failures still fail
+native locally. FAKE width, FINAL layout and native motion stay OEM-owned.
 
 ## Motion ownership
 

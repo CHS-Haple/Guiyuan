@@ -1057,10 +1057,6 @@ internal object SysUiPresentationOwner {
             ?: false
 
     @Synchronized
-    fun appliedCcTransitionReservationWidthPx(): Int? =
-        controlCenterCurrent?.appliedCcTransitionSlotWidthPx()
-
-    @Synchronized
     fun clearCcTransitionReservation(source: String): Boolean =
         controlCenterCurrent
             ?.clearTransitionReservation(source)
@@ -1590,36 +1586,6 @@ internal object SysUiPresentationOwner {
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String>? = null
         private var transitionRequestedSlotWidthPx: Int? = null
-        private var appliedTransitionSlotWidthPx: Int? = null
-
-        fun appliedCcTransitionSlotWidthPx(): Int? =
-            if (active && surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                !nativeLayoutOwnershipDeferred && statusIcons.get()?.isLayoutRequested == false
-            ) appliedTransitionSlotWidthPx else null
-        private val networkSpeedWidthMethod =
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
-                optionalNativeRead {
-                    Class.forName(
-                        "com.android.systemui.statusbar.views.NetworkSpeedView",
-                        false,
-                        statusIcons.javaClass.classLoader,
-                    ).getMethod("getNetworkSpeedWidth")
-                }
-            } else null
-        private val fakePeerMetrics =
-            if (
-                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                statusIcons.javaClass.name ==
-                    "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
-            ) {
-                optionalNativeRead {
-                    val cls = statusIcons.javaClass
-                    cls.getDeclaredField("measureViews").apply { isAccessible = true } to
-                        cls.getDeclaredField("iconSpacing").apply { isAccessible = true }
-                }
-            } else {
-                null
-            }
         private val clipStates = mutableListOf<ClipState>()
         private val mirroredPeerClipStates = mutableListOf<ClipState>()
         // Both views report width changes to the same reservation owner.
@@ -2346,7 +2312,6 @@ internal object SysUiPresentationOwner {
             val normalized = requestedSlotWidthPx.coerceAtLeast(0)
             if (transitionRequestedSlotWidthPx == normalized) return true
             transitionRequestedSlotWidthPx = normalized
-            appliedTransitionSlotWidthPx = null
             return syncEndReservation()
         }
 
@@ -2354,7 +2319,6 @@ internal object SysUiPresentationOwner {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
             if (transitionRequestedSlotWidthPx == null) return true
             transitionRequestedSlotWidthPx = null
-            appliedTransitionSlotWidthPx = null
             val restored = syncEndReservation()
             onEvent(
                 eventPrefix +
@@ -2364,104 +2328,10 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
-        private fun measuredNativePeerWidth(group: ViewGroup): Int? {
-            val (viewsField, spacingField) = fakePeerMetrics ?: return null
-            val views = optionalNativeRead { viewsField.get(group) as? List<*> } ?: return null
-            val spacing = optionalNativeRead { spacingField.getInt(group) }
-                ?: return null
-            if (spacing < 0 || views.size > group.childCount) return null
-
-            // Match this exact ROM's MiuiStatusIconContainer.onMeasure and
-            // onLayout, not a generic View measured-width approximation.
-            var width = group.paddingStart.toLong()
-            views.forEachIndexed { index, item ->
-                val view = item as? View ?: return null
-                if (view.parent !== group) return null
-                val speedLayoutWidth =
-                    if (view.javaClass.name ==
-                        "com.android.systemui.statusbar.views.NetworkSpeedView"
-                    ) {
-                        optionalNativeRead {
-                            networkSpeedWidthMethod?.invoke(view) as? Int
-                        } ?: return null
-                    } else null
-                val footprint = EndReservationPolicy.measuredNativePeerFootprint(
-                    measuredWidthPx = view.measuredWidth,
-                    paddingStartPx = view.paddingStart,
-                    paddingEndPx = view.paddingEnd,
-                    networkSpeedLayoutWidthPx = speedLayoutWidth,
-                ) ?: return null
-                if (footprint > 0) {
-                    width += footprint
-                    if (index > 0) width += spacing
-                }
-            }
-            return width.takeIf {
-                it >= 0L && it <= Int.MAX_VALUE.toLong()
-            }?.toInt()
-        }
-
-        // Do not let optional CC animation padding evict valid compact ownership.
-        // Clamp to the measured native peer capacity; retain Fail native if the
-        // mandatory compact reservation or native measurement is unsafe.
-        private fun ViewGroup.resolveFakeNativePeerReservationDelta(
-            baseline: PaddingState,
-            nativeHide: Boolean,
-            compactSlotWidthPx: Int,
-            requestedReservationDelta: Int,
-        ): Int? {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return requestedReservationDelta
-            val outsideCompact = requestedReservationDelta >
-                if (nativeHide) compactSlotWidthPx else 0
-            // A hidden native battery requires a verified compact slot even
-            // when no optional transition expansion was requested.
-            if (!outsideCompact && !nativeHide) return requestedReservationDelta
-            val contentWidth = measuredNativePeerWidth(this)
-                ?: run { onFailNative("fake-native-peer-measure-unavailable"); return null }
-            val requestedEnd = baseline.end + requestedReservationDelta
-            val minimumEnd = baseline.end + if (nativeHide) compactSlotWidthPx else 0
-            val boundedEnd = EndReservationPolicy.boundedFakeNativeTransitionPadding(
-                rowWidthPx = width,
-                contentWidthPx = contentWidth,
-                requestedPaddingEndPx = requestedEnd,
-                minimumPaddingEndPx = minimumEnd,
-            )
-            if (boundedEnd == null) {
-                emitDiagnostic {
-                    onEvent(
-                        eventPrefix + " fakePeerCapacity state=overflow" +
-                            " rowWidth=" + width +
-                            " contentWidth=" + contentWidth +
-                            " requestedPaddingEnd=" + requestedEnd +
-                            " minimumPaddingEnd=" + minimumEnd +
-                            " nativeHide=" + nativeHide +
-                            " compactSlotWidth=" + compactSlotWidthPx +
-                            " groupLayoutRequested=" + isLayoutRequested,
-                    )
-                }
-                onFailNative("fake-native-peer-row-overflow")
-                return null
-            }
-            if (boundedEnd != requestedEnd && lastReservationDelta != boundedEnd - baseline.end) {
-                emitDiagnostic {
-                    onEvent(
-                        eventPrefix + " fakePeerCapacity state=bounded" +
-                            " rowWidth=" + width +
-                            " contentWidth=" + contentWidth +
-                            " requestedPaddingEnd=" + requestedEnd +
-                            " appliedPaddingEnd=" + boundedEnd +
-                            " minimumPaddingEnd=" + minimumEnd,
-                    )
-                }
-            }
-            return boundedEnd - baseline.end
-        }
-
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) {
-                appliedTransitionSlotWidthPx = null
-                return true
+                    return true
             }
             val group = statusIcons.get() ?: run { onFailNative(REASON_STATUS_ICON_GROUP_RELEASED); return false }
             val container = batteryContainer.get() ?: run { onFailNative("battery-container-released"); return false }
@@ -2554,12 +2424,9 @@ internal object SysUiPresentationOwner {
                     actualBatteryWidthPx = actualBatteryWidthPx,
                     requestedSlotWidthPx = requestedSlotWidthPx,
                 )
-            val reservationDelta = group.resolveFakeNativePeerReservationDelta(
-                baseline = baseline,
-                nativeHide = nativeHide,
-                compactSlotWidthPx = compactSlotWidthPx,
-                requestedReservationDelta = requestedReservationDelta,
-            ) ?: return false
+            // Native status-icon onMeasure/onLayout owns peer underflow.
+            // Lease only the current projected occupancy via paddingEnd.
+            val reservationDelta = requestedReservationDelta
             val target =
                 PaddingState(
                     baseline.start,
@@ -2575,13 +2442,6 @@ internal object SysUiPresentationOwner {
                 return false
             }
             appliedPadding = if (target == baseline) null else target
-            appliedTransitionSlotWidthPx = transitionRequestedSlotWidthPx?.let {
-                EndReservationPolicy.appliedTransitionSlotWidth(
-                    requestedSlotWidthPx = requestedSlotWidthPx,
-                    requestedReservationDeltaPx = requestedReservationDelta,
-                    appliedReservationDeltaPx = reservationDelta,
-                )
-            }
             if (lastReservationDelta != reservationDelta) {
                 lastReservationDelta = reservationDelta
                 val shouldReport =

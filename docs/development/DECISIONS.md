@@ -351,25 +351,22 @@ captured and device acceptance is still required.
 Unit regression asserts normal 105 and charging 135 both end at the
 native right boundary, while a bad native end coordinate is rejected.
 
-## QS_FAKE peer capacity is valid only after its native measure
+## QS_FAKE native underflow owns crowded peer layout
 
-**Decision:** A pending `MiuiStatusIconContainer` native
-`isLayoutRequested` invalidates previously measured
-`measureViews` row capacity, even when the outer QS_FAKE host is
-already settled. Defer custom end-padding writes and overflow
-decisions until the native peer-row measure completes. Still reject
-a genuinely overfull measured row with the scoped Fail native policy.
+**Decision:** Reserve current projection occupancy via the existing,
+reversible `statusIcons.paddingEnd` lease. Do not enforce a second
+`measureViews` candidate-sum capacity cap or crop projected content.
+Keep FAKE host/peer-row settlement, owner receipt and native restoration.
 
-**Evidence:** B1903 reported `fake-native-peer-row-overflow` in the
-00:10:47–00:11:03 interval, repeatedly reinitializing the fake
-presentation. Native `onMeasure` excludes ignored slots and the
-`measureViews` collection is only a current measurement witness.
-The prior guard checked outer host settlement but not the peer row's
-pending layout. The logs do not expose the exact width or pending
-flag at each failure; the new bounded diagnostic includes them.
+**Evidence:** Fingerprinted ROM403 `MiuiStatusIconContainer.onMeasure`
+visits eligible icons in reverse order, applies its own fit/max-size
+logic and signal exceptions; `onLayout` handles `hiddenBySpace`.
+B1917: row 448px, all-candidate sum 359px, requested projection 167px,
+capped at 89px. This sum is not the native displayed peer layout.
 
-**Consequence:** Preserve SystemUI-owned fake width and avoid
-guessing extra space or force-fitting the native peer row.
+**Risk:** Native signal overflow, FAKE/FINAL compositor frames, battery
+island, rotation and ROM404 exact-APK parity require device acceptance.
+No new Hook, native width/alpha/translation writer or timing fallback.
 
 ## CC frozen source geometry is viewport-scoped
 

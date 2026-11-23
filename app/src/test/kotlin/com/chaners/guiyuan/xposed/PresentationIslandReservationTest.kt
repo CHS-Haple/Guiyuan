@@ -6,7 +6,7 @@ import org.junit.Test
 
 class PresentationIslandReservationTest {
     @Test
-    fun nativeFakePeerCapacityIsOnlyCheckedAfterItsOwnNativeMeasure() {
+    fun nativeFakeLayoutWaitsForHostAndPeerRow() {
         assertFalse(EndReservationPolicy.fakeNativePeerMeasureReady(
             carrierSettled = false,
             peerRowLayoutRequested = false,
@@ -18,26 +18,6 @@ class PresentationIslandReservationTest {
         assertTrue(EndReservationPolicy.fakeNativePeerMeasureReady(
             carrierSettled = true,
             peerRowLayoutRequested = false,
-        ))
-    }
-
-    @Test
-    fun nativeFakePeerRowUsesMeasuredNativeSlackWithoutHostWidthLease() {
-        // Synthetic native measure boundaries, not a claim about device pixels.
-        assertTrue(EndReservationPolicy.fitsFakeNativePeerRow(
-            rowWidthPx = 200, contentWidthPx = 120, targetPaddingEndPx = 80,
-        ))
-        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
-            rowWidthPx = 200, contentWidthPx = 121, targetPaddingEndPx = 80,
-        ))
-        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
-            rowWidthPx = 478, contentWidthPx = 392, targetPaddingEndPx = 87,
-        ))
-        assertTrue(EndReservationPolicy.fitsFakeNativePeerRow(
-            rowWidthPx = 478, contentWidthPx = 391, targetPaddingEndPx = 87,
-        ))
-        assertFalse(EndReservationPolicy.fitsFakeNativePeerRow(
-            rowWidthPx = 0, contentWidthPx = 0, targetPaddingEndPx = 0,
         ))
     }
 

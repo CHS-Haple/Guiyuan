@@ -914,7 +914,6 @@ internal object CcTransitionOwner {
                 finalRootRef.get()
                     ?.let(::endpointAlpha)
                     ?: 0f
-            clipToGrantedNativePeerSide(canvas, rootView)
             val carrierFrames =
                 frozenSource?.let { frozen ->
                     sample(
@@ -2278,32 +2277,6 @@ internal object CcTransitionOwner {
                 )
             } ?: source.copyOf()
 
-        private fun clipToGrantedNativePeerSide(
-            canvas: Canvas,
-            root: ViewGroup,
-        ) {
-            if (!transitionReservationEnabled || nativeBatteryIslandActive) return
-            val requested = lastReservationWidthPx ?: return
-            val granted = SysUiPresentationOwner.appliedCcTransitionReservationWidthPx() ?: return
-            if (granted >= requested) return
-            val nativeFakeHost = fakeStatusIcons.parent as? View ?: return
-            val nativeHostGeometry = sample(nativeFakeHost, root) ?: return
-            val rtl = nativeFakeHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
-            val boundary = CcCarrierGeometryPolicy.fakePeerClipBoundaryX(
-                nativeHostCenterX = nativeHostGeometry[0],
-                nativeHostWidthX = nativeHostGeometry[2],
-                nativeHostLocalWidthPx = nativeFakeHost.width,
-                requestedWidthPx = requested,
-                grantedWidthPx = granted,
-                isRtl = rtl,
-            ) ?: return
-            if (rtl) {
-                canvas.clipRect(0f, 0f, boundary, root.height.toFloat())
-            } else {
-                canvas.clipRect(boundary, 0f, root.width.toFloat(), root.height.toFloat())
-            }
-        }
-
         private fun latentRevealVisibleFraction(
             currentGeometry: FloatArray,
             targetGeometry: FloatArray,
@@ -2315,18 +2288,7 @@ internal object CcTransitionOwner {
                     baseSlotWidthPx = (frozenSource?.width ?: source.width).coerceAtLeast(0),
                     userScale = currentSnapshot.visual.combinedScale,
                 )
-            // Only the native peer width actually granted may reveal latent
-            // glyphs. Battery Island owns a distinct projected end frame.
-            val currentReservation =
-                if (transitionReservationEnabled && !nativeBatteryIslandActive) {
-                    minOf(
-                        lastReservationWidthPx ?: compactWidth,
-                        SysUiPresentationOwner.appliedCcTransitionReservationWidthPx()
-                            ?: compactWidth,
-                    ).coerceAtLeast(compactWidth)
-                } else {
-                    lastReservationWidthPx ?: compactWidth
-                }
+            val currentReservation = lastReservationWidthPx ?: compactWidth
             val requiredReservation =
                 reservationWidthForEnvelope(witness)
                     ?: return 0f
