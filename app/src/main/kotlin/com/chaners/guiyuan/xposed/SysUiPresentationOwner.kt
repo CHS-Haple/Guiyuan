@@ -2413,7 +2413,9 @@ internal object SysUiPresentationOwner {
             if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return requestedReservationDelta
             val outsideCompact = requestedReservationDelta >
                 if (nativeHide) compactSlotWidthPx else 0
-            if (!outsideCompact) return requestedReservationDelta
+            // A hidden native battery requires a verified compact slot even
+            // when no optional transition expansion was requested.
+            if (!outsideCompact && !nativeHide) return requestedReservationDelta
             val contentWidth = measuredNativePeerWidth(this)
                 ?: run { onFailNative("fake-native-peer-measure-unavailable"); return null }
             val requestedEnd = baseline.end + requestedReservationDelta
