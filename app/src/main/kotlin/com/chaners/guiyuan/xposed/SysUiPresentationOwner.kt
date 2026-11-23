@@ -1045,24 +1045,6 @@ internal object SysUiPresentationOwner {
     }
 
     @Synchronized
-    fun onCcVisibilityChanged(visible: Boolean): Boolean =
-        controlCenterCurrent?.onCcVisibilityChanged(visible) ?: true
-
-    @Synchronized
-    fun updateCcTransitionReservation(
-        requestedSlotWidthPx: Int,
-    ): Boolean =
-        controlCenterCurrent
-            ?.updateTransitionReservation(requestedSlotWidthPx)
-            ?: false
-
-    @Synchronized
-    fun clearCcTransitionReservation(source: String): Boolean =
-        controlCenterCurrent
-            ?.clearTransitionReservation(source)
-            ?: true
-
-    @Synchronized
     fun failCcPresentation(reason: String): Boolean {
         val session = controlCenterCurrent ?: return false
         onCcSessionFailure(session, reason)
@@ -1585,7 +1567,6 @@ internal object SysUiPresentationOwner {
         private var aodBatteryReleased = false
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String>? = null
-        private var transitionRequestedSlotWidthPx: Int? = null
         private val clipStates = mutableListOf<ClipState>()
         private val mirroredPeerClipStates = mutableListOf<ClipState>()
         // Both views report width changes to the same reservation owner.
@@ -2300,34 +2281,6 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
-        fun onCcVisibilityChanged(visible: Boolean): Boolean =
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && !visible) {
-                clearTransitionReservation("visible-cycle-hidden")
-            } else true
-
-        fun updateTransitionReservation(
-            requestedSlotWidthPx: Int,
-        ): Boolean {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return false
-            val normalized = requestedSlotWidthPx.coerceAtLeast(0)
-            if (transitionRequestedSlotWidthPx == normalized) return true
-            transitionRequestedSlotWidthPx = normalized
-            return syncEndReservation()
-        }
-
-        fun clearTransitionReservation(source: String): Boolean {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
-            if (transitionRequestedSlotWidthPx == null) return true
-            transitionRequestedSlotWidthPx = null
-            val restored = syncEndReservation()
-            onEvent(
-                eventPrefix +
-                    " transitionReservation cleared source=" + source +
-                    " restoredCompact=" + restored,
-            )
-            return restored
-        }
-
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
             if (nativeLayoutOwnershipDeferred) return true
@@ -2411,16 +2364,11 @@ internal object SysUiPresentationOwner {
                     baseSlotWidthPx = resolved.visualWidth,
                     userScale = VisualPrefsOwner.current().combinedScale,
                 )
-            val requestedSlotWidthPx =
-                EndReservationPolicy.resolveRequestedSlotWidth(
-                    compactSlotWidthPx = compactSlotWidthPx,
-                    transitionRequestedSlotWidthPx = transitionRequestedSlotWidthPx,
-                )
             val requestedReservationDelta =
                 EndReservationPolicy.resolvePaddingEndDelta(
                     nativeHide = nativeHide || homePrivacyOccupiesEnd,
                     actualBatteryWidthPx = actualBatteryWidthPx,
-                    requestedSlotWidthPx = requestedSlotWidthPx,
+                    requestedSlotWidthPx = compactSlotWidthPx,
                 )
             // Native status-icon onMeasure/onLayout owns peer underflow.
             // Lease only the current projected occupancy via paddingEnd.
@@ -2443,11 +2391,7 @@ internal object SysUiPresentationOwner {
             if (lastReservationDelta != reservationDelta) {
                 lastReservationDelta = reservationDelta
                 val shouldReport =
-                    surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
-                        (
-                            isDetailedDiagnosticsEnabled() &&
-                                transitionRequestedSlotWidthPx == null
-                        )
+                    surfaceName != CONTROL_CENTER_FAKE_SURFACE || isDetailedDiagnosticsEnabled()
                 if (shouldReport) {
                     onEvent(
                         eventPrefix + " endReservation nativeHide=" + nativeHide +
@@ -2456,9 +2400,7 @@ internal object SysUiPresentationOwner {
                             " actualBatteryWidth=" + actualBatteryWidthPx +
                             " compactSlotWidth=" + compactSlotWidthPx +
                             " visualScale=" + VisualPrefsOwner.current().combinedScale +
-                            " requestedSlotWidth=" + requestedSlotWidthPx +
-                            " transitionRequestedSlotWidth=" +
-                            (transitionRequestedSlotWidthPx ?: -1) +
+                            " requestedSlotWidth=" + compactSlotWidthPx +
                             " requestedPaddingEndDelta=" + requestedReservationDelta +
                             " paddingEndDelta=" + reservationDelta +
                             " basePaddingEnd=" + baseline.end +

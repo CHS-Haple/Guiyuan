@@ -173,10 +173,6 @@ internal object CcRenderSession {
     }
 
     @Synchronized
-    fun beginVisibleCycle(): Boolean =
-        SysUiPresentationOwner.onCcVisibilityChanged(true)
-
-    @Synchronized
     fun visualState(): String? = current?.visualState()
 
     @Synchronized
@@ -746,24 +742,6 @@ internal object CcRenderSession {
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (retired) return false
-            if (
-                !requestedVisible &&
-                visible &&
-                !SysUiPresentationOwner.onCcVisibilityChanged(true)
-            ) {
-                syncPresentation("visibility-visible-cycle-failed")
-                return false
-            }
-            if (requestedVisible && !visible &&
-                !SysUiPresentationOwner.onCcVisibilityChanged(false)
-            ) {
-                requestedVisible = false
-                releaseAll(
-                    { syncPresentation("visibility-hidden-release-failed") },
-                    { SysUiPresentationOwner.failCcPresentation("fake-carrier-hidden-release-unverified") },
-                )
-                return false
-            }
             requestedVisible = visible
             syncPresentation("visibility")
             return projectionReady()

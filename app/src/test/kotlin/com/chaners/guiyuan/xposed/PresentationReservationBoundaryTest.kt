@@ -7,28 +7,19 @@ import org.junit.Test
 
 class PresentationReservationBoundaryTest {
     @Test
-    fun transitionReservationCannotShrinkBelowCompactWidth() {
-        assertEquals(
-            105,
-            EndReservationPolicy.resolveRequestedSlotWidth(
-                compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = 80,
-            ),
-        )
-        assertEquals(
-            168,
-            EndReservationPolicy.resolveRequestedSlotWidth(
-                compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = 168,
-            ),
-        )
-        assertEquals(
-            105,
-            EndReservationPolicy.resolveRequestedSlotWidth(
-                compactSlotWidthPx = 105,
-                transitionRequestedSlotWidthPx = null,
-            ),
-        )
+    fun onlySteadyCompactWidthIsReservedForNativePeers() {
+        for (compact in listOf(105, 135)) {
+            assertEquals(0, EndReservationPolicy.resolvePaddingEndDelta(
+                nativeHide = false,
+                actualBatteryWidthPx = compact,
+                requestedSlotWidthPx = compact,
+            ))
+            assertEquals(compact, EndReservationPolicy.resolvePaddingEndDelta(
+                nativeHide = true,
+                actualBatteryWidthPx = compact,
+                requestedSlotWidthPx = compact,
+            ))
+        }
     }
 
     @Test
@@ -61,38 +52,19 @@ class PresentationReservationBoundaryTest {
     }
 
     @Test
-    fun endReservationKeepsOneResolvedEndBoundaryAcrossBatteryStates() {
-        // Native row owns crowded peers; request the true projection extent.
-        assertEquals(167, EndReservationPolicy.resolvePaddingEndDelta(
-            nativeHide = true, actualBatteryWidthPx = 135, requestedSlotWidthPx = 167,
+    fun nativeEndReservationTracksSteadyCarrierNotExpandedGeometry() {
+        assertEquals(0, EndReservationPolicy.resolvePaddingEndDelta(
+            nativeHide = false, actualBatteryWidthPx = 135, requestedSlotWidthPx = 135,
         ))
-        assertEquals(32, EndReservationPolicy.resolvePaddingEndDelta(
-            nativeHide = false, actualBatteryWidthPx = 135, requestedSlotWidthPx = 167,
+        assertEquals(135, EndReservationPolicy.resolvePaddingEndDelta(
+            nativeHide = true, actualBatteryWidthPx = 135, requestedSlotWidthPx = 135,
         ))
-        assertEquals(
-            0,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = false,
-                actualBatteryWidthPx = 105,
-                requestedSlotWidthPx = 105,
-            ),
-        )
-        assertEquals(
-            -30,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = false,
-                actualBatteryWidthPx = 135,
-                requestedSlotWidthPx = 105,
-            ),
-        )
-        assertEquals(
-            105,
-            EndReservationPolicy.resolvePaddingEndDelta(
-                nativeHide = true,
-                actualBatteryWidthPx = 135,
-                requestedSlotWidthPx = 105,
-            ),
-        )
+        assertEquals(-30, EndReservationPolicy.resolvePaddingEndDelta(
+            nativeHide = false, actualBatteryWidthPx = 135, requestedSlotWidthPx = 105,
+        ))
+        assertEquals(105, EndReservationPolicy.resolvePaddingEndDelta(
+            nativeHide = true, actualBatteryWidthPx = 135, requestedSlotWidthPx = 105,
+        ))
     }
 
     @Test

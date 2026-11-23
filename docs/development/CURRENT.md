@@ -50,9 +50,10 @@ execution ownership is in [architecture](../architecture/README.md).
 - **Open SystemUI work [#1817](https://github.com/CHS-Haple/Guiyuan/pull/1817):**
   retain Home and CC projections in their separate native lifecycles.
   Exact ROM403 source confirms native peer-row underflow, signal exceptions
-  and `paddingEnd` ownership. The work-branch requests current QS_FAKE
-  peer-side occupancy via reversible padding, and has removed the
-  parallel all-candidate width cap and canvas clipping. Native FAKE host
+  and `paddingEnd` ownership. The work-branch retains only the compact steady QS_FAKE end reservation;
+  the unfolding component envelope now controls visual reveal only and no
+  longer writes extra native peer padding. The parallel all-candidate width
+  cap and canvas clipping remain removed. Native FAKE host
   width, native FINAL, native alpha/motion and Hot Reload remain OEM-owned.
   Crowded/rotated FAKE, charging/island states, visual handoff and exact
   installed ROM404 binary parity still require focused acceptance.

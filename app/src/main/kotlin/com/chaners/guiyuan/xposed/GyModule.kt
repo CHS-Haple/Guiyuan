@@ -1267,18 +1267,6 @@ class GyModule : XposedModule() {
 
         controlCenterSceneVisible = true
         ccProjectionReadyForHandoff = false
-        if (!CcRenderSession.beginVisibleCycle()) {
-            reconcileCcHomeAuthority("native-visible-rearm-failed")
-            logDiagnostic(
-                level = Log.WARN,
-                event = "projection.visibleCycle",
-                component = "controlCenterProjection",
-                state = "native",
-                "reason" to "visible-cycle-rearm-failed",
-                "fallback" to "native-control-center-until-next-native-event",
-            )
-            return update.sourceScene
-        }
         val reportedSourceScene =
             update.sourceScene
                 ?: SourceScene.UNKNOWN

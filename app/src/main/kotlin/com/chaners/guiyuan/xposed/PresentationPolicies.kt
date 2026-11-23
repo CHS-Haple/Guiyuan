@@ -86,16 +86,6 @@ internal object FakeCarrierNativeGeometryPolicy {
 }
 
 internal object EndReservationPolicy {
-    fun resolveRequestedSlotWidth(
-        compactSlotWidthPx: Int,
-        transitionRequestedSlotWidthPx: Int?,
-    ): Int {
-        val compact = compactSlotWidthPx.coerceAtLeast(0)
-        return transitionRequestedSlotWidthPx
-            ?.coerceAtLeast(compact)
-            ?: compact
-    }
-
     fun resolvePaddingEndDelta(
         nativeHide: Boolean,
         actualBatteryWidthPx: Int,

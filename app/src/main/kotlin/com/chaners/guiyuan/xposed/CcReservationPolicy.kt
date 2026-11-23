@@ -3,7 +3,7 @@ package com.chaners.guiyuan.xposed
 import kotlin.math.min
 
 internal object CcReservationPolicy {
-    fun usesSemanticTransitionReservation(sourceScene: SourceScene): Boolean =
+    fun usesRevealReservation(sourceScene: SourceScene): Boolean =
         when (sourceScene) {
             SourceScene.HOME,
             SourceScene.KEYGUARD,
@@ -53,36 +53,5 @@ internal object CcReservationPolicy {
         return kotlin.math.ceil(-peerSideLeft).toInt()
     }
 
-    fun resolveBatteryIslandNativePeerReservationWidth(
-        compactWidthPx: Int,
-        spans: List<ReservationSpan>,
-        semanticWidthPx: Int,
-        progress: Float,
-        targetEndOffsetPx: Float = 0f,
-    ): Int {
-        val compact = compactWidthPx.coerceAtLeast(0)
-        val semantic = semanticWidthPx.coerceAtLeast(compact)
-        if (compact == 0) return 0
-        val targetEndOffset =
-            targetEndOffsetPx
-                .takeIf(Float::isFinite)
-                ?: 0f
-        val p = CcTransitionPolicy.geometryProgress(progress)
-        var left = -compact.toFloat()
-        spans.forEach { span ->
-            val currentLeft =
-                span.sourceLeft +
-                    (span.targetLeft + targetEndOffset - span.sourceLeft) * p
-            left = min(left, currentLeft)
-        }
 
-        // statusIcons.paddingEnd reserves space only on the peer side of the
-        // live QS_FAKE end edge (logical x=0). A projected Guiyuan span may
-        // extend to x>0 while converging on the final QS surface; that
-        // end-side extent is drawable occupancy, not native-peer intrusion.
-        return kotlin.math
-            .ceil((-left.coerceAtMost(0f)).coerceAtLeast(compact.toFloat()))
-            .toInt()
-            .coerceAtMost(semantic)
-    }
 }

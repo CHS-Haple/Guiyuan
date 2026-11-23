@@ -234,8 +234,8 @@ internal object CcTransitionOwner {
             sourceSnapshot = sourceSnapshot,
             nativeAppearance = nativeAppearance,
             nativeAppearanceAnimated = nativeAppearanceAnimated,
-            transitionReservationEnabled =
-                CcReservationPolicy.usesSemanticTransitionReservation(sourceScene),
+            revealReservationEnabled =
+                CcReservationPolicy.usesRevealReservation(sourceScene),
             nativeBatteryIslandActive = nativeBatteryIslandActive,
         )
     }
@@ -346,12 +346,8 @@ internal object CcTransitionOwner {
         private var reservationLayout: ChargeLayout? = null
         private var reservationRetarget: ReservationRetarget? = null
         private var lastReservationWidthPx: Int? = null
-        private var lastNativeReservationWidthPx: Int? = null
-        private var lastNativePeerTargetEndOffsetPx: Float? = null
-        private var transitionReservationEnabled = false
+        private var revealReservationEnabled = false
         private var nativeBatteryIslandActive = false
-        private val batteryIslandFakeLocationScratch = IntArray(2)
-        private val batteryIslandTargetLocationScratch = IntArray(2)
         private val chargeRootLocation = IntArray(2)
         private val chargePeerLocation = IntArray(2)
         private val chargeBatteryLocation = IntArray(2)
@@ -412,7 +408,7 @@ internal object CcTransitionOwner {
                 // Source snapshots and native peer tint can change without panel motion.
                 val previousTint = cachedNativePeerTint
                 refreshNativePeerTint()
-                syncTransitionReservation()
+                syncRevealReservation()
                 drawable.setBounds(0, 0, rootView.width, rootView.height)
                 if (
                     currentSnapshot !== previousSnapshot ||
@@ -672,8 +668,7 @@ internal object CcTransitionOwner {
                 " frozenSpans=${frozenReservationSpans?.take(8)}" +
                 " fakeAlpha=${fakeRootRef.get()?.let(::endpointAlpha)}" +
                 " finalAlpha=${finalRootRef.get()?.let(::endpointAlpha)}" +
-                " semanticWidth=$lastReservationWidthPx peerWidth=$lastNativeReservationWidthPx" +
-                " endOffset=$lastNativePeerTargetEndOffsetPx" +
+                " revealWidth=$lastReservationWidthPx" +
                 " wifiReady=$wifiTargetReady retargetAt=${wifiRetarget?.progress}" +
                 " retargetDx=${wifiRetarget?.delta?.get(0)}" +
                 " chargeAt=${chargeRetarget?.progress} chargePeerShift=${chargeRetarget?.peerShift}" +
@@ -709,7 +704,7 @@ internal object CcTransitionOwner {
                 sourceMaskApplied = true
                 source.clipBounds = sourceMask.appliedClip
                 refreshNativePeerTint()
-                syncTransitionReservation()
+                syncRevealReservation()
                 if (!started) return false
                 overlayAdded = true
                 rootView.overlay.add(drawable)
@@ -734,7 +729,7 @@ internal object CcTransitionOwner {
             sourceSnapshot: CcRenderSession.TransitionSourceSnapshot,
             nativeAppearance: Boolean,
             nativeAppearanceAnimated: Boolean,
-            transitionReservationEnabled: Boolean,
+            revealReservationEnabled: Boolean,
             nativeBatteryIslandActive: Boolean?,
         ) {
             if (!started) return
@@ -745,13 +740,13 @@ internal object CcTransitionOwner {
             acceptSourceSnapshot(sourceSnapshot)
             this.nativeAppearance = nativeAppearance
             this.nativeAppearanceAnimated = nativeAppearanceAnimated
-            this.transitionReservationEnabled = transitionReservationEnabled
+            this.revealReservationEnabled = revealReservationEnabled
             this.nativeBatteryIslandActive = nativeBatteryIslandActive == true
 
             if (appearanceChanged) {
                 refreshNativePeerTint()
             }
-            syncTransitionReservation()
+            syncRevealReservation()
             drawable.invalidateSelf()
         }
 
@@ -821,11 +816,6 @@ internal object CcTransitionOwner {
                 val registered = registeredObserver
                 val rootView = rootRef.get()
                 releaseAll(
-                    {
-                        SysUiPresentationOwner.clearCcTransitionReservation(
-                            "transition-" + source,
-                        )
-                    },
                     {
                         // Detached views can expose a different live observer.
                         releaseAll(
@@ -2398,16 +2388,9 @@ internal object CcTransitionOwner {
             }
         }
 
-        private fun syncTransitionReservation() {
-            if (!transitionReservationEnabled) {
-                if (lastNativeReservationWidthPx != null) {
-                    SysUiPresentationOwner.clearCcTransitionReservation(
-                        "transition-source-native-peer-motion",
-                    )
-                }
+        private fun syncRevealReservation() {
+            if (!revealReservationEnabled) {
                 lastReservationWidthPx = null
-                lastNativeReservationWidthPx = null
-                lastNativePeerTargetEndOffsetPx = null
                 return
             }
             // Do not freeze provisional FINAL coordinates into the native peer lease.
@@ -2468,99 +2451,9 @@ internal object CcTransitionOwner {
                 .coerceAtLeast(compactWidth)
             if (progress <= 0f || progress >= 1f) reservationRetarget = null
 
-            // The logical transition width is Guiyuan-owned. Native status-icon
-            // capacity and island collision remain HyperOS-owned.
+            // The reveal envelope controls Guiyuan's animation only.
+            // QS_FAKE peer capacity remains at its steady native reservation.
             lastReservationWidthPx = requestedWidth
-
-            val nativeRequestedWidth =
-                if (nativeBatteryIslandActive) {
-                    // Reservation spans store target X in the final-Battery end frame.
-                    // HyperOS translates the visible QS_FAKE carrier independently for
-                    // Battery Island, so project that target end into the current fake
-                    // end frame before measuring the current projected occupancy.
-                    lastNativePeerTargetEndOffsetPx = null
-                    val targetEndOffsetPx =
-                        batteryIslandPeerEndOffsetPx()
-                            ?: run {
-                                lastNativeReservationWidthPx = null
-                                val presentationFailed =
-                                    SysUiPresentationOwner
-                                        .failCcPresentation(
-                                            "battery-island-peer-end-frame-unavailable",
-                                        )
-                                if (!presentationFailed) {
-                                    CcTransitionOwner.detach(
-                                        "battery-island-peer-end-frame-unavailable",
-                                    )
-                                }
-                                return
-                            }
-                    lastNativePeerTargetEndOffsetPx = targetEndOffsetPx
-                    CcReservationPolicy.resolveBatteryIslandNativePeerReservationWidth(
-                        compactWidthPx = compactWidth,
-                        spans = spans,
-                        semanticWidthPx = requestedWidth,
-                        progress = progress,
-                        targetEndOffsetPx = targetEndOffsetPx,
-                    )
-                } else {
-                    lastNativePeerTargetEndOffsetPx = null
-                    requestedWidth
-                }
-
-            if (lastNativeReservationWidthPx != nativeRequestedWidth) {
-                val applied =
-                    SysUiPresentationOwner
-                        .updateCcTransitionReservation(
-                            requestedSlotWidthPx = nativeRequestedWidth,
-                        )
-                if (!applied) {
-                    return
-                }
-                lastNativeReservationWidthPx = nativeRequestedWidth
-            }
-        }
-
-        private fun batteryIslandPeerEndOffsetPx(): Float? {
-            if (
-                fakeStatusIcons.width <= 0 ||
-                finalBattery.width <= 0 ||
-                !fakeStatusIcons.isAttachedToWindow ||
-                !finalBattery.isAttachedToWindow
-            ) {
-                return null
-            }
-            val fakeRtl =
-                fakeStatusIcons.layoutDirection == View.LAYOUT_DIRECTION_RTL
-            val targetRtl =
-                finalBattery.layoutDirection == View.LAYOUT_DIRECTION_RTL
-            if (fakeRtl != targetRtl) return null
-
-            val located =
-                readOrNull {
-                    fakeStatusIcons.getLocationInWindow(batteryIslandFakeLocationScratch)
-                    finalBattery.getLocationInWindow(batteryIslandTargetLocationScratch)
-                    true
-                } ?: false
-            if (!located) return null
-
-            val fakeEndPhysical =
-                if (fakeRtl) {
-                    batteryIslandFakeLocationScratch[0].toFloat()
-                } else {
-                    (batteryIslandFakeLocationScratch[0] + fakeStatusIcons.width).toFloat()
-                }
-            val targetEndPhysical =
-                if (targetRtl) {
-                    batteryIslandTargetLocationScratch[0].toFloat()
-                } else {
-                    (batteryIslandTargetLocationScratch[0] + finalBattery.width).toFloat()
-                }
-            val fakeEndLogical =
-                if (fakeRtl) -fakeEndPhysical else fakeEndPhysical
-            val targetEndLogical =
-                if (targetRtl) -targetEndPhysical else targetEndPhysical
-            return targetEndLogical - fakeEndLogical
         }
 
         private fun resolveReservationSpans(): List<CcReservationPolicy.ReservationSpan>? {
