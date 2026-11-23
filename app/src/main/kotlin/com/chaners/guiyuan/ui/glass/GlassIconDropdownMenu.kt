@@ -72,6 +72,14 @@ fun BoxScope.GlassIconDropdownMenu(
     onDismissFinished: (() -> Unit)? = null,
 ) {
     val density = LocalDensity.current
+    // Primary leaf rows and submenu leaves share the same commit/dismiss order.
+    fun activateLeaf(onClick: (() -> Unit)?) {
+        onClick?.invoke()
+        if (collapseOnSelection) {
+            submenu = false
+            onDismissRequest()
+        }
+    }
     var submenu by remember { mutableStateOf(false) }
     var submenuPresent by remember { mutableStateOf(false) }
     val submenuPathState = remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -195,11 +203,7 @@ fun BoxScope.GlassIconDropdownMenu(
                                     submenu = true
                                 }
                             } else {
-                                item.onClick?.invoke()
-                                if (collapseOnSelection) {
-                                    submenu = false
-                                    onDismissRequest()
-                                }
+                                activateLeaf(item.onClick)
                             }
                         },
                     )
@@ -266,11 +270,7 @@ fun BoxScope.GlassIconDropdownMenu(
                             enabled = submenuEntry?.enabled == true && parent.enabled && item.enabled,
                             selected = item.selected,
                             onClick = {
-                                item.onClick?.invoke()
-                                if (collapseOnSelection) {
-                                    submenu = false
-                                    onDismissRequest()
-                                }
+                                activateLeaf(item.onClick)
                             },
                         )
                     }
