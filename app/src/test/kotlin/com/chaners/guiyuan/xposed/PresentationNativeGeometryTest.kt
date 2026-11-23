@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.xposed
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -69,6 +71,14 @@ class PresentationNativeGeometryTest {
                 height = 108,
             ),
         )
+    }
+
+    @Test
+    fun fakePeerReservationPreservesMeasuredSteadyIconsAtCrowdedWidths() {
+        assertEquals(89, EndReservationPolicy.limitFakePeerPaddingEnd(448, 359, -30, 167))
+        assertEquals(60, EndReservationPolicy.limitFakePeerPaddingEnd(448, 359, -30, 60))
+        assertNull(EndReservationPolicy.limitFakePeerPaddingEnd(448, 459, -5, 167))
+        assertNull(EndReservationPolicy.limitFakePeerPaddingEnd(0, 359, -30, 167))
     }
 
     @Test

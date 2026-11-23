@@ -117,7 +117,17 @@ internal object EndReservationPolicy {
         peerRowLayoutRequested: Boolean,
     ): Boolean = carrierSettled && !peerRowLayoutRequested
 
-
+    fun limitFakePeerPaddingEnd(
+        rowWidthPx: Int,
+        peerContentWidthPx: Int,
+        compactPaddingEndPx: Int,
+        requestedPaddingEndPx: Int,
+    ): Int? {
+        if (rowWidthPx <= 0 || peerContentWidthPx < 0) return null
+        val availableEnd = rowWidthPx.toLong() - peerContentWidthPx
+        if (availableEnd < compactPaddingEndPx) return null
+        return minOf(requestedPaddingEndPx.toLong(), availableEnd).toInt()
+    }
 }
 
 internal object OwnedEntries {
