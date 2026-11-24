@@ -8,7 +8,7 @@ import android.view.ViewTreeObserver
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
-import com.chaners.guiyuan.xposed.network.NativeStatusObserver
+import com.chaners.guiyuan.xposed.network.NativeIslandEvidence
 import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
@@ -2676,8 +2676,7 @@ internal object SysUiPresentationOwner {
                         val slot = NativeStatusSlots.slotOf(child) ?: continue
                         if (slot in representedSlots) continue
                         val state =
-                            NativeStatusObserver
-                                .readIslandVisibilityState(group, child)
+                            NativeIslandEvidence.read(group, child)
                                 ?: continue
                         if (
                             SteadyPeerMirrorPolicy.isIslandHidden(
