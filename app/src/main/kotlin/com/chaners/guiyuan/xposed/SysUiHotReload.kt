@@ -175,15 +175,6 @@ internal object SysUiHotReload {
     ): Boolean =
         transferEligible && featureEnabled && mobileReady && batteryReady
 
-    // API 102 drops the outgoing renderer and native masks before the new
-    // generation can attach. In landscape, skipping the native fallback
-    // relayout exposes restored mobile/battery glyphs at compact-layout
-    // positions during that gap. Keep a native-only, correctly laid-out fallback.
-    internal fun shouldRetainCompactHomeLayoutOnRetire(
-        eligible: Boolean,
-        isLandscape: Boolean,
-    ): Boolean = eligible && !isLandscape
-
     // Failure-only native fallback. Ordinary same-host transfer must not
     // add a second native relayout after the new presentation is ready.
     fun requestNativeHomeRelayoutAfterFailedTransfer(host: Any?) {
