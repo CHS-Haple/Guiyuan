@@ -1445,93 +1445,91 @@ internal object SysUiNetworkSource {
         sinks: Sinks,
         diagnostics: Diagnostics,
     ) {
+        // Missing native evidence has no applied delivery/cache transaction.
+        if (image == null || semantic == null) return
         val onWifiState = sinks.onWifiState
         val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         var deliveredKey: String? = null
         try {
-            if (image != null && semantic != null) {
-                val taggedResId =
-                    (image.tag as? Number)
-                        ?.toInt()
-                        ?.takeIf { it != 0 }
-                val taggedResource =
-                    taggedResId?.let { id -> NetworkNativeEvidence.resourceName(image, id) }
-                val previousTaggedResId =
-                    synchronized(this) {
-                        lastWifiTaggedResources.put(image, taggedResId)
-                    }
-                val hotspotAppliedFallback =
-                    shouldUseAppliedHotspotFallback(
-                        semanticState = semantic.state,
-                        taggedResId = taggedResId,
-                        previousTaggedResId = previousTaggedResId,
-                        taggedResource = taggedResource,
+            val taggedResId =
+                (image.tag as? Number)
+                    ?.toInt()
+                    ?.takeIf { it != 0 }
+            val taggedResource =
+                taggedResId?.let { id -> NetworkNativeEvidence.resourceName(image, id) }
+            val previousTaggedResId =
+                synchronized(this) {
+                    lastWifiTaggedResources.put(image, taggedResId)
+                }
+            val hotspotAppliedFallback =
+                shouldUseAppliedHotspotFallback(
+                    semanticState = semantic.state,
+                    taggedResId = taggedResId,
+                    previousTaggedResId = previousTaggedResId,
+                    taggedResource = taggedResource,
+                )
+            val effective =
+                if (hotspotAppliedFallback) {
+                    WifiSemanticValue(
+                        state =
+                            StatusStateStore.WifiState.Visible(
+                                iconResId = taggedResId,
+                                signal = SysUiSignalParser.wifi(taggedResource),
+                                internetValidated =
+                                    SysUiSignalParser.wifiInternetValidated(
+                                        taggedResource,
+                                    ),
+                            ),
+                        resourceId = taggedResId,
+                        resourceName = taggedResource,
+                        valueType = semantic.valueType + "+AppliedHotspot",
                     )
-                val effective =
-                    if (hotspotAppliedFallback) {
-                        WifiSemanticValue(
-                            state =
-                                StatusStateStore.WifiState.Visible(
-                                    iconResId = taggedResId,
-                                    signal = SysUiSignalParser.wifi(taggedResource),
-                                    internetValidated =
-                                        SysUiSignalParser.wifiInternetValidated(
-                                            taggedResource,
-                                        ),
-                                ),
-                            resourceId = taggedResId,
-                            resourceName = taggedResource,
-                            valueType = semantic.valueType + "+AppliedHotspot",
-                        )
-                    } else {
-                        semantic
-                    }
-                val eventKey =
-                    effective.valueType + ":" +
-                        (effective.resourceId?.toString() ?: "none")
-                val changed =
-                    synchronized(this) {
-                        lastWifiEvents.put(image, eventKey) != eventKey
-                    }
+                } else {
+                    semantic
+                }
+            val eventKey =
+                effective.valueType + ":" +
+                    (effective.resourceId?.toString() ?: "none")
+            val changed =
+                synchronized(this) {
+                    lastWifiEvents.put(image, eventKey) != eventKey
+                }
 
-                if (changed) {
-                    deliveredKey = eventKey
-                    effective.state?.let(onWifiState)
-                    if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                        optionalNativeRead {
-                            onEvent(
-                                "networkPipeline wifi iconEvent " +
-                                "phase=semanticBeforeProceed/viewAfterProceed " +
-                                "viewId=" + NativeStatusIdentity.resourceId(image) +
-                                " classId=" + classId +
-                                " valueType=" + semantic.valueType +
-                                " effectiveType=" + effective.valueType +
-                                " modelResId=" + (semantic.resourceId ?: 0) +
-                                " modelResource=" + (semantic.resourceName ?: "n/a") +
-                                " taggedResId=" + (taggedResId ?: 0) +
-                                " taggedResource=" + (taggedResource ?: "n/a") +
-                                " appliedFallback=" +
-                                if (hotspotAppliedFallback) {
-                                    "hotspot-tag-change"
-                                } else {
-                                    "none"
-                                } +
-                                " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
-                                " presentation=" + NetworkNativeEvidence.wifiPresentationToken(image),
-                            )
-                        }
+            if (changed) {
+                deliveredKey = eventKey
+                effective.state?.let(onWifiState)
+                if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                    optionalNativeRead {
+                        onEvent(
+                            "networkPipeline wifi iconEvent " +
+                            "phase=semanticBeforeProceed/viewAfterProceed " +
+                            "viewId=" + NativeStatusIdentity.resourceId(image) +
+                            " classId=" + classId +
+                            " valueType=" + semantic.valueType +
+                            " effectiveType=" + effective.valueType +
+                            " modelResId=" + (semantic.resourceId ?: 0) +
+                            " modelResource=" + (semantic.resourceName ?: "n/a") +
+                            " taggedResId=" + (taggedResId ?: 0) +
+                            " taggedResource=" + (taggedResource ?: "n/a") +
+                            " appliedFallback=" +
+                            if (hotspotAppliedFallback) {
+                                "hotspot-tag-change"
+                            } else {
+                                "none"
+                            } +
+                            " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
+                            " presentation=" + NetworkNativeEvidence.wifiPresentationToken(image),
+                        )
                     }
                 }
             }
         } catch (error: Throwable) {
             callbackFailed("wifi-icon", error, onRuntimeFailure)
-            if (image != null) {
-                synchronized(this) {
-                    if (lastWifiEvents[image] === deliveredKey) {
-                        // Both caches describe this one applied icon delivery.
-                        lastWifiEvents.remove(image)
-                        lastWifiTaggedResources.remove(image)
-                    }
+            synchronized(this) {
+                if (lastWifiEvents[image] === deliveredKey) {
+                    // Both caches describe this one applied icon delivery.
+                    lastWifiEvents.remove(image)
+                    lastWifiTaggedResources.remove(image)
                 }
             }
         }
