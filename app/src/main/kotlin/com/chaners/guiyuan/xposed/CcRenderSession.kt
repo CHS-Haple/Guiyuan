@@ -83,7 +83,6 @@ internal object CcRenderSession {
     }
 
     @Synchronized
-    @Suppress("TooGenericExceptionCaught")
     fun attach(
         host: ViewGroup,
         onEvent: (String) -> Unit,
@@ -152,6 +151,11 @@ internal object CcRenderSession {
                 initialPanelVisualOwner = panelVisualOwner,
             )
         current = session
+        return startSession(session)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun startSession(session: Session): AttachFailure? {
         return try {
             session.start()
             session.prepareNativePresentation(reused = false)
@@ -251,41 +255,29 @@ internal object CcRenderSession {
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 onProjectionReadinessChanged = onProjectionReadinessChanged,
             )
-        if (
-            result == null &&
-            transferredCompactReady
-        ) {
-            when (SysUiPresentationOwner.adoptCcLayoutAfterHotReload()) {
-                is SysUiPresentationOwner.Result.Active -> {
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        if (isDetailedDiagnosticsEnabled()) {
-                            onEvent(
-                                "controlCenterProjection hotReloadRestore state=adopted-compact " +
-                                    "source=transferred-laid-out-fake-root " +
-                                    "next=native-status-icons-layout-refresh",
-                            )
-                        }
-                    }
-                    return null
-                }
+        if (result != null) return result
 
-                else -> Unit
-            }
-        }
-        if (result == null) {
-            SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) {
-                    onEvent(
+        val adoptedCompact =
+            transferredCompactReady &&
+                SysUiPresentationOwner.adoptCcLayoutAfterHotReload() is SysUiPresentationOwner.Result.Active
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
+            if (isDetailedDiagnosticsEnabled()) {
+                onEvent(
+                    if (adoptedCompact) {
+                        "controlCenterProjection hotReloadRestore state=adopted-compact " +
+                            "source=transferred-laid-out-fake-root " +
+                            "next=native-status-icons-layout-refresh"
+                    } else {
                         "controlCenterProjection hotReloadRestore state=prepared " +
                             "source=transferred-laid-out-fake-root " +
                             "transferredCompactReady=" + transferredCompactReady +
                             " layoutRequestBoundary=outside-native-layout " +
-                            "next=native-status-icons-layout",
-                    )
-                }
+                            "next=native-status-icons-layout"
+                    },
+                )
             }
         }
-        return result
+        return null
     }
 
     internal fun canRestoreAfterReload(
