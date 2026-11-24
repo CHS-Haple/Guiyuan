@@ -103,10 +103,10 @@ internal fun HubNativeBottomBar(
     appearance: Appearance,
     items: List<MainNavItem>,
     pageSelection: HubPagerSelection,
-    os4Glass: Boolean,
+    glassNavigation: Boolean,
 ) {
     NavigationBar(
-        mode = if (os4Glass && appearance.navContent == NavContent.IconOnly) {
+        mode = if (glassNavigation && appearance.navContent == NavContent.IconOnly) {
             NavigationBarDisplayMode.IconOnly
         } else {
             NavigationBarDisplayMode.IconAndText

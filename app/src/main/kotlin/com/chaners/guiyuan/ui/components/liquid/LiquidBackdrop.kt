@@ -97,7 +97,7 @@ internal fun Modifier.liquidRailSurface(
             )
         },
         onDrawFront = {
-            // Match portrait Liquid's panel optics; only the OS3/OS4 silhouette differs.
+            // Match portrait Liquid's panel optics; the rail owns its panel silhouette.
             drawEdgeStroke(shape = shape, stroke = rim.value, alpha = 0.75f)
         },
         onDrawSurface = {

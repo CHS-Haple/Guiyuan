@@ -5,8 +5,8 @@ import com.chaners.guiyuan.settings.NavStyle
 
 internal enum class NavigationAction { HotReload, Search }
 
-/** Use only an OS4 bottom bar with an actual action layout, never a rail or fallback. */
-internal fun hasOs4NavigationActionSlot(
+/** Use only a bottom bar with an actual action layout, never a rail or fallback. */
+internal fun hasNavigationActionSlot(
     appearance: Appearance,
     glassBackdropAvailable: Boolean,
     liquidBackdropAvailable: Boolean,
@@ -35,7 +35,7 @@ internal fun navigationActionFor(
     else -> null
 }
 
-/** A native-morph OS4 Glass/Liquid rail can own an independent search action. */
-internal fun hasOs4RailActionSlot(appearance: Appearance, glassRailActive: Boolean): Boolean =
+/** A native-morph Glass/Liquid rail can own an independent search action. */
+internal fun hasRailActionSlot(appearance: Appearance, glassRailActive: Boolean): Boolean =
     appearance.navEnabled && glassRailActive &&
         (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)

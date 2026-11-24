@@ -101,7 +101,7 @@ internal fun MainHub(
             blocked = restartInProgress || hotReloadInProgress || scopeRequestInProgress || scopeBusy,
         )
     }
-    val os4Glass = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
+    val glassNavigation = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
@@ -137,7 +137,7 @@ internal fun MainHub(
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
     val liquidBackdrop =
         if (liquidMaterialActive) rememberLiquidNavBackdrop(surfaceColor) else null
-    val railBackdrop = if (os4Glass) navBackdrop else liquidBackdrop
+    val railBackdrop = if (glassNavigation) navBackdrop else liquidBackdrop
     // The Glass rail owns geometry; Liquid changes only its material.
     val useGlassRail = railBackdrop != null && canPlaceGlassRail(
         LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets,
@@ -149,8 +149,8 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
-    val actionInRail = hasOs4RailActionSlot(appearance, useGlassRail)
-    val actionInBottomNav = hasOs4NavigationActionSlot(
+    val actionInRail = hasRailActionSlot(appearance, useGlassRail)
+    val actionInBottomNav = hasNavigationActionSlot(
         appearance = appearance,
         glassBackdropAvailable = navBackdrop != null,
         liquidBackdropAvailable = liquidBackdrop != null,
@@ -197,7 +197,7 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (navBackdrop != null && !os4Glass) {
+        if (navBackdrop != null && !glassNavigation) {
             Modifier.floatingNavBlur(
                 backdrop = navBackdrop,
             )
@@ -211,12 +211,12 @@ internal fun MainHub(
         bottomBar = {
             when {
                 useGlassRail || useNativeRail -> Unit
-                os4Glass && navBackdrop != null -> HubGlassBottomBar(
+                glassNavigation && navBackdrop != null -> HubGlassBottomBar(
                     appearance, dark, items, pageSelection, navBackdrop, navigationAction, actionControls,
                 )
                 // Glass without a usable shader falls back to native MIUIX.
-                (os4Glass && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(
-                    appearance, items, pageSelection, os4Glass,
+                (glassNavigation && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(
+                    appearance, items, pageSelection, glassNavigation,
                 )
 
                 liquidBackdrop != null -> HubLiquidBottomBar(

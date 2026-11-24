@@ -58,7 +58,7 @@ internal fun MiniNavigationPreview(
     appearance: Appearance,
     dark: Boolean,
 ) {
-    val os4Glass = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
+    val glassNavigation = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
         appearance.navEnabled && appearance.navStyle.requiresTextureBackdrop && isRuntimeShaderSupported()
     val liquidMaterialActive =
@@ -86,9 +86,9 @@ internal fun MiniNavigationPreview(
         } else {
             0.dp
         }
-    val standardNav = !appearance.navEnabled || (os4Glass && miuixBackdrop == null)
+    val standardNav = !appearance.navEnabled || (glassNavigation && miuixBackdrop == null)
 
-    if (os4Glass && miuixBackdrop != null) {
+    if (glassNavigation && miuixBackdrop != null) {
         MiniGlassNavigationPreview(appearance.navContent, miuixBackdrop)
         return
     }
@@ -100,7 +100,7 @@ internal fun MiniNavigationPreview(
         bottomPadding = if (standardNav) 0.dp else liquidBottomSpace,
     ) {
         when {
-            standardNav -> MiniStandardNavigationPreview(appearance.navContent, os4Glass)
+            standardNav -> MiniStandardNavigationPreview(appearance.navContent, glassNavigation)
             liquidBackdrop != null -> MiniLiquidNavigationPreview(appearance.navContent, appearance.liquidMode, dark, liquidBackdrop)
             else -> MiniFloatingNavigationPreview(appearance.navContent, miuixBackdrop)
         }
@@ -273,8 +273,8 @@ private fun MiniFloatingNavigationPreview(
 }
 
 @Composable
-private fun MiniStandardNavigationPreview(content: NavContent, os4Glass: Boolean) {
-    val showLabel = !os4Glass || content == NavContent.IconAndText
+private fun MiniStandardNavigationPreview(content: NavContent, glassNavigation: Boolean) {
+    val showLabel = !glassNavigation || content == NavContent.IconAndText
     NavigationBar(
         color = MiuixTheme.colorScheme.surface,
         showDivider = true,

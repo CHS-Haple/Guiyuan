@@ -22,8 +22,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
@@ -53,7 +51,7 @@ internal fun SandboxSegmentedField(
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val title = stringResource(field.titleRes)
-        val glass = LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()
+        val glass = isRuntimeShaderSupported()
         val requiredWidth = if (glass) sandboxSegmentedRequiredWidth(options) else 0
 
         if (glass && requiredWidth > constraints.maxWidth) {
@@ -134,7 +132,7 @@ internal fun UiTabRow(
     modifier: Modifier = Modifier,
     inCard: Boolean = true,
 ) {
-    if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+    if (isRuntimeShaderSupported()) {
         // A tab inside the scrolling page must not sample the page's own
         // backdrop: that recorder also contains this tab. Record only its base.
         val surface = if (inCard) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.background
