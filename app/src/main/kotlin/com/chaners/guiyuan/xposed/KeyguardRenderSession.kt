@@ -73,6 +73,7 @@ internal object KeyguardRenderSession {
         if (!sceneEligible) {
             return if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active"
         }
+        // Sessions can only be created or retargeted after this eligibility gate.
         if (retirement.pending != null) return "keyguard-render-release-incomplete"
         val featureEnabled =
             resolveFamilyFeatureEnabled(
@@ -87,7 +88,6 @@ internal object KeyguardRenderSession {
             existing.retarget(
                 scene = scene,
                 featureEnabled = featureEnabled,
-                sceneEligible = sceneEligible,
                 onPresentationReadinessChanged = onPresentationReadinessChanged,
             )
             existing.update(StatusStateStore.snapshot())
@@ -105,7 +105,6 @@ internal object KeyguardRenderSession {
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 scene = scene,
                 initialFeatureEnabled = featureEnabled,
-                initialSceneEligible = sceneEligible,
                 onPresentationReadinessChanged = onPresentationReadinessChanged,
             )
         current = session
@@ -171,17 +170,14 @@ internal object KeyguardRenderSession {
         current?.transitionSourceWitness()
 
     @Synchronized
-    fun detach() {
-        val session = current ?: retirement.pending ?: return
-        if (!session.isScene(Scene.KEYGUARD)) return
-        current = null
-        retire(session)
-    }
+    fun detach() = detachFamily(Scene.KEYGUARD)
 
     @Synchronized
-    fun detachAod() {
+    fun detachAod() = detachFamily(Scene.AOD)
+
+    private fun detachFamily(scene: Scene) {
         val session = current ?: retirement.pending ?: return
-        if (!session.isScene(Scene.AOD)) return
+        if (!session.isScene(scene)) return
         current = null
         retire(session)
     }
@@ -237,25 +233,14 @@ internal object KeyguardRenderSession {
             ",chain=" + chain.joinToString(">")
     }
 
-    private fun resolveSceneOverlayVisible(
+    internal fun resolveOverlayVisible(
         featureEnabled: Boolean,
         nativeHandoffActive: Boolean,
         sceneEligible: Boolean,
     ): Boolean =
         featureEnabled && !nativeHandoffActive && sceneEligible
 
-    internal fun resolveOverlayVisible(
-        featureEnabled: Boolean,
-        nativeHandoffActive: Boolean,
-        aodBlocked: Boolean,
-    ): Boolean =
-        resolveSceneOverlayVisible(
-            featureEnabled = featureEnabled,
-            nativeHandoffActive = nativeHandoffActive,
-            sceneEligible = !aodBlocked,
-        )
-
-    private fun resolveSceneOwnerReady(
+    internal fun resolveOwnerReady(
         featureEnabled: Boolean,
         modelReady: Boolean,
         tintReady: Boolean,
@@ -269,23 +254,6 @@ internal object KeyguardRenderSession {
             layoutReady &&
             hostAttached &&
             sceneEligible
-
-    internal fun resolveOwnerReady(
-        featureEnabled: Boolean,
-        modelReady: Boolean,
-        tintReady: Boolean,
-        layoutReady: Boolean,
-        hostAttached: Boolean,
-        aodBlocked: Boolean,
-    ): Boolean =
-        resolveSceneOwnerReady(
-            featureEnabled = featureEnabled,
-            modelReady = modelReady,
-            tintReady = tintReady,
-            layoutReady = layoutReady,
-            hostAttached = hostAttached,
-            sceneEligible = !aodBlocked,
-        )
 
     private enum class Scene(
         val logPrefix: String,
@@ -314,7 +282,6 @@ internal object KeyguardRenderSession {
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         private var scene: Scene,
         initialFeatureEnabled: Boolean,
-        initialSceneEligible: Boolean,
         private var onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(resolved.host)
@@ -354,7 +321,6 @@ internal object KeyguardRenderSession {
 
         private var featureEnabled = initialFeatureEnabled
         private var nativeHandoffActive = true
-        private var sceneEligible = initialSceneEligible
         private var modelReady = false
         private var tintReady = false
         private var layoutReady = false
@@ -363,11 +329,8 @@ internal object KeyguardRenderSession {
         private var rejectedTintLogged = false
         private var lastPresentationReady = false
 
-        private val overlayHostLayoutListener =
-            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                layoutProbe()
-            }
-        private val carrierLayoutListener =
+        // Each native View owns its registration and independent removal.
+        private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProbe()
             }
@@ -390,16 +353,14 @@ internal object KeyguardRenderSession {
         fun retarget(
             scene: Scene,
             featureEnabled: Boolean,
-            sceneEligible: Boolean,
             onPresentationReadinessChanged: ((Boolean) -> Unit)?,
         ) {
             val changedScene = this.scene != scene
             this.scene = scene
             this.featureEnabled = featureEnabled
-            this.sceneEligible = sceneEligible
             this.onPresentationReadinessChanged = onPresentationReadinessChanged
-            if (changedScene) stopFollowingIconAlpha()
             if (changedScene) {
+                stopFollowingIconAlpha()
                 readyLogged = false
                 rejectedTintLogged = false
             }
@@ -413,35 +374,9 @@ internal object KeyguardRenderSession {
         fun transitionSourceWitness(): TransitionSourceWitness? {
             if (scene != Scene.KEYGUARD) return null
             val motion = statusIcons.get() ?: return null
-            val render = renderView
-            if (
-                !ScenePolicy.retainedTransitionSourceWitnessAvailable(
-                    widthPx = render.width,
-                    heightPx = render.height,
-                    hostAttached =
-                        systemIcons.get()?.isAttachedToWindow == true &&
-                            motion.isAttachedToWindow,
-                )
-            ) {
-                return null
+            return renderView.captureTransitionWitness(motion, systemIcons) {
+                SysUiPresentationOwner.keyguardSlots()
             }
-            if (
-                motion.width <= 0 ||
-                motion.height <= 0
-            ) {
-                return null
-            }
-            return TransitionSourceWitness(
-                renderView = render,
-                logicalLeftPx = 0,
-                logicalTopPx = render.currentLogicalViewportTopInsetPx(),
-                logicalWidthPx = render.currentLogicalViewportWidthPx(),
-                logicalHeightPx = render.currentLogicalViewportHeightPx(),
-                positionHost = systemIcons.get() ?: return null,
-                motionCarrier = motion,
-                representedSlots =
-                    SysUiPresentationOwner.keyguardSlots(),
-            )
         }
 
         fun start() {
@@ -450,8 +385,8 @@ internal object KeyguardRenderSession {
             val carrier = batteryCarrier.get() ?: return
 
             overlayHost.addOnAttachStateChangeListener(this)
-            overlayHost.addOnLayoutChangeListener(overlayHostLayoutListener)
-            carrier.addOnLayoutChangeListener(carrierLayoutListener)
+            overlayHost.addOnLayoutChangeListener(nativeLayoutListener)
+            carrier.addOnLayoutChangeListener(nativeLayoutListener)
             renderView.visibility = View.GONE
             (renderView.parent as? ViewGroup)?.removeView(renderView)
             overlayHost.addView(
@@ -486,8 +421,8 @@ internal object KeyguardRenderSession {
                 },
                 { dispatchPresentationReadiness("stop") },
                 { systemIcons.get()?.removeOnAttachStateChangeListener(this) },
-                { systemIcons.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
-                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { systemIcons.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { (renderView.parent as? ViewGroup)?.removeView(renderView) },
             )
         }
@@ -602,7 +537,7 @@ internal object KeyguardRenderSession {
                     IconAlphaMode.INVERSE -> 1f - nativeAlpha
                     IconAlphaMode.BATTERY_EXIT -> {
                         val battery = batteryView.get()
-                        ScenePolicy.outgoingAodAlpha(
+                        SceneAodBoundaryPolicy.outgoingAodAlpha(
                             nativeToAod =
                                 battery?.let(SysUiKeyguardAodSource::currentState)?.toAod,
                             nativeBatteryAlpha = battery?.alpha,
@@ -633,7 +568,7 @@ internal object KeyguardRenderSession {
                     " toAod=" + update.toAod +
                     " isAodAnimate=" + update.isAodAnimate +
                     " animToAod=" + (update.animToAod ?: "unavailable") +
-                    " sceneEligible=" + sceneEligible +
+                    " sceneEligible=true" +
                     " eligibilityAuthority=scene-policy" +
                     OVERLAY_VISIBLE_LOG_PREFIX + visible +
                     " childAlpha=" + renderView.alpha +
@@ -693,7 +628,7 @@ internal object KeyguardRenderSession {
                     emitEvent {
                         scene.logPrefix + "Tint source=" + source +
                             " applied=#" +
-                            resolved.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                            tintHexDigits(resolved.appliedTint) +
                             " authority=keyguard-battery"
                     }
                 }
@@ -744,21 +679,7 @@ internal object KeyguardRenderSession {
                 }
                 return
             }
-            val topOverflowPx =
-                renderView.requiredTopOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            val bottomOverflowPx =
-                renderView.requiredBottomOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            applyAnchorBounds(
-                bounds = anchorRect,
-                topOverflowPx = topOverflowPx,
-                bottomOverflowPx = bottomOverflowPx,
-            )
+            renderView.layoutAtAnchor(anchorRect)
             layoutReady = true
             if (!layoutLogged) {
                 layoutLogged = true
@@ -812,63 +733,18 @@ internal object KeyguardRenderSession {
             return out.width() > 0 && out.height() > 0
         }
 
-        private fun applyAnchorBounds(
-            bounds: Rect,
-            topOverflowPx: Int,
-            bottomOverflowPx: Int,
-        ) {
-            val physical =
-                VerticalOverflowPolicy.resolve(
-                    logicalTopPx = bounds.top,
-                    logicalHeightPx = bounds.height(),
-                    requestedTopOverflowPx = topOverflowPx,
-                    requestedBottomOverflowPx = bottomOverflowPx,
-                )
-            renderView.setLogicalViewport(
-                widthPx = bounds.width(),
-                heightPx = bounds.height(),
-                topInsetPx = physical.logicalTopInsetPx,
-            )
-            if (
-                renderView.measuredWidth != bounds.width() ||
-                renderView.measuredHeight != physical.physicalHeightPx
-            ) {
-                renderView.measure(
-                    View.MeasureSpec.makeMeasureSpec(
-                        bounds.width(),
-                        View.MeasureSpec.EXACTLY,
-                    ),
-                    View.MeasureSpec.makeMeasureSpec(
-                        physical.physicalHeightPx,
-                        View.MeasureSpec.EXACTLY,
-                    ),
-                )
-            }
-            renderView.layout(
-                bounds.left,
-                physical.physicalTopPx,
-                bounds.right,
-                bounds.bottom + bottomOverflowPx,
-            )
-        }
-
         private fun applyResolvedVisibility(): Boolean {
             val visible =
-                resolveSceneOverlayVisible(
+                resolveOverlayVisible(
                     featureEnabled = featureEnabled,
                     nativeHandoffActive = nativeHandoffActive,
-                    sceneEligible = sceneEligible,
+                    sceneEligible = true,
                 )
             if (visible) {
                 // The sibling combined view follows status icons, not Battery's separate AOD fade.
                 updateRenderAlpha()
             }
-            renderView.visibility = if (visible) View.VISIBLE else View.GONE
-            if (visible) {
-                renderView.invalidate()
-            } else {
-                renderView.clearPendingLatency()
-            }
+            renderView.updateRenderVisibility(visible)
             return visible
         }
 
@@ -877,13 +753,13 @@ internal object KeyguardRenderSession {
             force: Boolean = false,
         ) {
             val ready =
-                resolveSceneOwnerReady(
+                resolveOwnerReady(
                     featureEnabled = featureEnabled,
                     modelReady = modelReady,
                     tintReady = tintReady,
                     layoutReady = layoutReady,
                     hostAttached = systemIcons.get()?.isAttachedToWindow == true,
-                    sceneEligible = sceneEligible,
+                    sceneEligible = true,
                 )
             if (!force && ready == lastPresentationReady) return
             lastPresentationReady = ready
@@ -894,7 +770,7 @@ internal object KeyguardRenderSession {
                     " tintReady=" + tintReady +
                     " layoutReady=" + layoutReady +
                     " featureEnabled=" + featureEnabled +
-                    " sceneEligible=" + sceneEligible +
+                    " sceneEligible=true" +
                     " aodOwned=" + scene.aodOwned
             }
             onPresentationReadinessChanged?.invoke(ready)

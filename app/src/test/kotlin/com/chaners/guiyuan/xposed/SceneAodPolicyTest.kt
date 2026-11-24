@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.FeatureCfg
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,29 +9,37 @@ import org.junit.Test
 class SceneAodPolicyTest {
     @Test
     fun outgoingAodRingFollowsNativeBatteryOnlyAfterModeExit() {
-        assertEquals(1f, ScenePolicy.outgoingAodAlpha(true, 0.85f), 0f)
-        assertEquals(1f, ScenePolicy.outgoingAodAlpha(null, 0f), 0f)
-        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, 0f), 0f)
-        assertEquals(0.6f, ScenePolicy.outgoingAodAlpha(false, 0.4f), 0.0001f)
-        assertEquals(0f, ScenePolicy.outgoingAodAlpha(false, 1f), 0f)
-        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, -0.5f), 0f)
-        assertEquals(0f, ScenePolicy.outgoingAodAlpha(false, 1.5f), 0f)
-        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, null), 0f)
-        assertEquals(1f, ScenePolicy.outgoingAodAlpha(false, Float.NaN), 0f)
+        assertEquals(1f, SceneAodBoundaryPolicy.outgoingAodAlpha(true, 0.85f), 0f)
+        assertEquals(1f, SceneAodBoundaryPolicy.outgoingAodAlpha(null, 0f), 0f)
+        assertEquals(1f, SceneAodBoundaryPolicy.outgoingAodAlpha(false, 0f), 0f)
+        assertEquals(0.6f, SceneAodBoundaryPolicy.outgoingAodAlpha(false, 0.4f), 0.0001f)
+        assertEquals(0f, SceneAodBoundaryPolicy.outgoingAodAlpha(false, 1f), 0f)
+        assertEquals(1f, SceneAodBoundaryPolicy.outgoingAodAlpha(false, -0.5f), 0f)
+        assertEquals(0f, SceneAodBoundaryPolicy.outgoingAodAlpha(false, 1.5f), 0f)
+        assertEquals(1f, SceneAodBoundaryPolicy.outgoingAodAlpha(false, null), 0f)
+        assertEquals(1f, SceneAodBoundaryPolicy.outgoingAodAlpha(false, Float.NaN), 0f)
     }
 
     @Test
     fun homeAodPrearmUsesLiveProjectionDecision() {
         fun projected(feature: Boolean, aod: Boolean, prearmed: Boolean) =
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = feature,
-                keyguardEnabled = false,
-                aodEnabled = aod,
-                toAod = false,
-                isAodAnimate = false,
-                steadySourceScene = SourceScene.HOME,
-                lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homeAodTargetPrearm = prearmed,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    feature = ScenePolicy.AodFeatureFlags(
+                        featureEnabled = feature,
+                        keyguardEnabled = false,
+                        aodEnabled = aod,
+                        toAod = false,
+                        isAodAnimate = false,
+                    ),
+                    scene = ScenePolicy.AodSceneEvidence(
+                        steadySourceScene = SourceScene.HOME,
+                        lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                    ),
+                    home = ScenePolicy.AodHomeEvidence(
+                        homeAodTargetPrearm = prearmed,
+                    ),
+                ),
             )
 
         assertEquals(ScenePolicy.KeyguardAodProjection.AOD, projected(true, true, true))
@@ -49,12 +58,19 @@ class SceneAodPolicyTest {
             source: SourceScene,
         ) =
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = feature,
-                keyguardEnabled = keyguard,
-                aodEnabled = aod,
-                toAod = toAod,
-                isAodAnimate = false,
-                steadySourceScene = source,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    feature = ScenePolicy.AodFeatureFlags(
+                        featureEnabled = feature,
+                        keyguardEnabled = keyguard,
+                        aodEnabled = aod,
+                        toAod = toAod,
+                        isAodAnimate = false,
+                    ),
+                    scene = ScenePolicy.AodSceneEvidence(
+                        steadySourceScene = source,
+                    ),
+
+                ),
             )
 
         assertEquals(
@@ -85,88 +101,75 @@ class SceneAodPolicyTest {
 
     @Test
     fun aodAnimationRoutesFromLatchedStableFamilySceneNotMutableOwnership() {
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.AOD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
-            ),
+        val keyguard = ScenePolicy.StableKeyguardAodScene.KEYGUARD
+        val aod = ScenePolicy.StableKeyguardAodScene.AOD
+        val projectsAod = ScenePolicy.KeyguardAodProjection.AOD
+        val projectsKeyguard = ScenePolicy.KeyguardAodProjection.KEYGUARD
+        val cases = listOf(
+            Triple(false, keyguard, projectsAod),
+            Triple(true, keyguard, projectsAod),
+            Triple(true, aod, projectsKeyguard),
+            Triple(false, aod, projectsKeyguard),
         )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.AOD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = true,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.KEYGUARD,
-            ),
-        )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = true,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.AOD,
-            ),
-        )
-        assertEquals(
-            ScenePolicy.KeyguardAodProjection.KEYGUARD,
-            ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.AOD,
-            ),
-        )
+        cases.forEach { (toAod, stableScene, expected) ->
+            val input = ScenePolicy.KeyguardAodProjectionInputs(
+                feature = ScenePolicy.AodFeatureFlags(
+                    featureEnabled = true,
+                    keyguardEnabled = true,
+                    aodEnabled = true,
+                    toAod = toAod,
+                    isAodAnimate = true,
+                ),
+                scene = ScenePolicy.AodSceneEvidence(
+                    steadySourceScene = SourceScene.KEYGUARD,
+                    lastStableFamilyScene = stableScene,
+                ),
+            )
+            assertEquals(expected, ScenePolicy.resolveKeyguardAodProjection(input))
+        }
     }
-
     @Test
     fun directAodToHomeUnlockCannotReversePrearmAod() {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.HOME,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.AOD,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    feature = ScenePolicy.AodFeatureFlags(
+                        featureEnabled = true,
+                        keyguardEnabled = true,
+                        aodEnabled = true,
+                        toAod = false,
+                        isAodAnimate = true,
+                    ),
+                    scene = ScenePolicy.AodSceneEvidence(
+                        steadySourceScene = SourceScene.HOME,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.AOD,
+                        homePresentationOwned = true,
+                    ),
+
+                ),
             ),
         )
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
-                toAod = true,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.HOME,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    feature = ScenePolicy.AodFeatureFlags(
+                        featureEnabled = true,
+                        keyguardEnabled = true,
+                        aodEnabled = true,
+                        toAod = true,
+                        isAodAnimate = true,
+                    ),
+                    scene = ScenePolicy.AodSceneEvidence(
+                        steadySourceScene = SourceScene.HOME,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        homePresentationOwned = true,
+                    ),
+
+                ),
             ),
         )
     }
@@ -176,8 +179,7 @@ class SceneAodPolicyTest {
     fun nativeAodTargetCanPrearmHomeBeforeAnimationFlagCatchesUp() {
         assertTrue(
             ScenePolicy.shouldArmHomeAodTargetPrearm(
-                featureEnabled = true,
-                aodEnabled = true,
+                settings = FeatureCfg(enabled = true, aod = true),
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
@@ -188,18 +190,30 @@ class SceneAodPolicyTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = false,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = false,
-                nativeToLockScreenTarget = false,
-                fullAodTargetSourceReady = true,
-                homeAodTargetPrearm = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    feature = ScenePolicy.AodFeatureFlags(
+                        featureEnabled = true,
+                        keyguardEnabled = false,
+                        aodEnabled = true,
+                        toAod = false,
+                        isAodAnimate = false,
+                    ),
+                    scene = ScenePolicy.AodSceneEvidence(
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        homePresentationOwned = false,
+                    ),
+                    signal = ScenePolicy.AodNativeSignalEvidence(
+                        nativeToLockScreenTarget = false,
+                    ),
+                    boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                        fullAodTargetSourceReady = true,
+                    ),
+                    home = ScenePolicy.AodHomeEvidence(
+                        homeAodTargetPrearm = true,
+                    ),
+                ),
             ),
         )
     }
@@ -209,29 +223,43 @@ class SceneAodPolicyTest {
         assertEquals(
             ScenePolicy.KeyguardAodProjection.NATIVE,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = false,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    feature = ScenePolicy.AodFeatureFlags(
+                        featureEnabled = true,
+                        keyguardEnabled = false,
+                        aodEnabled = true,
+                        toAod = false,
+                        isAodAnimate = false,
+                    ),
+                    scene = ScenePolicy.AodSceneEvidence(
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        homePresentationOwned = true,
+                    ),
+
+                ),
             ),
         )
         assertEquals(
             ScenePolicy.KeyguardAodProjection.AOD,
             ScenePolicy.resolveKeyguardAodProjection(
-                featureEnabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
-                toAod = false,
-                isAodAnimate = true,
-                steadySourceScene = SourceScene.KEYGUARD,
-                lastStableFamilyScene =
-                    ScenePolicy.StableKeyguardAodScene.UNKNOWN,
-                homePresentationOwned = true,
+                ScenePolicy.KeyguardAodProjectionInputs(
+                    feature = ScenePolicy.AodFeatureFlags(
+                        featureEnabled = true,
+                        keyguardEnabled = false,
+                        aodEnabled = true,
+                        toAod = false,
+                        isAodAnimate = true,
+                    ),
+                    scene = ScenePolicy.AodSceneEvidence(
+                        steadySourceScene = SourceScene.KEYGUARD,
+                        lastStableFamilyScene =
+                            ScenePolicy.StableKeyguardAodScene.UNKNOWN,
+                        homePresentationOwned = true,
+                    ),
+
+                ),
             ),
         )
     }
@@ -246,9 +274,7 @@ class SceneAodBoundaryTest {
             target: Boolean? = true,
             aodEnabled: Boolean = false,
         ) = ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
-            featureEnabled = true,
-            keyguardEnabled = true,
-            aodEnabled = aodEnabled,
+            settings = FeatureCfg(enabled = true, keyguard = true, aod = aodEnabled),
             lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.AOD,
             nativeToLockScreenTarget = target,
             statusIconsPresentationAlpha = alpha,
@@ -273,9 +299,7 @@ class SceneAodBoundaryTest {
             animated: Boolean = true,
             aodEnabled: Boolean = false,
         ) = ScenePolicy.shouldHoldKeyguardForAodBattery(
-            featureEnabled = true,
-            keyguardEnabled = true,
-            aodEnabled = aodEnabled,
+            settings = FeatureCfg(enabled = true, keyguard = true, aod = aodEnabled),
             sourceScene = SourceScene.KEYGUARD,
             nativeToLockScreenTarget = target,
             batteryInAodMode = batteryAod,
@@ -293,9 +317,7 @@ class SceneAodBoundaryTest {
         assertFalse(hold(aodEnabled = true))
         assertFalse(
             ScenePolicy.shouldHoldKeyguardForAodBattery(
-                featureEnabled = false,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = false, keyguard = true, aod = false),
                 sourceScene = SourceScene.KEYGUARD,
                 nativeToLockScreenTarget = false,
                 batteryInAodMode = false,
@@ -306,9 +328,7 @@ class SceneAodBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldHoldKeyguardForAodBattery(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 sourceScene = SourceScene.KEYGUARD,
                 nativeToLockScreenTarget = false,
                 batteryInAodMode = false,
@@ -319,9 +339,7 @@ class SceneAodBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldHoldKeyguardForAodBattery(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 sourceScene = SourceScene.HOME,
                 nativeToLockScreenTarget = false,
                 batteryInAodMode = false,
@@ -335,14 +353,14 @@ class SceneAodBoundaryTest {
     @Test
     fun pendingAodTargetRejectsPreviousKeyguardStableSignal() {
         assertFalse(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = false,
                 toAod = false,
                 isAodAnimate = false,
             ),
         )
         assertTrue(
-            ScenePolicy.fullAodPendingTargetReachedStableState(
+            SceneAodBoundaryPolicy.fullAodPendingTargetReachedStableState(
                 pendingTargetToLockScreen = false,
                 toAod = true,
                 isAodAnimate = false,
@@ -354,9 +372,7 @@ class SceneAodBoundaryTest {
     fun keyguardBoundaryHandoffStopsWhenNativeTargetChanges() {
         val eligible = { target: Boolean? ->
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = target,
             )

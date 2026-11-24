@@ -7,16 +7,12 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import com.chaners.guiyuan.settings.FEATURE_AOD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_AOD_KEY
 import com.chaners.guiyuan.settings.FEATURE_ENABLED_KEY
 import com.chaners.guiyuan.settings.FEATURE_CHANGED_AT_NS_KEY
 import com.chaners.guiyuan.settings.FEATURE_PREFS
-import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_DEFAULT
 import com.chaners.guiyuan.settings.FEATURE_KEYGUARD_KEY
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_KEY
-import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
-import com.chaners.guiyuan.settings.validLowBatteryThreshold
 import com.chaners.guiyuan.settings.COMBINED_STATUS_VISUAL_PREFS_NAME
 import com.chaners.guiyuan.settings.DIAG_LEVEL_KEY
 import com.chaners.guiyuan.settings.DIAG_PREFS
@@ -27,9 +23,11 @@ import com.chaners.guiyuan.settings.SETTINGS_ENTRY_ICON_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_KEY
 import com.chaners.guiyuan.settings.SETTINGS_ENTRY_PREFS
 import com.chaners.guiyuan.settings.isFeatureKey
+import com.chaners.guiyuan.settings.isSettingsEntryKey
 import com.chaners.guiyuan.settings.isVisualPreferenceKey
 import com.chaners.guiyuan.settings.migrateVisualPrefsIfNeeded
 import com.chaners.guiyuan.settings.putVisualCfg
+import com.chaners.guiyuan.settings.readFeatureCfg
 import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
@@ -110,41 +108,25 @@ class GyApplication :
             }
         }
 
-    private val diagListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isDiagKey(key)) {
-                xposedService?.let(::syncRuntime)
+    private val runtimePrefsListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+            val runtimeKey = when {
+                prefs === diagPrefs -> isDiagKey(key)
+                prefs === featurePrefs -> isFeatureKey(key)
+                prefs === visualPrefs -> isVisualPreferenceKey(key)
+                prefs === settingsPrefs -> isSettingsEntryKey(key)
+                else -> false
             }
-        }
-
-    private val featListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isFeatureKey(key)) {
-                xposedService?.let(::syncRuntime)
-            }
-        }
-
-    private val visualListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (isVisualPreferenceKey(key)) {
-                xposedService?.let(::syncRuntime)
-            }
-        }
-
-    private val settingsListener =
-        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY) {
-                xposedService?.let(::syncRuntime)
-            }
+            if (runtimeKey) xposedService?.let(::syncRuntime)
         }
 
     override fun onCreate() {
         super.onCreate()
         migrateVisualPrefsIfNeeded(visualPrefs)
-        diagPrefs.registerOnSharedPreferenceChangeListener(diagListener)
-        featurePrefs.registerOnSharedPreferenceChangeListener(featListener)
-        visualPrefs.registerOnSharedPreferenceChangeListener(visualListener)
-        settingsPrefs.registerOnSharedPreferenceChangeListener(settingsListener)
+        diagPrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
+        featurePrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
+        visualPrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
+        settingsPrefs.registerOnSharedPreferenceChangeListener(runtimePrefsListener)
         XposedServiceHelper.registerListener(this)
         handler.postDelayed(
             bindTimeout,
@@ -183,10 +165,10 @@ class GyApplication :
 
     override fun onTerminate() {
         sandbox.stop()
-        diagPrefs.unregisterOnSharedPreferenceChangeListener(diagListener)
-        featurePrefs.unregisterOnSharedPreferenceChangeListener(featListener)
-        visualPrefs.unregisterOnSharedPreferenceChangeListener(visualListener)
-        settingsPrefs.unregisterOnSharedPreferenceChangeListener(settingsListener)
+        diagPrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
+        featurePrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
+        visualPrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
+        settingsPrefs.unregisterOnSharedPreferenceChangeListener(runtimePrefsListener)
         handler.removeCallbacks(bindTimeout)
         xposedService = null
         lastMirror = null
@@ -227,7 +209,7 @@ class GyApplication :
 
     private fun requestScope(pkg: String, onComplete: (Boolean) -> Unit): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingScope.value != null || pendingReload.value != null || ScopeRestart.isRunning) return false
+        if (service.apiVersion < 102 || !canRestartScopes()) return false
 
         val inScope = runCatching { pkg in service.scope }
             .getOrElse { return false }
@@ -280,7 +262,7 @@ class GyApplication :
 
     fun hotReloadSysUi(): Boolean {
         val service = xposedService ?: return false
-        if (service.apiVersion < 102 || pendingReload.value != null || pendingScope.value != null || ScopeRestart.isRunning) return false
+        if (service.apiVersion < 102 || !canRestartScopes()) return false
 
         val target =
             runCatching {
@@ -345,16 +327,7 @@ class GyApplication :
                         DIAG_LEVEL_KEY,
                         DiagLevel.General.name,
                     ) ?: DiagLevel.General.name,
-                feature =
-                    FeatureCfg(
-                        enabled = featurePrefs.getBoolean(FEATURE_ENABLED_KEY, true),
-                        keyguard =
-                            featurePrefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
-                        aod = featurePrefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
-                        lowBatteryThreshold = validLowBatteryThreshold(
-                            featurePrefs.getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT),
-                        ),
-                    ),
+                feature = featurePrefs.readFeatureCfg(),
                 changedAtNs = featurePrefs.getLong(FEATURE_CHANGED_AT_NS_KEY, 0L),
                 visual = visualPrefs.readVisualCfg(),
             )

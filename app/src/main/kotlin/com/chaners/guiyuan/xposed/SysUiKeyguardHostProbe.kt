@@ -4,7 +4,6 @@ import android.view.View
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.network.SysUiCarrierMetrics
 import java.lang.ref.WeakReference
-import java.lang.reflect.Field
 
 /**
  * Diagnostic only. It reuses the scene callback; no extra hook.
@@ -12,8 +11,6 @@ import java.lang.reflect.Field
  * CC `realSystemIcons` is context only; it doesn't decide Keyguard readiness.
  */
 internal object SysUiKeyguardHostProbe {
-    private const val KEYGUARD_HOST_CLASS =
-        "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
 
     private var confirmedHost = WeakReference<ViewGroup>(null)
 
@@ -22,7 +19,10 @@ internal object SysUiKeyguardHostProbe {
         if (update.surface != SysUiSceneSource.Surface.KEYGUARD) return null
 
         val host =
-            findAncestor(update.sourceView, KEYGUARD_HOST_CLASS) as? ViewGroup
+            SysUiKeyguardHostResolver.findAncestor(
+                update.sourceView,
+                SysUiKeyguardHostResolver.KEYGUARD_HOST_CLASS,
+            ) as? ViewGroup
                 ?: return null
         if (confirmedHost.get() === host) return null
 
@@ -180,20 +180,6 @@ internal object SysUiKeyguardHostProbe {
         }
     }
 
-    private fun findAncestor(
-        start: View,
-        className: String,
-    ): View? {
-        var current: View? = start
-        while (current != null) {
-            if (current.javaClass.name == className) {
-                return current
-            }
-            current = current.parent as? View
-        }
-        return null
-    }
-
     private fun readView(
         owner: Any,
         fieldName: String,
@@ -204,27 +190,6 @@ internal object SysUiKeyguardHostProbe {
         owner: Any,
         fieldName: String,
     ): Any? =
-        findField(owner.javaClass, fieldName)
+        SysUiKeyguardHostResolver.findField(owner.javaClass, fieldName)
             ?.let { field -> SysUiPresentationRuntime.optionalNativeRead { field.get(owner) } }
-
-    private fun findField(
-        type: Class<*>,
-        name: String,
-    ): Field? {
-        var current: Class<*>? = type
-        while (current != null) {
-            val candidate = current
-            val field =
-                SysUiPresentationRuntime.optionalNativeRead {
-                    candidate
-                        .getDeclaredField(name)
-                        .apply { isAccessible = true }
-                }
-            if (field != null) {
-                return field
-            }
-            current = candidate.superclass
-        }
-        return null
-    }
 }

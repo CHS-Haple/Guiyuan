@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Column
@@ -94,16 +95,16 @@ private fun AgreementScreen(document: AgreementDocument, onBack: () -> Unit) {
 
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
-internal fun AgreementSheetBody(document: AgreementDocument) {
+internal fun AgreementSheetBody(document: AgreementDocument, contentPadding: PaddingValues) {
     key(document) {
         val scrollState = rememberScrollState()
         Box(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.fillMaxWidth().verticalScroll(scrollState)) {
+            Column(modifier = Modifier.fillMaxWidth().verticalScroll(scrollState).padding(contentPadding)) {
                 AgreementArticle(document)
             }
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(scrollState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(contentPadding),
             )
         }
     }

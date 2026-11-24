@@ -9,6 +9,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.AppPlatform
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
@@ -30,10 +32,14 @@ import com.chaners.guiyuan.settings.AppearanceRepo
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
-import com.chaners.guiyuan.ui.LocalUiStyle
+import com.chaners.guiyuan.ui.AppSandbox
+import com.chaners.guiyuan.ui.AppSettingsActions
 import com.chaners.guiyuan.ui.GyApp
+import com.chaners.guiyuan.ui.screens.AppearanceThemeActions
+import com.chaners.guiyuan.ui.screens.AppearanceStyleActions
+import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
+import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 import kotlinx.coroutines.launch
@@ -72,62 +78,72 @@ class MainActivity : ComponentActivity() {
         val initialLang = AppPlatform.language(this)
         val initialIconHidden = AppPlatform.iconHidden(this)
 
-        setContent {
-            val appearance by repo.settings.collectAsState(initial = Appearance())
-            val sandboxActive by (application as GyApplication).sandboxActive.collectAsState()
-            val scope = rememberCoroutineScope()
-            val sysDark = isSystemInDarkTheme()
-            val dark =
-                when (appearance.theme) {
-                    ThemeMode.Light -> false
-                    ThemeMode.Dark -> true
-                    ThemeMode.System -> sysDark
-                }
-            // Sandbox only overrides this Activity window; never the saved app theme.
-            var previewBarDark by remember { mutableStateOf<Boolean?>(null) }
-            var lang by remember {
-                mutableStateOf(initialLang)
-            }
-            var iconHidden by remember {
-                mutableStateOf(initialIconHidden)
-            }
+        setContent { AppContent(repo, initialLang, initialIconHidden) }
+    }
 
-            DisposableEffect(previewBarDark, dark) {
-                updateBarIcons(previewBarDark ?: dark)
-                onDispose { }
+    @Composable
+    private fun AppContent(
+        repo: AppearanceRepo,
+        initialLang: AppLang,
+        initialIconHidden: Boolean,
+    ) {
+        val appearance by repo.settings.collectAsState(initial = Appearance())
+        val sandboxActive by (application as GyApplication).sandboxActive.collectAsState()
+        val scope = rememberCoroutineScope()
+        val sysDark = isSystemInDarkTheme()
+        val dark =
+            when (appearance.theme) {
+                ThemeMode.Light -> false
+                ThemeMode.Dark -> true
+                ThemeMode.System -> sysDark
             }
+        // Sandbox only overrides this Activity window; never the saved app theme.
+        var previewBarDark by remember { mutableStateOf<Boolean?>(null) }
+        var lang by remember {
+            mutableStateOf(initialLang)
+        }
+        var iconHidden by remember {
+            mutableStateOf(initialIconHidden)
+        }
 
-            val systemDensity = LocalDensity.current
-            val uiDensity = remember(systemDensity, appearance.uiScalePercent) {
-                Density(
-                    systemDensity.density * appearance.uiScalePercent / 100f,
-                    systemDensity.fontScale,
-                )
+        DisposableEffect(previewBarDark, dark) {
+            updateBarIcons(previewBarDark ?: dark)
+            onDispose { }
+        }
+
+        val systemDensity = LocalDensity.current
+        val uiDensity = remember(systemDensity, appearance.uiScalePercent) {
+            Density(
+                systemDensity.density * appearance.uiScalePercent / 100f,
+                systemDensity.fontScale,
+            )
+        }
+        // Match window DP dimensions to the same density used by the UI.
+        // MIUIX sheets cap their height against WindowInfo.containerDpSize.
+        val nativeWindow = LocalWindowInfo.current
+        val uiWindow = remember(nativeWindow, uiDensity) {
+            object : WindowInfo by nativeWindow {
+                override val containerDpSize: DpSize
+                    get() {
+                        val size = nativeWindow.containerSize
+                        return DpSize(
+                            (size.width / uiDensity.density).dp,
+                            (size.height / uiDensity.density).dp,
+                        )
+                    }
             }
-            // Match window DP dimensions to the same density used by the UI.
-            // MIUIX sheets cap their height against WindowInfo.containerDpSize.
-            val nativeWindow = LocalWindowInfo.current
-            val uiWindow = remember(nativeWindow, uiDensity) {
-                object : WindowInfo by nativeWindow {
-                    override val containerDpSize: DpSize
-                        get() {
-                            val size = nativeWindow.containerSize
-                            return DpSize(
-                                (size.width / uiDensity.density).dp,
-                                (size.height / uiDensity.density).dp,
-                            )
-                        }
-                }
-            }
-            CompositionLocalProvider(
-                LocalDensity provides uiDensity,
-                LocalWindowInfo provides uiWindow,
-                LocalUiStyle provides appearance.uiStyle,
-                LocalTopBarProgressiveBlur provides appearance.topBarProgressiveBlur,
-            ) {
-                GyApp(
-                    appearance = appearance,
-                    dark = dark,
+        }
+        CompositionLocalProvider(
+            LocalDensity provides uiDensity,
+            LocalWindowInfo provides uiWindow,
+            LocalTopBarProgressiveBlur provides appearance.topBarProgressiveBlur,
+        ) {
+            GyApp(
+                appearance = appearance,
+                dark = dark,
+                lang = lang,
+                iconHidden = iconHidden,
+                sandbox = AppSandbox(
                     onPreviewThemeChange = { previewBarDark = it },
                     sandboxActive = sandboxActive,
                     onSandboxToggle = { enabled, state ->
@@ -136,49 +152,57 @@ class MainActivity : ComponentActivity() {
                     },
                     onSandboxUpdate = { (application as GyApplication).updateSandbox(it) },
                     onSandboxStop = { (application as GyApplication).stopSandbox() },
-                    lang = lang,
-                    iconHidden = iconHidden,
+                ),
+                actions = AppSettingsActions(
                     onHotReload = {
                         (application as GyApplication).hotReloadSysUi()
                     },
-                    onUiStyleChange = { style: UiStyle ->
-                        scope.launch { repo.setUiStyle(style) }
-                    },
-                    onTopBarProgressiveBlurChange = { enabled ->
-                        scope.launch { repo.setTopBarProgressiveBlur(enabled) }
-                    },
-                    onThemeChange = { mode ->
-                        scope.launch { repo.setTheme(mode) }
-                    },
-                    onDynamicChange = { enabled ->
-                        scope.launch { repo.setDynamicColor(enabled) }
-                    },
-                    onColorSpecChange = { spec: ThemeColorSpec? ->
-                        scope.launch { repo.setColorSpec(spec) }
-                    },
-                    onPaletteStyleChange = { style: ThemePaletteStyle ->
-                        scope.launch { repo.setPaletteStyle(style) }
-                    },
-                    onNavEnabledChange = { enabled ->
-                        scope.launch { repo.setNavEnabled(enabled) }
-                    },
-                    onNavTouchExtensionChange = { enabled ->
-                        scope.launch { repo.setNavTouchExtension(enabled) }
-                    },
-                    onNavStyleChange = { style: NavStyle ->
-                        scope.launch { repo.setNavStyle(style) }
-                    },
-                    onNavContentChange = { content: NavContent ->
-                        scope.launch { repo.setNavContent(content) }
-                    },
-                    onLiquidModeChange = { mode: LiquidMode ->
-                        scope.launch { repo.setLiquidMode(mode) }
-                    },
+                    themeActions = AppearanceThemeActions(
+                        onThemeChange = { mode ->
+                            scope.launch { repo.setTheme(mode) }
+                        },
+                        onDynamicChange = { enabled ->
+                            scope.launch { repo.setDynamicColor(enabled) }
+                        },
+                        onCustomPaletteChange = { enabled ->
+                            scope.launch { repo.setCustomPalette(enabled) }
+                        },
+                        onColorSpecChange = { spec: ThemeColorSpec ->
+                            scope.launch { repo.setColorSpec(spec) }
+                        },
+                        onPaletteStyleChange = { style: ThemePaletteStyle ->
+                            scope.launch { repo.setPaletteStyle(style) }
+                        },
+                    ),
+                    visualActions = AppearanceVisualActions(
+                        style = AppearanceStyleActions(
+                            onTopBarProgressiveBlurChange = { enabled ->
+                                scope.launch { repo.setTopBarProgressiveBlur(enabled) }
+                            },
+                            onUiScaleChange = { percent ->
+                                scope.launch { repo.setUiScalePercent(percent) }
+                            },
+                        ),
+                        navigation = AppearanceNavigationActions(
+                            onNavEnabledChange = { enabled ->
+                                scope.launch { repo.setNavEnabled(enabled) }
+                            },
+                            onNavStyleChange = { style: NavStyle ->
+                                scope.launch { repo.setNavStyle(style) }
+                            },
+                            onNavTouchExtensionChange = { enabled ->
+                                scope.launch { repo.setNavTouchExtension(enabled) }
+                            },
+                            onNavContentChange = { content: NavContent ->
+                                scope.launch { repo.setNavContent(content) }
+                            },
+                            onLiquidModeChange = { mode: LiquidMode ->
+                                scope.launch { repo.setLiquidMode(mode) }
+                            },
+                        ),
+                    ),
                     onSwipeBackChange = { enabled ->
                         scope.launch { repo.setSwipeBack(enabled) }
-                    },
-                    onUiScaleChange = { percent ->
-                        scope.launch { repo.setUiScalePercent(percent) }
                     },
                     onLangChange = { language ->
                         if (language != lang) {
@@ -190,8 +214,8 @@ class MainActivity : ComponentActivity() {
                         AppPlatform.setIconHidden(this, hidden)
                         iconHidden = hidden
                     },
-                )
-            }
+                ),
+            )
         }
     }
 

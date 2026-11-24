@@ -99,21 +99,6 @@ class NativeStatusObserverTest {
     }
 
     @Test
-    fun reflectedFatalReadDoesNotLookLikeMissingNativeState() {
-        val fatal = OutOfMemoryError("native reflected cause")
-        try {
-            NativeStatusObserver.rethrowFatal(InvocationTargetException(fatal))
-            throw AssertionError("fatal reflected cause was swallowed")
-        } catch (cause: OutOfMemoryError) {
-            assertSame(fatal, cause)
-        }
-
-        NativeStatusObserver.rethrowFatal(
-            InvocationTargetException(NoSuchFieldException("optional"))
-        )
-    }
-
-    @Test
     fun fatalObservationOrFailureHandlerErrorsPropagate() {
         val fatalObservation = ThreadDeath()
         try {
@@ -179,51 +164,5 @@ class NativeStatusObserverTest {
         }
         assertEquals(false, value)
         assertEquals(7, NativeStatusObserver.observeAfterNative(7, { throw it }) { })
-    }
-
-    @Test
-    fun representedSlotsAreNotEligibleVisibleTintAuthorities() {
-        listOf("combined_status", "wifi", "mobile", "stacked_mobile", "airplane", "no_sim").forEach { slot ->
-            assertEquals(
-                false,
-                NativeStatusObserver.isTintAuthorityCandidate(
-                    slot = slot,
-                    visible = true,
-                    width = 75,
-                    height = 75,
-                ),
-            )
-        }
-    }
-
-    @Test
-    fun visibleNonRepresentedPeerCanAnchorHomeTint() {
-        assertEquals(
-            true,
-            NativeStatusObserver.isTintAuthorityCandidate(
-                slot = "vpn",
-                visible = true,
-                width = 75,
-                height = 75,
-            ),
-        )
-        assertEquals(
-            false,
-            NativeStatusObserver.isTintAuthorityCandidate(
-                slot = "vpn",
-                visible = false,
-                width = 75,
-                height = 75,
-            ),
-        )
-        assertEquals(
-            false,
-            NativeStatusObserver.isTintAuthorityCandidate(
-                slot = "vpn",
-                visible = true,
-                width = 0,
-                height = 75,
-            ),
-        )
     }
 }

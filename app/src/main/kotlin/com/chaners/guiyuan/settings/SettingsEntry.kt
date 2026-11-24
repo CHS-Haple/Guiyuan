@@ -1,15 +1,15 @@
 package com.chaners.guiyuan.settings
 
 import android.content.Context
-import android.content.SharedPreferences
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal const val SETTINGS_ENTRY_PREFS = "settings_entry"
 internal const val SETTINGS_ENTRY_KEY = "settings_entry_position"
 internal const val SETTINGS_ENTRY_ICON_KEY = "settings_entry_icon"
+
+// Android R+ emits a null key for Editor.clear(); both app observers need it.
+internal fun isSettingsEntryKey(key: String?): Boolean =
+    key == null || key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY
 
 internal enum class SettingsEntry {
     Disabled, Top, Middle, Bottom;
@@ -33,27 +33,21 @@ internal data class SettingsEntryCfg(
 )
 
 internal object SettingsEntryPrefs {
-    fun observe(ctx: Context): Flow<SettingsEntryCfg> = callbackFlow {
+    fun observe(ctx: Context): Flow<SettingsEntryCfg> {
         val prefs = ctx.applicationContext.getSharedPreferences(
             SETTINGS_ENTRY_PREFS, Context.MODE_PRIVATE,
         )
-        fun emitCurrent() {
-            trySend(
+        return observePreferenceChanges(
+            preferences = prefs,
+            matchesKey = ::isSettingsEntryKey,
+            snapshot = {
                 SettingsEntryCfg(
                     entry = SettingsEntry.from(prefs.getInt(SETTINGS_ENTRY_KEY, 0)),
                     icon = SettingsEntryIcon.from(prefs.getInt(SETTINGS_ENTRY_ICON_KEY, 0)),
-                ),
-            )
-        }
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == null || key == SETTINGS_ENTRY_KEY || key == SETTINGS_ENTRY_ICON_KEY) {
-                emitCurrent()
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        emitCurrent()
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }.distinctUntilChanged()
+                )
+            },
+        )
+    }
 
     fun get(ctx: Context): SettingsEntry =
         SettingsEntry.from(

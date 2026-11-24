@@ -23,9 +23,12 @@ internal class LiquidDragMotion(
     initialValue: Float,
     private val range: ClosedRange<Float>,
     visibilityThreshold: Float,
-    initialScale: Float,
+    private val initialScale: Float,
     private val pressedScale: Float,
+    private val canDrag: (Offset) -> Boolean,
+    private val onStarted: LiquidDragMotion.(Offset) -> Unit,
     private val onStopped: LiquidDragMotion.() -> Unit,
+    private val onCancelled: LiquidDragMotion.() -> Unit,
     private val onDrag: LiquidDragMotion.(IntSize, Offset) -> Unit,
 ) {
     private val valueSpec = spring(1f, 1000f, visibilityThreshold)
@@ -34,6 +37,8 @@ internal class LiquidDragMotion(
     private val scaleXSpec = spring(0.6f, 250f, 0.001f)
     private val scaleYSpec = spring(0.7f, 250f, 0.001f)
 
+    // The UI gesture's requested destination is synchronous; Animatable schedules frames later.
+    private var requestedValue = initialValue.coerceIn(range)
     private val valueAnim = Animatable(initialValue, visibilityThreshold)
     private val velocityAnim = Animatable(0f, 5f)
     private val pressAnim = Animatable(0f, 0.001f)
@@ -45,7 +50,7 @@ internal class LiquidDragMotion(
     private var releaseJob: Job? = null
 
     val value: Float get() = valueAnim.value
-    val targetValue: Float get() = valueAnim.targetValue
+    val targetValue: Float get() = requestedValue
     val pressProgress: Float get() = pressAnim.value
     val scaleX: Float get() = scaleXAnim.value
     val scaleY: Float get() = scaleYAnim.value
@@ -54,7 +59,8 @@ internal class LiquidDragMotion(
     val modifier: Modifier =
         Modifier.pointerInput(Unit) {
             inspectLiquidDrag(
-                onStart = {
+                onStart = { down ->
+                    onStarted(down.position)
                     press()
                 },
                 onEnd = {
@@ -62,11 +68,13 @@ internal class LiquidDragMotion(
                     release()
                 },
                 onCancel = {
-                    onStopped()
+                    onCancelled()
                     release()
                 },
-            ) { _, dragAmount ->
-                onDrag(size, dragAmount)
+            ) { change, dragAmount ->
+                if (canDrag(change.position) && canDrag(change.previousPosition)) {
+                    onDrag(size, dragAmount)
+                }
             }
         }
 
@@ -92,13 +100,14 @@ internal class LiquidDragMotion(
                     .first()
             }
             launch { pressAnim.animateTo(0f, pressSpec) }
-            launch { scaleXAnim.animateTo(1f, scaleXSpec) }
-            launch { scaleYAnim.animateTo(1f, scaleYSpec) }
+            launch { scaleXAnim.animateTo(initialScale, scaleXSpec) }
+            launch { scaleYAnim.animateTo(initialScale, scaleYSpec) }
         }
     }
 
     fun updateValue(value: Float) {
         val target = value.coerceIn(range)
+        requestedValue = target
         scope.launch {
             valueAnim.animateTo(target, valueSpec) {
                 updateVelocity()
@@ -107,10 +116,11 @@ internal class LiquidDragMotion(
     }
 
     fun animateToValue(value: Float) {
+        val target = value.coerceIn(range)
+        requestedValue = target
         scope.launch {
             mutex.mutate {
                 press()
-                val target = value.coerceIn(range)
                 launch { valueAnim.animateTo(target, valueSpec) }
                 if (velocity != 0f) {
                     launch { velocityAnim.animateTo(0f, velocitySpec) }

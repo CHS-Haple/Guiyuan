@@ -100,14 +100,7 @@ private fun AppearanceMiniPreview(
                 MiniPreviewHeader()
                 MiniSwitchSettingPreview()
                 MiniSliderSettingPreview()
-                MiniNavigationPreview(
-                    uiStyle = appearance.uiStyle,
-                    floating = appearance.navEnabled,
-                    style = appearance.navStyle,
-                    content = appearance.activeNavContent,
-                    liquidMode = appearance.liquidMode,
-                    dark = dark,
-                )
+                MiniNavigationPreview(appearance = appearance, dark = dark)
             }
         }
     }

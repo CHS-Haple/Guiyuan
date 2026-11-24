@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -15,6 +14,7 @@ internal object KeyguardIconTransitionSource {
     private const val HOOK_ID =
         "combinedstatus.keyguardAod.animateIconContainer"
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
@@ -24,21 +24,17 @@ internal object KeyguardIconTransitionSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val viewClass = Class.forName(KEYGUARD_VIEW_CLASS, false, classLoader)
-        val candidates =
-            viewClass.declaredMethods.filter { method ->
-                method.name == ANIMATE_ICON_CONTAINER_METHOD &&
-                    matchesSignature(
-                        parameterTypes = method.parameterTypes,
-                        returnType = method.returnType,
-                    )
-            }
         val method =
-            candidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "keyguard-status-icon-animation-contract-" +
-                        if (candidates.isEmpty()) "missing" else "ambiguous",
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                viewClass,
+                ANIMATE_ICON_CONTAINER_METHOD,
+                "keyguard-status-icon-animation-contract-",
+            ) { method ->
+                matchesSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
                 )
+            }
 
         val warned = AtomicBoolean(false)
         return listOf(
@@ -56,20 +52,13 @@ internal object KeyguardIconTransitionSource {
                                 onRuntimeFailure(error)
                             }
                         }
-                        try {
+                        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Keyguard]") {
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                 val rawArg0 = chain.getArg(0) as? Boolean
                                 onEvent(
                                     "keyguardStatusIconTransition source=animateIconContainer" +
                                         " arg0=" + (rawArg0 ?: "unavailable"),
                                 )
-                            }
-                        } catch (error: Throwable) {
-                            SysUiPresentationRuntime.throwIfFatal(error)
-                            if (warned.compareAndSet(false, true)) {
-                                SysUiPresentationRuntime.emitPassiveDiagnostic {
-                                    Log.w("Guiyuan[Keyguard]", "Diagnostic failed", error)
-                                }
                             }
                         }
                         result

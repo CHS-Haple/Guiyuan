@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,14 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
-import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
-import com.chaners.guiyuan.settings.BatteryColorSchemeSource
-import com.chaners.guiyuan.settings.BatteryCustomColorScheme
-import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -72,33 +69,37 @@ internal fun BatterySchemePreviewStrip(
 }
 
 @Composable
-private fun batteryCommonColorName(color: Int): String =
-    stringResource(
-        when (color) {
-            0xFFFF3B30.toInt() -> R.string.battery_common_color_red
-            0xFFFF9500.toInt() -> R.string.battery_common_color_orange
-            0xFFFFCC00.toInt() -> R.string.battery_common_color_yellow
-            0xFF34C759.toInt() -> R.string.battery_common_color_green
-            0xFF32ADE6.toInt() -> R.string.battery_common_color_light_blue
-            0xFF007AFF.toInt() -> R.string.battery_common_color_blue
-            0xFF5856D6.toInt() -> R.string.battery_common_color_indigo
-            0xFFAF52DE.toInt() -> R.string.battery_common_color_purple
-            0xFFFF2D55.toInt() -> R.string.battery_common_color_pink
-            else -> R.string.battery_common_color_gray
-        },
-    )
+private fun batteryCommonColorName(color: Int?): String {
+    val label = when (color) {
+        0xFFFF3B30.toInt() -> R.string.battery_common_color_red
+        0xFFFF9500.toInt() -> R.string.battery_common_color_orange
+        0xFFFFCC00.toInt() -> R.string.battery_common_color_yellow
+        0xFF34C759.toInt() -> R.string.battery_common_color_green
+        0xFF32ADE6.toInt() -> R.string.battery_common_color_light_blue
+        0xFF007AFF.toInt() -> R.string.battery_common_color_blue
+        0xFF5856D6.toInt() -> R.string.battery_common_color_indigo
+        0xFFAF52DE.toInt() -> R.string.battery_common_color_purple
+        0xFFFF2D55.toInt() -> R.string.battery_common_color_pink
+        null -> R.string.battery_color_follow_inversion
+        else -> return batteryColorHex(color)
+    }
+    return stringResource(label)
+}
 
 @Composable
 internal fun BatteryCommonColorButton(
-    color: Int,
+    color: Int?,
     selected: Boolean,
-    visuallyInactive: Boolean,
     onClick: () -> Unit,
 ) {
-    TooltipBox(text = batteryCommonColorName(color)) {
+    val label = batteryCommonColorName(color)
+    TooltipBox(text = label) {
         Surface(
             onClick = onClick,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).semantics {
+                contentDescription = label
+                this.selected = selected
+            },
             shape = CircleShape,
             color = Color.Transparent,
         ) {
@@ -115,11 +116,8 @@ internal fun BatteryCommonColorButton(
                         shadowElevation = 2.dp,
                     ) {}
                 }
-                BatteryColorDot(
-                    color = color,
-                    size = 28.dp,
-                    visuallyInactive = visuallyInactive,
-                )
+                if (color == null) BatteryColorMosaic(size = 28.dp)
+                else BatteryColorDot(color = color, size = 28.dp)
             }
         }
     }
@@ -166,55 +164,3 @@ internal fun BatteryColorMosaic(
         )
     }
 }
-
-@Composable
-internal fun batterySchemeDisplayName(
-    library: BatteryColorSchemeLibrary,
-    key: String,
-): String =
-    BatteryBuiltInColorScheme.fromKey(key)?.let { batteryBuiltInName(it) }
-        ?: library.customByKey(key)?.let { customSchemeName(it) }
-        ?: batteryBuiltInName(BatteryBuiltInColorScheme.HYPEROS)
-
-@Composable
-internal fun batteryBuiltInName(scheme: BatteryBuiltInColorScheme): String =
-    when (scheme) {
-        BatteryBuiltInColorScheme.HYPEROS ->
-            stringResource(R.string.battery_color_preset_hyperos)
-        BatteryBuiltInColorScheme.IOS ->
-            stringResource(R.string.battery_color_preset_ios)
-        BatteryBuiltInColorScheme.LOW_SATURATION ->
-            stringResource(R.string.battery_color_preset_recommended)
-    }
-
-@Composable
-internal fun customSchemeName(scheme: BatteryCustomColorScheme): String =
-    scheme.name.ifBlank {
-        stringResource(R.string.battery_custom_scheme_default_name, scheme.id)
-    }
-
-@Composable
-internal fun batterySourceLabel(source: BatteryColorSchemeSource): String =
-    when (source) {
-        BatteryColorSchemeSource.HYPEROS ->
-            stringResource(R.string.battery_color_preset_hyperos)
-        BatteryColorSchemeSource.IOS ->
-            stringResource(R.string.battery_color_preset_ios)
-        BatteryColorSchemeSource.LOW_SATURATION ->
-            stringResource(R.string.battery_color_preset_recommended)
-        BatteryColorSchemeSource.FOLLOW_SYSTEM ->
-            stringResource(R.string.battery_color_follow_inversion)
-        BatteryColorSchemeSource.CUSTOM ->
-            stringResource(R.string.battery_color_source_custom)
-    }
-
-@StringRes
-internal fun batteryColorSlotLabel(slot: BatteryColorSlot): Int =
-    when (slot) {
-        BatteryColorSlot.NORMAL -> R.string.battery_mode_normal
-        BatteryColorSlot.POWER_SAVE -> R.string.battery_mode_power_save
-        BatteryColorSlot.PERFORMANCE -> R.string.battery_mode_performance
-        BatteryColorSlot.SUPER_POWER_SAVE -> R.string.battery_mode_super_power_save
-        BatteryColorSlot.CHARGING -> R.string.battery_mode_charging
-        BatteryColorSlot.LOW -> R.string.battery_mode_low
-    }

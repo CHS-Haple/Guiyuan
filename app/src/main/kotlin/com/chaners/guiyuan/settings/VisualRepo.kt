@@ -1,222 +1,7 @@
 package com.chaners.guiyuan.settings
 
 import android.content.Context
-import android.content.SharedPreferences
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-
-
-private val visualPreferenceKeys = buildSet {
-    add(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY)
-    add(SHARED_LAYOUT_VISUAL_SCHEMA_KEY)
-    add(CONTENT_LAYOUT_KEY)
-    add(DUAL_SIGNAL_ENABLED_KEY)
-    add(DUAL_PROFILES_INITIALIZED_KEY)
-    addAll(PROFILE_VISUAL_BASE_KEYS)
-    addAll(GLOBAL_VISUAL_KEYS)
-    ContentLayout.entries.forEach { layout ->
-        PROFILE_VISUAL_BASE_KEYS.forEach { key ->
-            add(visualProfileKey(layout, key))
-        }
-    }
-}
-
-internal fun isVisualPreferenceKey(key: String?): Boolean =
-    key == null || key in visualPreferenceKeys
-
-// A backup owns feature visuals and scheme entries, not the whole preference file.
-internal fun isBackupVisualKey(key: String): Boolean =
-    key in visualPreferenceKeys || isBatterySchemeStorageKey(key)
-
-internal fun SharedPreferences.editBackupVisuals(): SharedPreferences.Editor =
-    edit().also { editor ->
-        all.keys.filter(::isBackupVisualKey).forEach(editor::remove)
-    }
-
-internal fun SharedPreferences.backupVisualSnapshot(): Map<String, Any?> =
-    all.filterKeys(::isBackupVisualKey)
-        .mapValues { (_, value) ->
-            if (value is Set<*>) value.filterIsInstance<String>().toSet() else value
-        }
-
-internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>): Boolean {
-    val editor = editBackupVisuals()
-    snapshot.forEach { (key, value) ->
-        when (value) {
-            is Boolean -> editor.putBoolean(key, value)
-            is Int -> editor.putInt(key, value)
-            is Long -> editor.putLong(key, value)
-            is Float -> editor.putFloat(key, value)
-            is String -> editor.putString(key, value)
-            is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
-            else -> error("Unexpected visual preference value")
-        }
-    }
-    return editor.commit()
-}
-
-// Convert the retired lower-row switch using its old effective behavior.
-// A single-row choice is shared across SIM modes within each content layout.
-internal fun migrateSignalDotArrangementsIfNeeded(
-    prefs: SharedPreferences,
-    sharedEditor: SharedPreferences.Editor? = null,
-) {
-    if (prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) >= 4) return
-    val activeDual = prefs.dualSignalEnabled() &&
-        prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
-    val editor = sharedEditor ?: prefs.edit()
-    for (layout in ContentLayout.entries) {
-        fun oldKey(key: String): String =
-            visualModeKey(activeDual, visualProfileKey(layout, key))
-        val dualKey = oldKey(DUAL_ROW_DOT_ARRANGEMENT_KEY)
-        val legacyDual = visualModeKey(activeDual, LEGACY_DUAL_DOT_STYLE_KEY)
-        val dualStyle = prefs.getString(dualKey, null)
-            ?.let(SignalDotArrangement::fromPersisted)
-            ?: prefs.getString(legacyDual, null)?.let(SignalDotArrangement::fromPersisted)
-            ?: SignalDotArrangement.BOTH_SIDES
-        val singleKey = oldKey(SINGLE_ROW_DOT_STYLE_KEY)
-        val legacySwitch = oldKey(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
-        val singleStyle = if (prefs.contains(singleKey)) {
-            SignalDotArrangement.fromPersisted(prefs.getString(singleKey, null))
-        } else if (prefs.getBoolean(legacySwitch, false) &&
-            dualStyle == SignalDotArrangement.HORIZONTAL) {
-            SignalDotArrangement.HORIZONTAL
-        } else SignalDotArrangement.CURVED
-        editor.putString(visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY), dualStyle.persistedValue)
-            .putString(visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY), singleStyle.persistedValue)
-        listOf(false, true).forEach { dual ->
-            editor.remove(visualModeKey(dual, visualProfileKey(layout, LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)))
-        }
-    }
-    listOf(false, true).forEach { dual ->
-        editor.remove(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY))
-    }
-    editor.remove(DUAL_ROW_DOT_ARRANGEMENT_KEY)
-        .remove(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY)
-        .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
-    if (sharedEditor == null) {
-        check(editor.commit()) { "Could not commit dot arrangement migration" }
-    }
-}
-
-// The retired opt-in-show switch cannot be inverted into a new opt-in-hide
-// setting: false previously meant default-off, not an explicit hide request.
-internal fun retireLegacyIdleActivityPreference(prefs: SharedPreferences) {
-    val retired = buildSet {
-        add(LEGACY_BOTH_SIDES_SHOW_IDLE_ACTIVITY_KEY)
-        for (layout in ContentLayout.entries) {
-            val key = visualProfileKey(layout, LEGACY_BOTH_SIDES_SHOW_IDLE_ACTIVITY_KEY)
-            add(key)
-            add(visualModeKey(false, key))
-            add(visualModeKey(true, key))
-        }
-    }
-    val present = retired.filter(prefs::contains)
-    if (present.isEmpty()) return
-    val editor = prefs.edit()
-    present.forEach(editor::remove)
-    editor.apply()
-}
-
-private fun copyLegacyVisualValue(
-    editor: SharedPreferences.Editor,
-    canonical: String,
-    key: String,
-    value: Any,
-) {
-    when (value) {
-        is Boolean -> editor.putBoolean(canonical, value)
-        is Float -> editor.putFloat(canonical, value)
-        is Int -> editor.putInt(canonical, value)
-        is String -> editor.putString(canonical, value)
-        else -> error("Unexpected saved visual preference type: $key")
-    }
-}
-
-internal const val SHARED_LAYOUT_VISUAL_SCHEMA_KEY = "shared_layout_visual_schema"
-
-internal fun migrateSharedLayoutVisualsIfNeeded(
-    prefs: SharedPreferences,
-    preserveMigratedSignalStyles: Boolean = false,
-    sharedEditor: SharedPreferences.Editor? = null,
-) {
-    if (prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) >= 1) return
-    val activeDual = prefs.dualSignalEnabled() &&
-        prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false)
-    val stored = prefs.all
-    val editor = sharedEditor ?: prefs.edit()
-    for (layout in ContentLayout.entries) {
-        for (key in PROFILE_VISUAL_BASE_KEYS) {
-            val canonical = visualProfileKey(layout, key)
-            val previousDual = visualModeKey(true, canonical)
-            // When the dot-style migration is staged in this same editor,
-            // neither a missing dual bank nor a stale unscoped key may
-            // overwrite its effective active-mode selection.
-            val migratedStyle = preserveMigratedSignalStyles &&
-                (key == DUAL_ROW_DOT_ARRANGEMENT_KEY || key == SINGLE_ROW_DOT_STYLE_KEY)
-            // The retired dual bank wins when active. Otherwise a saved layout
-            // value wins over the old unscoped single-mode value. Staged dot
-            // styles must never be overwritten before the shared editor commits.
-            val legacyValue = when {
-                activeDual -> stored[previousDual]
-                migratedStyle || stored.containsKey(canonical) -> null
-                else -> stored[key]
-            }
-            if (legacyValue != null) {
-                copyLegacyVisualValue(editor, canonical, key, legacyValue)
-            } else if (activeDual && !migratedStyle) {
-                // A missing active dual value meant the layout default, not a
-                // stale single-mode value. Preserve staged dot styles above.
-                editor.remove(canonical)
-            }
-            editor.remove(previousDual)
-        }
-    }
-    PROFILE_VISUAL_BASE_KEYS.forEach { editor.remove(it) }
-    editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-        .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
-    if (sharedEditor == null) {
-        check(editor.commit()) { "Could not commit shared layout migration" }
-    }
-}
-
-// Migrations must finish before the app mirrors its first runtime snapshot.
-internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
-    val migratingDotStyles = preferences.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) < 4
-    val migratingSharedLayout = preferences.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) < 1
-    if (migratingDotStyles && migratingSharedLayout) {
-        // Both steps must become durable together: a restart between writes could
-        // discard a newly migrated dot style while retiring the old SIM bank.
-        val editor = preferences.edit()
-        migrateSignalDotArrangementsIfNeeded(preferences, editor)
-        migrateSharedLayoutVisualsIfNeeded(preferences, preserveMigratedSignalStyles = true, sharedEditor = editor)
-        check(editor.commit()) { "Could not commit visual preference migration" }
-    } else {
-        migrateSignalDotArrangementsIfNeeded(preferences)
-        migrateSharedLayoutVisualsIfNeeded(preferences)
-    }
-}
-
-// Reset visual choices without deleting user-created battery schemes.
-internal fun resetVisualPreferences(
-    preferences: SharedPreferences,
-    schemes: BatteryColorSchemeLibrary,
-) {
-    val editor = preferences.edit().clear()
-    // A reset creates a current-schema store. Without these markers, the
-    // next startup may misinterpret newly saved shared values as legacy
-    // single-bank preferences and discard them when dual mode is enabled.
-    editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
-        .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
-        .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-    writeBatterySchemeLibrary(
-        editor,
-        schemes.copy(activeSchemeKey = BATTERY_COLOR_SCHEME_HYPEROS_KEY),
-    )
-    editor.apply()
-}
 
 internal class VisualRepo(context: Context) {
     private val context = context.applicationContext
@@ -232,29 +17,28 @@ internal class VisualRepo(context: Context) {
     }
 
     val settings: Flow<VisualCfg> =
-        callbackFlow {
-            fun emitCurrent() {
-                trySend(current())
-            }
-
-            val listener =
-                SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (isVisualPreferenceKey(key)) {
-                        emitCurrent()
-                    }
-                }
-
-            preferences.registerOnSharedPreferenceChangeListener(listener)
-            emitCurrent()
-            awaitClose {
-                preferences.unregisterOnSharedPreferenceChangeListener(listener)
-            }
-        }.distinctUntilChanged()
+        observePreferenceChanges(preferences, ::isVisualPreferenceKey, ::current)
 
     fun current(): VisualCfg = preferences.readVisualCfg()
 
     private fun activeProfileKey(baseKey: String): String =
         visualProfileKey(preferences.readLayout(), baseKey)
+
+    private fun writeProfileBoolean(key: String, enabled: Boolean) {
+        preferences.edit().putBoolean(activeProfileKey(key), enabled).apply()
+    }
+
+    private fun writeProfileFloat(key: String, value: Float) {
+        preferences.edit().putFloat(activeProfileKey(key), value).apply()
+    }
+
+    private fun writeProfileInt(key: String, value: Int) {
+        preferences.edit().putInt(activeProfileKey(key), value).apply()
+    }
+
+    private fun writeProfileString(key: String, value: String) {
+        preferences.edit().putString(activeProfileKey(key), value).apply()
+    }
 
     fun setDualSignal(enabled: Boolean) {
         preferences.edit()
@@ -264,58 +48,46 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setDualRowDotArrangement(style: SignalDotArrangement) {
-        preferences.edit().putString(activeProfileKey(DUAL_ROW_DOT_ARRANGEMENT_KEY), style.persistedValue).apply()
+        writeProfileString(DUAL_ROW_DOT_ARRANGEMENT_KEY, style.persistedValue)
     }
 
     fun setBothSidesShowActivity(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_ACTIVITY_KEY), enabled).apply()
+        writeProfileBoolean(BOTH_SIDES_ACTIVITY_KEY, enabled)
     }
 
     fun setBothSidesHideIdleActivity(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY), enabled).apply()
+        writeProfileBoolean(BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY, enabled)
     }
 
     fun setBothSidesBottomCharging(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(BOTH_SIDES_CHARGING_KEY), enabled).apply()
+        writeProfileBoolean(BOTH_SIDES_CHARGING_KEY, enabled)
     }
 
     fun setBothSidesActivityScale(scale: Float) {
-        preferences.edit().putFloat(
-            activeProfileKey(BOTH_SIDES_ACTIVITY_SCALE_KEY),
-            scale.finiteIn(
-                BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
-                BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
-                BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
-            ),
-        ).apply()
+        writeProfileFloat(BOTH_SIDES_ACTIVITY_SCALE_KEY, scale.finiteIn(
+            BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
+            BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
+            BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
+        ))
     }
 
     fun setBothSidesActivityOffsetY(offset: Float) {
-        preferences.edit().putFloat(
-            activeProfileKey(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY),
-            offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
-        ).apply()
+        writeProfileFloat(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setBothSidesChargingOffsetY(offset: Float) {
-        preferences.edit().putFloat(
-            activeProfileKey(BOTH_SIDES_CHARGING_OFFSET_Y_KEY),
-            offset.finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT),
-        ).apply()
+        writeProfileFloat(BOTH_SIDES_CHARGING_OFFSET_Y_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setSingleRowDotArrangement(style: SignalDotArrangement) {
         require(style != SignalDotArrangement.BOTH_SIDES) {
             "Two-sided signal dots require dual-row mode"
         }
-        preferences.edit().putString(
-            activeProfileKey(SINGLE_ROW_DOT_STYLE_KEY),
-            style.persistedValue,
-        ).apply()
+        writeProfileString(SINGLE_ROW_DOT_STYLE_KEY, style.persistedValue)
     }
 
     fun setFixedLowerOpening(enabled: Boolean) {
-        preferences.edit().putBoolean(activeProfileKey(LOWER_FIXED_OPENING_KEY), enabled).apply()
+        writeProfileBoolean(LOWER_FIXED_OPENING_KEY, enabled)
     }
 
     fun setMobileTypeBottomOffsetY(offset: Float) {
@@ -338,17 +110,11 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setMobileFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(MOBILE_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setCenterFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(CENTER_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(CENTER_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setTopReadout(enabled: Boolean) {
@@ -370,24 +136,15 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setTopTextFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setChargingIcon(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY), enabled)
-            .apply()
+        writeProfileBoolean(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, enabled)
     }
 
     fun setTopChargingIconFollowsBatteryColor(enabled: Boolean) {
-        preferences
-            .edit()
-            .putBoolean(activeProfileKey(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY), enabled)
-            .apply()
+        writeProfileBoolean(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, enabled)
     }
 
     fun setFillFollowsRetract(enabled: Boolean) {
@@ -411,24 +168,18 @@ internal class VisualRepo(context: Context) {
                 BATTERY_TOP_TEXT_UI_SCALE_MAX,
                 topTextUiScaleDefault(preferences.readLayout()),
             )
-        preferences
-            .edit()
-            .putFloat(
-                activeProfileKey(BATTERY_TOP_TEXT_SCALE_KEY),
-                (uiScale * BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
-                    .coerceIn(BATTERY_TOP_TEXT_SCALE_MIN, BATTERY_TOP_TEXT_SCALE_MAX),
-            )
-            .apply()
+        writeProfileFloat(
+            BATTERY_TOP_TEXT_SCALE_KEY,
+            (uiScale * BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
+                .coerceIn(BATTERY_TOP_TEXT_SCALE_MIN, BATTERY_TOP_TEXT_SCALE_MAX),
+        )
     }
 
     fun setTopTextWeight(weight: Int) {
-        preferences
-            .edit()
-            .putInt(
-                activeProfileKey(BATTERY_TOP_TEXT_WEIGHT_KEY),
-                weight.coerceIn(BATTERY_TOP_TEXT_WEIGHT_MIN, BATTERY_TOP_TEXT_WEIGHT_MAX),
-            )
-            .apply()
+        writeProfileInt(
+            BATTERY_TOP_TEXT_WEIGHT_KEY,
+            weight.coerceIn(BATTERY_TOP_TEXT_WEIGHT_MIN, BATTERY_TOP_TEXT_WEIGHT_MAX),
+        )
     }
 
     fun setTopOffsetY(offset: Float) {
@@ -438,37 +189,15 @@ internal class VisualRepo(context: Context) {
                 BATTERY_TOP_VERTICAL_OFFSET_UI_MAX,
                 0f,
             )
-        preferences
-            .edit()
-            .putFloat(
-                activeProfileKey(BATTERY_TOP_VERTICAL_OFFSET_KEY),
-                topOffsetYRaw(uiOffset),
-            )
-            .apply()
+        writeProfileFloat(BATTERY_TOP_VERTICAL_OFFSET_KEY, topOffsetYRaw(uiOffset))
     }
 
     fun setWifiOffsetY(offset: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(WIFI_VERTICAL_OFFSET_KEY),
-                offset.finiteIn(
-                    NETWORK_TOP_OFFSET_MIN,
-                    NETWORK_TOP_OFFSET_MAX,
-                    NETWORK_TOP_OFFSET_DEFAULT,
-                ),
-            ).apply()
+        writeProfileFloat(WIFI_VERTICAL_OFFSET_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setMobileTypeOffsetY(offset: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(MOBILE_TYPE_VERTICAL_OFFSET_KEY),
-                offset.finiteIn(
-                    NETWORK_TOP_OFFSET_MIN,
-                    NETWORK_TOP_OFFSET_MAX,
-                    NETWORK_TOP_OFFSET_DEFAULT,
-                ),
-            ).apply()
+        writeProfileFloat(MOBILE_TYPE_VERTICAL_OFFSET_KEY, offset.normalizedNetworkOffset())
     }
 
     fun setSignalDotOffsetY(offset: Float) {
@@ -476,80 +205,41 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setCombinedScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(COMBINED_SCALE_KEY),
-                scale.finiteIn(
-                    COMBINED_SCALE_MIN,
-                    COMBINED_SCALE_MAX,
-                    COMBINED_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(COMBINED_SCALE_KEY, scale.finiteIn(
+            COMBINED_SCALE_MIN, COMBINED_SCALE_MAX, COMBINED_SCALE_DEFAULT,
+        ))
     }
 
     fun setOuterWeightScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(OUTER_WEIGHT_SCALE_KEY),
-                scale.finiteIn(
-                    OUTER_WEIGHT_SCALE_MIN,
-                    OUTER_WEIGHT_SCALE_MAX,
-                    OUTER_WEIGHT_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(OUTER_WEIGHT_SCALE_KEY, scale.finiteIn(
+            OUTER_WEIGHT_SCALE_MIN, OUTER_WEIGHT_SCALE_MAX, OUTER_WEIGHT_SCALE_DEFAULT,
+        ))
     }
 
     fun setWifiWeight(weight: Int) {
-        preferences.edit()
-            .putInt(activeProfileKey(WIFI_WEIGHT_KEY), weight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX))
-            .apply()
+        writeProfileInt(WIFI_WEIGHT_KEY, weight.coerceIn(WIFI_WEIGHT_MIN, WIFI_WEIGHT_MAX))
     }
 
     fun setWifiScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(WIFI_SIZE_SCALE_KEY),
-                scale.finiteIn(
-                    WIFI_SIZE_SCALE_MIN,
-                    WIFI_SIZE_SCALE_MAX,
-                    WIFI_SIZE_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(WIFI_SIZE_SCALE_KEY, scale.finiteIn(
+            WIFI_SIZE_SCALE_MIN, WIFI_SIZE_SCALE_MAX, WIFI_SIZE_SCALE_DEFAULT,
+        ))
     }
 
     fun setAirplaneWeight(weight: Int) {
-        preferences.edit()
-            .putInt(activeProfileKey(AIRPLANE_WEIGHT_KEY), weight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX))
-            .apply()
+        writeProfileInt(AIRPLANE_WEIGHT_KEY, weight.coerceIn(AIRPLANE_WEIGHT_MIN, AIRPLANE_WEIGHT_MAX))
     }
 
     fun setAirplaneScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(AIRPLANE_SIZE_SCALE_KEY),
-                scale.finiteIn(
-                    AIRPLANE_SIZE_SCALE_MIN,
-                    AIRPLANE_SIZE_SCALE_MAX,
-                    AIRPLANE_SIZE_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(AIRPLANE_SIZE_SCALE_KEY, scale.finiteIn(
+            AIRPLANE_SIZE_SCALE_MIN, AIRPLANE_SIZE_SCALE_MAX, AIRPLANE_SIZE_SCALE_DEFAULT,
+        ))
     }
 
     fun setNoSimScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(NO_SIM_SIZE_SCALE_KEY),
-                scale.finiteIn(
-                    NO_SIM_SIZE_SCALE_MIN,
-                    NO_SIM_SIZE_SCALE_MAX,
-                    NO_SIM_SIZE_SCALE_DEFAULT,
-                ),
-            )
-            .apply()
+        writeProfileFloat(NO_SIM_SIZE_SCALE_KEY, scale.finiteIn(
+            NO_SIM_SIZE_SCALE_MIN, NO_SIM_SIZE_SCALE_MAX, NO_SIM_SIZE_SCALE_DEFAULT,
+        ))
     }
 
     fun setMobileTypeScale(scale: Float) {
@@ -566,12 +256,10 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setMobileTypeWeight(weight: Int) {
-        preferences.edit()
-            .putInt(
-                activeProfileKey(MOBILE_TYPE_WEIGHT_KEY),
-                weight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
-            )
-            .apply()
+        writeProfileInt(
+            MOBILE_TYPE_WEIGHT_KEY,
+            weight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
+        )
     }
 
     fun backup(): VisualBackup {
@@ -628,421 +316,13 @@ internal class VisualRepo(context: Context) {
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
                 topChargingIconUiScaleDefault(preferences.readLayout()),
             )
-        preferences
-            .edit()
-            .putFloat(
-                activeProfileKey(BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
-                (uiScale * BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE)
-                    .coerceIn(
-                        BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
-                        BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
-                    ),
-            )
-            .apply()
-    }
-}
-
-internal fun visualModeKey(dual: Boolean, key: String): String =
-    if (dual) "dual.$key" else key
-
-internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
-    val visual = readVisualCfg()
-    val key = when (if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) {
-        SignalDotArrangement.HORIZONTAL -> HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
-        SignalDotArrangement.BOTH_SIDES -> return
-        SignalDotArrangement.CURVED -> CURVED_SIGNAL_DOT_OFFSET_Y_KEY
-    }
-    edit().putFloat(
-        visualProfileKey(visual.layout, key),
-        offset.finiteIn(
-            NETWORK_TOP_OFFSET_MIN,
-            NETWORK_TOP_OFFSET_MAX,
-            NETWORK_TOP_OFFSET_DEFAULT,
-        ),
-    ).apply()
-}
-
-internal fun SharedPreferences.dualSignalEnabled(): Boolean =
-    getBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
-
-internal fun SharedPreferences.readLayout(): ContentLayout =
-    ContentLayout.fromPersisted(
-        getString(CONTENT_LAYOUT_KEY, ContentLayout.NETWORK_CENTER.persistedValue),
-    )
-
-internal fun visualProfileKey(
-    layout: ContentLayout,
-    baseKey: String,
-): String = layout.persistedValue + "." + baseKey
-
-private fun storedProfileKey(
-    layout: ContentLayout,
-    baseKey: String,
-    legacyDualBank: Boolean,
-): String {
-    val sharedKey = visualProfileKey(layout, baseKey)
-    return if (legacyDualBank) visualModeKey(true, sharedKey) else sharedKey
-}
-
-private fun SharedPreferences.profileBoolean(
-    layout: ContentLayout,
-    baseKey: String,
-    defaultValue: Boolean,
-    legacyDualBank: Boolean = false,
-): Boolean {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return if (contains(profileKey)) {
-        getBoolean(profileKey, defaultValue)
-    } else if (legacyDualBank) {
-        defaultValue
-    } else {
-        getBoolean(baseKey, defaultValue)
-    }
-}
-
-private fun SharedPreferences.profileFloat(
-    layout: ContentLayout,
-    baseKey: String,
-    defaultValue: Float,
-    legacyDualBank: Boolean = false,
-): Float {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return if (contains(profileKey)) {
-        getFloat(profileKey, defaultValue)
-    } else if (legacyDualBank) {
-        defaultValue
-    } else {
-        getFloat(baseKey, defaultValue)
-    }
-}
-
-private fun SharedPreferences.profileInt(
-    layout: ContentLayout,
-    baseKey: String,
-    defaultValue: Int,
-    legacyDualBank: Boolean = false,
-): Int {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return if (contains(profileKey)) {
-        getInt(profileKey, defaultValue)
-    } else if (legacyDualBank) {
-        defaultValue
-    } else {
-        getInt(baseKey, defaultValue)
-    }
-}
-
-private fun SharedPreferences.profileString(
-    layout: ContentLayout,
-    baseKey: String,
-    defaultValue: String?,
-    legacyDualBank: Boolean,
-): String? {
-    val profileKey = storedProfileKey(layout, baseKey, legacyDualBank)
-    return when {
-        contains(profileKey) -> getString(profileKey, defaultValue)
-        legacyDualBank -> defaultValue
-        else -> getString(baseKey, defaultValue)
-    }
-}
-
-internal fun SharedPreferences.readVisualCfg(
-    dual: Boolean = dualSignalEnabled(),
-    layoutOverride: ContentLayout? = null,
-): VisualCfg {
-    val layout = layoutOverride ?: readLayout()
-    // SystemUI can bind an older remote snapshot before the app migrates it.
-    // Only read the retired dual bank when that bank actually exists.
-    val legacyDualBank = dual &&
-        getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0) < 1 &&
-        // The local v4 style migration may leave a temporary old dual bank.
-        getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0) < 4 &&
-        getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false) &&
-        PROFILE_VISUAL_BASE_KEYS.any { key ->
-            contains(visualModeKey(true, visualProfileKey(layout, key)))
-        }
-    fun flag(key: String, default: Boolean) =
-        profileBoolean(layout, key, default, legacyDualBank)
-    fun size(key: String, default: Float) =
-        profileFloat(layout, key, default, legacyDualBank)
-    fun weight(key: String, default: Int) =
-        profileInt(layout, key, default, legacyDualBank)
-    val topOffset = size(BATTERY_TOP_VERTICAL_OFFSET_KEY, topOffsetYDefault(layout))
-    // Preserve existing battery-centered network position when split keys are first read.
-    val oldNetworkOffset =
-        if (layout == ContentLayout.BATTERY_CENTER) topOffsetYUi(topOffset) else 0f
-
-    val dualStyle = (
-        profileString(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY, null, legacyDualBank)
-            ?: getString(visualModeKey(dual, LEGACY_DUAL_DOT_STYLE_KEY), null)
-        )?.let(SignalDotArrangement::fromPersisted)
-        ?: SignalDotArrangement.BOTH_SIDES
-    val singleStyle = profileString(layout, SINGLE_ROW_DOT_STYLE_KEY, null, legacyDualBank)
-        ?.let(SignalDotArrangement::fromPersisted)
-        ?: if (flag(LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY, false) &&
-            dualStyle == SignalDotArrangement.HORIZONTAL) {
-            SignalDotArrangement.HORIZONTAL
-        } else {
-            SignalDotArrangement.CURVED
-        }
-
-    return VisualCfg(
-        layout = layout,
-        dualSignal = dual,
-        dualRowDotArrangement = dualStyle,
-        singleRowDotArrangement = singleStyle,
-        bothSidesShowActivity = flag(BOTH_SIDES_ACTIVITY_KEY, true),
-        bothSidesHideIdleActivity = flag(BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY, false),
-        bothSidesBottomCharging = flag(BOTH_SIDES_CHARGING_KEY, false),
-        bothSidesActivityScale = size(BOTH_SIDES_ACTIVITY_SCALE_KEY, BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT),
-        bothSidesActivityOffsetY = size(BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        bothSidesChargingOffsetY = size(BOTH_SIDES_CHARGING_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        fixedLowerOpening = flag(LOWER_FIXED_OPENING_KEY, false),
-        mobileTypeBottomOffsetY = size(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY, mobileTypeBottomOffsetDefault(layout)),
-        mobileFollowsBatteryColor = flag(MOBILE_FOLLOWS_BATTERY_COLOR_KEY, false),
-        centerFollowsBatteryColor = flag(CENTER_FOLLOWS_BATTERY_COLOR_KEY, false),
-        showTopReadout = flag(BATTERY_TOP_READOUT_ENABLED_KEY, topReadoutDefault(layout)),
-        topTextFollowsBatteryColor = flag(BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY, true),
-        showChargingIcon = flag(BATTERY_TOP_CHARGING_ICON_ENABLED_KEY, true),
-        topChargingIconFollowsBatteryColor = flag(BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY, true),
-        fillFollowsRetract = getBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, true),
-        ccTintTransition = getBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, true),
-        topTextScale = size(BATTERY_TOP_TEXT_SCALE_KEY, topTextScaleDefault(layout)),
-        topTextWeight = weight(BATTERY_TOP_TEXT_WEIGHT_KEY, BATTERY_TOP_TEXT_WEIGHT_DEFAULT),
-        topOffsetY = topOffset,
-        wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
-        mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
-        curvedSignalDotOffsetY = size(CURVED_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        horizontalSignalDotOffsetY = size(HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        bothSidesSignalDotOffsetY = size(BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
-        combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),
-        outerWeightScale = size(OUTER_WEIGHT_SCALE_KEY, OUTER_WEIGHT_SCALE_DEFAULT),
-        wifiScale = size(WIFI_SIZE_SCALE_KEY, WIFI_SIZE_SCALE_DEFAULT),
-        wifiWeight = weight(WIFI_WEIGHT_KEY, WIFI_WEIGHT_DEFAULT),
-        airplaneScale = size(AIRPLANE_SIZE_SCALE_KEY, AIRPLANE_SIZE_SCALE_DEFAULT),
-        airplaneWeight = weight(AIRPLANE_WEIGHT_KEY, AIRPLANE_WEIGHT_DEFAULT),
-        noSimScale = size(NO_SIM_SIZE_SCALE_KEY, NO_SIM_SIZE_SCALE_DEFAULT),
-        mobileTypeScale = size(MOBILE_TYPE_SIZE_SCALE_KEY, mobileTypeScaleDefault(layout)),
-        mobileTypeWeight = weight(MOBILE_TYPE_WEIGHT_KEY, MOBILE_TYPE_WEIGHT_DEFAULT),
-        batteryColorPreset =
-            BatteryColorPreset.fromPersisted(
-                getString(
-                    BATTERY_COLOR_PRESET_KEY,
-                    BatteryColorPreset.HYPEROS.persistedValue,
+        writeProfileFloat(
+            BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
+            (uiScale * BATTERY_TOP_CHARGING_ICON_UI_SCALE_REFERENCE)
+                .coerceIn(
+                    BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
+                    BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
                 ),
-            ),
-        batteryColorModes =
-            BatteryColorModes(
-                normal =
-                    batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_NORMAL_KEY,
-                        colorKey = BATTERY_COLOR_NORMAL_KEY,
-                    ),
-                powerSave =
-                    batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_POWER_SAVE_KEY,
-                        colorKey = BATTERY_COLOR_POWER_SAVE_KEY,
-                    ),
-                performance =
-                    batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_PERFORMANCE_KEY,
-                        colorKey = BATTERY_COLOR_PERFORMANCE_KEY,
-                    ),
-                superPowerSave =
-                    batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_SUPER_POWER_SAVE_KEY,
-                        colorKey = BATTERY_COLOR_SUPER_POWER_SAVE_KEY,
-                    ),
-                charging =
-                    batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_CHARGING_KEY,
-                        colorKey = BATTERY_COLOR_CHARGING_KEY,
-                    ),
-                low =
-                    batteryColorMode(
-                        modeKey = BATTERY_COLOR_MODE_LOW_KEY,
-                        colorKey = BATTERY_COLOR_LOW_KEY,
-                    ),
-            ),
-        batteryColorOverrides =
-            BatteryColorOverrides(
-                normal = optionalColor(BATTERY_COLOR_NORMAL_KEY),
-                powerSave = optionalColor(BATTERY_COLOR_POWER_SAVE_KEY),
-                performance = optionalColor(BATTERY_COLOR_PERFORMANCE_KEY),
-                superPowerSave = optionalColor(BATTERY_COLOR_SUPER_POWER_SAVE_KEY),
-                charging = optionalColor(BATTERY_COLOR_CHARGING_KEY),
-                low = optionalColor(BATTERY_COLOR_LOW_KEY),
-            ),
-    ).normalized()
-}
-
-internal fun SharedPreferences.Editor.putVisualCfg(
-    settings: VisualCfg,
-): SharedPreferences.Editor {
-    val normalized = settings.normalized()
-    val layout = normalized.layout
-    val editor = putBoolean(
-        DUAL_SIGNAL_ENABLED_KEY,
-        normalized.dualSignal,
-    ).putString(
-        CONTENT_LAYOUT_KEY,
-        layout.persistedValue,
-    ).putString(
-        visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY),
-        normalized.dualRowDotArrangement.persistedValue,
-    ).putString(
-        visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY),
-        normalized.singleRowDotArrangement.persistedValue,
-    ).putBoolean(
-        visualProfileKey(layout, BOTH_SIDES_ACTIVITY_KEY),
-        normalized.bothSidesShowActivity,
-    ).putBoolean(
-        visualProfileKey(layout, BOTH_SIDES_HIDE_IDLE_ACTIVITY_KEY),
-        normalized.bothSidesHideIdleActivity,
-    ).putBoolean(
-        visualProfileKey(layout, BOTH_SIDES_CHARGING_KEY),
-        normalized.bothSidesBottomCharging,
-    ).putFloat(
-        visualProfileKey(layout, BOTH_SIDES_ACTIVITY_SCALE_KEY),
-        normalized.bothSidesActivityScale,
-    ).putFloat(
-        visualProfileKey(layout, BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY),
-        normalized.bothSidesActivityOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, BOTH_SIDES_CHARGING_OFFSET_Y_KEY),
-        normalized.bothSidesChargingOffsetY,
-    ).putBoolean(
-        visualProfileKey(layout, LOWER_FIXED_OPENING_KEY),
-        normalized.fixedLowerOpening,
-    ).putFloat(
-        visualProfileKey(layout, MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY),
-        normalized.mobileTypeBottomOffsetY,
-    ).putBoolean(
-        visualProfileKey(layout, MOBILE_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.mobileFollowsBatteryColor,
-    ).putBoolean(
-        visualProfileKey(layout, CENTER_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.centerFollowsBatteryColor,
-    ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_READOUT_ENABLED_KEY),
-        normalized.showTopReadout,
-    ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.topTextFollowsBatteryColor,
-    ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_ENABLED_KEY),
-        normalized.showChargingIcon,
-    ).putBoolean(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
-        normalized.topChargingIconFollowsBatteryColor,
-    ).putBoolean(
-        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
-        normalized.fillFollowsRetract,
-    ).putBoolean(
-        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
-        normalized.ccTintTransition,
-    ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
-        normalized.topTextScale,
-    ).putInt(
-        visualProfileKey(layout, BATTERY_TOP_TEXT_WEIGHT_KEY),
-        normalized.topTextWeight,
-    ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_VERTICAL_OFFSET_KEY),
-        normalized.topOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, WIFI_VERTICAL_OFFSET_KEY),
-        normalized.wifiOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY),
-        normalized.mobileTypeOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY),
-        normalized.curvedSignalDotOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY),
-        normalized.horizontalSignalDotOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY),
-        normalized.bothSidesSignalDotOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_SCALE_KEY),
-        normalized.topChargingIconScale,
-    ).putFloat(
-        visualProfileKey(layout, COMBINED_SCALE_KEY),
-        normalized.combinedScale,
-    ).putFloat(
-        visualProfileKey(layout, OUTER_WEIGHT_SCALE_KEY),
-        normalized.outerWeightScale,
-    ).putFloat(
-        visualProfileKey(layout, WIFI_SIZE_SCALE_KEY),
-        normalized.wifiScale,
-    ).putInt(
-        visualProfileKey(layout, WIFI_WEIGHT_KEY),
-        normalized.wifiWeight,
-    ).putFloat(
-        visualProfileKey(layout, AIRPLANE_SIZE_SCALE_KEY),
-        normalized.airplaneScale,
-    ).putInt(
-        visualProfileKey(layout, AIRPLANE_WEIGHT_KEY),
-        normalized.airplaneWeight,
-    ).putFloat(
-        visualProfileKey(layout, NO_SIM_SIZE_SCALE_KEY),
-        normalized.noSimScale,
-    ).putFloat(
-        visualProfileKey(layout, MOBILE_TYPE_SIZE_SCALE_KEY),
-        normalized.mobileTypeScale,
-    ).putInt(
-        visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY),
-        normalized.mobileTypeWeight,
-    ).putBatteryColors(normalized)
-    // One writer serves app-local settings and the SystemUI remote mirror.
-    // Publish the schema with the values so stale dual banks cannot win later.
-    return editor
-        .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-        .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
-        .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
-}
-
-private fun SharedPreferences.batteryColorMode(
-    modeKey: String,
-    colorKey: String,
-): BatteryColorMode =
-    batteryColorModeFromPersisted(
-        persistedMode = getString(modeKey, null),
-        hasStoredColor = contains(colorKey),
-    )
-
-private fun SharedPreferences.optionalColor(key: String): Int? =
-    if (contains(key)) {
-        getInt(key, 0) or 0xFF000000.toInt()
-    } else {
-        null
+        )
     }
-
-internal fun SharedPreferences.Editor.putBatteryColors(settings: VisualCfg): SharedPreferences.Editor =
-    putString(BATTERY_COLOR_PRESET_KEY, settings.batteryColorPreset.persistedValue)
-        .applyBatteryColorModes(settings.batteryColorModes)
-        .applyBatteryColorOverrides(settings.batteryColorOverrides)
-
-private fun SharedPreferences.Editor.applyBatteryColorOverrides(
-    overrides: BatteryColorOverrides,
-): SharedPreferences.Editor {
-    BatteryColorSlot.entries.forEach { slot ->
-        val key = batteryColorOverrideKey(slot)
-        val color = overrides.colorFor(slot)
-        if (color == null) remove(key)
-        else putInt(key, color or 0xFF000000.toInt())
-    }
-    return this
-}
-
-private fun SharedPreferences.Editor.applyBatteryColorModes(
-    modes: BatteryColorModes,
-): SharedPreferences.Editor {
-    BatteryColorSlot.entries.forEach { slot ->
-        putString(batteryColorModeKey(slot), modes.modeFor(slot).persistedValue)
-    }
-    return this
 }

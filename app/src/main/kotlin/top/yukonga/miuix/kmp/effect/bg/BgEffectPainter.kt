@@ -3,8 +3,8 @@
 
 package top.yukonga.miuix.kmp.effect.bg
 
-import top.yukonga.miuix.kmp.blur.RuntimeShader
-import top.yukonga.miuix.kmp.blur.asBrush
+import top.yukonga.miuix.kmp.material.RuntimeShader
+import top.yukonga.miuix.kmp.material.asBrush
 import kotlin.math.cos
 import kotlin.math.sin
 

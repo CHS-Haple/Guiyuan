@@ -1,24 +1,43 @@
 package com.chaners.guiyuan.xposed.network
 
-import android.content.res.ColorStateList
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.NativeStatusSlots
+import com.chaners.guiyuan.xposed.NativeStatusIdentity
 import com.chaners.guiyuan.xposed.SysUiHostRegistry
 import com.chaners.guiyuan.xposed.StatusStateStore
+import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.lang.reflect.InvocationTargetException
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiNetworkSource {
+    // Callbacks are bound to one installing runtime generation, not native Views.
+    internal data class Sinks(
+        val onWifiState: (StatusStateStore.WifiState) -> Unit,
+        val onWifiActivity: (Int?) -> Unit,
+        val onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
+        val onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
+        val onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
+        val onPresentationChanged: (() -> Unit)?,
+    )
+
+    internal data class Diagnostics(
+        val onRuntimeFailure: (String, Throwable) -> Unit,
+        val onEvent: ((String) -> Unit)?,
+        val isDetailedDiagnosticsEnabled: () -> Boolean,
+    )
+
     const val WIFI_BINDER_CLASS_NAME =
         "com.android.systemui.statusbar.pipeline.wifi.ui.binder.MiuiWifiViewBinder"
     const val WIFI_BIND_METHOD_NAME = "bind"
@@ -75,9 +94,11 @@ internal object SysUiNetworkSource {
     private const val WIFI_BIND_HOOK_ID = "combinedstatus.network.wifi.bind"
     private const val WIFI_ICON_HOOK_ID = "combinedstatus.network.wifi.icon"
     private const val WIFI_ACTIVITY_HOOK_ID = "combinedstatus.network.wifi.activity"
+    private const val COLLECTOR_CLASS_ID_FIELD_NAME = "\$r8\$classId"
     private const val WIFI_ICON_COLLECTOR_CLASS_ID = 1
-    private const val MAX_PARENT_CHAIN_DEPTH = 8
     private const val WIFI_SEED_LOG_PREFIX = "networkPipeline wifi seed source="
+    private const val SUB_ID_LOG_FIELD = "subId="
+    private const val UNKNOWN_LOG_VALUE = "unknown"
     private const val ROOT_ID_LOG_FIELD = " rootId="
     private const val PARENT_CHAIN_LOG_FIELD = " parentChain="
     private const val LAYOUT_LOG_FIELD = " layout="
@@ -95,14 +116,6 @@ internal object SysUiNetworkSource {
         MOBILE_ACTIVITY_HOOK_ID,
         MOBILE_ACTIVITY_VISIBILITY_HOOK_ID,
     )
-
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
-
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private fun callbackFailed(
         source: String,
@@ -199,19 +212,14 @@ internal object SysUiNetworkSource {
         cause: Throwable,
     ) : RuntimeException(cause)
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onWifiActivity: (Int?) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
-        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
-        onPresentationChanged: (() -> Unit)?,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): InstallResult {
+        val (_, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val warned = AtomicBoolean(false)
         fun warn(error: Throwable) {
             rethrowFatal(error)
@@ -239,28 +247,13 @@ internal object SysUiNetworkSource {
                 false
             }
         }
-        val wifi =
-            installWifi(
-                module = module,
-                classLoader = classLoader,
-                onWifiState = onWifiState,
-                onWifiActivity = onWifiActivity,
-                onRuntimeFailure = onRuntimeFailure,
+        val guardedDiagnostics =
+            diagnostics.copy(
                 onEvent = diagnosticEvent,
                 isDetailedDiagnosticsEnabled = diagnosticEnabled,
             )
-        val mobile =
-            installMobile(
-                module = module,
-                classLoader = classLoader,
-                onMobileSignal = onMobileSignal,
-                onMobileActivityResource = onMobileActivityResource,
-                onMobileActivityVisibility = onMobileActivityVisibility,
-                onPresentationChanged = onPresentationChanged,
-                onRuntimeFailure = onRuntimeFailure,
-                onEvent = diagnosticEvent,
-                isDetailedDiagnosticsEnabled = diagnosticEnabled,
-            )
+        val wifi = installWifi(module, classLoader, sinks, guardedDiagnostics)
+        val mobile = installMobile(module, classLoader, sinks, guardedDiagnostics)
 
         return InstallResult(
             handles = wifi.handles + mobile.handles,
@@ -270,123 +263,208 @@ internal object SysUiNetworkSource {
         )
     }
 
+    private class WifiHooks(
+        val wifiBindMethod: Method,
+        val wifiIconEmitMethod: Method,
+        val wifiIconImageField: Field,
+        val wifiIconClassIdField: Field,
+        val seedContract: WifiSeedContract,
+    )
+
+    private fun resolveWifiHooks(classLoader: ClassLoader): WifiHooks {
+        val wifiBinderClass =
+            atStage("wifi.resolve.binderClass") {
+                Class.forName(WIFI_BINDER_CLASS_NAME, false, classLoader)
+            }
+        val wifiLocationVmClass =
+            atStage("wifi.resolve.locationViewModelClass") {
+                Class.forName(WIFI_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
+            }
+        val wifiBindMethod =
+            atStage("wifi.resolve.bindMethod") {
+                wifiBinderClass.getDeclaredMethod(
+                    WIFI_BIND_METHOD_NAME,
+                    ViewGroup::class.java,
+                    wifiLocationVmClass,
+                )
+            }
+        val wifiVisibleClass =
+            atStage("wifi.resolve.visibleClass") {
+                Class.forName(WIFI_ICON_VISIBLE_CLASS_NAME, false, classLoader)
+            }
+        val iconResourceClass =
+            atStage("wifi.resolve.iconResourceClass") {
+                Class.forName(ICON_RESOURCE_CLASS_NAME, false, classLoader)
+            }
+        val wifiVisibleIconField =
+            atStage("wifi.resolve.visibleIconField") {
+                wifiVisibleClass
+                    .getDeclaredField("icon")
+                    .apply { isAccessible = true }
+            }
+        val iconResourceIdAccessor =
+            atStage("wifi.resolve.iconResourceIdAccessor") {
+                resolveIconResourceIdAccessor(iconResourceClass)
+            }
+        val wifiIconEmitterClass =
+            atStage("wifi.resolve.iconEmitterClass") {
+                Class.forName(WIFI_ICON_EMITTER_CLASS_NAME, false, classLoader)
+            }
+        val wifiIconEmitMethod =
+            atStage("wifi.resolve.iconEmitMethod") {
+                resolveEmitterMethod(
+                    emitterClass = wifiIconEmitterClass,
+                    methodName = WIFI_ICON_EMIT_METHOD_NAME,
+                )
+            }
+        val wifiIconImageField =
+            atStage("wifi.resolve.iconViewField") {
+                wifiIconEmitterClass
+                    .getDeclaredField("\$iconView")
+                    .apply { isAccessible = true }
+            }
+        val wifiIconClassIdField =
+            atStage("wifi.resolve.classIdField") {
+                wifiIconEmitterClass
+                    .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
+                    .apply { isAccessible = true }
+            }
+        val wifiIconGetter =
+            wifiLocationVmClass.methods
+                .firstOrNull { method ->
+                    method.name == "getWifiIcon" &&
+                        method.parameterCount == 0
+                }
+                ?.apply { isAccessible = true }
+        val seedContract =
+            WifiSeedContract(
+                wifiIconGetter = wifiIconGetter,
+                wifiVisibleIconField = wifiVisibleIconField,
+                iconResourceIdAccessor = iconResourceIdAccessor,
+            )
+        return WifiHooks(
+            wifiBindMethod = wifiBindMethod,
+            wifiIconEmitMethod = wifiIconEmitMethod,
+            wifiIconImageField = wifiIconImageField,
+            wifiIconClassIdField = wifiIconClassIdField,
+            seedContract = seedContract,
+        )
+    }
+
+    private class MobileHooks(
+        val mobileBindMethod: Method,
+        val mobileSignalEmitMethod: Method,
+        val mobileImageField: Field,
+        val mobileClassIdField: Field,
+        val subscriptionIdMethod: Method,
+    )
+
+    private fun resolveMobileHooks(classLoader: ClassLoader): MobileHooks {
+        val mobileBinderClass =
+            atStage("mobile.resolve.binderClass") {
+                Class.forName(MOBILE_BINDER_CLASS_NAME, false, classLoader)
+            }
+        val mobileLocationVmClass =
+            atStage("mobile.resolve.locationViewModelClass") {
+                Class.forName(MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
+            }
+        val mobileIconVmClass =
+            atStage("mobile.resolve.iconViewModelClass") {
+                Class.forName(MOBILE_ICON_VIEW_MODEL_CLASS_NAME, false, classLoader)
+            }
+        val mobileLoggerClass =
+            atStage("mobile.resolve.loggerClass") {
+                Class.forName(MOBILE_VIEW_LOGGER_CLASS_NAME, false, classLoader)
+            }
+        val mobileBindMethod =
+            atStage("mobile.resolve.bindMethod") {
+                mobileBinderClass.getDeclaredMethod(
+                    MOBILE_BIND_METHOD_NAME,
+                    ViewGroup::class.java,
+                    mobileLocationVmClass,
+                    mobileIconVmClass,
+                    mobileLoggerClass,
+                )
+            }
+        val mobileSignalEmitterClass =
+            atStage("mobile.resolve.signalEmitterClass") {
+                Class.forName(MOBILE_SIGNAL_EMITTER_CLASS_NAME, false, classLoader)
+            }
+        val mobileSignalEmitMethod =
+            atStage("mobile.resolve.signalEmitMethod") {
+                resolveEmitterMethod(
+                    emitterClass = mobileSignalEmitterClass,
+                    methodName = MOBILE_SIGNAL_EMIT_METHOD_NAME,
+                )
+            }
+        val mobileImageField =
+            atStage("mobile.resolve.imageField") {
+                mobileSignalEmitterClass
+                    .getDeclaredField("\$mobile")
+                    .apply { isAccessible = true }
+            }
+        val mobileClassIdField =
+            atStage("mobile.resolve.classIdField") {
+                mobileSignalEmitterClass
+                    .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
+                    .apply { isAccessible = true }
+            }
+        val subscriptionIdMethod =
+            atStage("mobile.resolve.subscriptionIdMethod") {
+                mobileLocationVmClass
+                    .getDeclaredMethod("getSubscriptionId")
+                    .apply { isAccessible = true }
+            }
+        return MobileHooks(
+            mobileBindMethod = mobileBindMethod,
+            mobileSignalEmitMethod = mobileSignalEmitMethod,
+            mobileImageField = mobileImageField,
+            mobileClassIdField = mobileClassIdField,
+            subscriptionIdMethod = subscriptionIdMethod,
+        )
+    }
+
+    @Suppress("TooGenericExceptionCaught")
     private fun installWifi(
         module: XposedModule,
         classLoader: ClassLoader,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onWifiActivity: (Int?) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
 
         return try {
-            val wifiBinderClass =
-                atStage("wifi.resolve.binderClass") {
-                    Class.forName(WIFI_BINDER_CLASS_NAME, false, classLoader)
-                }
-            val wifiLocationVmClass =
-                atStage("wifi.resolve.locationViewModelClass") {
-                    Class.forName(WIFI_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
-                }
-            val wifiBindMethod =
-                atStage("wifi.resolve.bindMethod") {
-                    wifiBinderClass.getDeclaredMethod(
-                        WIFI_BIND_METHOD_NAME,
-                        ViewGroup::class.java,
-                        wifiLocationVmClass,
-                    )
-                }
-            val wifiVisibleClass =
-                atStage("wifi.resolve.visibleClass") {
-                    Class.forName(WIFI_ICON_VISIBLE_CLASS_NAME, false, classLoader)
-                }
-            val iconResourceClass =
-                atStage("wifi.resolve.iconResourceClass") {
-                    Class.forName(ICON_RESOURCE_CLASS_NAME, false, classLoader)
-                }
-            val wifiVisibleIconField =
-                atStage("wifi.resolve.visibleIconField") {
-                    wifiVisibleClass
-                        .getDeclaredField("icon")
-                        .apply { isAccessible = true }
-                }
-            val iconResourceIdAccessor =
-                atStage("wifi.resolve.iconResourceIdAccessor") {
-                    resolveIconResourceIdAccessor(iconResourceClass)
-                }
-            val wifiIconEmitterClass =
-                atStage("wifi.resolve.iconEmitterClass") {
-                    Class.forName(WIFI_ICON_EMITTER_CLASS_NAME, false, classLoader)
-                }
-            val wifiIconEmitMethod =
-                atStage("wifi.resolve.iconEmitMethod") {
-                    resolveEmitterMethod(
-                        emitterClass = wifiIconEmitterClass,
-                        methodName = WIFI_ICON_EMIT_METHOD_NAME,
-                    )
-                }
-            val wifiIconImageField =
-                atStage("wifi.resolve.iconViewField") {
-                    wifiIconEmitterClass
-                        .getDeclaredField("\$iconView")
-                        .apply { isAccessible = true }
-                }
-            val wifiIconClassIdField =
-                atStage("wifi.resolve.classIdField") {
-                    wifiIconEmitterClass
-                        .getDeclaredField("\$r8\$classId")
-                        .apply { isAccessible = true }
-                }
-            val wifiIconGetter =
-                wifiLocationVmClass.methods
-                    .firstOrNull { method ->
-                        method.name == "getWifiIcon" &&
-                            method.parameterCount == 0
-                    }
-                    ?.apply { isAccessible = true }
-            val seedContract =
-                WifiSeedContract(
-                    wifiIconGetter = wifiIconGetter,
-                    wifiVisibleIconField = wifiVisibleIconField,
-                    iconResourceIdAccessor = iconResourceIdAccessor,
-                )
-            wifiSeedContract = seedContract
+            val hooks = resolveWifiHooks(classLoader)
+            wifiSeedContract = hooks.seedContract
 
             created +=
                 atStage("wifi.hook.bind") {
                     module
-                        .hook(wifiBindMethod)
+                        .hook(hooks.wifiBindMethod)
                         .setId(WIFI_BIND_HOOK_ID)
                         .intercept(
                             wifiBindHooker(
                                 active = active,
-                                seedContract = seedContract,
-                                onWifiState = onWifiState,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                seedContract = hooks.seedContract,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
             created +=
                 atStage("wifi.hook.iconEmit") {
                     module
-                        .hook(wifiIconEmitMethod)
+                        .hook(hooks.wifiIconEmitMethod)
                         .setId(WIFI_ICON_HOOK_ID)
                         .intercept(
                             wifiIconHooker(
                                 active = active,
-                                wifiImageField = wifiIconImageField,
-                                wifiClassIdField = wifiIconClassIdField,
-                                wifiVisibleIconField = wifiVisibleIconField,
-                                iconResourceIdAccessor = iconResourceIdAccessor,
-                                onWifiState = onWifiState,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                wifiImageField = hooks.wifiIconImageField,
+                                wifiClassIdField = hooks.wifiIconClassIdField,
+                                seedContract = hooks.seedContract,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
@@ -398,40 +476,14 @@ internal object SysUiNetworkSource {
                 val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
                 module.hook(method)
                     .setId(WIFI_ACTIVITY_HOOK_ID)
-                    .intercept(Hooker { chain ->
-                        val result = chain.proceed()
-                        if (active.get()) {
-                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
-                            if (image != null && findWifiBinding(image)) {
-                                try {
-                                    val visible = image.visibility == View.VISIBLE &&
-                                        image.drawable != null
-                                    val taggedResId = (image.tag as? Number)?.toInt()
-                                        ?.takeIf { it > 0 && visible }
-                                    // Capture the native witness before Guiyuan's
-                                    // update may change presentation or masking.
-                                    val nativeWitness =
-                                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                            readOrNull { nativeActivityObservation(image, result) }
-                                        } else null
-                                    onWifiActivity(taggedResId)
-                                    nativeWitness?.let { witness ->
-                                        readOrNull {
-                                            onEvent?.invoke(
-                                                "networkPipeline wifi activityEvent " +
-                                                    "phase=afterNativeProceed/beforeModuleCommit " +
-                                                    "appliedResId=" + (taggedResId ?: 0) +
-                                                    " " + witness,
-                                            )
-                                        }
-                                    }
-                                } catch (error: Throwable) {
-                                    callbackFailed("wifi-activity", error, onRuntimeFailure)
-                                }
-                            }
-                        }
-                        result
-                    })
+                    .intercept(
+                        wifiActivityHooker(
+                            active = active,
+                            activityField = activityField,
+                            sinks = sinks,
+                            diagnostics = diagnostics,
+                        ),
+                    )
             }.onSuccess { created += it }.onFailure(::rethrowFatal)
 
             active.set(true)
@@ -448,261 +500,50 @@ internal object SysUiNetworkSource {
     }
 
 
+    @Suppress("TooGenericExceptionCaught")
     private fun installMobile(
         module: XposedModule,
         classLoader: ClassLoader,
-        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onMobileActivityResource: (subscriptionId: Int, resourceId: Int?, visible: Boolean) -> Unit,
-        onMobileActivityVisibility: (subscriptionId: Int, visible: Boolean) -> Unit,
-        onPresentationChanged: (() -> Unit)?,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): BranchInstallResult {
         val created = mutableListOf<HookHandle>()
         val active = AtomicBoolean(false)
 
         return try {
-            val mobileBinderClass =
-                atStage("mobile.resolve.binderClass") {
-                    Class.forName(MOBILE_BINDER_CLASS_NAME, false, classLoader)
-                }
-            val mobileLocationVmClass =
-                atStage("mobile.resolve.locationViewModelClass") {
-                    Class.forName(MOBILE_LOCATION_VIEW_MODEL_CLASS_NAME, false, classLoader)
-                }
-            val mobileIconVmClass =
-                atStage("mobile.resolve.iconViewModelClass") {
-                    Class.forName(MOBILE_ICON_VIEW_MODEL_CLASS_NAME, false, classLoader)
-                }
-            val mobileLoggerClass =
-                atStage("mobile.resolve.loggerClass") {
-                    Class.forName(MOBILE_VIEW_LOGGER_CLASS_NAME, false, classLoader)
-                }
-            val mobileBindMethod =
-                atStage("mobile.resolve.bindMethod") {
-                    mobileBinderClass.getDeclaredMethod(
-                        MOBILE_BIND_METHOD_NAME,
-                        ViewGroup::class.java,
-                        mobileLocationVmClass,
-                        mobileIconVmClass,
-                        mobileLoggerClass,
-                    )
-                }
-            val mobileSignalEmitterClass =
-                atStage("mobile.resolve.signalEmitterClass") {
-                    Class.forName(MOBILE_SIGNAL_EMITTER_CLASS_NAME, false, classLoader)
-                }
-            val mobileSignalEmitMethod =
-                atStage("mobile.resolve.signalEmitMethod") {
-                    resolveEmitterMethod(
-                        emitterClass = mobileSignalEmitterClass,
-                        methodName = MOBILE_SIGNAL_EMIT_METHOD_NAME,
-                    )
-                }
-            val mobileImageField =
-                atStage("mobile.resolve.imageField") {
-                    mobileSignalEmitterClass
-                        .getDeclaredField("\$mobile")
-                        .apply { isAccessible = true }
-                }
-            val mobileClassIdField =
-                atStage("mobile.resolve.classIdField") {
-                    mobileSignalEmitterClass
-                        .getDeclaredField("\$r8\$classId")
-                        .apply { isAccessible = true }
-                }
-            val subscriptionIdMethod =
-                atStage("mobile.resolve.subscriptionIdMethod") {
-                    mobileLocationVmClass
-                        .getDeclaredMethod("getSubscriptionId")
-                        .apply { isAccessible = true }
-                }
+            val hooks = resolveMobileHooks(classLoader)
             created +=
                 atStage("mobile.hook.bind") {
                     module
-                        .hook(mobileBindMethod)
+                        .hook(hooks.mobileBindMethod)
                         .setId(MOBILE_BIND_HOOK_ID)
                         .intercept(
                             mobileBindHooker(
                                 active = active,
-                                subscriptionIdMethod = subscriptionIdMethod,
+                                subscriptionIdMethod = hooks.subscriptionIdMethod,
                                 classLoader = classLoader,
-                                onPresentationChanged = onPresentationChanged,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
             created +=
                 atStage("mobile.hook.signalEmit") {
                     module
-                        .hook(mobileSignalEmitMethod)
+                        .hook(hooks.mobileSignalEmitMethod)
                         .setId(MOBILE_SIGNAL_HOOK_ID)
                         .intercept(
                             mobileSignalHooker(
                                 active = active,
-                                mobileImageField = mobileImageField,
-                                mobileClassIdField = mobileClassIdField,
-                                onMobileSignal = onMobileSignal,
-                                onPresentationChanged = onPresentationChanged,
-                                onRuntimeFailure = onRuntimeFailure,
-                                onEvent = onEvent,
-                                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                                mobileImageField = hooks.mobileImageField,
+                                mobileClassIdField = hooks.mobileClassIdField,
+                                sinks = sinks,
+                                diagnostics = diagnostics,
                             ),
                         )
                 }
 
-            // The exact OEM binder reads isVisible().value.first via this
-            // binding. The child visibility is written by getInOutVisible()
-            // independently of getInOutResId(); neither uses View.isShown.
-            val nativeBindingField = atStage("mobile.resolve.visibilityBinding") {
-                Class.forName(MODERN_STATUS_BAR_VIEW_CLASS_NAME, false, classLoader)
-                    .getField("binding").apply { isAccessible = true }
-            }
-            val nativeShouldVisibleMethod = atStage("mobile.resolve.shouldIconBeVisible") {
-                Class.forName(MODERN_STATUS_BAR_VIEW_BINDING_CLASS_NAME, false, classLoader)
-                    .getMethod("getShouldIconBeVisible").apply {
-                        check(returnType == Boolean::class.javaPrimitiveType) {
-                            "mobile-native-visibility-return-type-mismatch"
-                        }
-                        isAccessible = true
-                    }
-            }
-            // Both native activity collectors are required for the verified OS4
-            // replacement. If either cannot be hooked, roll back the mobile
-            // branch rather than announcing an incomplete native state owner.
-            created += atStage("mobile.hook.activityResource") {
-                val collector = Class.forName(MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
-                val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
-                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
-                module.hook(method)
-                    .setId(MOBILE_ACTIVITY_HOOK_ID)
-                    .intercept(Hooker { chain ->
-                        val result = chain.proceed()
-                        if (active.get()) {
-                            val image = readOrNull { activityField.get(chain.thisObject) as? ImageView }
-                            val binding = image?.let(::findNativeHomeMobileBinding)
-                            if (image != null && binding != null) {
-                                try {
-                                    val taggedResId = nativeMobileActivityResourceId(image)
-                                    val nativeWitness =
-                                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                            readOrNull { nativeActivityObservation(image, result) }
-                                        } else null
-                                    val rootVisible = readOrNull {
-                                        nativeBindingField.get(binding.root)?.let { nativeBinding ->
-                                            nativeShouldVisibleMethod.invoke(nativeBinding) as? Boolean
-                                        }
-                                    }
-                                    // A hidden Home scene or CombinedStatus's native
-                                    // visual mask can make isShown=false even when
-                                    // the OEM binding and child both allow the icon.
-                                    // Read the same native root semantic and child
-                                    // visibility that the binder itself consumes.
-                                    val effectiveVisible = nativeMobileActivityShown(
-                                        rootVisible = rootVisible,
-                                        childVisible = image.visibility == View.VISIBLE,
-                                    )
-                                    if (effectiveVisible != null) {
-                                        onMobileActivityResource(
-                                            binding.subscriptionId, taggedResId, effectiveVisible,
-                                        )
-                                    } else {
-                                        callbackFailed(
-                                            "mobile-activity-native-binding",
-                                            IllegalStateException("native-home-mobile-binding-unavailable"),
-                                            onRuntimeFailure,
-                                        )
-                                    }
-                                    nativeWitness?.let { witness ->
-                                        readOrNull {
-                                            onEvent?.invoke(
-                                                "networkPipeline mobile activityEvent " +
-                                                    "phase=afterNativeProceed/beforeModuleCommit " +
-                                                    "subId=" + binding.subscriptionId +
-                                                    " appliedResId=" + (taggedResId ?: 0) +
-                                                    " nativeRootVisible=" + (rootVisible ?: "unknown") +
-                                                    " " + witness,
-                                            )
-                                        }
-                                    }
-                                } catch (error: Throwable) {
-                                    callbackFailed("mobile-activity", error, onRuntimeFailure)
-                                }
-                            }
-                        }
-                        result
-                    })
-            }
-
-            // The native visibility collector is independent of getInOutResId().
-            // Observe its already-applied View state; do not collect a second Flow.
-            created += atStage("mobile.hook.activityVisibility") {
-                val collector = Class.forName(
-                    MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME, false, classLoader,
-                )
-                val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
-                val classIdField = collector.getDeclaredField("\$r8\$classId").apply { isAccessible = true }
-                val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
-                module.hook(method)
-                    .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
-                    .intercept(Hooker { chain ->
-                        val result = chain.proceed()
-                        if (
-                            active.get() &&
-                            readOrNull { classIdField.getInt(chain.thisObject) } ==
-                            MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
-                        ) {
-                            // The OEM has already applied the Flow's Pair to its
-                            // View. Read its authoritative Home binding and child
-                            // visibility instead of casting a host Kotlin Pair
-                            // through the module's ClassLoader.
-                            val image = readOrNull { imageField.get(chain.thisObject) as? ImageView }
-                            val binding = image?.let(::findNativeHomeMobileBinding)
-                            val rootVisible = binding?.let { owner ->
-                                readOrNull {
-                                    nativeBindingField.get(owner.root)?.let { nativeBinding ->
-                                        nativeShouldVisibleMethod.invoke(nativeBinding) as? Boolean
-                                    }
-                                }
-                            }
-                            val childVisible = image?.visibility == View.VISIBLE
-                            val effectiveVisible = nativeMobileActivityShown(
-                                rootVisible = rootVisible,
-                                childVisible = childVisible,
-                            )
-                            if (binding != null && effectiveVisible != null) {
-                                try {
-                                    // The native visibility collector can fire without
-                                    // another resource emission. A drawable is required
-                                    // to draw, but not to remember native visibility.
-                                    onMobileActivityVisibility(
-                                        binding.subscriptionId, effectiveVisible,
-                                    )
-                                } catch (error: Throwable) {
-                                    callbackFailed("mobile-activity-visibility", error, onRuntimeFailure)
-                                }
-                            }
-                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                val taggedResId = image?.let(::nativeMobileActivityResourceId)
-                                readOrNull {
-                                    onEvent.invoke(
-                                        "networkPipeline mobile activityVisibility " +
-                                            "subId=" + (binding?.subscriptionId ?: "unknown") +
-                                            " rootVisible=" + (rootVisible ?: "unknown") +
-                                            " childVisible=" + childVisible +
-                                            " effectiveVisible=" + (effectiveVisible ?: "unknown") +
-                                            " appliedResId=" + (taggedResId ?: 0) +
-                                            " accepted=" + (binding != null && effectiveVisible != null),
-                                    )
-                                }
-                            }
-                        }
-                        result
-                    })
-            }
+            installMobileActivity(module, classLoader, active, sinks, diagnostics, created)
 
             active.set(true)
             BranchInstallResult(
@@ -716,30 +557,270 @@ internal object SysUiNetworkSource {
         }
     }
 
+    private fun installMobileActivity(
+        module: XposedModule,
+        classLoader: ClassLoader,
+        active: AtomicBoolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+        created: MutableList<HookHandle>,
+    ) {
+        // The exact OEM binder reads isVisible().value.first via this
+        // binding. The child visibility is written by getInOutVisible()
+        // independently of getInOutResId(); neither uses View.isShown.
+        val nativeBindingField = atStage("mobile.resolve.visibilityBinding") {
+            Class.forName(MODERN_STATUS_BAR_VIEW_CLASS_NAME, false, classLoader)
+                .getField("binding").apply { isAccessible = true }
+        }
+        val nativeShouldVisibleMethod = atStage("mobile.resolve.shouldIconBeVisible") {
+            Class.forName(MODERN_STATUS_BAR_VIEW_BINDING_CLASS_NAME, false, classLoader)
+                .getMethod("getShouldIconBeVisible").apply {
+                    check(returnType == Boolean::class.javaPrimitiveType) {
+                        "mobile-native-visibility-return-type-mismatch"
+                    }
+                    isAccessible = true
+                }
+        }
+        // Both native activity collectors are required for the verified OS4
+        // replacement. If either cannot be hooked, roll back the mobile
+        // branch rather than announcing an incomplete native state owner.
+        created += atStage("mobile.hook.activityResource") {
+            val collector = Class.forName(MOBILE_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+            val activityField = collector.getDeclaredField("\$leftInOut").apply { isAccessible = true }
+            val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
+            module.hook(method)
+                .setId(MOBILE_ACTIVITY_HOOK_ID)
+                .intercept(
+                    mobileActivityResourceHooker(
+                        active = active,
+                        activityField = activityField,
+                        nativeBindingField = nativeBindingField,
+                        nativeShouldVisibleMethod = nativeShouldVisibleMethod,
+                        sinks = sinks,
+                        diagnostics = diagnostics,
+                    ),
+                )
+        }
+
+        // The native visibility collector is independent of getInOutResId().
+        // Observe its already-applied View state; do not collect a second Flow.
+        created += atStage("mobile.hook.activityVisibility") {
+            val collector = Class.forName(
+                MOBILE_ACTIVITY_VISIBILITY_COLLECTOR_CLASS_NAME, false, classLoader,
+            )
+            val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
+            val classIdField = collector.getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME).apply { isAccessible = true }
+            val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
+            module.hook(method)
+                .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
+                .intercept(
+                    mobileActivityVisibilityHooker(
+                        active = active,
+                        imageField = imageField,
+                        classIdField = classIdField,
+                        nativeBindingField = nativeBindingField,
+                        nativeShouldVisibleMethod = nativeShouldVisibleMethod,
+                        sinks = sinks,
+                        diagnostics = diagnostics,
+                    ),
+                )
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun wifiActivityHooker(
+        active: AtomicBoolean,
+        activityField: Field,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+    ): Hooker {
+        val onWifiActivity = sinks.onWifiActivity
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        return Hooker { chain ->
+            val result = chain.proceed()
+            if (active.get()) {
+                val image = optionalNativeRead { activityField.get(chain.thisObject) as? ImageView }
+                if (image != null && findWifiBinding(image)) {
+                    try {
+                        val visible = image.visibility == View.VISIBLE &&
+                            image.drawable != null
+                        val taggedResId = (image.tag as? Number)?.toInt()
+                            ?.takeIf { it > 0 && visible }
+                        // Capture the native witness before Guiyuan's
+                        // update may change presentation or masking.
+                        val nativeWitness =
+                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                optionalNativeRead { NetworkNativeEvidence.nativeActivityObservation(image, result) }
+                            } else null
+                        onWifiActivity(taggedResId)
+                        nativeWitness?.let { witness ->
+                            optionalNativeRead {
+                                onEvent?.invoke(
+                                    "networkPipeline wifi activityEvent " +
+                                        "phase=afterNativeProceed/beforeModuleCommit " +
+                                        "appliedResId=" + (taggedResId ?: 0) +
+                                        " " + witness,
+                                )
+                            }
+                        }
+                    } catch (error: Throwable) {
+                        callbackFailed("wifi-activity", error, onRuntimeFailure)
+                    }
+                }
+            }
+            result
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun mobileActivityResourceHooker(
+        active: AtomicBoolean,
+        activityField: Field,
+        nativeBindingField: Field,
+        nativeShouldVisibleMethod: Method,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+    ): Hooker {
+        val onMobileActivityResource = sinks.onMobileActivityResource
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        return Hooker { chain ->
+            val result = chain.proceed()
+            if (active.get()) {
+                val image = optionalNativeRead { activityField.get(chain.thisObject) as? ImageView }
+                val binding = image?.let(::findNativeHomeMobileBinding)
+                if (image != null && binding != null) {
+                    try {
+                        val taggedResId = nativeMobileActivityResourceId(image)
+                        val nativeWitness =
+                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                                optionalNativeRead { NetworkNativeEvidence.nativeActivityObservation(image, result) }
+                            } else null
+                        val rootVisible = nativeMobileRootVisible(
+                            binding.root, nativeBindingField, nativeShouldVisibleMethod,
+                        )
+                        // A hidden Home scene or CombinedStatus's native
+                        // visual mask can make isShown=false even when
+                        // the OEM binding and child both allow the icon.
+                        // Read the same native root semantic and child
+                        // visibility that the binder itself consumes.
+                        val effectiveVisible = nativeMobileActivityShown(
+                            rootVisible = rootVisible,
+                            childVisible = image.visibility == View.VISIBLE,
+                        )
+                        if (effectiveVisible != null) {
+                            onMobileActivityResource(
+                                binding.subscriptionId, taggedResId, effectiveVisible,
+                            )
+                        } else {
+                            callbackFailed(
+                                "mobile-activity-native-binding",
+                                IllegalStateException("native-home-mobile-binding-unavailable"),
+                                onRuntimeFailure,
+                            )
+                        }
+                        nativeWitness?.let { witness ->
+                            optionalNativeRead {
+                                onEvent?.invoke(
+                                    "networkPipeline mobile activityEvent " +
+                                        "phase=afterNativeProceed/beforeModuleCommit " +
+                                        SUB_ID_LOG_FIELD + binding.subscriptionId +
+                                        " appliedResId=" + (taggedResId ?: 0) +
+                                        " nativeRootVisible=" + (rootVisible ?: UNKNOWN_LOG_VALUE) +
+                                        " " + witness,
+                                )
+                            }
+                        }
+                    } catch (error: Throwable) {
+                        callbackFailed("mobile-activity", error, onRuntimeFailure)
+                    }
+                }
+            }
+            result
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun mobileActivityVisibilityHooker(
+        active: AtomicBoolean,
+        imageField: Field,
+        classIdField: Field,
+        nativeBindingField: Field,
+        nativeShouldVisibleMethod: Method,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+    ): Hooker {
+        val onMobileActivityVisibility = sinks.onMobileActivityVisibility
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        return Hooker { chain ->
+            val result = chain.proceed()
+            if (
+                active.get() &&
+                optionalNativeRead { classIdField.getInt(chain.thisObject) } ==
+                MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
+            ) {
+                // The OEM has already applied the Flow's Pair to its
+                // View. Read its authoritative Home binding and child
+                // visibility instead of casting a host Kotlin Pair
+                // through the module's ClassLoader.
+                val image = optionalNativeRead { imageField.get(chain.thisObject) as? ImageView }
+                val binding = image?.let(::findNativeHomeMobileBinding)
+                val rootVisible = binding?.let { owner ->
+                    nativeMobileRootVisible(
+                        owner.root, nativeBindingField, nativeShouldVisibleMethod,
+                    )
+                }
+                val childVisible = image?.visibility == View.VISIBLE
+                val effectiveVisible = nativeMobileActivityShown(
+                    rootVisible = rootVisible,
+                    childVisible = childVisible,
+                )
+                if (binding != null && effectiveVisible != null) {
+                    try {
+                        // The native visibility collector can fire without
+                        // another resource emission. A drawable is required
+                        // to draw, but not to remember native visibility.
+                        onMobileActivityVisibility(
+                            binding.subscriptionId, effectiveVisible,
+                        )
+                    } catch (error: Throwable) {
+                        callbackFailed("mobile-activity-visibility", error, onRuntimeFailure)
+                    }
+                }
+                if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                    val taggedResId = image?.let(::nativeMobileActivityResourceId)
+                    optionalNativeRead {
+                        onEvent.invoke(
+                            "networkPipeline mobile activityVisibility " +
+                                SUB_ID_LOG_FIELD + (binding?.subscriptionId ?: UNKNOWN_LOG_VALUE) +
+                                " rootVisible=" + (rootVisible ?: UNKNOWN_LOG_VALUE) +
+                                " childVisible=" + childVisible +
+                                " effectiveVisible=" + (effectiveVisible ?: UNKNOWN_LOG_VALUE) +
+                                " appliedResId=" + (taggedResId ?: 0) +
+                                " accepted=" + (binding != null && effectiveVisible != null),
+                        )
+                    }
+                }
+            }
+            result
+        }
+    }
+
+    // Read the exact OEM visibility value from the current root after native proceed.
+    private fun nativeMobileRootVisible(
+        root: ViewGroup,
+        bindingField: Field,
+        visibilityMethod: Method,
+    ): Boolean? =
+        optionalNativeRead {
+            bindingField.get(root)?.let { binding ->
+                visibilityMethod.invoke(binding) as? Boolean
+            }
+        }
+
     private fun nativeMobileActivityResourceId(image: ImageView): Int? =
         (image.tag as? Number)?.toInt()?.takeIf { id ->
             id > 0 && image.drawable != null
         }
-
-    // Diagnostic-only witness: native activity may change visibility, image alpha
-    // or drawable state without changing the resource ID we currently transfer.
-    // Do not synthesize an activity event from these observations.
-    private fun nativeActivityObservation(image: ImageView, hookResult: Any?): String {
-        val drawable = image.drawable
-        val nativeId = (image.tag as? Number)?.toInt() ?: 0
-        val nativeName = nativeId.takeIf { it > 0 }?.let { resourceName(image, it) }
-        return "viewId=" + resourceId(image) +
-            " tag=" + nativeId +
-            " tagName=" + (nativeName ?: "none") +
-            " visibility=" + visibilityName(image.visibility) +
-            " shown=" + image.isShown +
-            " viewAlpha=" + image.alpha +
-            " imageAlpha=" + image.imageAlpha +
-            " drawableType=" + (drawable?.javaClass?.simpleName ?: "none") +
-            " drawableAlpha=" + (drawable?.alpha ?: -1) +
-            " drawableLevel=" + (drawable?.level ?: -1) +
-            " nativeResult=" + (hookResult?.javaClass?.simpleName ?: "null")
-    }
 
     private fun resolveEmitterMethod(
         emitterClass: Class<*>,
@@ -871,9 +952,9 @@ internal object SysUiNetworkSource {
             wifiRoots.keys.forEach { root ->
                 add(
                     "nativeSlot binding=wifi root=" + root.javaClass.simpleName +
-                        ROOT_ID_LOG_FIELD + resourceId(root) +
-                        PARENT_CHAIN_LOG_FIELD + parentChain(root) +
-                        LAYOUT_LOG_FIELD + layoutToken(root),
+                        ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(root) +
+                        PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(root) +
+                        LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(root),
                 )
             }
             mobileRoots.forEach { (root, binding) ->
@@ -881,14 +962,16 @@ internal object SysUiNetworkSource {
                     add(
                         "nativeSlot binding=mobile subId=" + subscriptionId +
                             " root=" + root.javaClass.simpleName +
-                            ROOT_ID_LOG_FIELD + resourceId(root) +
-                            PARENT_CHAIN_LOG_FIELD + parentChain(root) +
-                            LAYOUT_LOG_FIELD + layoutToken(root),
+                            ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(root) +
+                            PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(root) +
+                            LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(root),
                     )
                 }
             }
         }
 
+    // Capture any nonfatal install error with its stage; fatal errors propagate.
+    @Suppress("TooGenericExceptionCaught")
     private inline fun <T> atStage(
         stage: String,
         block: () -> T,
@@ -913,20 +996,14 @@ internal object SysUiNetworkSource {
         )
     }
 
+    // Unhook may fail inside framework code; retain the handle for lifecycle cleanup.
+    @Suppress("TooGenericExceptionCaught")
     private fun failedBranch(
         component: String,
         error: InstallStageException,
         handles: List<HookHandle>,
     ): BranchInstallResult {
-        val remaining = handles.filter { handle ->
-            try {
-                handle.unhook()
-                false
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                true
-            }
-        }
+        val remaining = handles.filter { it.unhookFailed() }
         val failure = installFailure(component, error)
         return BranchInstallResult(
             handles = remaining,
@@ -942,15 +1019,33 @@ internal object SysUiNetworkSource {
 
     fun matches(handle: HookHandle): Boolean = handle.id in hookIds
 
+    // Hook failures can be arbitrary Throwables; fatal causes are rethrown.
+    // Only the unfinished native bind may restore its previous receipt.
+    private fun <T : Any> rollbackPendingBinding(
+        bindings: WeakHashMap<ViewGroup, T>,
+        root: ViewGroup?,
+        pending: T?,
+        previous: T?,
+    ) {
+        if (root == null || pending == null) return
+        synchronized(this) {
+            if (bindings[root] === pending) {
+                if (previous == null) bindings.remove(root)
+                else bindings[root] = previous
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
     private fun wifiBindHooker(
         active: AtomicBoolean,
         seedContract: WifiSeedContract,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val onWifiState = sinks.onWifiState
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val root: ViewGroup?
         val viewModel: Any?
         try {
@@ -975,15 +1070,15 @@ internal object SysUiNetworkSource {
         if (boundRoot != null && previous?.viewModel !== viewModel) {
             try {
                 val diagnosticEvent = onEvent?.takeIf { isDetailedDiagnosticsEnabled() }
-                readOrNull {
+                optionalNativeRead {
                     diagnosticEvent?.invoke(
                         "networkPipeline wifi bound " +
                         "stage=beforeProceed " +
                         "root=" + boundRoot.javaClass.simpleName +
-                        ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
+                        ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(boundRoot) +
                         " vm=" + viewModel?.javaClass?.simpleName +
-                        PARENT_CHAIN_LOG_FIELD + parentChain(boundRoot) +
-                        LAYOUT_LOG_FIELD + layoutToken(boundRoot),
+                        PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(boundRoot) +
+                        LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(boundRoot),
                     )
                 }
                 readWifiSeed(
@@ -1003,15 +1098,7 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                // Revert only our unfinished bind, not a nested newer bind.
-                if (boundRoot != null && pending != null) {
-                    synchronized(this) {
-                        if (wifiRoots[boundRoot] === pending) {
-                            if (previous == null) wifiRoots.remove(boundRoot)
-                            else wifiRoots[boundRoot] = previous
-                        }
-                    }
-                }
+                rollbackPendingBinding(wifiRoots, boundRoot, pending, previous)
                 throw error
             }
         seedFailure?.let { error ->
@@ -1022,7 +1109,7 @@ internal object SysUiNetworkSource {
 
     // SystemUI keeps its binding on the native View even when bind() is not replayed.
     private fun nativeWifiViewModel(root: ViewGroup): Any? =
-        readOrNull {
+        optionalNativeRead {
             val parentClass = root.javaClass.superclass
             if (parentClass.name == MODERN_STATUS_BAR_VIEW_CLASS_NAME) {
                 parentClass.getDeclaredField("binding")
@@ -1056,7 +1143,7 @@ internal object SysUiNetworkSource {
             val root = icons.getChildAt(index) as? ViewGroup ?: continue
             if (
                 root.javaClass.name != HOME_WIFI_VIEW_CLASS_NAME ||
-                NativeParticipantAccess.resourceEntryName(root) != "wifi_combo" ||
+                NativeStatusSlots.resourceEntryName(root) != "wifi_combo" ||
                 !root.isAttachedToWindow
             ) continue
             if (wifi != null) return null
@@ -1109,10 +1196,7 @@ internal object SysUiNetworkSource {
         val getter =
             contract.wifiIconGetter
                 ?: run {
-                    reportSeed(onEvent,
-                        WIFI_SEED_LOG_PREFIX + source +
-                            " state=unavailable reason=getWifiIcon-missing",
-                    )
+                    reportUnavailableWifiSeed(onEvent, source, "getWifiIcon-missing")
                     return null
                 }
 
@@ -1121,22 +1205,15 @@ internal object SysUiNetworkSource {
                 getter.invoke(viewModel)
             }.getOrElse { error ->
                 rethrowFatal(error)
-                reportSeed(onEvent,
-                    WIFI_SEED_LOG_PREFIX + source +
-                        " state=unavailable reason=wifiIcon-read-" +
-                        error.javaClass.simpleName,
-                )
+                reportUnavailableWifiSeed(onEvent, source, "wifiIcon-read-" + error.javaClass.simpleName)
                 return null
             } ?: run {
-                reportSeed(onEvent,
-                    WIFI_SEED_LOG_PREFIX + source +
-                        " state=unavailable reason=wifiIcon-null",
-                )
+                reportUnavailableWifiSeed(onEvent, source, "wifiIcon-null")
                 return null
             }
 
         val valueGetter =
-            readOrNull {
+            optionalNativeRead {
                 flow.javaClass.methods
                     .firstOrNull { method ->
                         method.name == "getValue" &&
@@ -1144,11 +1221,7 @@ internal object SysUiNetworkSource {
                     }
                     ?.apply { isAccessible = true }
             } ?: run {
-                    reportSeed(onEvent,
-                        WIFI_SEED_LOG_PREFIX + source +
-                            " state=unavailable reason=stateFlow-value-missing " +
-                            "flow=" + flow.javaClass.name,
-                    )
+                    reportUnavailableWifiSeed(onEvent, source, "stateFlow-value-missing flow=" + flow.javaClass.name)
                     return null
                 }
 
@@ -1157,11 +1230,7 @@ internal object SysUiNetworkSource {
                 valueGetter.invoke(flow)
             }.getOrElse { error ->
                 rethrowFatal(error)
-                reportSeed(onEvent,
-                    WIFI_SEED_LOG_PREFIX + source +
-                        " state=unavailable reason=stateFlow-value-" +
-                        error.javaClass.simpleName,
-                )
+                reportUnavailableWifiSeed(onEvent, source, "stateFlow-value-" + error.javaClass.simpleName)
                 return null
             }
 
@@ -1184,6 +1253,14 @@ internal object SysUiNetworkSource {
                 " resourceAccessor=" + contract.iconResourceIdAccessor.description,
         )
         return semantic.state
+    }
+
+    private fun reportUnavailableWifiSeed(
+        onEvent: ((String) -> Unit)?,
+        source: String,
+        reason: String,
+    ) {
+        reportSeed(onEvent, WIFI_SEED_LOG_PREFIX + source + " state=unavailable reason=" + reason)
     }
 
     private fun reportSeed(onEvent: ((String) -> Unit)?, message: String) {
@@ -1215,7 +1292,7 @@ internal object SysUiNetworkSource {
 
         listOf("resId", "res").forEach { name ->
             val field =
-                readOrNull {
+                optionalNativeRead {
                     iconResourceClass.getDeclaredField(name)
                 }
             if (
@@ -1271,7 +1348,7 @@ internal object SysUiNetworkSource {
         }
 
         val modelResId =
-            readOrNull {
+            optionalNativeRead {
                 val icon = wifiVisibleIconField.get(value)
                 if (icon?.javaClass?.name == ICON_RESOURCE_CLASS_NAME) {
                     iconResourceIdAccessor.read(icon)
@@ -1280,7 +1357,7 @@ internal object SysUiNetworkSource {
                 }
             }
         val modelResourceName =
-            modelResId?.let { id -> resourceName(sourceView, id) }
+            modelResId?.let { id -> NetworkNativeEvidence.resourceName(sourceView, id) }
 
         return WifiSemanticValue(
             state =
@@ -1298,18 +1375,19 @@ internal object SysUiNetworkSource {
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun wifiIconHooker(
         active: AtomicBoolean,
         wifiImageField: Field,
         wifiClassIdField: Field,
-        wifiVisibleIconField: Field,
-        iconResourceIdAccessor: IconResourceIdAccessor,
-        onWifiState: (StatusStateStore.WifiState) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        seedContract: WifiSeedContract,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val wifiVisibleIconField = seedContract.wifiVisibleIconField
+        val iconResourceIdAccessor = seedContract.iconResourceIdAccessor
+        val onRuntimeFailure = diagnostics.onRuntimeFailure
         val value =
             try {
                 chain.getArg(0)
@@ -1329,7 +1407,7 @@ internal object SysUiNetworkSource {
                 return@Hooker result
             }
         val classId =
-            readOrNull {
+            optionalNativeRead {
                 wifiClassIdField.getInt(emitter)
             } ?: -1
 
@@ -1338,7 +1416,7 @@ internal object SysUiNetworkSource {
         }
 
         val image =
-            readOrNull {
+            optionalNativeRead {
                 wifiImageField.get(emitter) as? ImageView
             }
         val semantic =
@@ -1355,6 +1433,20 @@ internal object SysUiNetworkSource {
 
         val result = chain.proceed()
 
+        publishAppliedWifiIcon(image, semantic, classId, sinks, diagnostics)
+        result
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun publishAppliedWifiIcon(
+        image: ImageView?,
+        semantic: WifiSemanticValue?,
+        classId: Int,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+    ) {
+        val onWifiState = sinks.onWifiState
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         var deliveredKey: String? = null
         try {
             if (image != null && semantic != null) {
@@ -1363,7 +1455,7 @@ internal object SysUiNetworkSource {
                         ?.toInt()
                         ?.takeIf { it != 0 }
                 val taggedResource =
-                    taggedResId?.let { id -> resourceName(image, id) }
+                    taggedResId?.let { id -> NetworkNativeEvidence.resourceName(image, id) }
                 val previousTaggedResId =
                     synchronized(this) {
                         lastWifiTaggedResources.put(image, taggedResId)
@@ -1406,11 +1498,11 @@ internal object SysUiNetworkSource {
                     deliveredKey = eventKey
                     effective.state?.let(onWifiState)
                     if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                        readOrNull {
+                        optionalNativeRead {
                             onEvent(
                                 "networkPipeline wifi iconEvent " +
                                 "phase=semanticBeforeProceed/viewAfterProceed " +
-                                "viewId=" + resourceId(image) +
+                                "viewId=" + NativeStatusIdentity.resourceId(image) +
                                 " classId=" + classId +
                                 " valueType=" + semantic.valueType +
                                 " effectiveType=" + effective.valueType +
@@ -1424,8 +1516,8 @@ internal object SysUiNetworkSource {
                                 } else {
                                     "none"
                                 } +
-                                " visibility=" + visibilityName(image.visibility) +
-                                " presentation=" + wifiPresentationToken(image),
+                                " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
+                                " presentation=" + NetworkNativeEvidence.wifiPresentationToken(image),
                             )
                         }
                     }
@@ -1443,8 +1535,6 @@ internal object SysUiNetworkSource {
                 }
             }
         }
-
-        result
     }
 
     internal fun shouldUseAppliedHotspotFallback(
@@ -1458,16 +1548,18 @@ internal object SysUiNetworkSource {
             taggedResId != previousTaggedResId &&
             SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
+    // Recoverable OEM argument-read failures proceed natively; VM fatals rethrow.
+    @Suppress("TooGenericExceptionCaught")
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
         classLoader: ClassLoader,
-        onPresentationChanged: (() -> Unit)?,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val onPresentationChanged = sinks.onPresentationChanged
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val root: ViewGroup?
         val locationViewModel: Any?
         val iconViewModel: Any?
@@ -1493,7 +1585,7 @@ internal object SysUiNetworkSource {
 
         try {
             if (boundRoot != null) {
-                val subscriptionId = readOrNull {
+                val subscriptionId = optionalNativeRead {
                     (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
                 } ?: -1
                 val nextId = subscriptionId.takeIf { it >= 0 }
@@ -1503,16 +1595,16 @@ internal object SysUiNetworkSource {
                 previous = synchronized(this) { mobileRoots.put(boundRoot, candidate) }
                 bindingChanged = previous?.subscriptionId != nextId
                 if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
-                    bindingLog = readOrNull {
+                    bindingLog = optionalNativeRead {
                         "networkPipeline mobile bound " +
                             "stage=beforeProceed " +
                             "root=" + boundRoot.javaClass.simpleName +
-                            ROOT_ID_LOG_FIELD + resourceId(boundRoot) +
+                            ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(boundRoot) +
                             " locationVm=" + locationViewModel?.javaClass?.simpleName +
                             " subId=" + subscriptionId +
                             " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
-                            PARENT_CHAIN_LOG_FIELD + parentChain(boundRoot) +
-                            LAYOUT_LOG_FIELD + layoutToken(boundRoot)
+                            PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(boundRoot) +
+                            LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(boundRoot)
                     }
                 }
             }
@@ -1525,21 +1617,11 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                // A nested bind can reuse the same subscription ID.
-                val candidate = pending
-                if (boundRoot != null && candidate != null) {
-                    synchronized(this) {
-                        if (mobileRoots[boundRoot] === candidate) {
-                            val old = previous
-                            if (old == null) mobileRoots.remove(boundRoot)
-                            else mobileRoots[boundRoot] = old
-                        }
-                    }
-                }
+                rollbackPendingBinding(mobileRoots, boundRoot, pending, previous)
                 throw error
             }
         if (bindingChanged) {
-            readOrNull { bindingLog?.let { onEvent?.invoke(it) } }
+            optionalNativeRead { bindingLog?.let { onEvent?.invoke(it) } }
         }
         // A native binder can replace a child even if the SIM ID stays the same.
         if (boundRoot != null) {
@@ -1556,17 +1638,28 @@ internal object SysUiNetworkSource {
         result
     }
 
+    // Only clear the failed delivery if a newer native emission has not replaced it.
+    private fun rollbackPendingMobileEvent(image: ImageView?, pendingKey: String?) {
+        if (image == null) return
+        synchronized(this) {
+            if (lastMobileEvents[image] === pendingKey) {
+                lastMobileEvents.remove(image)
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
     private fun mobileSignalHooker(
         active: AtomicBoolean,
         mobileImageField: Field,
         mobileClassIdField: Field,
-        onMobileSignal: (subscriptionId: Int, signal: SignalStrength) -> Unit,
-        onPresentationChanged: (() -> Unit)?,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
+        val onMobileSignal = sinks.onMobileSignal
+        val onPresentationChanged = sinks.onPresentationChanged
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         val emitter =
             try {
                 chain.thisObject
@@ -1576,10 +1669,10 @@ internal object SysUiNetworkSource {
                 callbackFailed("mobile-signal-receiver", error, onRuntimeFailure)
                 return@Hooker result
             }
-        val image = readOrNull {
+        val image = optionalNativeRead {
             mobileImageField.get(emitter) as? ImageView
         }
-        val classId = readOrNull {
+        val classId = optionalNativeRead {
             mobileClassIdField.getInt(emitter)
         } ?: -1
         val value =
@@ -1616,7 +1709,7 @@ internal object SysUiNetworkSource {
                             ?.toInt()
                             ?.takeIf { it != 0 }
                         val resourceName =
-                            if (classId == 0) resourceId?.let { id -> resourceName(image, id) }
+                            if (classId == 0) resourceId?.let { id -> NetworkNativeEvidence.resourceName(image, id) }
                             else null
                         when (classId) {
                             0 ->
@@ -1628,16 +1721,16 @@ internal object SysUiNetworkSource {
                         }
 
                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                            eventLog = readOrNull {
+                            eventLog = optionalNativeRead {
                                 "networkPipeline mobile iconEvent " +
                                     "phase=beforeProceed " +
-                                    "subId=" + subscriptionId +
-                                    " viewId=" + resourceId(image) +
+                                    SUB_ID_LOG_FIELD + subscriptionId +
+                                    " viewId=" + NativeStatusIdentity.resourceId(image) +
                                     " classId=" + classId +
                                     " value=" + valueText +
                                     " resource=" +
                                     (resourceName
-                                        ?: resourceId?.let { id -> resourceName(image, id) }
+                                        ?: resourceId?.let { id -> NetworkNativeEvidence.resourceName(image, id) }
                                         ?: "n/a")
                             }
                         }
@@ -1653,26 +1746,14 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                if (image != null) {
-                    synchronized(this) {
-                        if (lastMobileEvents[image] === pendingKey) {
-                            lastMobileEvents.remove(image)
-                        }
-                    }
-                }
+                rollbackPendingMobileEvent(image, pendingKey)
                 throw error
             }
         callbackError?.let { error ->
             callbackFailed("mobile-signal", error, onRuntimeFailure)
-            if (image != null) {
-                synchronized(this) {
-                    if (lastMobileEvents[image] === pendingKey) {
-                        lastMobileEvents.remove(image)
-                    }
-                }
-            }
+            rollbackPendingMobileEvent(image, pendingKey)
         }
-        readOrNull { eventLog?.let { onEvent?.invoke(it) } }
+        optionalNativeRead { eventLog?.let { onEvent?.invoke(it) } }
         result
     }
 
@@ -1684,15 +1765,16 @@ internal object SysUiNetworkSource {
             val group = current as? ViewGroup
             if (group != null && wifiRoots.containsKey(group)) {
                 // A transferred root can carry no VM; the native binding remains its owner.
-                if (wifiRoots[group]?.viewModel?.javaClass?.name != HOME_WIFI_VIEW_MODEL_CLASS_NAME) {
-                    nativeWifiViewModel(group)?.let { wifiRoots[group] = WifiBinding(it) }
-                }
+                val needsNativeRefresh =
+                    wifiRoots[group]?.viewModel?.javaClass?.name != HOME_WIFI_VIEW_MODEL_CLASS_NAME
+                val nativeViewModel = if (needsNativeRefresh) nativeWifiViewModel(group) else null
+                if (nativeViewModel != null) wifiRoots[group] = WifiBinding(nativeViewModel)
                 return true
             }
             if (
                 group != null &&
                 group.javaClass.simpleName == "ModernStatusBarWifiView" &&
-                NativeParticipantAccess.resourceEntryName(group) == "wifi_combo"
+                NativeStatusSlots.resourceEntryName(group) == "wifi_combo"
             ) {
                 nativeRoot = group
             }
@@ -1791,13 +1873,13 @@ internal object SysUiNetworkSource {
     private fun nativeHomeMobileSubscription(root: ViewGroup, homeGroup: ViewGroup): Int? {
         if (!isNativeHomeMobileRootIdentity(
                 className = root.javaClass.name,
-                slot = NativeParticipantAccess.slotOf(root),
-                resourceEntry = NativeParticipantAccess.resourceEntryName(root),
+                slot = NativeStatusSlots.slotOf(root),
+                resourceEntry = NativeStatusSlots.resourceEntryName(root),
                 attached = root.isAttachedToWindow,
                 directHomeChild = root.parent === homeGroup,
             )
         ) return null
-        return readOrNull {
+        return optionalNativeRead {
             val getter =
                 nativeMobileSubIdMethod
                     ?.takeIf { it.declaringClass.isInstance(root) }
@@ -1806,118 +1888,4 @@ internal object SysUiNetworkSource {
         }
     }
 
-    private fun parentChain(view: View): String =
-        buildList {
-            var current: View? = view
-            for (index in 0 until MAX_PARENT_CHAIN_DEPTH) {
-                val value = current ?: break
-                add(
-                    value.javaClass.simpleName +
-                        "[" + resourceId(value) + "]",
-                )
-                current = value.parent as? View
-            }
-        }.joinToString(">")
-
-    private fun layoutToken(view: View): String {
-        val params = view.layoutParams
-        return if (params == null) {
-            "none"
-        } else {
-            params.width.toString() + "x" + params.height +
-                ":measured=" + view.measuredWidth + "x" + view.measuredHeight
-        }
-    }
-
-    private fun wifiPresentationToken(image: ImageView): String {
-        val drawable = image.drawable
-        val bounds = drawable?.bounds
-        val tint = image.imageTintList
-        return buildString {
-            append("drawable=")
-            append(drawable?.javaClass?.simpleName ?: "none")
-            append(" intrinsic=")
-            append(drawable?.intrinsicWidth ?: 0)
-            append('x')
-            append(drawable?.intrinsicHeight ?: 0)
-            append(" bounds=")
-            if (bounds == null) {
-                append("none")
-            } else {
-                append(bounds.left)
-                append(',')
-                append(bounds.top)
-                append(',')
-                append(bounds.right)
-                append(',')
-                append(bounds.bottom)
-            }
-            append(" drawableAlpha=")
-            append(drawable?.alpha ?: -1)
-            append(" imageAlpha=")
-            append(image.imageAlpha)
-            append(" tint=")
-            append(colorStateListToken(tint, image.drawableState))
-            append(" tintMode=")
-            append(image.imageTintMode?.name ?: "none")
-            append(" colorFilter=")
-            append(image.colorFilter?.javaClass?.simpleName ?: "none")
-            append(" scaleType=")
-            append(image.scaleType?.name ?: "none")
-            append(" matrix=")
-            append(image.imageMatrix?.toShortString() ?: "none")
-            append(" padding=")
-            append(image.paddingLeft)
-            append(',')
-            append(image.paddingTop)
-            append(',')
-            append(image.paddingRight)
-            append(',')
-            append(image.paddingBottom)
-            append(" measured=")
-            append(image.measuredWidth)
-            append('x')
-            append(image.measuredHeight)
-        }
-    }
-
-    private fun colorStateListToken(
-        tint: ColorStateList?,
-        state: IntArray,
-    ): String {
-        if (tint == null) return "none"
-        val resolved = tint.getColorForState(state, tint.defaultColor)
-        return "0x" + resolved.toUInt().toString(16).padStart(8, '0') +
-            "/default=0x" + tint.defaultColor.toUInt().toString(16).padStart(8, '0')
-    }
-
-    private fun visibilityName(visibility: Int): String = when (visibility) {
-        View.VISIBLE -> "VISIBLE"
-        View.INVISIBLE -> "INVISIBLE"
-        View.GONE -> "GONE"
-        else -> visibility.toString()
-    }
-
-    private fun resourceId(view: View): String {
-        if (view.id == View.NO_ID) {
-            return "none"
-        }
-
-        return readOrNull {
-            view.resources.getResourceName(view.id)
-        } ?: view.id.toString()
-    }
-
-    private fun resourceName(
-        view: View,
-        resId: Int,
-    ): String {
-        if (resId == 0) {
-            return "none"
-        }
-
-        return readOrNull {
-            view.resources.getResourceName(resId)
-        } ?: resId.toString()
-    }
 }

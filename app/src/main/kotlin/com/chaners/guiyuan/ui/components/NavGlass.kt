@@ -8,7 +8,6 @@ import top.yukonga.miuix.kmp.basic.FloatingToolbarDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -19,16 +18,13 @@ internal val NavStyle.requiresTextureBackdrop: Boolean
     get() = this == NavStyle.Blur || this == NavStyle.Glass
 
 @Composable
-internal fun Modifier.floatingNavMaterial(
+internal fun Modifier.floatingNavBlur(
     backdrop: Backdrop,
-    dark: Boolean,
-    style: NavStyle,
 ): Modifier {
-    if (!style.requiresTextureBackdrop) return this
-
+    val shape = RoundedCornerShape(FloatingToolbarDefaults.CornerRadius)
     return textureBlur(
         backdrop = backdrop,
-        shape = RoundedCornerShape(FloatingToolbarDefaults.CornerRadius),
+        shape = shape,
         blurRadius = NAV_BLUR_RADIUS,
         colors =
             BlurDefaults.blurColors(
@@ -42,11 +38,5 @@ internal fun Modifier.floatingNavMaterial(
                         ),
                     ),
             ),
-        highlight =
-            if (style == NavStyle.Glass) {
-                if (dark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight
-            } else {
-                null
-            },
     )
 }

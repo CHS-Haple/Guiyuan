@@ -1,0 +1,41 @@
+package com.chaners.guiyuan.ui
+
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavStyle
+
+internal enum class NavigationAction { HotReload, Search }
+
+/** Use only a bottom bar with an actual action layout, never a rail or fallback. */
+internal fun hasNavigationActionSlot(
+    appearance: Appearance,
+    glassBackdropAvailable: Boolean,
+    liquidBackdropAvailable: Boolean,
+    glassRailActive: Boolean,
+    nativeRailActive: Boolean,
+): Boolean {
+    if (!appearance.navEnabled ||
+        glassRailActive || nativeRailActive
+    ) return false
+    return when (appearance.navStyle) {
+        NavStyle.Glass -> glassBackdropAvailable
+        NavStyle.Liquid -> liquidBackdropAvailable
+        NavStyle.Standard, NavStyle.Blur -> false
+    }
+}
+
+/** The selected destination owns this slot; Features search remains separately stateful. */
+internal fun navigationActionFor(
+    slotAvailable: Boolean,
+    selectedPage: Int,
+    searchActive: Boolean,
+): NavigationAction? = when {
+    !slotAvailable -> null
+    selectedPage == 0 -> NavigationAction.HotReload
+    selectedPage == 1 && !searchActive -> NavigationAction.Search
+    else -> null
+}
+
+/** A native-morph Glass/Liquid rail can own an independent search action. */
+internal fun hasRailActionSlot(appearance: Appearance, glassRailActive: Boolean): Boolean =
+    appearance.navEnabled && glassRailActive &&
+        (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)

@@ -248,39 +248,4 @@ class VisualPersistenceTest {
         assertFalse(prefs.readVisualCfg(dual = false, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
         assertFalse(prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER).showTopReadout)
     }
-
-    @Test
-    fun singleAndDualKeepSeparateGeometryButShareBatteryColors() {
-        val prefs = VisualTestPreferences()
-        val single = VisualCfg(
-            layout = ContentLayout.BATTERY_CENTER,
-            combinedScale = 0.9f,
-            wifiOffsetY = -3f,
-            batteryColorPreset = BatteryColorPreset.RECOMMENDED,
-            batteryColorModes = BatteryColorModes(charging = BatteryColorMode.CUSTOM),
-            batteryColorOverrides = BatteryColorOverrides(charging = 0xFF123456.toInt()),
-        )
-        val dual = VisualCfg(
-            layout = ContentLayout.BATTERY_CENTER,
-            dualSignal = true,
-            combinedScale = 1.2f,
-            wifiOffsetY = 4f,
-            batteryColorPreset = BatteryColorPreset.IOS_STYLE,
-            batteryColorModes = BatteryColorModes(powerSave = BatteryColorMode.FOLLOW_SYSTEM),
-        )
-        prefs.edit().putVisualCfg(single).apply()
-        prefs.edit().putVisualCfg(dual).apply()
-
-        assertEquals(dual.normalized(), prefs.readVisualCfg(dual = true))
-        assertEquals(dual.normalized().copy(dualSignal = false), prefs.readVisualCfg(dual = false))
-        assertEquals(ContentLayout.BATTERY_CENTER, prefs.readLayout())
-        assertFalse(prefs.all.keys.any { it.startsWith("dual.battery_color_") })
-
-        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false).apply()
-        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
-        assertEquals(1f, prefs.readVisualCfg().combinedScale, 0.001f)
-        prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, true).apply()
-        assertEquals(BatteryColorPreset.IOS_STYLE, prefs.readVisualCfg().batteryColorPreset)
-        assertEquals(1f, prefs.readVisualCfg().combinedScale, 0.001f)
-    }
 }

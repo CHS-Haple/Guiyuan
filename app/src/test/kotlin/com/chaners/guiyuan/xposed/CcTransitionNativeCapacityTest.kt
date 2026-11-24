@@ -9,19 +9,19 @@ class CcTransitionNativeCapacityTest {
     fun chargingPeerReservationHoldsThenConvergesToLiveNativeEndpoint() {
         val compact = 105
         val unplugged = listOf(
-            CcTransitionPolicy.ReservationSpan(
+            CcReservationPolicy.ReservationSpan(
                 sourceLeft = -105f, sourceRight = 0f,
                 targetLeft = -220f, targetRight = 0f,
             ),
         )
         val plugged = listOf(
-            CcTransitionPolicy.ReservationSpan(
+            CcReservationPolicy.ReservationSpan(
                 sourceLeft = -105f, sourceRight = 0f,
                 targetLeft = -250f, targetRight = 0f,
             ),
         )
-        fun width(spans: List<CcTransitionPolicy.ReservationSpan>, p: Float) =
-            CcTransitionPolicy.resolveTransitionReservationWidth(
+        fun width(spans: List<CcReservationPolicy.ReservationSpan>, p: Float) =
+            CcReservationPolicy.resolveReservationWidth(
                 compactWidthPx = compact, spans = spans, progress = p,
             )
         val held = 0.6f
@@ -61,7 +61,7 @@ class CcTransitionNativeCapacityTest {
     fun transitionReservationInterpolatesTotalWidthFromNativeProgress() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = -10f,
                     sourceRight = 0f,
                     targetLeft = -30f,
@@ -71,8 +71,8 @@ class CcTransitionNativeCapacityTest {
 
         assertEquals(
             10,
-            CcTransitionPolicy
-                .resolveTransitionReservationWidth(
+            CcReservationPolicy
+                .resolveReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 0f,
@@ -80,8 +80,8 @@ class CcTransitionNativeCapacityTest {
         )
         assertEquals(
             20,
-            CcTransitionPolicy
-                .resolveTransitionReservationWidth(
+            CcReservationPolicy
+                .resolveReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 0.5f,
@@ -89,8 +89,8 @@ class CcTransitionNativeCapacityTest {
         )
         assertEquals(
             30,
-            CcTransitionPolicy
-                .resolveTransitionReservationWidth(
+            CcReservationPolicy
+                .resolveReservationWidth(
                     compactWidthPx = 10,
                     spans = spans,
                     progress = 1f,
@@ -99,10 +99,28 @@ class CcTransitionNativeCapacityTest {
     }
 
     @Test
-    fun totalWidthInterpolationAvoidsOverlappingSpanDeadZone() {
+    fun endSideOverflowDoesNotConsumeNativePeerReservation() {
         val spans =
             listOf(
-                CcTransitionPolicy.ReservationSpan(
+                CcReservationPolicy.ReservationSpan(
+                    sourceLeft = -20f,
+                    sourceRight = 10f,
+                    targetLeft = -150f,
+                    targetRight = 50f,
+                ),
+            )
+
+        // Only geometry left of the native FAKE end edge occupies peer space.
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0f))
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0.5f))
+        assertEquals(150, CcReservationPolicy.resolveReservationWidth(105, spans, 1f))
+    }
+
+    @Test
+    fun latentTargetOnlyReservesSpaceAsItEntersTheNativePeerSide() {
+        val spans =
+            listOf(
+                CcReservationPolicy.ReservationSpan(
                     sourceLeft = 0f,
                     sourceRight = 0f,
                     targetLeft = -180f,
@@ -110,164 +128,12 @@ class CcTransitionNativeCapacityTest {
                 ),
             )
 
-        val oldGeometryUnion =
-            CcTransitionPolicy.resolveReservationWidth(
-                compactWidthPx = 105,
-                spans = spans,
-                progress = 0.25f,
-            )
-        val transitionWidth =
-            CcTransitionPolicy
-                .resolveTransitionReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    progress = 0.25f,
-                )
-
-        assertEquals(105, oldGeometryUnion)
-        assertTrue(transitionWidth > 105)
-        assertTrue(transitionWidth < 180)
+        // A future FINAL destination is not current native FAKE occupancy.
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0f))
+        assertEquals(105, CcReservationPolicy.resolveReservationWidth(105, spans, 0.25f))
+        assertEquals(135, CcReservationPolicy.resolveReservationWidth(105, spans, 0.75f))
+        assertEquals(180, CcReservationPolicy.resolveReservationWidth(105, spans, 1f))
     }
 
-    @Test
-    fun batteryIslandNativePeerReservationDoesNotPreReserveLatentGap() {
-        val spans =
-            listOf(
-                CcTransitionPolicy.ReservationSpan(
-                    sourceLeft = 0f,
-                    sourceRight = 0f,
-                    targetLeft = -180f,
-                    targetRight = -105f,
-                ),
-            )
-        val semantic =
-            CcTransitionPolicy
-                .resolveTransitionReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    progress = 0.25f,
-                )
-        val native =
-            CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    semanticWidthPx = semantic,
-                    progress = 0.25f,
-                )
 
-        assertTrue(semantic > 105)
-        assertEquals(105, native)
-    }
-
-    @Test
-    fun batteryIslandNativePeerReservationProjectsTargetIntoCurrentFakeEndFrame() {
-        val spans =
-            listOf(
-                CcTransitionPolicy.ReservationSpan(
-                    sourceLeft = -105f,
-                    sourceRight = 0f,
-                    targetLeft = -240f,
-                    targetRight = -135f,
-                ),
-            )
-
-        val unprojected =
-            CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    semanticWidthPx = 220,
-                    progress = 0.5f,
-                )
-        val projected =
-            CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    semanticWidthPx = 220,
-                    progress = 0.5f,
-                    targetEndOffsetPx = 120f,
-                )
-
-        assertEquals(173, unprojected)
-        assertEquals(113, projected)
-    }
-
-    @Test
-    fun batteryIslandNativePeerReservationIgnoresEndSideProjection() {
-        val spans =
-            listOf(
-                CcTransitionPolicy.ReservationSpan(
-                    sourceLeft = -40f,
-                    sourceRight = 0f,
-                    targetLeft = -140f,
-                    targetRight = 0f,
-                ),
-            )
-
-        assertEquals(
-            80,
-            CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
-                    compactWidthPx = 40,
-                    spans = spans,
-                    semanticWidthPx = 140,
-                    progress = 1f,
-                    targetEndOffsetPx = 60f,
-                ),
-        )
-    }
-
-    @Test
-    fun batteryIslandNativePeerReservationFollowsCurrentSpanAndConverges() {
-        val spans =
-            listOf(
-                CcTransitionPolicy.ReservationSpan(
-                    sourceLeft = 0f,
-                    sourceRight = 0f,
-                    targetLeft = -180f,
-                    targetRight = -105f,
-                ),
-            )
-
-        assertEquals(
-            135,
-            CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    semanticWidthPx = 161,
-                    progress = 0.75f,
-                ),
-        )
-        assertEquals(
-            180,
-            CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
-                    compactWidthPx = 105,
-                    spans = spans,
-                    semanticWidthPx = 180,
-                    progress = 1f,
-                ),
-        )
-        assertEquals(
-            150,
-            CcTransitionPolicy
-                .resolveBatteryIslandNativePeerReservationWidth(
-                    compactWidthPx = 105,
-                    spans =
-                        listOf(
-                            CcTransitionPolicy.ReservationSpan(
-                                sourceLeft = -105f,
-                                sourceRight = 0f,
-                                targetLeft = -220f,
-                                targetRight = 0f,
-                            ),
-                        ),
-                    semanticWidthPx = 150,
-                    progress = 1f,
-                ),
-        )
-    }
 }

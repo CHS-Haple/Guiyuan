@@ -4,10 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
 import kotlinx.serialization.Serializable
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal const val FEATURE_KEYGUARD_DEFAULT = true
 internal const val FEATURE_AOD_DEFAULT = true
@@ -27,6 +24,15 @@ internal data class FeatureCfg(
     val lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
 )
 
+internal fun SharedPreferences.readFeatureCfg(): FeatureCfg =
+    FeatureCfg(
+        enabled = getBoolean(FEATURE_ENABLED_KEY, true),
+        keyguard = getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
+        aod = getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
+        lowBatteryThreshold =
+            validLowBatteryThreshold(getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT)),
+    )
+
 internal class FeatureRepo(context: Context) {
     private val prefs =
         context.applicationContext.getSharedPreferences(
@@ -35,33 +41,9 @@ internal class FeatureRepo(context: Context) {
         )
 
     val settings: Flow<FeatureCfg> =
-        callbackFlow {
-            fun emitCurrent() {
-                trySend(current())
-            }
+        observePreferenceChanges(prefs, ::isFeatureKey, ::current)
 
-            val listener =
-                SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (isFeatureKey(key)) {
-                        emitCurrent()
-                    }
-                }
-
-            prefs.registerOnSharedPreferenceChangeListener(listener)
-            emitCurrent()
-            awaitClose {
-                prefs.unregisterOnSharedPreferenceChangeListener(listener)
-            }
-        }.distinctUntilChanged()
-
-    fun current(): FeatureCfg =
-        FeatureCfg(
-            enabled = prefs.getBoolean(FEATURE_ENABLED_KEY, true),
-            keyguard = prefs.getBoolean(FEATURE_KEYGUARD_KEY, FEATURE_KEYGUARD_DEFAULT),
-            aod = prefs.getBoolean(FEATURE_AOD_KEY, FEATURE_AOD_DEFAULT),
-            lowBatteryThreshold =
-                validLowBatteryThreshold(prefs.getInt(LOW_BATTERY_THRESHOLD_KEY, LOW_BATTERY_THRESHOLD_DEFAULT)),
-        )
+    fun current(): FeatureCfg = prefs.readFeatureCfg()
 
     fun setEnabled(enabled: Boolean) {
         writeBool(FEATURE_ENABLED_KEY, enabled)

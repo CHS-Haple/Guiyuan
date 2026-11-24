@@ -30,18 +30,27 @@ internal object CcRenderSession {
     private var current: Session? = null
     private var pendingPrearm: PendingPrearm? = null
     private var sceneEligible = false
+    private var sourceScene = SourceScene.UNKNOWN
+    // This affects only the FAKE RenderView. Native QS slot masks stay owned
+    // by the actual onVisibleChanged lifecycle until SystemUI retires them.
+    private var panelVisualOwner = false
 
     internal data class AttachFailure(
         val reason: String,
         val retryAfterLayout: Boolean = false,
     )
 
+    // Retain the same callback routes from prearm through the resulting session.
+    internal class Sinks(
+        val onEvent: (String) -> Unit,
+        val isDetailedDiagnosticsEnabled: () -> Boolean,
+        val onProjectionReadinessChanged: (Boolean) -> Unit,
+    )
+
     @Synchronized
     fun prearmAfterNextNativeLayout(
         host: ViewGroup,
-        onEvent: (String) -> Unit,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        onProjectionReadinessChanged: (Boolean) -> Unit,
+        sinks: Sinks,
     ): PrearmResult {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return PrearmResult.Failure(CC_MAIN_THREAD_REQUIRED)
@@ -65,9 +74,7 @@ internal object CcRenderSession {
         val pending =
             PendingPrearm(
                 host = host,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = onProjectionReadinessChanged,
+                sinks = sinks,
             )
         pendingPrearm = pending
         return if (pending.start()) {
@@ -81,9 +88,7 @@ internal object CcRenderSession {
     @Synchronized
     fun attach(
         host: ViewGroup,
-        onEvent: (String) -> Unit,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        onProjectionReadinessChanged: (Boolean) -> Unit,
+        sinks: Sinks,
     ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return AttachFailure(CC_MAIN_THREAD_REQUIRED)
@@ -98,10 +103,10 @@ internal object CcRenderSession {
                     retryAfterLayout = true,
                 )
         val statusIcons =
-            statusBarArea.directChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
+            statusBarArea.directNativeChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
                 ?: return AttachFailure("status-icons-missing", retryAfterLayout = true)
         val battery =
-            statusBarArea.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
+            statusBarArea.directNativeChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
                 ?: return AttachFailure("battery-view-missing", retryAfterLayout = true)
         val carrier =
             SysUiCarrierMetrics.resolveView(battery)
@@ -139,12 +144,17 @@ internal object CcRenderSession {
                 statusIcons = statusIcons,
                 battery = battery,
                 carrier = carrier,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = onProjectionReadinessChanged,
+                sinks = sinks,
                 initialSceneEligible = sceneEligible,
+                initialSourceScene = sourceScene,
+                initialPanelVisualOwner = panelVisualOwner,
             )
         current = session
+        return startSession(session)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun startSession(session: Session): AttachFailure? {
         return try {
             session.start()
             session.prepareNativePresentation(reused = false)
@@ -166,11 +176,20 @@ internal object CcRenderSession {
     }
 
     @Synchronized
-    fun beginVisibleCycle(): Boolean =
-        SysUiPresentationOwner.onCcVisibilityChanged(true)
+    fun visualState(): String? = current?.visualState()
 
     @Synchronized
-    fun visualState(): String? = current?.visualState()
+    fun setPanelVisualOwner(owned: Boolean) {
+        if (panelVisualOwner == owned) return
+        panelVisualOwner = owned
+        current?.setPanelVisualOwner(owned)
+    }
+
+    internal fun resolveFakeVisible(
+        nativeRequested: Boolean,
+        projectionReady: Boolean,
+        panelVisualOwner: Boolean,
+    ): Boolean = nativeRequested && projectionReady && panelVisualOwner
 
     @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
@@ -189,6 +208,13 @@ internal object CcRenderSession {
     }
 
     @Synchronized
+    fun setSourceScene(next: SourceScene) {
+        if (sourceScene == next) return
+        sourceScene = next
+        current?.setSourceScene(next)
+    }
+
+    @Synchronized
     fun hotReloadHost(): ViewGroup? =
         current?.attachedHost()
             ?: pendingPrearm?.host()?.takeIf { candidate -> candidate.isAttachedToWindow }
@@ -200,9 +226,7 @@ internal object CcRenderSession {
     @Synchronized
     fun restoreAfterHotReload(
         host: ViewGroup,
-        onEvent: (String) -> Unit,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        onProjectionReadinessChanged: (Boolean) -> Unit,
+        sinks: Sinks,
         transferredCompactReady: Boolean = false,
     ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
@@ -224,45 +248,31 @@ internal object CcRenderSession {
         val result =
             attach(
                 host = host,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = onProjectionReadinessChanged,
+                sinks = sinks,
             )
-        if (
-            result == null &&
-            transferredCompactReady
-        ) {
-            when (SysUiPresentationOwner.adoptCcLayoutAfterHotReload()) {
-                is SysUiPresentationOwner.Result.Active -> {
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        if (isDetailedDiagnosticsEnabled()) {
-                            onEvent(
-                                "controlCenterProjection hotReloadRestore state=adopted-compact " +
-                                    "source=transferred-laid-out-fake-root " +
-                                    "next=native-status-icons-layout-refresh",
-                            )
-                        }
-                    }
-                    return null
-                }
+        if (result != null) return result
 
-                else -> Unit
-            }
-        }
-        if (result == null) {
-            SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) {
-                    onEvent(
+        val adoptedCompact =
+            transferredCompactReady &&
+                SysUiPresentationOwner.adoptCcLayoutAfterHotReload() is SysUiPresentationOwner.Result.Active
+        SysUiPresentationRuntime.emitPassiveDiagnostic {
+            if (sinks.isDetailedDiagnosticsEnabled()) {
+                sinks.onEvent(
+                    if (adoptedCompact) {
+                        "controlCenterProjection hotReloadRestore state=adopted-compact " +
+                            "source=transferred-laid-out-fake-root " +
+                            "next=native-status-icons-layout-refresh"
+                    } else {
                         "controlCenterProjection hotReloadRestore state=prepared " +
                             "source=transferred-laid-out-fake-root " +
                             "transferredCompactReady=" + transferredCompactReady +
                             " layoutRequestBoundary=outside-native-layout " +
-                            "next=native-status-icons-layout",
-                    )
-                }
+                            "next=native-status-icons-layout"
+                    },
+                )
             }
         }
-        return result
+        return null
     }
 
     internal fun canRestoreAfterReload(
@@ -319,8 +329,7 @@ internal object CcRenderSession {
         val session = current
         releaseAll(
             {
-                pending?.cancel()
-                if (pendingPrearm === pending) pendingPrearm = null
+                if (pending != null) cancelPendingPrearm(pending)
             },
             { if (releaseNativePresentation) SysUiPresentationOwner.deactivateCc(source) },
             { session?.stop(source) },
@@ -329,12 +338,17 @@ internal object CcRenderSession {
     }
 
     // Keep the old listener receipt if cancellation cannot complete.
+    private fun cancelPendingPrearm(pending: PendingPrearm) {
+        pending.cancel()
+        if (pendingPrearm === pending) pendingPrearm = null
+    }
+
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun abortPrearm(pending: PendingPrearm, error: Throwable) {
         SysUiPresentationRuntime.throwIfFatal(error)
         try {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+            cancelPendingPrearm(pending)
         } catch (cleanup: Throwable) {
             SysUiPresentationRuntime.throwIfFatal(cleanup)
             if (cleanup !== error) error.addSuppressed(cleanup)
@@ -343,12 +357,12 @@ internal object CcRenderSession {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun onPendingPrearmLayout(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
         val host = pending.host()
         if (host == null || !host.isAttachedToWindow) {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+            cancelPendingPrearm(pending)
             return
         }
 
@@ -358,9 +372,7 @@ internal object CcRenderSession {
             try {
                 attach(
                     host = host,
-                    onEvent = pending.onEvent,
-                    isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
-                    onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
+                    sinks = pending.sinks,
                 )
             } catch (error: Throwable) {
                 abortPrearm(pending, error)
@@ -369,8 +381,7 @@ internal object CcRenderSession {
             }
         if (pendingPrearm !== pending) return
         if (failure == null) {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+            cancelPendingPrearm(pending)
             pending.emit(
                 "controlCenterProjection prearm state=armed " +
                     FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt,
@@ -378,34 +389,42 @@ internal object CcRenderSession {
             return
         }
 
-        val retry =
-            failure.retryAfterLayout &&
-                attempt < MAX_PREARM_LAYOUT_ATTEMPTS
-        if (retry) {
-            pending.emit(
-                "controlCenterProjection prearm state=deferred " +
-                    FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
-                    " reason=" + failure.reason +
-                    " next=native-root-layout",
-            )
-            try {
-                host.requestLayout()
-            } catch (error: Throwable) {
-                abortPrearm(pending, error)
-                pending.emit(
-                    "controlCenterProjection prearm state=failed " +
-                        FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
-                        " reason=layout-request-failed type=" + error.javaClass.simpleName +
-                        " fallback=native-qs-fake",
-                )
-            }
-        } else {
-            pending.cancel()
-            if (pendingPrearm === pending) pendingPrearm = null
+        if (failure.retryAfterLayout && attempt < MAX_PREARM_LAYOUT_ATTEMPTS) {
+            requestPendingPrearmRetry(pending, host, attempt, failure.reason)
+            return
+        }
+        cancelPendingPrearm(pending)
+        pending.emit(
+            "controlCenterProjection prearm state=failed " +
+                FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
+                " reason=" + failure.reason +
+                " fallback=native-qs-fake",
+        )
+    }
+
+    // A prearmed CC fake root gets another native layout only while its
+    // original listener receipt remains owned by this session.
+    @Suppress("TooGenericExceptionCaught")
+    private fun requestPendingPrearmRetry(
+        pending: PendingPrearm,
+        host: ViewGroup,
+        attempt: Int,
+        reason: String,
+    ) {
+        pending.emit(
+            "controlCenterProjection prearm state=deferred " +
+                FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
+                " reason=" + reason +
+                " next=native-root-layout",
+        )
+        try {
+            host.requestLayout()
+        } catch (error: Throwable) {
+            abortPrearm(pending, error)
             pending.emit(
                 "controlCenterProjection prearm state=failed " +
                     FAKE_ROOT_LAYOUT_LOG_PREFIX + attempt +
-                    " reason=" + failure.reason +
+                    " reason=layout-request-failed type=" + error.javaClass.simpleName +
                     " fallback=native-qs-fake",
             )
         }
@@ -414,15 +433,12 @@ internal object CcRenderSession {
     @Synchronized
     private fun onPendingPrearmDetached(pending: PendingPrearm) {
         if (pendingPrearm !== pending) return
-        pending.cancel()
-        if (pendingPrearm === pending) pendingPrearm = null
+        cancelPendingPrearm(pending)
     }
 
     private class PendingPrearm(
         host: ViewGroup,
-        val onEvent: (String) -> Unit,
-        val isDetailedDiagnosticsEnabled: () -> Boolean,
-        val onProjectionReadinessChanged: (Boolean) -> Unit,
+        val sinks: Sinks,
     ) : View.OnLayoutChangeListener,
         View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
@@ -440,6 +456,7 @@ internal object CcRenderSession {
         fun matches(candidate: ViewGroup): Boolean =
             phase == Phase.Armed && host.get() === candidate
 
+        @Suppress("TooGenericExceptionCaught")
         fun start(): Boolean {
             if (phase != Phase.Idle) return phase == Phase.Armed
             val root = host.get() ?: return false
@@ -474,7 +491,7 @@ internal object CcRenderSession {
 
         fun emit(message: String) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) onEvent(message)
+                if (sinks.isDetailedDiagnosticsEnabled()) sinks.onEvent(message)
             }
         }
 
@@ -545,10 +562,10 @@ internal object CcRenderSession {
         statusIcons: ViewGroup,
         battery: ViewGroup,
         carrier: View,
-        private val onEvent: (String) -> Unit,
-        private val isDetailedDiagnosticsEnabled: () -> Boolean,
-        private val onProjectionReadinessChanged: (Boolean) -> Unit,
+        private val sinks: Sinks,
         initialSceneEligible: Boolean,
+        initialSourceScene: SourceScene,
+        initialPanelVisualOwner: Boolean,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val statusBarArea = WeakReference(statusBarArea)
@@ -563,6 +580,8 @@ internal object CcRenderSession {
 
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
+        private var sourceScene = initialSourceScene
+        private var panelVisualOwner = initialPanelVisualOwner
         private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
@@ -578,7 +597,9 @@ internal object CcRenderSession {
         private var lastProjectionReady: Boolean? = null
         private var retired = false
 
-        private val hostLayoutListener =
+        // Host and carrier share the same stateless projection callback;
+        // status area keeps its extra native-readiness behavior.
+        private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 layoutProjection()
             }
@@ -589,10 +610,6 @@ internal object CcRenderSession {
                     // A Keyguard scene may become ready before the fake carrier's own layout.
                     prepareNativePresentation(reused = true)
                 }
-            }
-        private val carrierLayoutListener =
-            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                layoutProjection()
             }
 
         fun matches(
@@ -655,9 +672,9 @@ internal object CcRenderSession {
         fun start() {
             val hostView = host.get() ?: return
             hostView.addOnAttachStateChangeListener(this)
-            hostView.addOnLayoutChangeListener(hostLayoutListener)
+            hostView.addOnLayoutChangeListener(nativeLayoutListener)
             statusBarArea.get()?.addOnLayoutChangeListener(statusAreaLayoutListener)
-            carrier.get()?.addOnLayoutChangeListener(carrierLayoutListener)
+            carrier.get()?.addOnLayoutChangeListener(nativeLayoutListener)
             renderView.visibility = View.GONE
             hostView.overlay.add(renderView)
             renderController.updateVisualCfg(visual)
@@ -679,11 +696,11 @@ internal object CcRenderSession {
             releaseAll(
                 { renderView.visibility = View.GONE },
                 { hostView?.removeOnAttachStateChangeListener(this) },
-                { hostView?.removeOnLayoutChangeListener(hostLayoutListener) },
+                { hostView?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { statusBarArea.get()?.removeOnLayoutChangeListener(statusAreaLayoutListener) },
-                { carrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
+                { carrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { hostView?.overlay?.remove(renderView) },
-                { if (notify) onProjectionReadinessChanged(false) },
+                { if (notify) sinks.onProjectionReadinessChanged(false) },
             )
             emitEvent { "controlCenterProjection cleanup source=" + source }
         }
@@ -691,31 +708,21 @@ internal object CcRenderSession {
         fun visualState(): String =
             "requested=" + requestedVisible +
                 ":eligible=" + sceneEligible +
+                ":childVisibility=" + renderView.visibility +
                 ":childShown=" + renderView.isShown +
                 ":childAlpha=" + renderView.alpha +
                 ":hostShown=" + (host.get()?.isShown ?: "unavailable") +
-                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable")
+                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable") +
+                ":sourceScene=" + sourceScene +
+                ":panelVisualOwner=" + panelVisualOwner +
+                ":effectiveTint=" + (currentTint?.appliedTint?.let(::tintHexDigits) ?: "none") +
+                ":homeTint=" + (HomeRenderSession.currentTintState()?.appliedTint?.let(::tintHexDigits) ?: "none") +
+                ":nativeFakeTint=" + (battery.get()
+                    ?.let(SysUiTintSource::currentState)
+                    ?.appliedTint?.let(::tintHexDigits) ?: "none")
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (retired) return false
-            if (
-                !requestedVisible &&
-                visible &&
-                !SysUiPresentationOwner.onCcVisibilityChanged(true)
-            ) {
-                syncPresentation("visibility-visible-cycle-failed")
-                return false
-            }
-            if (requestedVisible && !visible &&
-                !SysUiPresentationOwner.onCcVisibilityChanged(false)
-            ) {
-                requestedVisible = false
-                releaseAll(
-                    { syncPresentation("visibility-hidden-release-failed") },
-                    { SysUiPresentationOwner.failCcPresentation("fake-carrier-hidden-release-unverified") },
-                )
-                return false
-            }
             requestedVisible = visible
             syncPresentation("visibility")
             return projectionReady()
@@ -743,16 +750,15 @@ internal object CcRenderSession {
                 carrier.get()
                     ?: return AttachFailure("battery-core-carrier-released")
 
-            return when (
-                val result =
+            val result =
                     SysUiPresentationOwner.activateCc(
                         host = statusArea,
                         statusIcons = statusIconGroup,
                         batteryContainer = statusArea,
                         battery = batteryView,
                         batteryCarrier = carrierView,
-                        onEvent = onEvent,
-                        isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                        onEvent = sinks.onEvent,
+                        isDetailedDiagnosticsEnabled = sinks.isDetailedDiagnosticsEnabled,
                         onFailNative = { reason ->
                             setNativePresentationReady(
                                 ready = false,
@@ -768,7 +774,14 @@ internal object CcRenderSession {
                             )
                         },
                     )
-            ) {
+            return handleActivationResult(result, reused)
+        }
+
+        private fun handleActivationResult(
+            result: SysUiPresentationOwner.Result,
+            reused: Boolean,
+        ): AttachFailure? =
+            when (result) {
                 is SysUiPresentationOwner.Result.Active -> {
                     setNativePresentationReady(
                         ready = true,
@@ -808,7 +821,7 @@ internal object CcRenderSession {
                     AttachFailure("compact-presentation-inactive")
                 }
             }
-        }
+
 
         fun setNativePresentationReady(
             ready: Boolean,
@@ -844,8 +857,21 @@ internal object CcRenderSession {
 
         fun updateTint(update: SysUiTintSource.TintUpdate) {
             val batteryView = battery.get() ?: return
-            if (update.sourceView !== batteryView) return
-            applyTint(update.state, "battery")
+            // A Home-origin fake must also follow changes on the Home source.
+            if (update.sourceView !== batteryView && sourceScene != SourceScene.HOME) return
+            refreshTint()
+        }
+
+        fun setSourceScene(next: SourceScene) {
+            if (sourceScene == next) return
+            sourceScene = next
+            refreshTint()
+        }
+
+        fun setPanelVisualOwner(owned: Boolean) {
+            if (panelVisualOwner == owned) return
+            panelVisualOwner = owned
+            applyVisibility()
         }
 
         fun setSceneEligible(eligible: Boolean) {
@@ -874,8 +900,23 @@ internal object CcRenderSession {
 
         private fun refreshTint() {
             val batteryView = battery.get() ?: return
-            val state = SysUiTintSource.currentState(batteryView) ?: return
-            applyTint(state, "surface")
+            val fakeTint = SysUiTintSource.currentState(batteryView)
+            val homeTint =
+                if (sourceScene == SourceScene.HOME) {
+                    HomeRenderSession.currentTintState()
+                } else {
+                    null
+                }
+            val resolved =
+                CcTintPolicy.resolveSourceTint(
+                    sourceScene = sourceScene,
+                    homeTint = homeTint,
+                    fakeTint = fakeTint,
+                ) ?: return
+            applyTint(
+                resolved,
+                if (resolved === homeTint) "home-source" else "fake-native",
+            )
         }
 
         private fun applyTint(
@@ -896,6 +937,9 @@ internal object CcRenderSession {
             val hostView = host.get() ?: return markLayoutUnavailable()
             val statusArea = statusBarArea.get() ?: return markLayoutUnavailable()
             val carrierView = carrier.get() ?: return markLayoutUnavailable()
+            if (!hostView.isAttachedToWindow || !statusArea.isAttachedToWindow ||
+                !carrierView.isAttachedToWindow
+            ) return markLayoutUnavailable()
             val carrierWidth =
                 SysUiCarrierMetrics.resolveWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
@@ -916,23 +960,18 @@ internal object CcRenderSession {
             val top = offsetY
             val bottom = offsetY + statusArea.height
             anchorRect.set(left, top, right, bottom)
-            if (anchorRect.width() <= 0 || anchorRect.height() <= 0) {
+            val anchorWidth = anchorRect.width()
+            val anchorHeight = anchorRect.height()
+            if (anchorWidth <= 0 || anchorHeight <= 0) {
                 return markLayoutUnavailable()
             }
 
-            if (
-                renderView.measuredWidth != anchorRect.width() ||
-                renderView.measuredHeight != anchorRect.height()
+            if (renderView.measuredWidth != anchorWidth ||
+                renderView.measuredHeight != anchorHeight
             ) {
                 renderView.measure(
-                    View.MeasureSpec.makeMeasureSpec(
-                        anchorRect.width(),
-                        View.MeasureSpec.EXACTLY,
-                    ),
-                    View.MeasureSpec.makeMeasureSpec(
-                        anchorRect.height(),
-                        View.MeasureSpec.EXACTLY,
-                    ),
+                    View.MeasureSpec.makeMeasureSpec(anchorWidth, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(anchorHeight, View.MeasureSpec.EXACTLY),
                 )
             }
             renderView.layout(
@@ -985,7 +1024,9 @@ internal object CcRenderSession {
                 modelReady = modelReady,
                 tintReady = tintReady,
                 layoutReady = layoutReady,
-                hostAttached = host.get()?.isAttachedToWindow == true,
+                hostAttached = host.get()?.isAttachedToWindow == true &&
+                    statusBarArea.get()?.isAttachedToWindow == true &&
+                    carrier.get()?.isAttachedToWindow == true,
                 nativePresentationReady = nativePresentationReady,
             )
 
@@ -996,13 +1037,13 @@ internal object CcRenderSession {
         }
 
         private fun applyVisibility() {
-            val visible = requestedVisible && projectionReady()
-            renderView.visibility = if (visible) View.VISIBLE else View.GONE
-            if (visible) {
-                renderView.invalidate()
-            } else {
-                renderView.clearPendingLatency()
-            }
+            renderView.updateRenderVisibility(
+                resolveFakeVisible(
+                    nativeRequested = requestedVisible,
+                    projectionReady = projectionReady(),
+                    panelVisualOwner = panelVisualOwner,
+                ),
+            )
         }
 
         private fun dispatchReadiness(source: String) {
@@ -1019,7 +1060,7 @@ internal object CcRenderSession {
                     " layoutReady=" + layoutReady +
                     " nativePresentationReady=" + nativePresentationReady
             }
-            onProjectionReadinessChanged(ready)
+            sinks.onProjectionReadinessChanged(ready)
         }
 
         override fun onViewAttachedToWindow(view: View) {
@@ -1043,18 +1084,11 @@ internal object CcRenderSession {
 
         private inline fun emitEvent(message: () -> String) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+                if (sinks.isDetailedDiagnosticsEnabled()) sinks.onEvent(message())
             }
         }
     }
 
-    private fun ViewGroup.directChild(className: String): View? {
-        for (index in 0 until childCount) {
-            val child = getChildAt(index)
-            if (child.javaClass.name == className) return child
-        }
-        return null
-    }
 
     private fun ViewGroup.uniqueDescendant(className: String): ViewGroup? {
         var found: ViewGroup? = null

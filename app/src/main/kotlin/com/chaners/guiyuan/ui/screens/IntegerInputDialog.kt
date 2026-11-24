@@ -20,21 +20,31 @@ import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.glass.GlassTextField
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+internal data class IntegerInputModel(
+    val title: String,
+    val summary: String,
+    val value: Int,
+    val range: IntRange,
+    val suffix: String? = null,
+)
+
+internal data class IntegerInputCallbacks(
+    val onDismiss: () -> Unit,
+    val onConfirm: (Int) -> Unit,
+)
 
 @Composable
 internal fun IntegerInputDialog(
     show: Boolean,
-    title: String,
-    summary: String,
-    value: Int,
-    range: IntRange,
-    suffix: String? = null,
-    onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit,
+    model: IntegerInputModel,
+    callbacks: IntegerInputCallbacks,
 ) {
+    val (title, summary, value, range, suffix) = model
+    val (onDismiss, onConfirm) = callbacks
     var editedInput by remember { mutableStateOf<String?>(null) }
     val input = editedInput ?: value.toString()
     UiOverlayDialog(
@@ -45,7 +55,7 @@ internal fun IntegerInputDialog(
         onDismissFinished = { editedInput = null },
     ) {
         Column {
-            TextField(
+            GlassTextField(
                 value = input,
                 onValueChange = { text ->
                     if (text.length <= range.last.toString().length && text.all(Char::isDigit)) {

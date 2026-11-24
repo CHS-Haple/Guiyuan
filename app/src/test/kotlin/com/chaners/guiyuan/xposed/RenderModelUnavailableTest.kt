@@ -17,6 +17,34 @@ private const val NATIVE_SYSTEMUI_PACKAGE = "com.android.systemui"
 
 class RenderModelUnavailableTest {
     @Test
+    fun absentMobileCollectorDataStillPermitsCompleteWifiAndBatteryModel() {
+        val model =
+            RenderModel.from(
+                snapshot = snapshot(
+                    wifi = StatusStateStore.WifiState.Visible(
+                        iconResId = 10,
+                        signal = SignalStrength.Level(2),
+                        internetValidated = true,
+                    ),
+                    mobile = emptyMap(),
+                ),
+                presentation = presentation(
+                    connectivity = connectivity(
+                        transport = SysUiConnectivitySource.Transport.WIFI,
+                        validated = true,
+                    ),
+                    networkType = null,
+                ),
+                defaultDataSubscriptionId = -1,
+            )
+
+        assertTrue(model != null)
+        assertTrue(model?.centerIndicator is CenterIndicator.Wifi)
+        assertNull(model?.mobileLevel)
+        assertEquals(80, model?.batteryPercent)
+    }
+
+    @Test
     fun nativeNoSimPresentationOverridesStaleMobileSignalAndType() {
         val noSimIcon =
             PresentationStore.NativeIconResource(
@@ -233,6 +261,51 @@ class RenderModelUnavailableTest {
         assertTrue(model?.centerIndicator is CenterIndicator.Airplane)
         assertNull(model?.mobileLevel)
         assertTrue(model?.mobileUnavailableMark == true)
+    }
+
+    @Test
+    fun nativeActivityIsWithdrawnDuringRecoveryOrNoSimEvenWhenPreviouslyVisible() {
+        val observed =
+            snapshot(
+                wifi = StatusStateStore.WifiState.Hidden,
+                mobile = mapOf(
+                    1 to StatusStateStore.MobileState(signal = SignalStrength.Level(3)),
+                ),
+            ).copy(
+                mobileActivityResIds = mapOf(1 to 220),
+                mobileActivityShownIds = setOf(1),
+                mobileActivityVisibilityObservedIds = setOf(1),
+            )
+        val native =
+            presentation(
+                connectivity = connectivity(SysUiConnectivitySource.Transport.NONE, false),
+                networkType = mobileType("5G"),
+            )
+
+        val normal = RenderModel.from(observed, native, 1)
+        assertTrue(normal?.centerIndicator is CenterIndicator.Empty)
+        assertEquals(220, normal?.networkActivityResId)
+
+        val pending = RenderModel.from(observed.copy(mobileRecoveryPending = true), native, 1)
+        assertTrue(pending?.centerIndicator is CenterIndicator.Empty)
+        assertNull(pending?.networkActivityResId)
+
+        val noSim =
+            RenderModel.from(
+                observed,
+                native.copy(
+                    statusIcons = PresentationStore.StatusIconPresentation(
+                        noSimVisible = true,
+                        noSimIcon = PresentationStore.NativeIconResource(
+                            packageName = NATIVE_SYSTEMUI_PACKAGE,
+                            resourceId = 42,
+                        ),
+                    ),
+                ),
+                1,
+            )
+        assertTrue(noSim?.centerIndicator is CenterIndicator.NoSim)
+        assertNull(noSim?.networkActivityResId)
     }
 
     @Test

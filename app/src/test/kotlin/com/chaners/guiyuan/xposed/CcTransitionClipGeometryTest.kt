@@ -8,14 +8,14 @@ class CcTransitionClipGeometryTest {
 @Test
     fun exactBarTargetCompensatesInsideSimilarityBasis() {
         val outerScale =
-            MobileSignalMorphPolicy.outerSimilarityScale(
+            MobileSignalTargetGeometry.outerSimilarityScale(
                 targetWidthRatio = 1.5f,
                 targetHeightRatio = 2f,
             )
         assertEquals(1f, outerScale, 0.0001f)
         assertEquals(
             1.5f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 1.5f,
                 outerScale = outerScale,
             ),
@@ -23,7 +23,7 @@ class CcTransitionClipGeometryTest {
         )
         assertEquals(
             2f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 2f,
                 outerScale = outerScale,
             ),
@@ -34,14 +34,14 @@ class CcTransitionClipGeometryTest {
     @Test
     fun exactBarTargetPreservesUniformOuterShrinkAndCompensatesAxes() {
         val outerScale =
-            MobileSignalMorphPolicy.outerSimilarityScale(
+            MobileSignalTargetGeometry.outerSimilarityScale(
                 targetWidthRatio = 0.75f,
                 targetHeightRatio = 0.5f,
             )
         assertEquals(0.5f, outerScale, 0.0001f)
         assertEquals(
             1.5f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 0.75f,
                 outerScale = outerScale,
             ),
@@ -49,7 +49,7 @@ class CcTransitionClipGeometryTest {
         )
         assertEquals(
             1f,
-            MobileSignalMorphPolicy.exactTargetAxisCompensation(
+            MobileSignalTargetGeometry.exactTargetAxisCompensation(
                 targetAxisRatio = 0.5f,
                 outerScale = outerScale,
             ),
@@ -61,30 +61,28 @@ class CcTransitionClipGeometryTest {
     fun unmatchedComponentsFadeOutFastWithoutChangingTheirScale() {
         assertEquals(
             1f,
-            CcTransitionPolicy.unmatchedExitOpacity(0f),
+            CcTransitionRevealPolicy.unmatchedExitOpacity(0f),
             0.0001f,
         )
         assertEquals(
             0.125f,
-            CcTransitionPolicy.unmatchedExitOpacity(0.5f),
+            CcTransitionRevealPolicy.unmatchedExitOpacity(0.5f),
             0.0001f,
         )
         assertEquals(
             0f,
-            CcTransitionPolicy.unmatchedExitOpacity(1f),
+            CcTransitionRevealPolicy.unmatchedExitOpacity(1f),
             0.0001f,
         )
     }
 
     @Test
     fun horizontalClipKeepsPixelsOpaqueAndAnchorsTowardChosenEdge() {
-        val policy = CcTransitionPolicy
+        val policy = CcTransitionClipPolicy
+        val bounds = StatusPainter.TransitionBounds(0f, 10f, 100f, 30f)
         val rightAnchored =
             policy.horizontalClipBounds(
-                left = 0f,
-                top = 10f,
-                right = 100f,
-                bottom = 30f,
+                bounds = bounds,
                 visibleFraction = 0.25f,
                 anchorRight = true,
             )
@@ -94,10 +92,7 @@ class CcTransitionClipGeometryTest {
 
         val leftAnchored =
             policy.horizontalClipBounds(
-                left = 0f,
-                top = 10f,
-                right = 100f,
-                bottom = 30f,
+                bounds = bounds,
                 visibleFraction = 0.25f,
                 anchorRight = false,
             )
@@ -107,10 +102,7 @@ class CcTransitionClipGeometryTest {
 
         assertNull(
             policy.horizontalClipBounds(
-                left = 0f,
-                top = 0f,
-                right = 100f,
-                bottom = 20f,
+                bounds = StatusPainter.TransitionBounds(0f, 0f, 100f, 20f),
                 visibleFraction = 0f,
                 anchorRight = true,
             ),
@@ -127,7 +119,7 @@ class CcTransitionClipGeometryTest {
                 bottom = 60f,
             )
         val expanded =
-            CcTransitionPolicy.expandedClipBounds(
+            CcTransitionClipPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 1.5f,
                 heightScale = 1.25f,
@@ -139,7 +131,7 @@ class CcTransitionClipGeometryTest {
         assertEquals(65f, expanded.bottom, 0.0001f)
 
         val unchanged =
-            CcTransitionPolicy.expandedClipBounds(
+            CcTransitionClipPolicy.expandedClipBounds(
                 bounds = source,
                 widthScale = 0.75f,
                 heightScale = Float.NaN,
@@ -149,7 +141,7 @@ class CcTransitionClipGeometryTest {
 
     @Test
     fun nativePeerTintNeverFallsBackToBatteryTintAuthority() {
-        val policy = CcTransitionPolicy
+        val policy = CcTintPolicy
         val peer = 0xffe0e0e0.toInt()
         val cached = 0xffdddddd.toInt()
 

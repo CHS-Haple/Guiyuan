@@ -1,12 +1,12 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
 import android.view.View
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -27,14 +27,6 @@ internal object SysUiKeyguardAodSource {
     private const val TOGGLE_AOD_HOOK_ID =
         "combinedstatus.keyguardAod.toggleAodMode"
 
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
-
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
-
     // Stored values must not keep their weak View keys alive.
     private val states = WeakHashMap<View, AodState>()
     @Volatile private var hooksReady = false
@@ -45,6 +37,7 @@ internal object SysUiKeyguardAodSource {
     @Volatile private var animToAodField: Field? = null
     @Volatile private var storedStyleField: Field? = null
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
@@ -57,97 +50,41 @@ internal object SysUiKeyguardAodSource {
 
         val batteryClass = Class.forName(BATTERY_VIEW_CLASS, false, classLoader)
         val resolvedToAod =
-            resolveBooleanField(batteryClass, TO_AOD_FIELD)
+            SysUiKeyguardAodEvidence.resolveField(batteryClass, TO_AOD_FIELD, { SysUiKeyguardAodEvidence.isBooleanType(it) })
                 ?: error("aod-to-field-contract-missing")
         val resolvedIsAnimate =
-            resolveBooleanField(batteryClass, IS_AOD_ANIMATE_FIELD)
+            SysUiKeyguardAodEvidence.resolveField(batteryClass, IS_AOD_ANIMATE_FIELD, { SysUiKeyguardAodEvidence.isBooleanType(it) })
                 ?: error("aod-animate-field-contract-missing")
         val resolvedAnimToAod =
-            resolveBooleanField(batteryClass, ANIM_TO_AOD_FIELD)
+            SysUiKeyguardAodEvidence.resolveField(batteryClass, ANIM_TO_AOD_FIELD, { SysUiKeyguardAodEvidence.isBooleanType(it) })
 
-        val setAnimateCandidates =
-            batteryClass.declaredMethods.filter { method ->
-                method.name == SET_AOD_ANIMATE_METHOD &&
-                    method.parameterCount == 1 &&
-                    isBooleanType(method.parameterTypes[0]) &&
-                    method.returnType == Void.TYPE
-            }
-        val setAnimateMethod =
-            setAnimateCandidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "aod-set-animate-method-contract-" +
-                        if (setAnimateCandidates.isEmpty()) "missing" else "ambiguous",
-                )
-
-        val toggleCandidates =
-            batteryClass.declaredMethods.filter { method ->
-                method.name == TOGGLE_AOD_METHOD &&
-                    matchesToggleAodSignature(
-                        parameterTypes = method.parameterTypes,
-                        returnType = method.returnType,
-                    )
-            }
-        val toggleMethod =
-            toggleCandidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "aod-toggle-method-contract-" +
-                        if (toggleCandidates.isEmpty()) "missing" else "ambiguous",
-                )
+        val hookMethods = resolveHookMethods(batteryClass)
 
         toAodField = resolvedToAod
         isAodAnimateField = resolvedIsAnimate
         animToAodField = resolvedAnimToAod
-        storedStyleField = resolveIntField(batteryClass, STORED_STYLE_FIELD)
-
-        val warned = AtomicBoolean(false)
-        val onDiagnostic: ((AodUpdate) -> Unit)? =
-            onEvent?.let { sink ->
-                { update ->
-                    try {
-                        if (isDetailedDiagnosticsEnabled()) {
-                            sink(
-                                "keyguardAod source=" + update.source +
-                                    " toAod=" + update.toAod +
-                                    " isAodAnimate=" + update.isAodAnimate +
-                                    " animToAod=" + (update.animToAod ?: "unavailable") +
-                                    " blocked=" + update.blocksProjection,
-                            )
-                        }
-                    } catch (error: Throwable) {
-                        rethrowFatal(error)
-                        if (warned.compareAndSet(false, true)) {
-                            SysUiPresentationRuntime.emitPassiveDiagnostic {
-                                Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
-                            }
-                        }
-                    }
-                }
+        storedStyleField =
+            SysUiKeyguardAodEvidence.resolveField(batteryClass, STORED_STYLE_FIELD) {
+                it == Int::class.javaPrimitiveType
             }
 
+        val warned = AtomicBoolean(false)
+        val onDiagnostic =
+            SysUiKeyguardAodEvidence.diagnosticCallback(onEvent, isDetailedDiagnosticsEnabled, warned)
         val handles = ArrayList<HookHandle>(HOOK_COUNT)
         try {
             handles +=
-                module.hook(setAnimateMethod)
+                module.hook(hookMethods.setAnimate)
                     .setId(SET_AOD_ANIMATE_HOOK_ID)
                     .intercept(aodHooker(SET_AOD_ANIMATE_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
             handles +=
-                module.hook(toggleMethod)
+                module.hook(hookMethods.toggle)
                     .setId(TOGGLE_AOD_HOOK_ID)
                     .intercept(aodHooker(TOGGLE_AOD_METHOD, onAodState, onRuntimeFailure, onDiagnostic))
             hooksReady = true
             return handles
         } catch (error: Throwable) {
-            val remaining = handles.asReversed().filter { handle ->
-                try {
-                    handle.unhook()
-                    false
-                } catch (failure: Throwable) {
-                    rethrowFatal(failure)
-                    true
-                }
-            }
+            val remaining = handles.asReversed().filter { it.unhookFailed() }
             failedInstallHandles = remaining
             clearSourceState()
             rethrowFatal(error)
@@ -158,9 +95,43 @@ internal object SysUiKeyguardAodSource {
         }
     }
 
+    // Verify both exact native hook method signatures before any hook is installed.
+    private data class HookMethods(
+        val setAnimate: java.lang.reflect.Method,
+        val toggle: java.lang.reflect.Method,
+    )
+
+    private fun resolveHookMethods(batteryClass: Class<*>): HookMethods {
+        val setAnimateMethod =
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                batteryClass,
+                SET_AOD_ANIMATE_METHOD,
+                "aod-set-animate-method-contract-",
+            ) { method ->
+                SysUiKeyguardAodEvidence.matchesToggleAodSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
+                )
+            }
+
+        val toggleMethod =
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                batteryClass,
+                TOGGLE_AOD_METHOD,
+                "aod-toggle-method-contract-",
+            ) { method ->
+                SysUiKeyguardAodEvidence.matchesToggleAodSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
+                )
+            }
+        return HookMethods(setAnimateMethod, toggleMethod)
+    }
+
     val failedInstallHookCount: Int
         get() = failedInstallHandles.size
 
+    @Suppress("TooGenericExceptionCaught")
     private fun aodHooker(
         source: String,
         onAodState: (AodUpdate) -> Unit,
@@ -169,8 +140,8 @@ internal object SysUiKeyguardAodSource {
     ): Hooker =
         Hooker { chain ->
             val result = chain.proceed()
-            if (!hooksReady) return@Hooker result
-            val sourceView = readOrNull { chain.thisObject as? View }
+            val sourceView =
+                if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
             if (sourceView != null) {
                 try {
                     publish(sourceView, source, onAodState, onDiagnostic)
@@ -198,7 +169,7 @@ internal object SysUiKeyguardAodSource {
     // Style 3 does not use the native battery alpha/mode handoff.
     fun usesAnimatedBatteryMode(sourceView: View): Boolean =
         storedStyleField
-            ?.let { field -> readOrNull { field.getInt(sourceView) } }
+            ?.let { field -> optionalNativeRead { field.getInt(sourceView) } }
             ?.let { it != 3 } == true
 
     @Synchronized
@@ -216,18 +187,6 @@ internal object SysUiKeyguardAodSource {
         animToAodField = null
         storedStyleField = null
     }
-
-    internal fun blocksKeyguardProjection(
-        toAod: Boolean,
-        isAodAnimate: Boolean,
-    ): Boolean =
-        toAod || isAodAnimate
-
-    internal fun isStableAod(
-        toAod: Boolean,
-        isAodAnimate: Boolean,
-    ): Boolean =
-        toAod && !isAodAnimate
 
     private fun publish(
         sourceView: View,
@@ -253,56 +212,21 @@ internal object SysUiKeyguardAodSource {
     }
 
     private fun readState(sourceView: View): AodState? {
-        val toAod = readBoolean(sourceView, toAodField ?: return null) ?: return null
+        val toAod = SysUiKeyguardAodEvidence.readBoolean(sourceView, toAodField ?: return null) ?: return null
         val isAodAnimate =
-            readBoolean(sourceView, isAodAnimateField ?: return null) ?: return null
-        val animToAod = animToAodField?.let { field -> readBoolean(sourceView, field) }
+            SysUiKeyguardAodEvidence.readBoolean(sourceView, isAodAnimateField ?: return null) ?: return null
+        val animToAod = animToAodField?.let { field -> SysUiKeyguardAodEvidence.readBoolean(sourceView, field) }
         return AodState(
             toAod = toAod,
             isAodAnimate = isAodAnimate,
             animToAod = animToAod,
             blocksProjection =
-                blocksKeyguardProjection(
+                SysUiKeyguardAodPolicy.blocksKeyguardProjection(
                     toAod = toAod,
                     isAodAnimate = isAodAnimate,
                 ),
         )
     }
-
-    private fun resolveIntField(type: Class<*>, name: String): Field? =
-        generateSequence(type) { current -> current.superclass }
-            .mapNotNull { current ->
-                current.declaredFields.firstOrNull { field ->
-                    field.name == name && field.type == Int::class.javaPrimitiveType
-                }
-            }
-            .firstOrNull()
-            ?.apply { isAccessible = true }
-
-    private fun resolveBooleanField(type: Class<*>, name: String): Field? =
-        generateSequence(type) { current -> current.superclass }
-            .mapNotNull { current ->
-                current.declaredFields.firstOrNull { field ->
-                    field.name == name && isBooleanType(field.type)
-                }
-            }
-            .firstOrNull()
-            ?.apply { isAccessible = true }
-
-    private fun readBoolean(owner: Any, field: Field): Boolean? =
-        readOrNull { field.get(owner) as? Boolean }
-
-    internal fun matchesToggleAodSignature(
-        parameterTypes: Array<Class<*>>,
-        returnType: Class<*>,
-    ): Boolean =
-        parameterTypes.size == 1 &&
-            isBooleanType(parameterTypes[0]) &&
-            returnType == Void.TYPE
-
-    private fun isBooleanType(type: Class<*>): Boolean =
-        type == Boolean::class.javaPrimitiveType ||
-            type == Boolean::class.javaObjectType
 
     internal data class AodState(
         val toAod: Boolean,

@@ -5,26 +5,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.graphics.drawable.Icon
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
+import com.chaners.guiyuan.xposed.NativeStatusSlots
 import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
+import com.chaners.guiyuan.xposed.tintHexDigits
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 import java.lang.reflect.Method
-import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.ConcurrentHashMap
+
+// Native slot identities are shared by the observer and its tint resolver.
+internal const val AIRPLANE_SLOT = "airplane"
+internal const val NO_SIM_SLOT = "no_sim"
 
 internal object NativeStatusObserver {
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
-
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private inline fun reportEvent(message: () -> String) {
         SysUiPresentationRuntime.emitPassiveDiagnostic {
@@ -33,7 +33,7 @@ internal object NativeStatusObserver {
     }
 
     private fun tintText(color: Int?): String =
-        color?.toUInt()?.toString(16)?.padStart(8, '0') ?: "none"
+        color?.let(::tintHexDigits) ?: "none"
 
     private const val HOME_MANAGER_CLASS =
         "com.android.systemui.statusbar.phone.ui.DarkIconManager"
@@ -41,12 +41,6 @@ internal object NativeStatusObserver {
         "com.android.systemui.statusbar.phone.ui.StatusBarIconControllerImpl"
     private const val STATUS_BAR_ICON_VIEW_CLASS =
         "com.android.systemui.statusbar.StatusBarIconView"
-    private const val DARK_ICON_DISPATCHER_CLASS =
-        "com.android.systemui.plugins.DarkIconDispatcher"
-    private const val DARK_ICON_DISPATCHER_FIELD = "mDarkIconDispatcher"
-    private const val TINT_AREAS_FIELD = "mTintAreas"
-    private const val ICON_TINT_FIELD = "mIconTint"
-    private const val MANAGER_COLOR_FIELD = "mColor"
     private const val HOME_MANAGER_REGISTERED_SOURCE = "homeManagerRegistered"
 
     private const val HOME_ICON_ADDED_HOOK_ID =
@@ -58,9 +52,6 @@ internal object NativeStatusObserver {
         "combinedstatus.nativeNetworkSuppression.airplaneVisibility"
 
     private val observableTargetSlots = setOf("wifi", "mobile", NO_SIM_SLOT)
-    private val representedTintSlots =
-        setOf("combined_status", "wifi", "mobile", "stacked_mobile", NO_SIM_SLOT, AIRPLANE_SLOT)
-
     private val installedHandles = mutableListOf<HookHandle>()
     private var installIncomplete = false
     private val failedObservations = mutableSetOf<String>()
@@ -81,25 +72,108 @@ internal object NativeStatusObserver {
     private class Delivery(val presentation: PresentationStore.StatusIconPresentation)
     private var lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
 
-    // The island peer mirror samples native icon state from onLayout. These
-    // reflective contracts are stable for the SystemUI process lifetime, so
-    // cache discovery by concrete class and keep the per-layout path to invoke
-    // + direct Field.get only.
-    private val transitionStateAccessorCache = ConcurrentHashMap<Class<*>, Method>()
-    private val transitionStateAccessorMissing = ConcurrentHashMap.newKeySet<Class<*>>()
-    private val transitionStateFieldCache =
-        ConcurrentHashMap<Class<*>, TransitionStateFields>()
-
-    // Cache reflective lookups, not the live SystemUI tint values.
-    private val tintFieldNames =
-        setOf(DARK_ICON_DISPATCHER_FIELD, TINT_AREAS_FIELD, ICON_TINT_FIELD, MANAGER_COLOR_FIELD)
-    private val tintFieldsByClass =
-        ConcurrentHashMap<Class<*>, List<Field>>()
-    private val tintMethodByManagerClass =
-        ConcurrentHashMap<Class<*>, Method>()
-
     val installedHookCount: Int
         @Synchronized get() = installedHandles.size
+
+    private fun bindSinks(
+        onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
+        onObservationAttached: ((String) -> Unit)?,
+        onStatusPresentationChanged: ((PresentationStore.StatusIconPresentation) -> Unit)?,
+    ) {
+        eventSink = onEvent
+        diagnosticsEnabled = isDetailedDiagnosticsEnabled
+        observationAttachedSink = onObservationAttached
+        statusPresentationSink = onStatusPresentationChanged
+    }
+
+    private fun resolveStatusIconVisibility(classLoader: ClassLoader): Method {
+        val statusBarIconView =
+            Class.forName(
+                STATUS_BAR_ICON_VIEW_CLASS,
+                false,
+                classLoader,
+            )
+        val airplaneVisibility =
+            statusBarIconView
+                .getDeclaredMethod("isIconVisible")
+                .apply {
+                    check(returnType == java.lang.Boolean.TYPE) {
+                        "airplane-visibility-return-type-mismatch"
+                    }
+                    isAccessible = true
+                }
+        statusIconVisibleAccessor = airplaneVisibility
+        statusIconSourceAccessor =
+            statusBarIconView.methods
+                .firstOrNull { method ->
+                    method.name == "getSourceIcon" &&
+                        method.parameterCount == 0 &&
+                        method.returnType == Icon::class.java
+                }
+                ?.apply { isAccessible = true }
+        statusIconStaticColorAccessor =
+            statusBarIconView.methods
+                .firstOrNull { method ->
+                    method.name == "getStaticDrawableColor" &&
+                        method.parameterCount == 0 &&
+                        (
+                            method.returnType == Int::class.javaPrimitiveType ||
+                                method.returnType == Int::class.java
+                        )
+                }
+                ?.apply { isAccessible = true }
+        airplaneSlotAccessor =
+            generateSequence(statusBarIconView) { clazz -> clazz.superclass }
+                .flatMap { clazz -> clazz.declaredMethods.asSequence() }
+                .firstOrNull { method ->
+                    method.name == "getSlot" &&
+                        method.parameterCount == 0 &&
+                        method.returnType == String::class.java
+                }
+                ?.apply { isAccessible = true }
+                ?: error("airplane-slot-accessor-missing")
+        return airplaneVisibility
+    }
+
+    private fun resolveHomeHookMethods(classLoader: ClassLoader): Pair<Method, Method> {
+        val darkIconManager =
+            Class.forName(
+                HOME_MANAGER_CLASS,
+                false,
+                classLoader,
+            )
+        val statusBarIconController =
+            Class.forName(
+                STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS,
+                false,
+                classLoader,
+            )
+        val addIconGroup =
+            statusBarIconController.declaredMethods
+                .filter { method ->
+                    method.name == "addIconGroup" &&
+                        method.parameterCount == 1 &&
+                        method.parameterTypes[0].name.contains("IconManager")
+                }
+                .sortedBy { method -> method.parameterTypes[0].name }
+                .firstOrNull()
+                ?: error("home-icon-manager-registration-method-missing")
+        addIconGroup.isAccessible = true
+
+        val onIconAdded =
+            darkIconManager.declaredMethods
+                .firstOrNull { method ->
+                    method.name == "onIconAdded" &&
+                        method.parameterCount == 4 &&
+                        method.parameterTypes[0] == Integer.TYPE &&
+                        method.parameterTypes[1] == String::class.java &&
+                        method.parameterTypes[2] == java.lang.Boolean.TYPE
+                }
+                ?: error("home-icon-manager-onIconAdded-missing")
+        onIconAdded.isAccessible = true
+        return onIconAdded to addIconGroup
+    }
 
     @Synchronized
     fun install(
@@ -113,96 +187,14 @@ internal object NativeStatusObserver {
     ): String? {
         if (installIncomplete) return "partial-hook-state"
         if (installedHandles.isNotEmpty()) {
-            eventSink = onEvent
-            diagnosticsEnabled = isDetailedDiagnosticsEnabled
-            observationAttachedSink = onObservationAttached
-            statusPresentationSink = onStatusPresentationChanged
+            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
             return null
         }
 
         val created = mutableListOf<HookHandle>()
         return runCatching {
-            val statusBarIconView =
-                Class.forName(
-                    STATUS_BAR_ICON_VIEW_CLASS,
-                    false,
-                    classLoader,
-                )
-            val airplaneVisibility =
-                statusBarIconView
-                    .getDeclaredMethod("isIconVisible")
-                    .apply {
-                        check(returnType == java.lang.Boolean.TYPE) {
-                            "airplane-visibility-return-type-mismatch"
-                        }
-                        isAccessible = true
-                    }
-            statusIconVisibleAccessor = airplaneVisibility
-            statusIconSourceAccessor =
-                statusBarIconView.methods
-                    .firstOrNull { method ->
-                        method.name == "getSourceIcon" &&
-                            method.parameterCount == 0 &&
-                            method.returnType == Icon::class.java
-                    }
-                    ?.apply { isAccessible = true }
-            statusIconStaticColorAccessor =
-                statusBarIconView.methods
-                    .firstOrNull { method ->
-                        method.name == "getStaticDrawableColor" &&
-                            method.parameterCount == 0 &&
-                            (
-                                method.returnType == Int::class.javaPrimitiveType ||
-                                    method.returnType == Int::class.java
-                            )
-                    }
-                    ?.apply { isAccessible = true }
-            airplaneSlotAccessor =
-                generateSequence(statusBarIconView) { clazz -> clazz.superclass }
-                    .flatMap { clazz -> clazz.declaredMethods.asSequence() }
-                    .firstOrNull { method ->
-                        method.name == "getSlot" &&
-                            method.parameterCount == 0 &&
-                            method.returnType == String::class.java
-                    }
-                    ?.apply { isAccessible = true }
-                    ?: error("airplane-slot-accessor-missing")
-
-            val darkIconManager =
-                Class.forName(
-                    HOME_MANAGER_CLASS,
-                    false,
-                    classLoader,
-                )
-            val statusBarIconController =
-                Class.forName(
-                    STATUS_BAR_ICON_CONTROLLER_IMPL_CLASS,
-                    false,
-                    classLoader,
-                )
-            val addIconGroup =
-                statusBarIconController.declaredMethods
-                    .filter { method ->
-                        method.name == "addIconGroup" &&
-                            method.parameterCount == 1 &&
-                            method.parameterTypes[0].name.contains("IconManager")
-                    }
-                    .sortedBy { method -> method.parameterTypes[0].name }
-                    .firstOrNull()
-                    ?: error("home-icon-manager-registration-method-missing")
-            addIconGroup.isAccessible = true
-
-            val onIconAdded =
-                darkIconManager.declaredMethods
-                    .firstOrNull { method ->
-                        method.name == "onIconAdded" &&
-                            method.parameterCount == 4 &&
-                            method.parameterTypes[0] == Integer.TYPE &&
-                            method.parameterTypes[1] == String::class.java &&
-                            method.parameterTypes[2] == java.lang.Boolean.TYPE
-                    }
-                    ?: error("home-icon-manager-onIconAdded-missing")
-            onIconAdded.isAccessible = true
+            val airplaneVisibility = resolveStatusIconVisibility(classLoader)
+            val (onIconAdded, addIconGroup) = resolveHomeHookMethods(classLoader)
 
             created +=
                 module
@@ -223,40 +215,32 @@ internal object NativeStatusObserver {
             installedHandles.clear()
             installedHandles.addAll(created)
             installIncomplete = false
-            eventSink = onEvent
-            diagnosticsEnabled = isDetailedDiagnosticsEnabled
-            observationAttachedSink = onObservationAttached
-            statusPresentationSink = onStatusPresentationChanged
+            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
             null
         }.getOrElse { error ->
-            val remaining = created.filter { handle ->
-                try {
-                    handle.unhook()
-                    false
-                } catch (failure: Throwable) {
-                    rethrowFatal(failure)
-                    true
-                }
-            }
-            installedHandles.clear()
-            installedHandles.addAll(remaining)
-            installIncomplete = remaining.isNotEmpty()
-            airplaneSlotAccessor = null
-            statusIconVisibleAccessor = null
-            statusIconSourceAccessor = null
-            statusIconStaticColorAccessor = null
-            activeManager = null
-            activeGroup = null
-            pendingObservationHost = null
-            pendingObservationSource = null
-            eventSink = onEvent
-            diagnosticsEnabled = isDetailedDiagnosticsEnabled
-            observationAttachedSink = onObservationAttached
-            statusPresentationSink = onStatusPresentationChanged
+            rollbackInstall(created)
+            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
             rethrowFatal(error)
             val reason = error.message ?: error.javaClass.simpleName
             if (installIncomplete) "$reason-hook-cleanup-failed" else reason
         }
+    }
+
+    // Preserve any hook whose unhook failed; a partial install must not be retried.
+    @Suppress("TooGenericExceptionCaught")
+    private fun rollbackInstall(created: List<HookHandle>) {
+        val remaining = created.filter { it.unhookFailed() }
+        installedHandles.clear()
+        installedHandles.addAll(remaining)
+        installIncomplete = remaining.isNotEmpty()
+        airplaneSlotAccessor = null
+        statusIconVisibleAccessor = null
+        statusIconSourceAccessor = null
+        statusIconStaticColorAccessor = null
+        activeManager = null
+        activeGroup = null
+        pendingObservationHost = null
+        pendingObservationSource = null
     }
 
     @Synchronized
@@ -331,16 +315,14 @@ internal object NativeStatusObserver {
         statusIconVisibleAccessor = null
         statusIconSourceAccessor = null
         statusIconStaticColorAccessor = null
-        transitionStateAccessorCache.clear()
-        transitionStateAccessorMissing.clear()
-        transitionStateFieldCache.clear()
-        tintFieldsByClass.clear()
-        tintMethodByManagerClass.clear()
+        NativeIslandEvidence.resetCaches()
+        NativeStatusTintResolver.resetCaches()
         lastDelivery = Delivery(PresentationStore.StatusIconPresentation())
     }
 
     // The native method has already run. Observation cannot replace its return
     // or make a diagnostic/renderer callback fail the SystemUI caller.
+    @Suppress("TooGenericExceptionCaught")
     internal inline fun <T> observeAfterNative(
         result: T,
         onFailure: (Throwable) -> Unit,
@@ -370,7 +352,7 @@ internal object NativeStatusObserver {
             observeAfterNative(result, { reportObservationFailure("noSimVisibility", it) }) {
                 val view = chain.thisObject as? View
                 val slot =
-                    readOrNull {
+                    optionalNativeRead {
                         airplaneSlotAccessor?.invoke(chain.thisObject) as? String
                     }
                 val homeGroup = activeGroup?.get()
@@ -460,112 +442,21 @@ internal object NativeStatusObserver {
             }
         }
 
-    internal fun readIslandVisibilityState(
-        group: ViewGroup,
-        view: View,
-    ): IslandVisibilityState? {
-        val state = transitionStateObject(group, view) ?: return null
-        val fields = transitionStateFields(state.javaClass)
-        return IslandVisibilityState(
-            visibleState = (readCachedField(fields.visibleState, state) as? Number)?.toInt(),
-            inIslandState = (readCachedField(fields.inIslandState, state) as? Number)?.toInt(),
-        )
-    }
-
-    private fun transitionStateObject(
-        group: ViewGroup,
-        view: View,
-    ): Any? {
-        val groupClass = group.javaClass
-        val accessor =
-            transitionStateAccessorCache[groupClass]
-                ?: run {
-                    if (groupClass in transitionStateAccessorMissing) {
-                        return null
-                    }
-                    val companionClass =
-                        readOrNull {
-                            Class.forName(
-                                groupClass.name + "\$Companion",
-                                false,
-                                groupClass.classLoader,
-                            )
-                        }
-                    val resolved =
-                        readOrNull {
-                            companionClass
-                                ?.declaredMethods
-                                ?.firstOrNull { method ->
-                                    method.name == "access\$getViewStateFromChild" &&
-                                        method.parameterTypes.contentEquals(arrayOf(View::class.java))
-                                }?.apply { isAccessible = true }
-                        }
-                    if (resolved == null) {
-                        transitionStateAccessorMissing += groupClass
-                        return null
-                    }
-                    transitionStateAccessorCache.putIfAbsent(groupClass, resolved) ?: resolved
-                }
-        return readOrNull {
-            accessor.invoke(null, view)
-        }
-    }
-
-    private fun transitionStateFields(stateClass: Class<*>): TransitionStateFields =
-        transitionStateFieldCache[stateClass]
-            ?: TransitionStateFields(
-                visibleState = resolveCachedField(stateClass, "visibleState"),
-                inIslandState = resolveCachedField(stateClass, "inIslandState"),
-            ).let { resolved ->
-                transitionStateFieldCache.putIfAbsent(stateClass, resolved) ?: resolved
-            }
-
-    private fun resolveCachedField(
-        clazz: Class<*>,
-        name: String,
-    ): Field? =
-        readOrNull {
-            generateSequence(clazz) { candidate -> candidate.superclass }
-                .mapNotNull { candidate ->
-                    candidate.declaredFields.firstOrNull { field -> field.name == name }
-                }
-                .firstOrNull()
-                ?.apply { isAccessible = true }
-        }
-
-    private fun readCachedField(
-        field: Field?,
-        target: Any,
-    ): Any? =
-        field?.let { resolved ->
-            readOrNull { resolved.get(target) }
-        }
-
-    internal data class IslandVisibilityState(
-        val visibleState: Int?,
-        val inIslandState: Int?,
-    )
-
-    private data class TransitionStateFields(
-        val visibleState: Field?,
-        val inIslandState: Field?,
-    )
-
     @Synchronized
     fun currentAppliedStatusIconTint(anchorView: View? = null): Int? {
         val group = activeGroup?.get()
         val peerTint = group?.let(::resolveAppliedStatusIconTint)
         val resolvedAnchor =
             anchorView
-                ?.takeIf(::isTintAuthorityCandidate)
-                ?: group?.let(::resolveTintAnchorView)
+                ?.takeIf(NativeStatusTintResolver::isTintAuthorityCandidate)
+                ?: group?.let(NativeStatusTintResolver::resolveTintAnchorView)
         val locationAwareTint =
-            resolveLocationAwareManagerTint(
+            NativeStatusTintResolver.resolveLocationAwareManagerTint(
                 manager = activeManager,
                 anchorView = resolvedAnchor,
             )
         val managerFallbackTint =
-            resolveManagerFallbackTint(activeManager)
+            NativeStatusTintResolver.resolveManagerFallbackTint(activeManager)
         return StatusIconTintPolicy.statusIconTint(
             locationAwareTint = locationAwareTint,
             peerAppliedTint = peerTint,
@@ -582,29 +473,25 @@ internal object NativeStatusObserver {
         val group = activeGroup?.get() ?: return
         val noSimView =
             observedNoSimView
-                ?: (0 until group.childCount)
-                    .map(group::getChildAt)
-                    .firstOrNull { child ->
-                        NativeParticipantAccess.slotOf(child) == NO_SIM_SLOT
+                ?: (0 until group.childCount).firstNotNullOfOrNull { index ->
+                    group.getChildAt(index).takeIf { child ->
+                        NativeStatusSlots.slotOf(child) == NO_SIM_SLOT
                     }
+                }
         val noSimVisible =
             observedNoSimVisible
                 ?: (noSimView?.let(::isNativeStatusIconVisible) == true)
         val noSimIcon =
-            if (noSimVisible) {
-                noSimView?.let(::resolveNativeIconResource)
-            } else {
-                null
-            }
+            noSimView?.takeIf { noSimVisible }?.let(::resolveNativeIconResource)
         val peerTint = resolveAppliedStatusIconTint(group)
-        val tintAnchor = resolveTintAnchorView(group)
+        val tintAnchor = NativeStatusTintResolver.resolveTintAnchorView(group)
         val locationAwareTint =
-            resolveLocationAwareManagerTint(
+            NativeStatusTintResolver.resolveLocationAwareManagerTint(
                 manager = activeManager,
                 anchorView = tintAnchor,
             )
         val managerFallbackTint =
-            resolveManagerFallbackTint(activeManager)
+            NativeStatusTintResolver.resolveManagerFallbackTint(activeManager)
         val appliedTint =
             StatusIconTintPolicy.statusIconTint(
                 locationAwareTint = locationAwareTint,
@@ -621,39 +508,26 @@ internal object NativeStatusObserver {
         val sink = statusPresentationSink
         if (sink != null && deliverPresentation(presentation, sink)) {
             reportEvent {
-                "statusIconPresentation source=" + source +
-                    " tint=" +
-                    tintText(presentation.appliedTint) +
-                    " tintAuthority=" +
-                    when {
-                        locationAwareTint != null -> "dispatcher-location-aware"
-                        peerTint != null -> "peer-static-applied"
-                        managerFallbackTint != null -> "manager-global-fallback"
-                        else -> "cached-fallback"
-                    } +
-                    " locationAwareTint=" +
-                    tintText(locationAwareTint) +
-                    " peerTint=" +
-                    tintText(peerTint) +
-                    " managerFallbackTint=" +
-                    tintText(managerFallbackTint) +
-                    " tintAnchorSlot=" +
-                    (tintAnchor?.let(NativeParticipantAccess::slotOf) ?: "none") +
-                    " tintAnchorClass=" +
-                    (tintAnchor?.javaClass?.simpleName ?: "none") +
-                    " noSimVisible=" + presentation.noSimVisible +
-                    " noSimResource=" +
-                    (
-                        presentation.noSimIcon?.packageName +
-                            ":" +
-                            presentation.noSimIcon?.resourceId
-                    )
+                val authority = when {
+                    locationAwareTint != null -> "dispatcher-location-aware"
+                    peerTint != null -> "peer-static-applied"
+                    managerFallbackTint != null -> "manager-global-fallback"
+                    else -> "cached-fallback"
+                }
+                "statusIconPresentation source=$source tint=${tintText(presentation.appliedTint)}" +
+                    " tintAuthority=$authority locationAwareTint=${tintText(locationAwareTint)}" +
+                    " peerTint=${tintText(peerTint)} managerFallbackTint=${tintText(managerFallbackTint)}" +
+                    " tintAnchorSlot=${tintAnchor?.let(NativeStatusSlots::slotOf) ?: "none"}" +
+                    " tintAnchorClass=${tintAnchor?.javaClass?.simpleName ?: "none"}" +
+                    " noSimVisible=${presentation.noSimVisible}" +
+                    " noSimResource=${presentation.noSimIcon?.packageName}:${presentation.noSimIcon?.resourceId}"
             }
         }
 
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     internal fun deliverPresentation(
         presentation: PresentationStore.StatusIconPresentation,
         deliver: (PresentationStore.StatusIconPresentation) -> Unit,
@@ -677,7 +551,7 @@ internal object NativeStatusObserver {
             return false
         }
         val accessor = statusIconVisibleAccessor ?: return true
-        return readOrNull {
+        return optionalNativeRead {
             accessor.invoke(view) as? Boolean
         } ?: true
     }
@@ -687,7 +561,7 @@ internal object NativeStatusObserver {
     ): PresentationStore.NativeIconResource? {
         val accessor = statusIconSourceAccessor ?: return null
         val icon =
-            readOrNull {
+            optionalNativeRead {
                 accessor.invoke(view) as? Icon
             } ?: return null
         if (icon.type != Icon.TYPE_RESOURCE) {
@@ -707,148 +581,12 @@ internal object NativeStatusObserver {
         )
     }
 
-    private fun resolveLocationAwareManagerTint(
-        manager: Any?,
-        anchorView: View?,
-    ): Int? {
-        manager ?: return null
-        anchorView ?: return null
-
-        val dispatcher =
-            readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
-                ?: return null
-        val iconTint =
-            readIntField(dispatcher, ICON_TINT_FIELD)
-                ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-                ?: return null
-        val tintAreas =
-            readObjectField(dispatcher, TINT_AREAS_FIELD)
-                as? Collection<*>
-                ?: return null
-
-        return readOrNull {
-            val managerClass = manager.javaClass
-            val getTint =
-                tintMethodByManagerClass[managerClass]
-                    ?: Class.forName(
-                        DARK_ICON_DISPATCHER_CLASS,
-                        false,
-                        managerClass.classLoader,
-                    ).methods.firstOrNull { method ->
-                        method.name == "getTint" &&
-                            method.parameterCount == 3 &&
-                            View::class.java.isAssignableFrom(
-                                method.parameterTypes[1],
-                            ) &&
-                            method.parameterTypes[2] ==
-                                Int::class.javaPrimitiveType
-                    }?.also { tintMethodByManagerClass[managerClass] = it }
-            getTint?.let { method ->
-                (method.invoke(null, tintAreas, anchorView, iconTint) as? Number)
-                    ?.toInt()
-                    ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-            }
-        }
-    }
-
-    private fun resolveManagerFallbackTint(manager: Any?): Int? {
-        manager ?: return null
-
-        readIntField(manager, MANAGER_COLOR_FIELD)
-            ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-            ?.let { return it }
-
-        val dispatcher =
-            readObjectField(manager, DARK_ICON_DISPATCHER_FIELD)
-                ?: return null
-        return readIntField(dispatcher, ICON_TINT_FIELD)
-            ?.takeIf(StatusIconTintPolicy::isVisibleTint)
-    }
-
-    private fun resolveTintAnchorView(group: ViewGroup): View? {
-        for (index in group.childCount - 1 downTo 0) {
-            val child = group.getChildAt(index)
-            if (
-                isTintAuthorityCandidate(
-                    slot = NativeParticipantAccess.slotOf(child),
-                    visible = child.visibility == View.VISIBLE,
-                    width = child.width,
-                    height = child.height,
-                )
-            ) {
-                return child
-            }
-        }
-        return null
-    }
-
-    private fun isTintAuthorityCandidate(view: View): Boolean =
-        isTintAuthorityCandidate(
-            slot = NativeParticipantAccess.slotOf(view),
-            visible = view.visibility == View.VISIBLE,
-            width = view.width,
-            height = view.height,
-        )
-
-    internal fun isTintAuthorityCandidate(
-        slot: String?,
-        visible: Boolean,
-        width: Int,
-        height: Int,
-    ): Boolean =
-        slot !in representedTintSlots &&
-            visible &&
-            width > 0 &&
-            height > 0
-
-    private fun tintFields(clazz: Class<*>): List<Field> =
-        tintFieldsByClass.computeIfAbsent(clazz) {
-            readOrNull {
-                generateSequence(clazz) { it.superclass }
-                    .flatMap { it.declaredFields.asSequence() }
-                    .filter { it.name in tintFieldNames }
-                    .toList()
-            } ?: emptyList()
-        }
-
-    private fun readObjectField(
-        target: Any,
-        name: String,
-    ): Any? {
-        val field =
-            tintFields(target.javaClass)
-                .firstOrNull { it.name == name }
-                ?: return null
-        return readOrNull {
-            field.isAccessible = true
-            field.get(target)
-        }
-    }
-
-    private fun readIntField(
-        target: Any,
-        name: String,
-    ): Int? {
-        val field =
-            tintFields(target.javaClass)
-                .firstOrNull {
-                    it.name == name &&
-                        (it.type == Int::class.javaPrimitiveType ||
-                            it.type == Int::class.javaObjectType)
-                }
-                ?: return null
-        return readOrNull {
-            field.isAccessible = true
-            (field.get(target) as? Number)?.toInt()
-        }
-    }
-
     private fun resolveStaticDrawableColor(view: View): Int? {
         val accessor = statusIconStaticColorAccessor ?: return null
         if (!accessor.declaringClass.isInstance(view)) {
             return null
         }
-        return readOrNull {
+        return optionalNativeRead {
             (accessor.invoke(view) as? Number)?.toInt()
         }?.takeIf { color -> (color ushr 24) != 0 }
     }
@@ -860,12 +598,12 @@ internal object NativeStatusObserver {
     private fun resolveAppliedStatusIconTint(group: ViewGroup): Int? {
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
-            if (!isTintAuthorityCandidate(child)) continue
+            if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
             findAppliedTint(child)?.let { return it }
         }
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
-            if (!isTintAuthorityCandidate(child)) continue
+            if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
             resolveStaticDrawableColor(child)?.let { return it }
         }
         return null
@@ -932,6 +670,4 @@ internal object NativeStatusObserver {
         }
     }
 
-    private const val AIRPLANE_SLOT = "airplane"
-    private const val NO_SIM_SLOT = "no_sim"
 }

@@ -4,6 +4,11 @@ import com.chaners.guiyuan.xposed.StatusStateStore
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+private const val TEST_NATIVE_WIFI_LEVEL_3_RESOURCE = "com.android.systemui:drawable/stat_sys_wifi_signal_3"
+private const val TEST_NATIVE_HOTSPOT_LEVEL_3_RESOURCE = "com.android.systemui:drawable/stat_sys_hotspot_signal_3"
+
+private const val TEST_UNAVAILABLE_WIFI_LEVEL_2_RESOURCE = "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable"
+
 class SysUiSignalParserTest {
     @Test
     fun wifiSignalLevelsCoverZeroThroughThree() {
@@ -22,7 +27,7 @@ class SysUiSignalParserTest {
         assertEquals(
             SignalStrength.Level(2),
             SysUiSignalParser.wifi(
-                "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable",
+                TEST_UNAVAILABLE_WIFI_LEVEL_2_RESOURCE,
             ),
         )
         assertEquals(
@@ -54,13 +59,13 @@ class SysUiSignalParserTest {
         assertEquals(
             true,
             SysUiSignalParser.wifiInternetValidated(
-                "com.android.systemui:drawable/stat_sys_wifi_signal_3",
+                TEST_NATIVE_WIFI_LEVEL_3_RESOURCE,
             ),
         )
         assertEquals(
             false,
             SysUiSignalParser.wifiInternetValidated(
-                "com.android.systemui:drawable/stat_sys_wifi_signal_2_unavailable",
+                TEST_UNAVAILABLE_WIFI_LEVEL_2_RESOURCE,
             ),
         )
         assertEquals(
@@ -98,13 +103,13 @@ class SysUiSignalParserTest {
         assertEquals(
             true,
             SysUiSignalParser.isHotspotWifiResource(
-                "com.android.systemui:drawable/stat_sys_hotspot_signal_3",
+                TEST_NATIVE_HOTSPOT_LEVEL_3_RESOURCE,
             ),
         )
         assertEquals(
             false,
             SysUiSignalParser.isHotspotWifiResource(
-                "com.android.systemui:drawable/stat_sys_wifi_signal_3",
+                TEST_NATIVE_WIFI_LEVEL_3_RESOURCE,
             ),
         )
     }
@@ -141,7 +146,7 @@ class SysUiSignalParserTest {
                 taggedResId = 100,
                 previousTaggedResId = 99,
                 taggedResource =
-                    "com.android.systemui:drawable/stat_sys_hotspot_signal_3",
+                    TEST_NATIVE_HOTSPOT_LEVEL_3_RESOURCE,
             ),
         )
         assertEquals(
@@ -151,7 +156,7 @@ class SysUiSignalParserTest {
                 taggedResId = 100,
                 previousTaggedResId = 100,
                 taggedResource =
-                    "com.android.systemui:drawable/stat_sys_hotspot_signal_3",
+                    TEST_NATIVE_HOTSPOT_LEVEL_3_RESOURCE,
             ),
         )
         assertEquals(
@@ -161,7 +166,7 @@ class SysUiSignalParserTest {
                 taggedResId = 101,
                 previousTaggedResId = 100,
                 taggedResource =
-                    "com.android.systemui:drawable/stat_sys_wifi_signal_3",
+                    TEST_NATIVE_WIFI_LEVEL_3_RESOURCE,
             ),
         )
     }

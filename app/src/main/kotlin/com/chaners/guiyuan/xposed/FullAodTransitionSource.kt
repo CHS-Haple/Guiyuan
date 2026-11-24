@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
+import io.github.libxposed.api.XposedInterface.Chain
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -16,6 +16,7 @@ internal object FullAodTransitionSource {
     private const val HOOK_ID =
         "combinedstatus.keyguardAod.animateFullAod"
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
@@ -26,21 +27,17 @@ internal object FullAodTransitionSource {
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): List<HookHandle> {
         val controllerClass = Class.forName(CONTROLLER_CLASS, false, classLoader)
-        val candidates =
-            controllerClass.declaredMethods.filter { method ->
-                method.name == ANIMATE_FULL_AOD_METHOD &&
-                    matchesSignature(
-                        parameterTypes = method.parameterTypes,
-                        returnType = method.returnType,
-                    )
-            }
         val method =
-            candidates.singleOrNull()
-                ?.apply { isAccessible = true }
-                ?: error(
-                    "full-aod-animation-method-contract-" +
-                        if (candidates.isEmpty()) "missing" else "ambiguous",
+            SysUiPresentationRuntime.requireUniqueHookMethod(
+                controllerClass,
+                ANIMATE_FULL_AOD_METHOD,
+                "full-aod-animation-method-contract-",
+            ) { method ->
+                matchesSignature(
+                    parameterTypes = method.parameterTypes,
+                    returnType = method.returnType,
                 )
+            }
 
         val warned = AtomicBoolean(false)
         fun fallback(stage: String, error: Throwable) {
@@ -89,30 +86,33 @@ internal object FullAodTransitionSource {
                                 fallback("full-aod-commit", error)
                             }
                         }
-                        try {
-                            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                                val rawArg0 = chain.getArg(0) as? Boolean
-                                val rawArg1 = chain.getArg(1) as? Boolean
-                                onEvent(
-                                    "keyguardFullAod source=animateFullAod" +
-                                        " arg0=" + (rawArg0 ?: "unavailable") +
-                                        " arg1=" + (rawArg1 ?: "unavailable"),
-                                )
-                            }
-                        } catch (error: Throwable) {
-                            SysUiPresentationRuntime.throwIfFatal(error)
-                            if (warned.compareAndSet(false, true)) {
-                                try {
-                                    Log.w("Guiyuan[FullAod]", "Diagnostic failed", error)
-                                } catch (failure: Throwable) {
-                                    SysUiPresentationRuntime.throwIfFatal(failure)
-                                }
-                            }
-                        }
+                        reportOptionalDiagnostic(
+                            chain, onEvent, isDetailedDiagnosticsEnabled, warned,
+                        )
                         result
                     },
                 )
         return listOf(handle)
+    }
+
+    // A Chain is used synchronously within the current hook callback, never retained.
+    private fun reportOptionalDiagnostic(
+        chain: Chain,
+        onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
+        warned: AtomicBoolean,
+    ) {
+        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[FullAod]") {
+            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                val rawArg0 = chain.getArg(0) as? Boolean
+                val rawArg1 = chain.getArg(1) as? Boolean
+                onEvent(
+                    "keyguardFullAod source=animateFullAod" +
+                        " arg0=" + (rawArg0 ?: "unavailable") +
+                        " arg1=" + (rawArg1 ?: "unavailable"),
+                )
+            }
+        }
     }
 
     internal fun matchesSignature(

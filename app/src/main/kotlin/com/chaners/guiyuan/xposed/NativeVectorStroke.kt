@@ -43,8 +43,8 @@ internal object NativeVectorStroke {
         return if (requested < 0f) requested * 0.6f else requested
     }
 
-    fun load(resources: Resources, resourceId: Int): Source? =
-        runCatching {
+    fun load(resources: Resources, resourceId: Int): Source? {
+        return runCatching {
             resources.getXml(resourceId).use { xml ->
                 var depth = 0
                 var viewportWidth = Float.NaN
@@ -59,36 +59,15 @@ internal object NativeVectorStroke {
                                     viewportHeight = xml.getAttributeFloatValue(NS, "viewportHeight", Float.NaN)
                                     if (!viewportWidth.isFinite() || !viewportHeight.isFinite() ||
                                         viewportWidth <= 0f || viewportHeight <= 0f
-                                    ) return@runCatching null
+                                    ) return null
                                 }
                                 depth == 1 && xml.name == "path" && onlyKeys(xml, pathKeys) -> {
-                                    if (layers.size >= 12) return@runCatching null
-                                    val data = xml.getAttributeValue(NS, "pathData")
-                                        ?.takeIf { it.isNotBlank() && it.length <= 4096 }
-                                        ?: return@runCatching null
-                                    val values = resources.obtainAttributes(Xml.asAttributeSet(xml), pathAttrs)
-                                    val alpha: Int
-                                    val fillType: Int
-                                    try {
-                                        if (!values.hasValue(0)) return@runCatching null
-                                        val fill = values.getColor(0, Color.TRANSPARENT)
-                                        val fillAlpha = values.getFloat(1, 1f)
-                                        if (!fillAlpha.isFinite() || fillAlpha !in 0f..1f) {
-                                            return@runCatching null
-                                        }
-                                        alpha = (Color.alpha(fill) * fillAlpha).roundToInt()
-                                        fillType = values.getInt(2, 0)
-                                    } finally {
-                                        values.recycle()
-                                    }
-                                    if (fillType !in 0..1) return@runCatching null
-                                    val path = PathParser.createPathFromPathData(data)
-                                    if (path.isEmpty) return@runCatching null
-                                    path.fillType =
-                                        if (fillType == 1) Path.FillType.EVEN_ODD else Path.FillType.WINDING
-                                    layers.add(Layer(path, alpha))
+                                    // Exiting at depth 1 fails the document completeness check.
+                                    if (layers.size >= 12) break
+                                    val layer = readLayer(resources, xml) ?: break
+                                    layers.add(layer)
                                 }
-                                else -> return@runCatching null
+                                else -> return null
                             }
                             depth++
                         }
@@ -99,56 +78,89 @@ internal object NativeVectorStroke {
                 else Source(viewportWidth, viewportHeight, layers)
             }
         }.onFailure { rethrowRenderFatal(it) }.getOrNull()
+    }
+
+    private fun readLayer(
+        resources: Resources,
+        xml: android.content.res.XmlResourceParser,
+    ): Layer? {
+        val data = xml.getAttributeValue(NS, "pathData")
+            ?.takeIf { it.isNotBlank() && it.length <= 4096 }
+            ?: return null
+        val values = resources.obtainAttributes(Xml.asAttributeSet(xml), pathAttrs)
+        val alpha: Int
+        val fillType: Int
+        try {
+            if (!values.hasValue(0)) return null
+            val fill = values.getColor(0, Color.TRANSPARENT)
+            val fillAlpha = values.getFloat(1, 1f)
+            if (!fillAlpha.isFinite() || fillAlpha !in 0f..1f) return null
+            alpha = (Color.alpha(fill) * fillAlpha).roundToInt()
+            fillType = values.getInt(2, 0)
+        } finally {
+            values.recycle()
+        }
+        if (fillType !in 0..1) return null
+        val path = PathParser.createPathFromPathData(data)
+        if (path.isEmpty) return null
+        path.fillType =
+            if (fillType == 1) Path.FillType.EVEN_ODD else Path.FillType.WINDING
+        return Layer(path, alpha)
+    }
 
     fun style(source: Source, weight: Int): Styled? =
-        runCatching {
-            val offset = edgeOffset(weight, source.viewportWidth, source.viewportHeight)
-            if (!offset.isFinite() || offset == 0f) return@runCatching null
-            val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.STROKE
-                strokeWidth = 2f * abs(offset)
-                strokeJoin = Paint.Join.ROUND
-                strokeCap = Paint.Cap.ROUND
-            }
-            val bounds = RectF()
-            val rimBounds = RectF()
-            val combined = RectF()
-            val styled = ArrayList<Layer>(source.layers.size)
-            source.layers.forEachIndexed { index, layer ->
-                val rim = Path()
-                if (!rimPaint.getFillPath(layer.path, rim)) return@runCatching null
-                val changed =
-                    if (offset > 0f) {
-                        // Keep the native Bezier paths in the final draw: filling and
-                        // stroking directly avoids merged-outline corner artifacts.
-                        Path(layer.path).also {
-                            it.computeBounds(bounds, true)
-                            rim.computeBounds(rimBounds, true)
-                            bounds.union(rimBounds)
-                        }
-                    } else {
-                        Path(layer.path).apply {
-                            if (!op(rim, Path.Op.DIFFERENCE)) return@runCatching null
-                            computeBounds(bounds, true)
-                        }
+        runCatching { styleSource(source, weight) }
+            .onFailure { rethrowRenderFatal(it) }
+            .getOrNull()
+
+    private fun styleSource(source: Source, weight: Int): Styled? {
+        val offset = edgeOffset(weight, source.viewportWidth, source.viewportHeight)
+        if (!offset.isFinite() || offset == 0f) return null
+        val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 2f * abs(offset)
+            strokeJoin = Paint.Join.ROUND
+            strokeCap = Paint.Cap.ROUND
+        }
+        val bounds = RectF()
+        val rimBounds = RectF()
+        val combined = RectF()
+        val styled = ArrayList<Layer>(source.layers.size)
+        source.layers.forEachIndexed { index, layer ->
+            val rim = Path()
+            if (!rimPaint.getFillPath(layer.path, rim)) return null
+            val changed =
+                if (offset > 0f) {
+                    // Keep the native Bezier paths in the final draw: filling and
+                    // stroking directly avoids merged-outline corner artifacts.
+                    Path(layer.path).also {
+                        it.computeBounds(bounds, true)
+                        rim.computeBounds(rimBounds, true)
+                        bounds.union(rimBounds)
                     }
-                if (changed.isEmpty || !bounds.left.isFinite() || !bounds.top.isFinite() ||
-                    !bounds.right.isFinite() || !bounds.bottom.isFinite() || bounds.isEmpty
-                ) return@runCatching null
-                if (index == 0) combined.set(bounds) else combined.union(bounds)
-                styled.add(Layer(changed, layer.alpha))
-            }
-            Styled(
-                source.viewportWidth, source.viewportHeight, styled,
-                RectF(
-                    combined.left / source.viewportWidth,
-                    combined.top / source.viewportHeight,
-                    combined.right / source.viewportWidth,
-                    combined.bottom / source.viewportHeight,
-                ),
-                offset.coerceAtLeast(0f) * 2f,
-            )
-        }.onFailure { rethrowRenderFatal(it) }.getOrNull()
+                } else {
+                    Path(layer.path).apply {
+                        if (!op(rim, Path.Op.DIFFERENCE)) return null
+                        computeBounds(bounds, true)
+                    }
+                }
+            if (changed.isEmpty || !bounds.left.isFinite() || !bounds.top.isFinite() ||
+                !bounds.right.isFinite() || !bounds.bottom.isFinite() || bounds.isEmpty
+            ) return null
+            if (index == 0) combined.set(bounds) else combined.union(bounds)
+            styled.add(Layer(changed, layer.alpha))
+        }
+        return Styled(
+            source.viewportWidth, source.viewportHeight, styled,
+            RectF(
+                combined.left / source.viewportWidth,
+                combined.top / source.viewportHeight,
+                combined.right / source.viewportWidth,
+                combined.bottom / source.viewportHeight,
+            ),
+            offset.coerceAtLeast(0f) * 2f,
+        )
+    }
 
     private fun onlyKeys(xml: android.content.res.XmlResourceParser, allowed: Set<String>): Boolean =
         (0 until xml.attributeCount).all { xml.getAttributeName(it) in allowed }

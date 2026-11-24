@@ -8,6 +8,20 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private const val EXPECTED_RUNTIME_DETAILED = "runtimeLevel=detailed"
+private const val FIELD_SESSION_ID = "sessionId"
+private const val COMPONENT_DIAGNOSTICS = "diagnostics"
+private const val EVENT_DIAGNOSTICS_BIND = "diagnostics.bind"
+private const val EVENT_DIAGNOSTICS_SNAPSHOT = "diagnostics.snapshot"
+private const val EVENT_DIAGNOSTICS_LEVEL = "diagnostics.level"
+private const val STATE_READY = "ready"
+private const val STATE_UNAVAILABLE = "unavailable"
+private const val SESSION_TEST = "test-session"
+private const val FIELD_LEVEL = "level"
+private const val LEVEL_GENERAL = "general"
+private const val LEVEL_DETAILED = "detailed"
+private const val SESSION_CURRENT = "current"
+
 class DiagReportTest {
     @Test
     fun reportSectionsRetainTheirExportOrder() {
@@ -32,8 +46,8 @@ class DiagReportTest {
             DiagProtocol.format(
                 event = "presentation.resolve",
                 component = "statusIcons",
-                state = "ready",
-                fields = mapOf("sessionId" to "test-session"),
+                state = STATE_READY,
+                fields = mapOf(FIELD_SESSION_ID to SESSION_TEST),
             ),
         )
         assertTrue(report.contains("requestedLevel=detailed"))
@@ -45,10 +59,10 @@ class DiagReportTest {
     fun observedRuntimeLevelIsPreserved() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "ready",
-                fields = mapOf("level" to "general", "sessionId" to "test-session"),
+                event = EVENT_DIAGNOSTICS_BIND,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_READY,
+                fields = mapOf(FIELD_LEVEL to LEVEL_GENERAL, FIELD_SESSION_ID to SESSION_TEST),
             ),
         )
         assertTrue(report.contains("runtimeLevel=general"))
@@ -59,10 +73,10 @@ class DiagReportTest {
     fun actualUnavailableBindingRemainsVisible() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "unavailable",
-                fields = mapOf("sessionId" to "test-session"),
+                event = EVENT_DIAGNOSTICS_BIND,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_UNAVAILABLE,
+                fields = mapOf(FIELD_SESSION_ID to SESSION_TEST),
             ),
         )
         assertTrue(report.contains("runtimeLevel=not-observed"))
@@ -73,32 +87,51 @@ class DiagReportTest {
     fun unavailableSnapshotRetainsObservedLevelAndFailure() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.snapshot",
-                component = "diagnostics",
-                state = "unavailable",
-                fields = mapOf("level" to "detailed", "sessionId" to "test-session"),
+                event = EVENT_DIAGNOSTICS_SNAPSHOT,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_UNAVAILABLE,
+                fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_TEST),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_DETAILED))
         assertTrue(report.contains("runtimeBinding=unavailable"))
+    }
+
+    @Test
+    fun newestSnapshotWithoutLevelSupersedesStaleLevelEvidence() {
+        val exported = report(
+            DiagProtocol.format(
+                event = EVENT_DIAGNOSTICS_BIND,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_READY,
+                fields = mapOf(FIELD_LEVEL to LEVEL_GENERAL, FIELD_SESSION_ID to SESSION_CURRENT),
+            ),
+            DiagProtocol.format(
+                event = EVENT_DIAGNOSTICS_SNAPSHOT,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_UNAVAILABLE,
+                fields = mapOf(FIELD_SESSION_ID to SESSION_CURRENT),
+            ),
+        )
+        assertTrue(exported.contains("runtimeLevel=not-observed\nruntimeBinding=unavailable"))
     }
 
     @Test
     fun levelChangeRetainsObservedBinding() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "ready",
-                fields = mapOf("level" to "general", "sessionId" to "current"),
+                event = EVENT_DIAGNOSTICS_BIND,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_READY,
+                fields = mapOf(FIELD_LEVEL to LEVEL_GENERAL, FIELD_SESSION_ID to SESSION_CURRENT),
             ),
             DiagProtocol.format(
-                event = "diagnostics.level",
-                component = "diagnostics",
-                fields = mapOf("level" to "detailed", "sessionId" to "current"),
+                event = EVENT_DIAGNOSTICS_LEVEL,
+                component = COMPONENT_DIAGNOSTICS,
+                fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_CURRENT),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_DETAILED))
         assertTrue(report.contains("runtimeBinding=ready"))
     }
 
@@ -106,18 +139,18 @@ class DiagReportTest {
     fun earlierSessionDoesNotSupplyBinding() {
         val report = report(
             DiagProtocol.format(
-                event = "diagnostics.bind",
-                component = "diagnostics",
-                state = "ready",
-                fields = mapOf("level" to "general", "sessionId" to "previous"),
+                event = EVENT_DIAGNOSTICS_BIND,
+                component = COMPONENT_DIAGNOSTICS,
+                state = STATE_READY,
+                fields = mapOf(FIELD_LEVEL to LEVEL_GENERAL, FIELD_SESSION_ID to "previous"),
             ),
             DiagProtocol.format(
-                event = "diagnostics.level",
-                component = "diagnostics",
-                fields = mapOf("level" to "detailed", "sessionId" to "current"),
+                event = EVENT_DIAGNOSTICS_LEVEL,
+                component = COMPONENT_DIAGNOSTICS,
+                fields = mapOf(FIELD_LEVEL to LEVEL_DETAILED, FIELD_SESSION_ID to SESSION_CURRENT),
             ),
         )
-        assertTrue(report.contains("runtimeLevel=detailed"))
+        assertTrue(report.contains(EXPECTED_RUNTIME_DETAILED))
         assertTrue(report.contains("runtimeBinding=not-observed"))
     }
 }
@@ -168,10 +201,10 @@ class DiagReportExportTest {
     @Test
     fun timedOutCollectionRetainsPartialEvidenceAndFailureStatus() {
         val raw = DiagProtocol.format(
-            event = "diagnostics.snapshot",
-            component = "diagnostics",
-            state = "ready",
-            fields = mapOf("sessionId" to "test-session"),
+            event = EVENT_DIAGNOSTICS_SNAPSHOT,
+            component = COMPONENT_DIAGNOSTICS,
+            state = STATE_READY,
+            fields = mapOf(FIELD_SESSION_ID to SESSION_TEST),
         )
         val report = report(
             raw,

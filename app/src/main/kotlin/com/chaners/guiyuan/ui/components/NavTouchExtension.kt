@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -20,69 +21,140 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-// The existing empty bottom margin is hit-test space; the bar and system gestures keep their geometry.
 @Composable
-internal fun Modifier.navTouchExtension(
-    bottomPadding: Dp,
-    horizontalPadding: Dp,
-    contentPadding: Dp,
-    itemCount: Int,
-    rtl: Boolean,
-    onSelect: (Int) -> Unit,
-): Modifier {
-    if (itemCount <= 0) return this
-
-    val bottomGestureInset = maxOf(
+private fun bottomSystemGestureInset(): Dp =
+    maxOf(
         WindowInsets.systemGestures.only(WindowInsetsSides.Bottom)
             .asPaddingValues().calculateBottomPadding(),
         WindowInsets.mandatorySystemGestures.only(WindowInsetsSides.Bottom)
             .asPaddingValues().calculateBottomPadding(),
     )
+
+// The existing empty bottom margin is hit-test space; the bar and system gestures keep their geometry.
+internal data class NavTouchStripGeometry(
+    val bottomPadding: Dp,
+    val horizontalPadding: Dp,
+    val contentPadding: Dp,
+    val itemCount: Int,
+    val rtl: Boolean,
+)
+
+internal data class NavTouchTrailingAction(
+    val width: Dp = 0.dp,
+    val size: Dp = 0.dp,
+    val onTap: (() -> Unit)? = null,
+)
+
+@Composable
+internal fun Modifier.navTouchExtension(
+    geometry: NavTouchStripGeometry,
+    onSelect: (Int) -> Unit,
+    trailing: NavTouchTrailingAction = NavTouchTrailingAction(),
+): Modifier {
+    val (bottomPadding, horizontalPadding, contentPadding, itemCount, rtl) = geometry
+    val trailingActionWidth = trailing.width
+    val trailingActionSize = trailing.size
+    val onTrailingAction = trailing.onTap
+    if (itemCount <= 0) return this
+
+    val bottomGestureInset = bottomSystemGestureInset()
     val extension = navTouchExtensionHeight(bottomPadding, bottomGestureInset)
     if (extension == 0.dp) return this
 
     val select = rememberUpdatedState(onSelect)
-    return this.pointerInput(bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl) {
+    val trailingTap = rememberUpdatedState(onTrailingAction)
+    return this.pointerInput(
+        bottomPadding, extension, horizontalPadding, contentPadding, itemCount, rtl,
+        trailingActionWidth, trailingActionSize,
+    ) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
-            val left = horizontalPadding.toPx()
-            val right = size.width - left
+            val (left, right) = navTouchHorizontalBounds(
+                width = size.width.toFloat(),
+                padding = horizontalPadding.toPx(),
+                trailingActionWidth = trailingActionWidth.toPx(),
+                rtl = rtl,
+            )
             val top = size.height - bottomPadding.toPx()
             val bottom = top + extension.toPx()
             val start = down.position
-            if (start.x < left || start.x >= right || start.y < top || start.y >= bottom) {
-                return@awaitEachGesture
+            if (start.y >= top && start.y < bottom) {
+                val bounds = left to right
+                val reserved = trailingActionWidth.toPx()
+                val actionSize = trailingActionSize.toPx()
+                val geometry = NavTouchIndexGeometry(
+                    left, right, contentPadding.toPx(), itemCount, rtl,
+                )
+                val startIndex = navTouchIndex(start.x, geometry)
+                val startedOnAction = trailingTap.value != null &&
+                    navTouchActionHit(start.x, bounds, reserved, actionSize, rtl)
+                if (startIndex != null || startedOnAction) {
+                    val up = awaitShortTapUp(down)
+                    if (up != null && up.position.y >= top && up.position.y < bottom) {
+                        if (startedOnAction) {
+                            if (navTouchActionHit(up.position.x, bounds, reserved, actionSize, rtl)) {
+                                trailingTap.value?.let { action ->
+                                    up.consume()
+                                    action()
+                                }
+                            }
+                        } else if (startIndex != null && navTouchIndex(up.position.x, geometry) == startIndex
+                        ) {
+                            up.consume()
+                            select.value(startIndex)
+                        }
+                    }
+                }
             }
-
-            val up = awaitShortTapUp(down) ?: return@awaitEachGesture
-            if (up.position.x < left || up.position.x >= right ||
-                up.position.y < top || up.position.y >= bottom
-            ) return@awaitEachGesture
-            val index = navTouchIndex(
-                x = up.position.x,
-                left = left,
-                right = right,
-                contentPadding = contentPadding.toPx(),
-                count = itemCount,
-                rtl = rtl,
-            ) ?: return@awaitEachGesture
-            up.consume()
-            select.value(index)
         }
     }
+}
+
+/** Exclude the independent navigation action from the destination-only bottom hit strip. */
+internal fun navTouchHorizontalBounds(
+    width: Float,
+    padding: Float,
+    trailingActionWidth: Float,
+    rtl: Boolean,
+): Pair<Float, Float> {
+    val exclusion = trailingActionWidth.coerceAtLeast(0f)
+    return if (rtl) {
+        (padding + exclusion) to (width - padding)
+    } else {
+        padding to (width - padding - exclusion)
+    }
+}
+
+/** The trailing control shares the safe tap strip, but never the destination hit region. */
+internal fun navTouchActionHit(
+    x: Float,
+    destinationBounds: Pair<Float, Float>,
+    reservedWidth: Float,
+    actionSize: Float,
+    rtl: Boolean,
+): Boolean {
+    if (actionSize <= 0f || reservedWidth < actionSize ||
+        destinationBounds.second <= destinationBounds.first
+    ) return false
+    val edge = if (rtl) destinationBounds.first - reservedWidth
+        else destinationBounds.second + reservedWidth
+    return if (rtl) x >= edge && x < edge + actionSize
+    else x >= edge - actionSize && x < edge
 }
 
 internal fun navTouchExtensionHeight(bottomPadding: Dp, gestureInset: Dp): Dp =
     (bottomPadding - gestureInset - 4.dp).coerceIn(0.dp, 12.dp)
 
-internal fun navTouchIndex(
-    x: Float,
-    left: Float,
-    right: Float,
-    contentPadding: Float,
-    count: Int,
-    rtl: Boolean,
-): Int? {
+internal data class NavTouchIndexGeometry(
+    val left: Float,
+    val right: Float,
+    val contentPadding: Float,
+    val count: Int,
+    val rtl: Boolean,
+)
+
+internal fun navTouchIndex(x: Float, geometry: NavTouchIndexGeometry): Int? {
+    val (left, right, contentPadding, count, rtl) = geometry
     val width = right - left - contentPadding * 2f
     if (count <= 0 || x < left || x >= right || width <= 0f) return null
     val relative = if (rtl) right - contentPadding - x else x - left - contentPadding
@@ -104,12 +176,7 @@ internal fun Modifier.measuredNavTouchExtension(
         itemBounds.any { it == null }
     ) return this
 
-    val gestureInset = maxOf(
-        WindowInsets.systemGestures.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding(),
-        WindowInsets.mandatorySystemGestures.only(WindowInsetsSides.Bottom)
-            .asPaddingValues().calculateBottomPadding(),
-    )
+    val gestureInset = bottomSystemGestureInset()
     val density = LocalDensity.current
     val gesturePx = with(density) { gestureInset.toPx() }
     val extensionPx = with(density) { 12.dp.toPx() }
@@ -120,40 +187,37 @@ internal fun Modifier.measuredNavTouchExtension(
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
             val start = down.position + hostBounds.topLeft
-            val index = measuredNavTouchTarget(
-                start.x, start.y, hostBounds, barBounds, measuredItems,
-                gesturePx, extensionPx, safetyPx,
-            ) ?: return@awaitEachGesture
-
-            val up = awaitShortTapUp(down) ?: return@awaitEachGesture
-            val end = up.position + hostBounds.topLeft
-            if (measuredNavTouchTarget(
-                    end.x, end.y, hostBounds, barBounds, measuredItems,
-                    gesturePx, extensionPx, safetyPx,
-                ) != index
-            ) return@awaitEachGesture
-
-            up.consume()
-            select.value(index)
+            val safeBottom = minOf(
+                barBounds.bottom + extensionPx,
+                hostBounds.bottom - gesturePx - safetyPx,
+            )
+            val index = measuredNavTouchTarget(start, barBounds, measuredItems, safeBottom)
+            val up = if (index != null) awaitShortTapUp(down) else null
+            if (up != null && index != null) {
+                val end = up.position + hostBounds.topLeft
+                if (
+                    measuredNavTouchTarget(end, barBounds, measuredItems, safeBottom) == index
+                ) {
+                    up.consume()
+                    select.value(index)
+                }
+            }
         }
     }
 }
 
 internal fun measuredNavTouchTarget(
-    x: Float,
-    y: Float,
-    host: Rect,
+    position: Offset,
     bar: Rect,
     items: List<Rect>,
-    gestureInset: Float,
-    extension: Float,
-    safety: Float,
+    safeBottom: Float,
 ): Int? {
-    val bottom = minOf(bar.bottom + extension, host.bottom - gestureInset - safety)
-    if (items.isEmpty() || x < bar.left || x >= bar.right ||
-        y < bar.bottom || y >= bottom
+    if (items.isEmpty() || position.x < bar.left || position.x >= bar.right ||
+        position.y < bar.bottom || position.y >= safeBottom
     ) return null
-    return items.indices.firstOrNull { x >= items[it].left && x < items[it].right }
+    return items.indices.firstOrNull {
+        position.x >= items[it].left && position.x < items[it].right
+    }
 }
 
 /** Accept one short stationary tap. A long hold, drag excursion or second finger cancels. */
@@ -162,12 +226,11 @@ private suspend fun AwaitPointerEventScope.awaitShortTapUp(down: PointerInputCha
         var up: PointerInputChange? = null
         while (up == null) {
             val event = awaitPointerEvent()
-            if (event.changes.any { it.id != down.id && it.pressed }) return@withTimeoutOrNull null
-            val change = event.changes.firstOrNull { it.id == down.id }
-                ?: return@withTimeoutOrNull null
+            if (event.changes.any { it.id != down.id && it.pressed }) break
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
             if (change.isConsumed ||
                 (change.position - down.position).getDistance() > viewConfiguration.touchSlop
-            ) return@withTimeoutOrNull null
+            ) break
             if (!change.pressed) up = change
         }
         up

@@ -1,34 +1,16 @@
 package com.chaners.guiyuan.xposed
 
 import android.content.Context
-import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
-import java.lang.reflect.Field
-import java.io.File
-import java.io.FileInputStream
-import java.nio.channels.FileChannel
-import com.chaners.guiyuan.settings.FontAxes
-import com.chaners.guiyuan.settings.NativeFontAxis
-import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
-import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
 
 internal object NativePresentationResolver {
-    private data class DrawableFields(val type: Field?, val enhanced: Field?, val textPaint: Field?)
-
-    private val drawableFields = ConcurrentHashMap<Class<*>, DrawableFields>()
-
-    internal inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
-
     fun resolve(
         state: StatusStateStore.Snapshot,
         defaultDataSubscriptionId: Int =
@@ -38,49 +20,28 @@ internal object NativePresentationResolver {
         val bindings =
             SysUiNetworkSource.mobilePresentationBindings()
                 .filter { binding -> binding.root.isAttachedToWindow }
-        val semanticActiveSubIds =
-            bindings
-                .map { binding -> binding.subscriptionId }
-                .distinct()
-                .filter { subscriptionId ->
-                    state.mobile[subscriptionId]
-                        ?.signal
-                        ?.let { signal -> signal !is SignalStrength.Unknown }
-                        ?: false
-                }
-                .toSet()
-        val platformSubscriptions =
-            bindings
-                .firstOrNull()
-                ?.root
-                ?.context
-                ?.let(::activeSubscriptions)
-        val platformActive = platformSubscriptions?.map { it.first }?.toSet()
+        val semanticActiveSubIds = linkedSetOf<Int>()
+        val boundSubscriptionIds = collectBoundSubscriptionIds(state, bindings, semanticActiveSubIds)
+        val platformSubscriptions = bindings.firstOrNull()?.root?.context?.let(::activeSubscriptions)
+        val platformActive = platformSubscriptions?.mapTo(linkedSetOf<Int>()) { it.first }
         val resolvedActive =
-            resolveActiveSubIds(
-                boundSubscriptionIds =
-                    bindings.map { binding -> binding.subscriptionId },
+            NativeSubscriptionPolicy.resolveActiveSubIds(
+                boundSubscriptionIds = boundSubscriptionIds,
                 semanticActiveSubscriptionIds = semanticActiveSubIds,
                 authoritativeActiveSubscriptionIds =
                     platformActive,
             )
         val activeBindingSubIds = resolvedActive.subscriptionIds
         val slotSubscriptionIds =
-            resolveSlotSubscriptions(
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
                 activeBindingSubIds,
                 platformSubscriptions,
             )
-        val activeBindings =
-            bindings.filter { binding ->
-                binding.subscriptionId in activeBindingSubIds
-            }
-        val visible =
-            activeBindings.filter { binding ->
-                binding.root.visibility == View.VISIBLE
-            }
+        val activeBindings = bindings.filter { it.subscriptionId in activeBindingSubIds }
+        val visible = activeBindings.filter { it.root.visibility == View.VISIBLE }
 
         val mode =
-            classify(
+            NativeSubscriptionPolicy.classify(
                 boundRoots = activeBindings.size,
                 visibleRoots = visible.size,
                 activeSubscriptions = activeBindingSubIds.size,
@@ -91,44 +52,17 @@ internal object NativePresentationResolver {
                 .takeIf { subscriptionId -> subscriptionId >= 0 }
                 ?: activeBindingSubIds.firstOrNull()
 
-        val target =
-            when (mode) {
-                Mode.DUAL_AGGREGATED,
-                Mode.SINGLE,
-                -> visible.firstOrNull()
-
-                Mode.DUAL_SEPARATE ->
-                    visible.firstOrNull { binding ->
-                        binding.subscriptionId == effectiveDataSubscriptionId
-                    } ?: visible.firstOrNull()
-
-                Mode.UNKNOWN -> visible.firstOrNull()
-            }
+        val target = selectNativePresentationRoot(mode, visible, effectiveDataSubscriptionId)
 
         val networkTypeSubscriptionId =
-            selectNetworkTypeSubscriptionId(
+            NativeSubscriptionPolicy.selectNetworkTypeSubscriptionId(
                 effectiveDataSubscriptionId = effectiveDataSubscriptionId,
                 presentationRootSubscriptionId = target?.subscriptionId,
-                boundSubscriptionIds =
-                    activeBindings.map { binding -> binding.subscriptionId },
+                boundSubscriptionIds = activeBindingSubIds,
             )
-        val networkTypeTarget =
-            networkTypeSubscriptionId?.let { subscriptionId ->
-                activeBindings.firstOrNull { binding ->
-                    binding.subscriptionId == subscriptionId
-                }
-            }
-        val networkType =
-            networkTypeTarget?.let { binding ->
-                resolveNetworkType(
-                    root = binding.root,
-                    pendingMobileTypeDrawable = pendingMobileTypeDrawable,
-                )
-            } ?: if (bindings.isEmpty()) {
-                resolveUnboundNativeType(pendingMobileTypeDrawable)
-            } else {
-                null
-            }
+        val networkType = resolvePresentedNetworkType(
+            networkTypeSubscriptionId, activeBindings, pendingMobileTypeDrawable, bindings.isEmpty(),
+        )
 
         return Snapshot(
             mode = mode,
@@ -146,45 +80,53 @@ internal object NativePresentationResolver {
         )
     }
 
-    internal fun selectNetworkTypeSubscriptionId(
-        effectiveDataSubscriptionId: Int?,
-        presentationRootSubscriptionId: Int?,
-        boundSubscriptionIds: List<Int>,
-    ): Int? =
-        effectiveDataSubscriptionId
-            ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
-            ?: presentationRootSubscriptionId
-                ?.takeIf { subscriptionId -> subscriptionId in boundSubscriptionIds }
-            ?: boundSubscriptionIds.firstOrNull()
-
-    internal fun resolveActiveSubIds(
-        boundSubscriptionIds: List<Int>,
-        semanticActiveSubscriptionIds: Set<Int>,
-        authoritativeActiveSubscriptionIds: Set<Int>?,
-    ): ActiveBindingResolution {
-        val bound = boundSubscriptionIds.filter { it >= 0 }.toSet()
-        val authoritative = authoritativeActiveSubscriptionIds != null
-        val source =
-            authoritativeActiveSubscriptionIds
-                ?: semanticActiveSubscriptionIds
-        return ActiveBindingResolution(
-            subscriptionIds = bound.intersect(source),
-            authoritative = authoritative,
-        )
+    /** Retain native binding order while collecting only semantically confirmed SIMs. */
+    private fun collectBoundSubscriptionIds(
+        state: StatusStateStore.Snapshot,
+        bindings: List<SysUiNetworkSource.MobilePresentationBinding>,
+        semanticActiveIds: MutableSet<Int>,
+    ): List<Int> = bindings.map { binding ->
+        val subscriptionId = binding.subscriptionId
+        val signal = state.mobile[subscriptionId]?.signal
+        if (signal != null && signal !is SignalStrength.Unknown) {
+            semanticActiveIds.add(subscriptionId)
+        }
+        subscriptionId
     }
 
-    internal fun classify(
-        boundRoots: Int,
-        visibleRoots: Int,
-        activeSubscriptions: Int,
-    ): Mode =
-        when {
-            boundRoots <= 0 -> Mode.UNKNOWN
-            activeSubscriptions <= 1 && visibleRoots <= 1 -> Mode.SINGLE
-            activeSubscriptions >= 2 && visibleRoots >= 2 -> Mode.DUAL_SEPARATE
-            activeSubscriptions >= 2 && visibleRoots == 1 -> Mode.DUAL_AGGREGATED
-            else -> Mode.UNKNOWN
+    private fun selectNativePresentationRoot(
+        mode: Mode,
+        visible: List<SysUiNetworkSource.MobilePresentationBinding>,
+        effectiveDataSubscriptionId: Int?,
+    ): SysUiNetworkSource.MobilePresentationBinding? =
+        when (mode) {
+            Mode.DUAL_AGGREGATED, Mode.SINGLE -> visible.firstOrNull()
+            Mode.DUAL_SEPARATE -> visible.firstOrNull {
+                it.subscriptionId == effectiveDataSubscriptionId
+            } ?: visible.firstOrNull()
+            Mode.UNKNOWN -> visible.firstOrNull()
         }
+
+    private fun resolvePresentedNetworkType(
+        subscriptionId: Int?,
+        activeBindings: List<SysUiNetworkSource.MobilePresentationBinding>,
+        pendingMobileTypeDrawable: Drawable?,
+        noNativeBindings: Boolean,
+    ): NetworkType? {
+        val target = subscriptionId?.let { id ->
+            activeBindings.firstOrNull { it.subscriptionId == id }
+        }
+        return target?.let { binding ->
+            NativeMobileTypePresentation.resolveNetworkType(
+                root = binding.root,
+                pendingMobileTypeDrawable = pendingMobileTypeDrawable,
+            )
+        } ?: if (noNativeBindings) {
+            resolveUnboundNativeType(pendingMobileTypeDrawable)
+        } else {
+            null
+        }
+    }
 
     // Binder callbacks are not replayed for an existing SystemUI icon after Hot Reload.
     // A sole visible native mobile view supplies its label, not an invented SIM binding.
@@ -198,7 +140,7 @@ internal object NativePresentationResolver {
             val root = group.getChildAt(index)
             if (
                 root.javaClass.simpleName != "ModernStatusBarMobileView" ||
-                NativeParticipantAccess.resourceEntryName(root) != "mobile_combo" ||
+                NativeStatusSlots.resourceEntryName(root) != "mobile_combo" ||
                 root !is ViewGroup ||
                 !root.isAttachedToWindow ||
                 root.visibility != View.VISIBLE
@@ -208,179 +150,7 @@ internal object NativePresentationResolver {
             if (candidate != null) return null
             candidate = root
         }
-        return candidate?.let { resolveNetworkType(it, pendingMobileTypeDrawable) }
-    }
-
-    private fun resolveNetworkType(
-        root: ViewGroup,
-        pendingMobileTypeDrawable: Drawable?,
-    ): NetworkType? {
-
-        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_RESOURCE_ENTRY)
-            ?.let { view ->
-                val image = view as? ImageView
-                val drawable = image?.drawable
-                val networkType =
-                    drawable?.let { nativeDrawableType(it, it === pendingMobileTypeDrawable) }
-                if (networkType != null) {
-                    // Native source and font must come from the same verified Drawable.
-                    // Keep only immutable Typeface; never retain a SystemUI Paint/View.
-                    val face =
-                        drawable
-                            .takeIf { it.javaClass.name == SysUiMobileTypeSource.CLASS_NAME }
-                            ?.let { native ->
-                                readOrNull {
-                                    (drawableFields[native.javaClass]?.textPaint?.get(native) as? Paint)
-                                        ?.typeface
-                                }
-                            }
-                    return networkType.copy(
-                        typeface = face,
-                        fontPath =
-                            drawable.takeIf { face != null }
-                                ?.let { nativeFontPath(it, face!!) },
-                    )
-                }
-            }
-
-        NativeParticipantAccess.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
-            ?.let { view ->
-                val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
-                if (text.isNotEmpty()) {
-                    return NetworkType(
-                        label = text,
-                        enhanced = false,
-                        source = NetworkTypeSource.MOBILE_TYPE_SINGLE,
-                    )
-                }
-            }
-
-        return null
-    }
-
-    // The static native glyph face is available even when Wi-Fi hides the mobile type.
-    // Follow SystemUI's own fallback selection; never substitute a guessed app font.
-    fun sandboxMobileTypeface(context: Context): Typeface? = readOrNull {
-        val verified = verifiedMobileFont(context)
-        if (verified == null) {
-            null
-        } else {
-            val (face, path) = verified
-            val file = File(path)
-            if (file.isFile && file.length() in 1..(64L * 1024 * 1024)) {
-                val axis = FileInputStream(file).channel.use { channel ->
-                    FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
-                }?.let(NativeFontAxis::checked)
-                face.takeIf { axis != null }
-            } else {
-                null
-            }
-        }
-    }
-
-    // This static SystemUI face remains authoritative when no mobile type is visible.
-    fun verifiedMobileFont(context: Context): Pair<Typeface, String>? = readOrNull {
-        val loader = context.classLoader
-        val clazz = loader.loadClass(SysUiMobileTypeSource.CLASS_NAME)
-        val face = clazz.getField("sMiproTypeface").get(null) as? Typeface
-        if (face == null) {
-            null
-        } else {
-            val paint = Paint()
-            clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
-                .invoke(null, arrayOf(paint) as Any)
-            if (paint.typeface === face) {
-                val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
-                (config.getField("FONT_MIPRO_PATH").get(null) as? String)?.let { face to it }
-            } else {
-                null
-            }
-        }
-    }
-
-    // Only the exact Typeface built from MiuiConfigs.FONT_MIPRO_PATH proves file identity.
-    private fun nativeFontPath(drawable: Drawable, face: Typeface): String? =
-        readOrNull {
-            val clazz = drawable.javaClass
-            val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
-            if (original === face) {
-                val configs = clazz.classLoader!!.loadClass("com.miui.utils.configs.MiuiConfigs")
-                configs.getField("FONT_MIPRO_PATH").get(null) as? String
-            } else {
-                null
-            }
-        }
-
-    // Snapshot the verified native Paint; never retain its mutable SystemUI owner.
-    internal fun nativeMobileTextPaint(view: View?): Paint? {
-        val drawable = (view as? ImageView)?.drawable ?: return null
-        if (drawable.javaClass.name != SysUiMobileTypeSource.CLASS_NAME) return null
-        val fields = drawableFields[drawable.javaClass] ?: return null
-        return readOrNull {
-            (fields.textPaint?.get(drawable) as? Paint)?.let { Paint(it) }
-        }
-    }
-
-    // The visual CC target need not belong to the active data subscription.
-    internal fun nativeTargetType(view: View?): NetworkType? =
-        when (view) {
-            is ImageView -> view.drawable?.let { nativeDrawableType(it, false) }
-            is TextView ->
-                view.text?.toString()?.trim()
-                    ?.takeIf { it.isNotEmpty() }
-                    ?.let { NetworkType(it, false, NetworkTypeSource.MOBILE_TYPE_SINGLE) }
-            else -> null
-        }
-
-    private fun nativeDrawableType(drawable: Drawable, beforeMeasure: Boolean): NetworkType? {
-        val fields =
-            drawableFields.computeIfAbsent(drawable.javaClass) { clazz ->
-                fun field(name: String): Field? =
-                    readOrNull { clazz.getDeclaredField(name).apply { isAccessible = true } }
-                DrawableFields(
-                    type = field(MOBILE_TYPE_FIELD),
-                    enhanced = field(MOBILE_TYPE_ENHANCED_FIELD),
-                    textPaint = field("mMobileTypeTextPaint"),
-                )
-            }
-        // Drawables can change text without replacing their ImageView.
-        val label = readOrNull { fields.type?.get(drawable) as? String }
-        val enhanced =
-            readOrNull { fields.enhanced?.getBoolean(drawable) } == true
-        return normalizeDrawableNetworkType(label.orEmpty(), enhanced, beforeMeasure)
-    }
-
-    internal fun normalizeDrawableNetworkType(
-        rawLabel: String,
-        enhanced: Boolean,
-        beforeMeasure: Boolean,
-    ): NetworkType? {
-        val label = rawLabel.trim()
-        if (label.isEmpty()) {
-            return null
-        }
-
-        if (beforeMeasure) {
-            return if (label == MOBILE_TYPE_DOUBLE_PLUS_LABEL) {
-                NetworkType(
-                    label = MOBILE_TYPE_DOUBLE_PLUS_BASE_LABEL,
-                    enhanced = true,
-                    source = NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
-                )
-            } else {
-                NetworkType(
-                    label = label,
-                    enhanced = false,
-                    source = NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
-                )
-            }
-        }
-
-        return NetworkType(
-            label = label,
-            enhanced = enhanced,
-            source = NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
-        )
+        return candidate?.let { NativeMobileTypePresentation.resolveNetworkType(it, pendingMobileTypeDrawable) }
     }
 
     internal data class ActiveBindingResolution(
@@ -409,37 +179,18 @@ internal object NativePresentationResolver {
     )
 
 
-    // Slot order is physical SIM1/SIM2 order, not numeric subscription-ID order.
-    internal fun resolveSlotSubscriptions(
-        activeSubscriptionIds: Set<Int>,
-        platformSubscriptions: List<Pair<Int, Int>>?,
-    ): Map<Int, Int> {
-        val platform = platformSubscriptions ?: return emptyMap()
-        // Bound roots can lag behind an additional active platform subscription.
-        if (platform.size != 2) return emptyMap()
-        val pairs =
-            platform.filter { (id, slot) -> id in activeSubscriptionIds && slot in 0..1 }
-        if (
-            activeSubscriptionIds.size != 2 ||
-            pairs.size != 2 ||
-            pairs.map { it.first }.toSet() != activeSubscriptionIds ||
-            pairs.map { it.second }.toSet() != setOf(0, 1)
-        ) {
-            return emptyMap()
-        }
-        return pairs.associate { (id, slot) -> slot to id }
-    }
-
     private fun activeSubscriptions(context: Context): List<Pair<Int, Int>>? {
         val manager =
             context.getSystemService(SubscriptionManager::class.java)
                 ?: return null
 
         // null means the platform source is unavailable; an empty list is authoritative.
-        return readOrNull {
+        return SysUiPresentationRuntime.optionalNativeRead {
             manager.activeSubscriptionInfoList
-                ?.filter { info -> info.subscriptionId >= 0 }
-                ?.map { info -> info.subscriptionId to info.simSlotIndex }
+                ?.mapNotNull { info ->
+                    info.takeIf { it.subscriptionId >= 0 }
+                        ?.let { it.subscriptionId to it.simSlotIndex }
+                }
         }
     }
 
@@ -491,10 +242,5 @@ internal object NativePresentationResolver {
             }
     }
 
-    private const val MOBILE_TYPE_RESOURCE_ENTRY = "mobile_type"
-    private const val MOBILE_TYPE_SINGLE_RESOURCE_ENTRY = "mobile_type_single"
-    private const val MOBILE_TYPE_FIELD = "mMobileType"
-    private const val MOBILE_TYPE_ENHANCED_FIELD = "mShowMobileTypeDoublePlus"
-    private const val MOBILE_TYPE_DOUBLE_PLUS_LABEL = "5G++"
-    private const val MOBILE_TYPE_DOUBLE_PLUS_BASE_LABEL = "5G"
+
 }

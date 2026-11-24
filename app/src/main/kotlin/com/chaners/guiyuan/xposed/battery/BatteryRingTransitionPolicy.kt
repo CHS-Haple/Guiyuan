@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed.battery
 
+import com.chaners.guiyuan.settings.finiteIn
 import kotlin.math.max
 import kotlin.math.min
 
@@ -10,11 +11,7 @@ internal object BatteryRingTransitionPolicy {
     internal enum class ExitDirection { NONE, LEFT, RIGHT }
 
     fun transitionProgress(progress: Float): Float {
-        val p =
-            progress
-                .takeIf(Float::isFinite)
-                ?.coerceIn(0f, 1f)
-                ?: 0f
+        val p = progress.finiteIn(0f, 1f, 0f)
         return (p / TRANSITION_COMPLETE_PROGRESS).coerceIn(0f, 1f)
     }
 
@@ -25,7 +22,7 @@ internal object BatteryRingTransitionPolicy {
     )
 
     fun remainingFraction(progress: Float): Float {
-        val p = progress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f
+        val p = progress.finiteIn(0f, 1f, 0f)
         val warped =
             (p + FRONT_LOAD * p * (1f - p))
                 .coerceIn(0f, 1f)

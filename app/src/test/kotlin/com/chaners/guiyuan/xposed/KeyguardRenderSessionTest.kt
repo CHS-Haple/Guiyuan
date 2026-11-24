@@ -7,10 +7,10 @@ import org.junit.Test
 class KeyguardRenderSessionTest {
     @Test
     fun overlayRequiresFeatureAndCompletedNativeHandoff() {
-        assertFalse(KeyguardRenderSession.resolveOverlayVisible(false, false, false))
-        assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, true, false))
-        assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, false, true))
-        assertTrue(KeyguardRenderSession.resolveOverlayVisible(true, false, false))
+        assertFalse(KeyguardRenderSession.resolveOverlayVisible(false, false, sceneEligible = true))
+        assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, true, sceneEligible = true))
+        assertFalse(KeyguardRenderSession.resolveOverlayVisible(true, false, sceneEligible = false))
+        assertTrue(KeyguardRenderSession.resolveOverlayVisible(true, false, sceneEligible = true))
     }
 
     @Test
@@ -51,9 +51,9 @@ class KeyguardRenderSessionTest {
 
     @Test
     fun readinessRequiresCompleteAttachedKeyguardSurface() {
-        assertTrue(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, false))
-        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, false, true, false))
-        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, false, false))
-        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, true))
+        assertTrue(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, sceneEligible = true))
+        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, false, true, sceneEligible = true))
+        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, false, sceneEligible = true))
+        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, sceneEligible = false))
     }
 }

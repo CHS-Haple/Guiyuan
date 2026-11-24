@@ -20,7 +20,6 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.reflect.Field
-import java.lang.reflect.InvocationTargetException
 import java.util.ArrayList
 
 // An unrecognized Settings list stays entirely native.
@@ -34,10 +33,7 @@ internal object SettingsEntryHook {
     private const val ICON_HOOK_ID = "guiyuan.settings.header.icon"
     private const val HEADER_ID = 0x475955414E4CL
 
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     internal fun reportFailure(message: String, error: Throwable) {
         rethrowFatal(error)
@@ -69,35 +65,42 @@ internal object SettingsEntryHook {
             module.hook(method).setId(HOOK_ID).intercept(Hooker { chain ->
                 val result = chain.proceed()
                 runCatching {
-                    val activity = chain.thisObject as? Activity ?: return@runCatching
+                    val activity = chain.thisObject as? Activity
                     @Suppress("UNCHECKED_CAST")
-                    val headers = chain.getArg(0) as? MutableList<Any> ?: return@runCatching
-                    if (headers.any { !headerClass.isInstance(it) }) return@runCatching
-                    if (headers.any { id.getLong(it) == HEADER_ID }) return@runCatching
-                    val anchor = anchorIndex(headers.map { id.getLong(it) }, activity, entry)
-                        ?: return@runCatching
-
-                    val header = ctor.newInstance()
-                    id.setLong(header, HEADER_ID)
-                    group.setInt(header, group.getInt(headers[anchor]))
-                    // Android owns this resource; module APK resource IDs are not Settings IDs.
-                    icon.setInt(header, android.R.drawable.ic_menu_preferences)
-                    val app = activity.createPackageContext(MODULE_PKG, 0)
-                    title.set(header, app.applicationInfo.loadLabel(app.packageManager))
-                    intent.set(
-                        header,
-                        Intent().setClassName(MODULE_PKG, "$MODULE_PKG.MainActivity")
-                            .putExtra("isDisplayHomeAsUpEnabled", true),
-                    )
-                    extras.set(
-                        header,
-                        Bundle().apply {
-                            putParcelableArrayList(
-                                "header_user", ArrayList(listOf(Process.myUserHandle())),
-                            )
-                        },
-                    )
-                    headers.add(anchor + 1, header)
+                    val headers =
+                        if (activity != null) chain.getArg(0) as? MutableList<Any> else null
+                    val anchor =
+                        if (activity != null && headers != null &&
+                            !headers.any { !headerClass.isInstance(it) } &&
+                            !headers.any { id.getLong(it) == HEADER_ID }
+                        ) {
+                            anchorIndex(headers.map { id.getLong(it) }, activity, entry)
+                        } else {
+                            null
+                        }
+                    if (activity != null && headers != null && anchor != null) {
+                        val header = ctor.newInstance()
+                        id.setLong(header, HEADER_ID)
+                        group.setInt(header, group.getInt(headers[anchor]))
+                        // Android owns this resource; module APK resource IDs are not Settings IDs.
+                        icon.setInt(header, android.R.drawable.ic_menu_preferences)
+                        val app = activity.createPackageContext(MODULE_PKG, 0)
+                        title.set(header, app.applicationInfo.loadLabel(app.packageManager))
+                        intent.set(
+                            header,
+                            Intent().setClassName(MODULE_PKG, "$MODULE_PKG.MainActivity")
+                                .putExtra("isDisplayHomeAsUpEnabled", true),
+                        )
+                        extras.set(
+                            header,
+                            Bundle().apply {
+                                putParcelableArrayList(
+                                    "header_user", ArrayList(listOf(Process.myUserHandle())),
+                                )
+                            },
+                        )
+                        headers.add(anchor + 1, header)
+                    }
                 }.onFailure { reportFailure("Native Settings header insertion skipped", it) }
                 result
             })
@@ -148,22 +151,28 @@ internal object SettingsEntryHook {
                 // Native binding is the sole writer for other Settings rows.
                 val result = chain.proceed()
                 runCatching {
-                    val header = chain.getArg(1) ?: return@runCatching
-                    if (!headerClass.isInstance(header) || id.getLong(header) != HEADER_ID) {
-                        return@runCatching
-                    }
-                    val image = icon.get(chain.getArg(0)) as? ImageView ?: return@runCatching
-                    val config = image.resources.configuration
-                    if (artworkConfig != config) {
-                        artwork = null
-                        artworkConfig = null
-                        artwork = createIcon(image.context, style)?.constantState
-                        artworkConfig = Configuration(config)
-                    }
-                    artwork?.newDrawable(image.resources)?.mutate()?.let {
-                        image.imageTintList = null
-                        image.clearColorFilter()
-                        image.setImageDrawable(it)
+                    val header = chain.getArg(1)
+                    val image =
+                        if (header != null && headerClass.isInstance(header) &&
+                            id.getLong(header) == HEADER_ID
+                        ) {
+                            icon.get(chain.getArg(0)) as? ImageView
+                        } else {
+                            null
+                        }
+                    if (image != null) {
+                        val config = image.resources.configuration
+                        if (artworkConfig != config) {
+                            artwork = null
+                            artworkConfig = null
+                            artwork = createIcon(image.context, style)?.constantState
+                            artworkConfig = Configuration(config)
+                        }
+                        artwork?.newDrawable(image.resources)?.mutate()?.let {
+                            image.imageTintList = null
+                            image.clearColorFilter()
+                            image.setImageDrawable(it)
+                        }
                     }
                 }.onFailure { error ->
                     rethrowFatal(error)

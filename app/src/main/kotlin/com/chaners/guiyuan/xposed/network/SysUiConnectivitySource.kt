@@ -8,18 +8,12 @@ import android.os.Handler
 import android.os.Looper
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
-import java.lang.reflect.InvocationTargetException
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
+import com.chaners.guiyuan.xposed.throwIfCleanupIncomplete
 
 internal object SysUiConnectivitySource {
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
-
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
-
 
     private var manager: ConnectivityManager? = null
     @Volatile
@@ -32,6 +26,7 @@ internal object SysUiConnectivitySource {
     private var onDataChanged: (() -> Unit)? = null
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun attach(
         context: Context,
         onState: (State) -> Unit,
@@ -44,6 +39,7 @@ internal object SysUiConnectivitySource {
         val handler = Handler(Looper.getMainLooper())
         var lastLoggedState: State? = null
 
+        @Suppress("TooGenericExceptionCaught")
         fun publish(
             source: String,
             capabilities: NetworkCapabilities?,
@@ -129,7 +125,7 @@ internal object SysUiConnectivitySource {
         onDataChanged = {
             if (callback === networkCallback) {
                 val capabilities =
-                    readOrNull {
+                    optionalNativeRead {
                         connectivityManager.activeNetwork?.let(
                             connectivityManager::getNetworkCapabilities,
                         )
@@ -159,6 +155,7 @@ internal object SysUiConnectivitySource {
 
     // Default data SIM can change while the network stays connected.
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun refreshDataSubscription() {
         val subId = SysUiDefaultDataSubSource.currentSubscriptionId()
         if (subId == dataSubscriptionId && dataCallback != null) {
@@ -210,6 +207,7 @@ internal object SysUiConnectivitySource {
         onDataChanged?.invoke()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @Synchronized
     fun detach() {
         // Failed unregisters still own their handles, but cannot publish stale state.
@@ -255,11 +253,7 @@ internal object SysUiConnectivitySource {
             manager = null
             callback = null
         }
-        if (failures.isNotEmpty()) {
-            val error = IllegalStateException("connectivity-release-incomplete", failures.first())
-            failures.drop(1).forEach(error::addSuppressed)
-            throw error
-        }
+        throwIfCleanupIncomplete("connectivity-release-incomplete", failures)
     }
 
     private fun mobileDataEnabled(context: Context): Boolean? {
@@ -271,7 +265,7 @@ internal object SysUiConnectivitySource {
         val telephony =
             context.getSystemService(TelephonyManager::class.java)
                 ?: return null
-        return readOrNull {
+        return optionalNativeRead {
             telephony
                 .createForSubscriptionId(subscriptionId)
                 .isDataEnabled

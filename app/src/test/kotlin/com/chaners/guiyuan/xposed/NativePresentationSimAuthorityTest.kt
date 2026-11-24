@@ -27,7 +27,7 @@ class NativePresentationSimAuthorityTest {
     fun slotMappingUsesPlatformSimSlotRatherThanSubscriptionIdOrder() {
         assertEquals(
             mapOf(0 to 14, 1 to 3),
-            NativePresentationResolver.resolveSlotSubscriptions(
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
                 activeSubscriptionIds = setOf(3, 14),
                 platformSubscriptions = listOf(3 to 1, 14 to 0),
             ),
@@ -48,7 +48,7 @@ class NativePresentationSimAuthorityTest {
         for (pairList in cases) {
             assertEquals(
                 emptyMap<Int, Int>(),
-                NativePresentationResolver.resolveSlotSubscriptions(active, pairList),
+                NativeSubscriptionPolicy.resolveSlotSubscriptions(active, pairList),
             )
         }
     }
@@ -57,7 +57,7 @@ class NativePresentationSimAuthorityTest {
     fun extraPlatformSubscriptionCannotDisguiseIncompleteDualBinding() {
         assertEquals(
             emptyMap<Int, Int>(),
-            NativePresentationResolver.resolveSlotSubscriptions(
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
                 activeSubscriptionIds = setOf(1, 4),
                 platformSubscriptions = listOf(1 to 0, 4 to 1, 7 to 2),
             ),
@@ -68,7 +68,7 @@ class NativePresentationSimAuthorityTest {
     fun oneActiveSubscriptionDoesNotPretendToBeAggregatedDual() {
         assertEquals(
             NativePresentationResolver.Mode.SINGLE,
-            NativePresentationResolver.classify(
+            NativeSubscriptionPolicy.classify(
                 boundRoots = 2,
                 visibleRoots = 1,
                 activeSubscriptions = 1,
@@ -79,7 +79,7 @@ class NativePresentationSimAuthorityTest {
     @Test
     fun authoritativeActiveSubscriptionDropsDisabledStaleRoot() {
         val resolved =
-            NativePresentationResolver.resolveActiveSubIds(
+            NativeSubscriptionPolicy.resolveActiveSubIds(
                 boundSubscriptionIds = listOf(1, 4),
                 semanticActiveSubscriptionIds = setOf(1, 4),
                 authoritativeActiveSubscriptionIds = setOf(4),
@@ -89,7 +89,7 @@ class NativePresentationSimAuthorityTest {
         assertEquals(true, resolved.authoritative)
         assertEquals(
             NativePresentationResolver.Mode.SINGLE,
-            NativePresentationResolver.classify(
+            NativeSubscriptionPolicy.classify(
                 boundRoots = 1,
                 visibleRoots = 1,
                 activeSubscriptions = resolved.subscriptionIds.size,
@@ -101,7 +101,7 @@ class NativePresentationSimAuthorityTest {
     fun ambiguousMultiSubscriptionSetCannotMasqueradeAsTwoRows() {
         assertEquals(
             emptyMap<Int, Int>(),
-            NativePresentationResolver.resolveSlotSubscriptions(
+            NativeSubscriptionPolicy.resolveSlotSubscriptions(
                 activeSubscriptionIds = setOf(3, 14, 27),
                 platformSubscriptions = listOf(3 to 0, 14 to 1, 27 to -1),
             ),
@@ -111,7 +111,7 @@ class NativePresentationSimAuthorityTest {
     @Test
     fun semanticActiveSubscriptionsRemainFallbackWhenPlatformAuthorityUnavailable() {
         val resolved =
-            NativePresentationResolver.resolveActiveSubIds(
+            NativeSubscriptionPolicy.resolveActiveSubIds(
                 boundSubscriptionIds = listOf(1, 4),
                 semanticActiveSubscriptionIds = setOf(4),
                 authoritativeActiveSubscriptionIds = null,

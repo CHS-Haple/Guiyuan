@@ -158,7 +158,7 @@ jobs:
 
             for path in "${SURFACE_CHANGED_FILES[@]}"; do
               case "$path" in
-                .github/workflows/*|.github/dependabot.yml)
+                .github/workflows/*|.github/actions/*|.github/dependabot.yml)
                   HAS_CI=true
                   ;;
                 tools/*)
@@ -214,7 +214,7 @@ jobs:
             mapfile -t CHANGED_FILES < <(git diff --name-only "$base_sha" "$head_sha")
             for path in "${CHANGED_FILES[@]}"; do
               case "$path" in
-                .github/workflows/*|.github/dependabot.yml|gradle/*|tools/*|build.gradle.kts|settings.gradle.kts|app/build.gradle.kts|app/proguard-rules.pro|gradlew|gradlew.bat)
+                .github/workflows/*|.github/actions/*|.github/dependabot.yml|gradle/*|tools/*|build.gradle.kts|settings.gradle.kts|app/build.gradle.kts|app/proguard-rules.pro|gradlew|gradlew.bat)
                   SCOPE=full
                   REASON="build/CI/dependency-affecting path changed: $path"
                   break
@@ -361,14 +361,14 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Install Android API 37
+      - name: Install Android API 37.2
         if: steps.scope.outputs.run_android == 'true'
         shell: bash
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --channel=3 "platforms;android-37.0" "build-tools;37.0.0"
+          "$SDKMANAGER" --channel=3 "platforms;android-37.2" "build-tools;37.0.0"
 
       - name: Set up source-matched Gradle with trusted cache
         if: steps.scope.outputs.run_android == 'true'
@@ -386,9 +386,9 @@ jobs:
 
       # Only trusted same-repo PRs may use the job's packages:read token.
       # Fail fast on unpublished API before source-composite APK compilation.
-      # Keep the main-specific published OS4 variant flag unchanged, while the
-      # later pinned-source task owns the single Debug unit-test execution.
-      - name: Verify new MIUIX Maven dependencies without source substitution
+      # This invocation deliberately omits the source-composite flags, while
+      # the later source task owns the single Debug unit-test execution.
+      - name: Verify pinned MIUIX Maven API without source substitution
         if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         shell: bash
         env:
@@ -407,14 +407,14 @@ jobs:
           baseline_miuix="$(grep -E '^miuix\.(version|revision|upstream\.revision)=' <<< "$baseline_props" || true)"
           current_miuix="$(grep -E '^miuix\.(version|revision|upstream\.revision)=' <<< "$current_props" || true)"
           if [[ "$baseline_miuix" == "$current_miuix" ]] &&
-             git diff --quiet "$base" "$HEAD_SHA" -- app/build.gradle.kts app/src/os4Published/kotlin app/src/os4Upstream/kotlin; then
+             git diff --quiet "$base" "$HEAD_SHA" -- app/build.gradle.kts app/src/main/kotlin/com/chaners/guiyuan/ui/glass app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayDialog.kt app/src/main/kotlin/com/chaners/guiyuan/ui/components/UiOverlayBottomSheet.kt; then
             echo "MIUIX published coordinates and ABI surfaces unchanged; skip Maven preflight."
             exit 0
           fi
           test -z "${GY_OS4_MIUIXDIR:-}"
-          ./gradlew \
-            -Pgy.os4.dialogSurfaces=false \
-            :app:compileDebugKotlin \
+          # The pinned 8-char SHA in the Maven coordinate identifies an immutable
+          # published snapshot; forced metadata refresh adds network flakiness.
+          ./gradlew :app:compileDebugKotlin \
             --no-daemon --max-workers=3 --stacktrace
 
       - name: Test and build required APK variants
@@ -427,6 +427,12 @@ jobs:
           fi
           if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
             TASKS+=(":app:assembleCanary")
+          elif [[ "${{ github.event_name }}" == "pull_request" &&
+                  "${{ github.event.pull_request.base.ref }}" == "dev" &&
+                  "${{ steps.scope.outputs.scope }}" == "full" ]]; then
+            # Exercise R8 for dependency/build changes without allocating a Build or signing.
+            TASKS+=(":app:assembleCanary")
+            echo "R8_PR_PROBE=true" >> "$GITHUB_ENV"
           fi
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
                 ( ( "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.base.ref }}" == "main" ) ||
@@ -437,7 +443,6 @@ jobs:
           ./gradlew \
             -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
             -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
-            -Pgy.os4.dialogSurfaces=true \
             "${TASKS[@]}" --no-daemon --max-workers=3 --stacktrace
 
       - name: Resolve built APK paths
@@ -453,7 +458,8 @@ jobs:
             echo "DEBUG_APK_PATH=$DEBUG_APK_PATH" >> "$GITHUB_ENV"
           fi
 
-          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
+          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ||
+                "${R8_PR_PROBE:-false}" == "true" ]]; then
             if [[ -f "app/build/outputs/apk/canary/app-canary-unsigned.apk" ]]; then
               CANARY_APK_PATH="app/build/outputs/apk/canary/app-canary-unsigned.apk"
             else
@@ -471,7 +477,8 @@ jobs:
           if [[ "${{ steps.scope.outputs.run_debug }}" == "true" ]]; then
             APKS+=("$DEBUG_APK_PATH")
           fi
-          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ]]; then
+          if [[ "${{ steps.scope.outputs.run_canary }}" == "true" ||
+                "${R8_PR_PROBE:-false}" == "true" ]]; then
             APKS+=("$CANARY_APK_PATH")
           fi
           if [[ "${{ steps.scope.outputs.scope }}" == "full" &&
@@ -483,7 +490,7 @@ jobs:
 
 
       - name: Verify canary is non-debuggable
-        if: steps.scope.outputs.run_canary == 'true'
+        if: steps.scope.outputs.run_canary == 'true' || env.R8_PR_PROBE == 'true'
         shell: bash
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
@@ -498,27 +505,6 @@ jobs:
             exit 1
           fi
 
-      - name: Test alternate OS4 fallback icons against matched source
-        if: github.event_name == 'pull_request' && steps.scope.outputs.run_android == 'true'
-        shell: bash
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
-          if ! git diff --name-only "$base" "$HEAD_SHA" -- \
-            app/src/os4Published/kotlin app/src/os4Upstream/kotlin \
-            app/src/test/kotlin/com/chaners/guiyuan/ui/icons/GlassIconCanvasTest.kt | grep -q .; then
-            echo "OS4 Glass icon variants and canvas tests unchanged; skip alternate tests."
-            exit 0
-          fi
-          test -n "$MIUIX_SOURCE_REVISION" && test -n "$MIUIX_SOURCE_DIR"
-          ./gradlew \
-            -Pgy.os4.miuixDir="$MIUIX_SOURCE_DIR" \
-            -Pgy.os4.miuixRevision="$MIUIX_SOURCE_REVISION" \
-            -Pgy.os4.dialogSurfaces=false \
-            :app:testDebugUnitTest --no-daemon --max-workers=3 --stacktrace
       - name: Record exact source Build identity
         id: identity
         if: steps.scope.outputs.run_canary == 'true'

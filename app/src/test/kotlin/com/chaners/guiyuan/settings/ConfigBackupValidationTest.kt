@@ -105,6 +105,19 @@ class ConfigBackupValidationTest {
         }
     }
 
+    @Test
+    fun archiveTextUsesSamePortableControlRulesAndPreservesValidEmoji() {
+        val valid = sampleBackup().copy(appVersion = "2.0 \uD83D\uDE80")
+        ConfigBackupFormat.validate(valid)
+        for (unsafe in listOf("\u2066", "\u206F", "\u200E", "\uD800")) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupFormat.validate(
+                    sampleBackup().copy(appVersion = "2.0" + unsafe + "spoof"),
+                )
+            }
+        }
+    }
+
     @Test fun importOwnsOnlyFeatureVisualAndSchemeKeys() {
         assertTrue(isBackupVisualKey(
             visualProfileKey(ContentLayout.NETWORK_CENTER, WIFI_WEIGHT_KEY),

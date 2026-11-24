@@ -24,13 +24,8 @@ class BatteryTopArcPolicyTest {
     @Test
     fun lowerMobileTextWithAdditionalOpticalClearanceWidensOnlyItsGap() {
         fun lower(clearance: Float) = BatteryTopArcPolicy.resolveGap(
-            contentLeft = 48f,
-            contentTop = 94f,
-            contentRight = 72f,
-            contentBottom = 112f,
-            ringCenterX = 60f,
-            ringCenterY = 58f,
-            ringRadius = 50f,
+            content = BatteryTopArcPolicy.ContentBounds(48f, 94f, 72f, 112f),
+            ring = BatteryTopArcPolicy.RingCircle(60f, 58f, 50f),
             ringStroke = 4f,
             visualClearance = clearance,
             startDegrees = 0f,
@@ -41,13 +36,8 @@ class BatteryTopArcPolicyTest {
         assertTrue(legacyClearance.sweepDegrees > 0f)
         assertTrue(increasedClearance.sweepDegrees > legacyClearance.sweepDegrees)
         val mirroredUpper = BatteryTopArcPolicy.resolveGap(
-            contentLeft = 48f,
-            contentTop = 4f,
-            contentRight = 72f,
-            contentBottom = 22f,
-            ringCenterX = 60f,
-            ringCenterY = 58f,
-            ringRadius = 50f,
+            content = BatteryTopArcPolicy.ContentBounds(48f, 4f, 72f, 22f),
+            ring = BatteryTopArcPolicy.RingCircle(60f, 58f, 50f),
             ringStroke = 4f,
             visualClearance = 4f,
             startDegrees = 180f,
@@ -425,13 +415,8 @@ private fun gapFor(
     bottom: Float,
 ): BatteryTopArcPolicy.Gap =
     BatteryTopArcPolicy.resolveGap(
-        contentLeft = left,
-        contentTop = top,
-        contentRight = right,
-        contentBottom = bottom,
-        ringCenterX = 60f,
-        ringCenterY = 58f,
-        ringRadius = 50f,
+        content = BatteryTopArcPolicy.ContentBounds(left, top, right, bottom),
+        ring = BatteryTopArcPolicy.RingCircle(60f, 58f, 50f),
         ringStroke = 4f,
         visualClearance = 2f,
         startDegrees = 150f,

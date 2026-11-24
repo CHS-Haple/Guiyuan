@@ -19,6 +19,7 @@ import com.chaners.guiyuan.xposed.network.CenterIndicator
 internal class RenderView(
     context: Context,
     private val onDrawn: ((View) -> Unit)? = null,
+    private val onModelDrawn: ((RenderModel) -> Unit)? = null,
     private val onShownChanged: ((View) -> Unit)? = null,
     private val preview: Boolean = false,
     private val onStateRendered: ((
@@ -376,21 +377,7 @@ internal class RenderView(
         if (logicalTopInset > 0) {
             canvas.translate(0f, logicalTopInset.toFloat())
         }
-        val colors =
-            colorCache
-                ?.takeIf { cache ->
-                    cache.model === current &&
-                        cache.tint === tint &&
-                        cache.visual === currentVisual
-                }?.colors
-                ?: ColorPolicy.resolve(
-                    model = current,
-                    tintState = tint,
-                    visualSettings = currentVisual,
-                    batteryColorPreferences = colorPrefs,
-                ).also { resolved ->
-                    colorCache = ColorCache(current, tint, currentVisual, resolved)
-                }
+        val colors = resolveRenderColors(current, tint, currentVisual)
 
         painter.draw(
             canvas = canvas,
@@ -411,8 +398,33 @@ internal class RenderView(
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
         )
         canvas.restoreToCount(viewportSave)
+        onModelDrawn?.invoke(current)
         onDrawn?.invoke(this)
 
+        reportDrawLatency()
+    }
+
+    private fun resolveRenderColors(
+        current: RenderModel,
+        tint: TintState,
+        currentVisual: VisualCfg,
+    ): RenderColors =
+        colorCache
+            ?.takeIf { cache ->
+                cache.model === current &&
+                    cache.tint === tint &&
+                    cache.visual === currentVisual
+            }?.colors
+            ?: ColorPolicy.resolve(
+                model = current,
+                tintState = tint,
+                visualSettings = currentVisual,
+                batteryColorPreferences = colorPrefs,
+            ).also { resolved ->
+                colorCache = ColorCache(current, tint, currentVisual, resolved)
+            }
+
+    private fun reportDrawLatency() {
         val report = onStateRendered ?: return
         val committedAt = pendingStateUptimeMs
         if (committedAt != 0L) {

@@ -3,7 +3,7 @@ package com.chaners.guiyuan.ui.components.liquid
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
@@ -48,7 +49,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -62,15 +62,14 @@ import com.chaners.guiyuan.settings.NavContent
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
-import top.yukonga.miuix.kmp.blur.highlight.LightPosition
-import top.yukonga.miuix.kmp.blur.highlight.LightSource
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
+import top.yukonga.miuix.kmp.material.EdgeLightSource
+import top.yukonga.miuix.kmp.material.EdgePeak
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.drawEdgeStroke
+import top.yukonga.miuix.kmp.material.sensor.rememberDeviceTilt
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -86,24 +85,13 @@ import kotlin.math.sin
 
 // Liquid optics adapted from the MIUIX Liquid Glass example (Apache-2.0).
 // Guiyuan retains navigation content, gestures and fallback ownership.
-private val glassHighlight = Highlight(
+private val glassHighlight = EdgeStroke(
     width = 1.dp,
-    alpha = 1f,
-    style = BloomStroke(
-        color = Color.White.copy(alpha = 0.12f),
-        innerBlurRadius = 2.dp,
-        primaryLight = LightSource(
-            position = LightPosition(0.5f, -0.3f, -0.05f),
-            color = Color.White,
-            intensity = 1f,
-        ),
-        secondaryLight = LightSource(
-            position = LightPosition(0.5f, 0.8f, -0.5f),
-            color = Color.White,
-            intensity = 0.4f,
-        ),
-        dualPeak = true,
-    ),
+    bevel = 2.dp,
+    color = Color.White.copy(alpha = 0.12f),
+    primary = EdgeLightSource(0.5f, -0.3f, -0.05f, intensity = 1f),
+    secondary = EdgeLightSource(0.5f, 0.8f, -0.5f, intensity = 0.4f),
+    peak = EdgePeak.Dual,
 )
 
 private const val GRAVITY_THRESHOLD_SQ = 0.01f
@@ -116,7 +104,7 @@ private val PITCH_SWEEP_LIMIT = (30.0 * PI / 180.0).toFloat()
 internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Float)
 
 @Composable
-private fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
+internal fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
     if (!interactive) {
         return remember { mutableStateOf(GlassTilt((-PI / 2).toFloat(), PITCH_NEUTRAL, 0f)) }
     }
@@ -148,8 +136,7 @@ private fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
     }
 }
 
-internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
-    val style = glassHighlight.style as BloomStroke
+internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): EdgeStroke {
     // Pitch spans ±90°; center the light sweep at 45° to avoid saturating normal upright use.
     val pitchSweep =
         ((abs(tilt.pitch) - PITCH_NEUTRAL) * PITCH_SWEEP_PER_RAD)
@@ -157,14 +144,9 @@ internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
     val rad = tilt.angle + (offsetDegrees * PI / 180.0).toFloat() + pitchSweep
     val dx = (tilt.roll * TILT_LIGHT_SENSITIVITY).coerceIn(-0.12f, 0.12f)
     return glassHighlight.copy(
-        style = style.copy(
-            primaryLight = style.primaryLight.copy(
-                position = LightPosition(
-                    0.5f + cos(rad) + dx,
-                    0.7f + sin(rad),
-                    style.primaryLight.position.z,
-                ),
-            ),
+        primary = glassHighlight.primary.copy(
+            x = 0.5f + cos(rad) + dx,
+            y = 0.7f + sin(rad),
         ),
     )
 }
@@ -172,16 +154,50 @@ internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): Highlight {
 internal object LiquidNavSpec {
     val height = 64.dp
     val sidePadding = 36.dp
+    val contentPadding = 4.dp
 }
 
-private data class LiquidParams(
+/** The bar is the sole animation writer; its sibling action reads the same frames. */
+internal class LiquidNavPressLink {
+    internal class Source(
+        val motion: LiquidDragMotion,
+        val dragOffset: State<Float>,
+        val lensWidth: State<Float>,
+        val tabCount: Int,
+    )
+
+    private var source: Source? by mutableStateOf(null)
+    val dragOffsetX: Float get() = source?.dragOffset?.value ?: 0f
+
+    fun actionOffsetX(panelGrowthPx: Float, endInsetPx: Float, direction: LayoutDirection): Float =
+        visibleEndReachPx(panelGrowthPx, endInsetPx) +
+            dragOffsetX * (if (direction == LayoutDirection.Ltr) 1f else -1f)
+
+    fun visibleEndReachPx(panelGrowthPx: Float, endInsetPx: Float): Float {
+        val current = source ?: return 0f
+        val motion = current.motion
+        val width = current.lensWidth.value
+        return liquidPortraitActionReachPx(
+            panelReachPx = panelGrowthPx / 2f * motion.pressProgress.coerceIn(0f, 1f),
+            lensWidthPx = width,
+            lensScaleX = liquidRenderedLensScaleX(motion.scaleX, motion.velocity),
+            lensDistanceFromEndPx = (current.tabCount - 1 - motion.value) * width,
+            endInsetPx = endInsetPx,
+        )
+    }
+
+    internal fun attach(value: Source) { source = value }
+    internal fun detach(value: Source) { if (source === value) source = null }
+}
+
+internal data class LiquidParams(
     val blur: Dp,
     val refractionHeight: Dp,
     val refractionAmount: Dp,
     val surfaceAlpha: Float,
 )
 
-private fun LiquidMode.params(): LiquidParams =
+internal fun LiquidMode.params(): LiquidParams =
     when (this) {
         LiquidMode.Blur ->
             LiquidParams(
@@ -226,6 +242,7 @@ internal fun LiquidNavBar(
     mode: LiquidMode = LiquidMode.Balanced,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
+    pressLink: LiquidNavPressLink? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     require(tabsCount > 0)
@@ -258,7 +275,7 @@ internal fun LiquidNavBar(
         val widthPx = rememberUpdatedState(constraints.maxWidth)
         val tabWidthPx = rememberUpdatedState(tabWidth)
         val offsetAnim = remember { Animatable(0f) }
-        val panelOffset by remember(density) {
+        val panelOffsetState = remember(density) {
             derivedStateOf {
                 val fraction =
                     (offsetAnim.value / widthPx.value)
@@ -269,66 +286,82 @@ internal fun LiquidNavBar(
             }
         }
 
+        val panelOffset by panelOffsetState
         val ltr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val currentLtr = rememberUpdatedState(ltr)
         val scope = rememberCoroutineScope()
-        var currentIndex by remember(selectedIndex) {
-            mutableIntStateOf(selectedIndex())
-        }
+        var currentIndex by remember { mutableIntStateOf(selectedIndex()) }
+        val onSelectedUpdated by rememberUpdatedState(onSelected)
         val motion =
             // The tab count owns the animation range; dimensions remain live.
-            remember(scope, tabsCount) {
+            remember(scope, tabsCount, density) {
                 LiquidDragMotion(
                     scope = scope,
                     initialValue = selectedIndex().toFloat(),
                     range = 0f..(tabsCount - 1).toFloat(),
                     visibilityThreshold = 0.001f,
                     initialScale = 1f,
-                    pressedScale = 78f / 56f,
-                    onStopped = {
-                        val target =
-                            targetValue
-                                .fastRoundToInt()
-                                .fastCoerceIn(0, tabsCount - 1)
-                        if (currentIndex == target) {
-                            // A drag may stop between tabs without changing the selected index.
-                            animateToValue(target.toFloat())
-                        } else {
-                            currentIndex = target
-                        }
-                        scope.launch {
-                            offsetAnim.animateTo(
-                                0f,
-                                spring(1f, 300f, 0.5f),
+                    pressedScale = LiquidFeedbackSpec.PressedLensScale,
+                    canDrag = { position -> position.x in 0f..widthPx.value.toFloat() },
+                    onStarted = { position ->
+                        val tabWidth = tabWidthPx.value
+                        if (tabWidth > 0f) {
+                            val logicalX = if (currentLtr.value) position.x else widthPx.value.toFloat() - position.x
+                            val paddingPx = with(density) { 4.dp.toPx() }
+                            updateValue(
+                                ((logicalX - paddingPx) / tabWidth)
+                                    .toInt().coerceIn(0, tabsCount - 1).toFloat(),
                             )
                         }
                     },
+                    onStopped = {
+                        val target = targetValue.fastRoundToInt().fastCoerceIn(0, tabsCount - 1)
+                        if (currentIndex != target) {
+                            currentIndex = target
+                            onSelectedUpdated(target)
+                        }
+                        updateValue(target.toFloat())
+                        scope.launch { offsetAnim.animateTo(0f, spring(1f, 300f, 0.5f)) }
+                    },
+                    onCancelled = {
+                        // A cancelled pointer sequence must not commit a different page.
+                        updateValue(currentIndex.toFloat())
+                        scope.launch { offsetAnim.animateTo(0f, spring(1f, 300f, 0.5f)) }
+                    },
                     onDrag = { _, dragAmount ->
-                        updateValue(
-                            (
-                                targetValue +
-                                    dragAmount.x / tabWidthPx.value * if (currentLtr.value) 1f else -1f
-                            ).fastCoerceIn(0f, (tabsCount - 1).toFloat()),
-                        )
-                        scope.launch {
-                            offsetAnim.snapTo(offsetAnim.value + dragAmount.x)
+                        val tabWidth = tabWidthPx.value
+                        if (tabWidth > 0f && dragAmount.x != 0f) {
+                            updateValue(
+                                (targetValue + dragAmount.x / tabWidth *
+                                    if (currentLtr.value) 1f else -1f)
+                                    .fastCoerceIn(0f, (tabsCount - 1).toFloat()),
+                            )
+                            scope.launch { offsetAnim.snapTo(offsetAnim.value + dragAmount.x) }
                         }
                     },
                 )
             }
 
-        LaunchedEffect(selectedIndex) {
+        if (pressLink != null) {
+            val source = remember(motion, panelOffsetState, tabWidthPx) {
+                LiquidNavPressLink.Source(motion, panelOffsetState, tabWidthPx, tabsCount)
+            }
+            DisposableEffect(pressLink, source) {
+                pressLink.attach(source)
+                onDispose { pressLink.detach(source) }
+            }
+        }
+
+        // Pager selection is authoritative. Mirror external page changes into Liquid's motion
+        // without emitting the same selection event back to HubPagerSelection.
+        LaunchedEffect(selectedIndex, motion) {
             snapshotFlow { selectedIndex() }
                 .collectLatest { index ->
-                    currentIndex = index.fastCoerceIn(0, tabsCount - 1)
-                }
-        }
-        LaunchedEffect(motion) {
-            snapshotFlow { currentIndex }
-                .drop(1)
-                .collectLatest { index ->
-                    motion.animateToValue(index.toFloat())
-                    onSelected(index)
+                    val target = index.fastCoerceIn(0, tabsCount - 1)
+                    if (currentIndex != target) {
+                        currentIndex = target
+                        motion.animateToValue(target.toFloat())
+                    }
                 }
         }
 
@@ -355,6 +388,7 @@ internal fun LiquidNavBar(
         Row(
             modifier =
                 Modifier
+                    .selectableGroup()
                     .graphicsLayer {
                         translationX = panelOffset
                     }
@@ -375,13 +409,19 @@ internal fun LiquidNavBar(
                             blur(params.blur.toPx(), params.blur.toPx())
                             lens(params.refractionHeight.toPx(), params.refractionAmount.toPx())
                         },
-                        highlight = { panelHighlight.value.copy(alpha = 0.75f) },
+                        onDrawFront = {
+                            drawEdgeStroke(
+                                shape = pillShape,
+                                stroke = panelHighlight.value,
+                                alpha = 0.75f,
+                            )
+                        },
                         layerBlock = {
                             val progress = motion.pressProgress
                             val scale =
                                 lerp(
                                     1f,
-                                    1f + 16.dp.toPx() / size.width,
+                                    1f + LiquidFeedbackSpec.PressedPanelGrowth.toPx() / size.width,
                                     progress,
                                 )
                             scaleX = scale
@@ -392,9 +432,12 @@ internal fun LiquidNavBar(
                         },
                     )
                     .then(highlight.modifier)
+                    // The upstream gesture surface is the entire bar, not the moving selected pill.
+                    .then(if (interactive) highlight.gestureModifier else Modifier)
+                    .then(if (interactive) motion.modifier else Modifier)
                     .height(LiquidNavSpec.height)
                     .fillMaxWidth()
-                    .padding(4.dp),
+                    .padding(LiquidNavSpec.contentPadding),
             verticalAlignment = Alignment.CenterVertically,
             content = {
                 CompositionLocalProvider(LocalContentColor provides normalColor) {
@@ -405,7 +448,7 @@ internal fun LiquidNavBar(
 
         CompositionLocalProvider(
             LocalLiquidItemScale provides {
-                lerp(1f, 1.2f, motion.pressProgress)
+                lerp(1f, LiquidFeedbackSpec.PressedItemScale, motion.pressProgress)
             },
             LocalContentColor provides selectedColor,
         ) {
@@ -440,44 +483,43 @@ internal fun LiquidNavBar(
         Box(
             modifier =
                 Modifier
-                    .padding(horizontal = 4.dp)
+                    .padding(horizontal = LiquidNavSpec.contentPadding)
                     .graphicsLayer {
                         translationX =
                             if (ltr) {
                                 motion.value * tabWidth + panelOffset
                             } else {
-                                size.width -
+                                widthPx.value.toFloat() -
+                                    LiquidNavSpec.contentPadding.toPx() * 2f -
                                     (motion.value + 1f) * tabWidth +
                                     panelOffset
                             }
                     }
-                    .then(if (interactive) highlight.gestureModifier else Modifier)
-                    .then(if (interactive) motion.modifier else Modifier)
                     .drawBackdrop(
                         backdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
                         shape = { pillShape },
                         effects = {
                             val progress = motion.pressProgress
                             lens(
-                                10.dp.toPx() * progress,
-                                14.dp.toPx() * progress,
+                                liquidSelectionOptics(progress).lensHeight.toPx(),
+                                liquidSelectionOptics(progress).lensAmount.toPx(),
                                 depthEffect = true,
                                 chromaticAberration = 0.5f,
                             )
                         },
-                        highlight = { pillHighlight.value.copy(alpha = motion.pressProgress) },
+                        onDrawFront = {
+                            drawEdgeStroke(
+                                shape = pillShape,
+                                stroke = pillHighlight.value,
+                                alpha = liquidSelectionOptics(motion.pressProgress).rimAlpha,
+                            )
+                        },
                         layerBlock = {
-                            scaleX = motion.scaleX
+                            // Keep the original portrait Liquid velocity feedback.
+                            scaleX = liquidRenderedLensScaleX(motion.scaleX, motion.velocity)
                             scaleY = motion.scaleY
                             val velocity = motion.velocity / 10f
-                            scaleX /=
-                                1f -
-                                    (velocity * 0.75f)
-                                        .fastCoerceIn(-0.2f, 0.2f)
-                            scaleY *=
-                                1f -
-                                    (velocity * 0.25f)
-                                        .fastCoerceIn(-0.2f, 0.2f)
+                            scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                         },
                         onDrawSurface = {
                             val progress = motion.pressProgress
@@ -487,18 +529,18 @@ internal fun LiquidNavBar(
                                 } else {
                                     Color.Black.copy(alpha = 0.10f)
                                 },
-                                alpha = 1f - progress,
+                                alpha = liquidSelectionOptics(progress).restAlpha,
                             )
                             drawRect(
-                                Color.Black.copy(alpha = 0.03f * progress),
+                                Color.Black.copy(alpha = liquidSelectionOptics(progress).pressedTintAlpha),
                             )
                         },
                     )
                     .innerShadow(shape = pillShape) {
                         InnerShadow(
-                            radius = 8.dp * motion.pressProgress,
+                            radius = liquidSelectionOptics(motion.pressProgress).shadowRadius,
                             color = Color.Black.copy(alpha = 0.15f),
-                            alpha = motion.pressProgress,
+                            alpha = liquidSelectionOptics(motion.pressProgress).shadowAlpha,
                         )
                     }
                     .height(56.dp)
@@ -513,6 +555,7 @@ private val LocalLiquidItemScale =
 @Composable
 internal fun RowScope.LiquidNavItem(
     onClick: () -> Unit,
+    selected: Boolean,
     interactive: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
@@ -522,18 +565,7 @@ internal fun RowScope.LiquidNavItem(
         modifier =
             modifier
                 .clip(CircleShape)
-                .then(
-                    if (interactive) {
-                        Modifier.clickable(
-                            interactionSource = null,
-                            indication = null,
-                            role = Role.Tab,
-                            onClick = onClick,
-                        )
-                    } else {
-                        Modifier.clearAndSetSemantics {}
-                    },
-                )
+                .liquidNavTabInput(selected, interactive, onClick)
                 .fillMaxHeight()
                 .weight(1f)
                 .graphicsLayer {
@@ -550,12 +582,13 @@ internal fun RowScope.LiquidNavItem(
 @Composable
 internal fun RowScope.LiquidNavEntry(
     contentMode: NavContent,
+    selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
     interactive: Boolean = true,
 ) {
-    LiquidNavItem(onClick = onClick, interactive = interactive) {
+    LiquidNavItem(onClick = onClick, selected = selected, interactive = interactive) {
         Icon(
             imageVector = icon,
             contentDescription =

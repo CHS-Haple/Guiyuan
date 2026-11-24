@@ -4,13 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.provider.Settings
 import java.lang.reflect.InvocationTargetException
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 // A read-only report from verified SystemUI source, never a control surface.
 internal object NativeFontAxis {
@@ -33,20 +29,6 @@ internal object NativeFontAxis {
         data object Unavailable : State
         data class Variable(val axis: FontWeightAxis) : State
     }
-
-    internal fun state(reported: Boolean, axis: FontWeightAxis?): State =
-        if (!reported) State.Pending
-        else checked(axis)?.let(State::Variable) ?: State.Unavailable
-
-    internal fun isSystemUiSender(uid: Int, pkg: String?, installedUid: Int?): Boolean =
-        uid >= 0 && pkg == SYSTEM_UI && uid == installedUid
-
-    fun checked(axis: FontWeightAxis?): FontWeightAxis? =
-        axis?.takeIf {
-            it.min.isFinite() && it.default.isFinite() && it.max.isFinite() &&
-                it.min >= 1f && it.min <= it.default && it.default <= it.max &&
-                it.max <= 1000f && it.min < it.max
-        }
 
     private fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -72,7 +54,7 @@ internal object NativeFontAxis {
         if (boot < 0 || prefs.getInt(BOOT, -1) != boot) {
             State.Pending
         } else {
-            state(
+            NativeFontAxisPolicy.state(
                 reported = prefs.getBoolean(REPORTED, false),
                 axis = FontWeightAxis(
                     min = prefs.getFloat(min, Float.NaN),
@@ -94,18 +76,18 @@ internal object NativeFontAxis {
         min: String,
         default: String,
         max: String,
-    ): Flow<State> = callbackFlow {
+    ): Flow<State> {
         val app = context.applicationContext
-        val prefs = prefs(app)
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == min || key == default || key == max || key == BOOT || key == REPORTED) {
-                trySend(read(app, prefs, min, default, max))
-            }
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(read(app, prefs, min, default, max))
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-    }.distinctUntilChanged()
+        val source = prefs(app)
+        return observePreferenceChanges(
+            preferences = source,
+            matchesKey = { key ->
+                key == min || key == default || key == max ||
+                    key == BOOT || key == REPORTED
+            },
+            snapshot = { read(app, source, min, default, max) },
+        )
+    }
 
     fun save(context: Context, mobile: FontWeightAxis?, battery: FontWeightAxis?) {
         val boot = bootCount(context)
@@ -129,16 +111,16 @@ internal object NativeFontAxis {
 
 class NativeFontAxisReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (Build.VERSION.SDK_INT < 34 || intent.action != NativeFontAxis.ACTION) return
+        if (intent.action != NativeFontAxis.ACTION) return
         // SystemUI may have its own UID; match the OS-resolved package owner.
         val systemUiUid = runCatching {
             context.packageManager.getPackageUid(NativeFontAxis.SYSTEM_UI, 0)
         }.onFailure(NativeFontAxis::rethrowFatal).getOrNull()
-        if (!NativeFontAxis.isSystemUiSender(sentFromUid, sentFromPackage, systemUiUid)) return
+        if (!NativeFontAxisPolicy.isSystemUiSender(sentFromUid, sentFromPackage, systemUiUid)) return
 
         fun axis(min: String, default: String, max: String): FontWeightAxis? =
             if (intent.hasExtra(min) && intent.hasExtra(default) && intent.hasExtra(max)) {
-                NativeFontAxis.checked(
+                NativeFontAxisPolicy.checked(
                     FontWeightAxis(
                         intent.getFloatExtra(min, Float.NaN),
                         intent.getFloatExtra(default, Float.NaN),
