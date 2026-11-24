@@ -1020,6 +1020,22 @@ internal object SysUiNetworkSource {
     fun matches(handle: HookHandle): Boolean = handle.id in hookIds
 
     // Hook failures can be arbitrary Throwables; fatal causes are rethrown.
+    // Only the unfinished native bind may restore its previous receipt.
+    private fun <T : Any> rollbackPendingBinding(
+        bindings: WeakHashMap<ViewGroup, T>,
+        root: ViewGroup?,
+        pending: T?,
+        previous: T?,
+    ) {
+        if (root == null || pending == null) return
+        synchronized(this) {
+            if (bindings[root] === pending) {
+                if (previous == null) bindings.remove(root)
+                else bindings[root] = previous
+            }
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
     private fun wifiBindHooker(
         active: AtomicBoolean,
@@ -1082,15 +1098,7 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                // Revert only our unfinished bind, not a nested newer bind.
-                if (boundRoot != null && pending != null) {
-                    synchronized(this) {
-                        if (wifiRoots[boundRoot] === pending) {
-                            if (previous == null) wifiRoots.remove(boundRoot)
-                            else wifiRoots[boundRoot] = previous
-                        }
-                    }
-                }
+                rollbackPendingBinding(wifiRoots, boundRoot, pending, previous)
                 throw error
             }
         seedFailure?.let { error ->
@@ -1379,8 +1387,7 @@ internal object SysUiNetworkSource {
         if (!active.get()) return@Hooker chain.proceed()
         val wifiVisibleIconField = seedContract.wifiVisibleIconField
         val iconResourceIdAccessor = seedContract.iconResourceIdAccessor
-        val onWifiState = sinks.onWifiState
-        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        val onRuntimeFailure = diagnostics.onRuntimeFailure
         val value =
             try {
                 chain.getArg(0)
@@ -1426,6 +1433,20 @@ internal object SysUiNetworkSource {
 
         val result = chain.proceed()
 
+        publishAppliedWifiIcon(image, semantic, classId, sinks, diagnostics)
+        result
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun publishAppliedWifiIcon(
+        image: ImageView?,
+        semantic: WifiSemanticValue?,
+        classId: Int,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+    ) {
+        val onWifiState = sinks.onWifiState
+        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
         var deliveredKey: String? = null
         try {
             if (image != null && semantic != null) {
@@ -1514,8 +1535,6 @@ internal object SysUiNetworkSource {
                 }
             }
         }
-
-        result
     }
 
     internal fun shouldUseAppliedHotspotFallback(
@@ -1598,17 +1617,7 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                // A nested bind can reuse the same subscription ID.
-                val candidate = pending
-                if (boundRoot != null && candidate != null) {
-                    synchronized(this) {
-                        if (mobileRoots[boundRoot] === candidate) {
-                            val old = previous
-                            if (old == null) mobileRoots.remove(boundRoot)
-                            else mobileRoots[boundRoot] = old
-                        }
-                    }
-                }
+                rollbackPendingBinding(mobileRoots, boundRoot, pending, previous)
                 throw error
             }
         if (bindingChanged) {
