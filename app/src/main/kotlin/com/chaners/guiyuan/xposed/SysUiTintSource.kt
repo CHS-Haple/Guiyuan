@@ -27,7 +27,6 @@ internal object SysUiTintSource {
     // Native reads and successful owner delivery are independent facts.
     private class Delivery(val state: TintState)
     private val deliveredStates = WeakHashMap<View, Delivery>()
-    private val firstEventLogged = WeakHashMap<View, Unit>()
 
     @Volatile
     private var hooksReady = false
@@ -102,33 +101,13 @@ internal object SysUiTintSource {
                                 source = source,
                                 onEvent = onEvent,
                             )
-                            if (
-                                reportNativeArguments &&
-                                state != null &&
-                                synchronized(this) {
-                                    !firstEventLogged.containsKey(sourceView)
-                                }
-                            ) {
-                                val darkIntensity =
-                                    (chain.getArg(1) as? Number)?.toFloat()
-                                        ?: Float.NaN
-                                val lightColor =
-                                    (chain.getArg(3) as? Number)?.toInt() ?: 0
-                                val darkColor =
-                                    (chain.getArg(4) as? Number)?.toInt() ?: 0
-                                val useTint =
-                                    chain.getArg(5) as? Boolean ?: false
-                                onEvent(
-                                    "tintSource receiver=" +
-                                        sourceView.javaClass.simpleName +
-                                        " batteryApplied=" + colorHex(state.appliedTint) +
-                                        " authority=battery-anchor-fallback" +
-                                        " intensity=" + darkIntensity +
-                                        " light=" + colorHex(lightColor) +
-                                        " dark=" + colorHex(darkColor) +
-                                        " useTint=" + useTint,
+                            if (reportNativeArguments && state != null) {
+                                SysUiTintDiagnosticProbe.probeFirstNativeArguments(
+                                    sourceView = sourceView,
+                                    state = state,
+                                    onEvent = onEvent,
+                                    getArg = { chain.getArg(it) },
                                 )
-                                synchronized(this) { firstEventLogged[sourceView] = Unit }
                             }
                         }
                     }
@@ -236,7 +215,6 @@ internal object SysUiTintSource {
 
     @Synchronized
     fun resetDiagnosticProbes() {
-        firstEventLogged.clear()
         SysUiTintDiagnosticProbe.resetTransient()
     }
 
@@ -251,7 +229,6 @@ internal object SysUiTintSource {
         hooksReady = false
         lastStates.clear()
         deliveredStates.clear()
-        firstEventLogged.clear()
         SysUiTintDiagnosticProbe.clearAll()
         batteryPercentViewField = null
         lastSourceView = null
