@@ -6,7 +6,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +31,6 @@ import io.github.libxposed.service.HookedTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -67,7 +65,6 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
                 status = scopeState("com.android.systemui", env.sysUiInstalled, xposedStatus),
                 fallbackIcon = R.drawable.ic_material_symbol_display_settings,
                 usage = stringResource(R.string.static_scope_sysui_usage),
-                advice = stringResource(R.string.static_scope_sysui_advice),
             )
         }
         Section(R.string.static_scope_optional_group) {
@@ -79,7 +76,6 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
                 status = scopeState("com.android.settings", env.settingsInstalled, xposedStatus),
                 fallbackIcon = R.drawable.ic_material_symbol_settings_applications,
                 usage = stringResource(R.string.static_scope_settings_usage),
-                advice = stringResource(R.string.static_scope_settings_advice),
             )
         }
     }
@@ -94,7 +90,6 @@ private fun StaticScopeItem(
     status: ScopeState,
     @DrawableRes fallbackIcon: Int,
     usage: String,
-    advice: String,
 ) {
     val versionText = when {
         installed == false || version.isBlank() || version == "—" ->
@@ -103,39 +98,17 @@ private fun StaticScopeItem(
     }
 
     BasicComponent(
-        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+        title = name,
+        summary = "$packageName\n$versionText",
         startAction = { StaticScopeIcon(packageName, fallbackIcon) },
         endActions = { StaticScopeStatusBadge(status) },
-    ) {
-        Text(
-            text = name,
-            fontSize = MiuixTheme.textStyles.headline1.fontSize,
-            fontWeight = FontWeight.Medium,
-        )
-        Text(
-            text = packageName,
-            fontSize = MiuixTheme.textStyles.body2.fontSize,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-        Text(
-            text = versionText,
-            fontSize = MiuixTheme.textStyles.body2.fontSize,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-    }
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-    Text(
-        text = usage,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
-        fontSize = MiuixTheme.textStyles.body2.fontSize,
-        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-    )
-    Text(
-        text = advice,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
-        fontSize = MiuixTheme.textStyles.body2.fontSize,
-        fontWeight = FontWeight.Medium,
-        color = MiuixTheme.colorScheme.onSurface,
+        bottomAction = {
+            Text(
+                text = usage,
+                fontSize = MiuixTheme.textStyles.body2.fontSize,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            )
+        },
     )
 }
 
