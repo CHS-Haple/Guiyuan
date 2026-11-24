@@ -3,6 +3,7 @@
 
 package com.chaners.guiyuan.ui.glass
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -12,6 +13,8 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -29,6 +32,10 @@ import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 import top.yukonga.miuix.kmp.material.EdgeStroke
@@ -108,6 +115,64 @@ class GlassPopupAnchor {
 
     /** Hides the transform anchor throughout opening, expansion and exit. */
     internal var contentHidden: Boolean by mutableStateOf(false)
+
+    internal val reboundBounds = Animatable(0f)
+    internal val reboundCenter = Animatable(0f)
+    internal var reboundScaleXFactor: Float by mutableFloatStateOf(0f)
+    internal var reboundScaleYFactor: Float by mutableFloatStateOf(0f)
+    internal var reboundOffsetX: Float by mutableFloatStateOf(0f)
+    internal var reboundOffsetY: Float by mutableFloatStateOf(0f)
+    internal var coroutineScope: CoroutineScope? = null
+
+    internal fun startCloseRebound(
+        boundsValue: Float,
+        boundsVelocity: Float,
+        centerValue: Float,
+        centerVelocity: Float,
+        scaleXFactor: Float,
+        scaleYFactor: Float,
+        offsetX: Float,
+        offsetY: Float,
+    ) {
+        val hasBoundsRebound = (boundsValue < 0f || boundsVelocity < 0f) && (scaleXFactor > 0f || scaleYFactor > 0f)
+        val hasCenterRebound = (centerValue < 0f || centerVelocity < 0f) && (offsetX != 0f || offsetY != 0f)
+        if (!hasBoundsRebound && !hasCenterRebound) return
+        reboundScaleXFactor = scaleXFactor
+        reboundScaleYFactor = scaleYFactor
+        reboundOffsetX = offsetX
+        reboundOffsetY = offsetY
+        val scope = coroutineScope ?: return
+        if (hasBoundsRebound) {
+            scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                reboundBounds.snapTo(boundsValue)
+                reboundBounds.animateTo(
+                    targetValue = 0f,
+                    animationSpec = GlassMotion.transformBounds(false),
+                    initialVelocity = boundsVelocity,
+                )
+            }
+        }
+        if (hasCenterRebound) {
+            scope.launch(start = CoroutineStart.UNDISPATCHED) {
+                reboundCenter.snapTo(centerValue)
+                reboundCenter.animateTo(
+                    targetValue = 0f,
+                    animationSpec = GlassMotion.transformCenter(false),
+                    initialVelocity = centerVelocity,
+                )
+            }
+        }
+    }
+
+    internal fun cancelCloseRebound() {
+        val scope = coroutineScope ?: return
+        if (reboundBounds.isRunning || reboundBounds.value != 0f) {
+            scope.launch(start = CoroutineStart.UNDISPATCHED) { reboundBounds.snapTo(0f) }
+        }
+        if (reboundCenter.isRunning || reboundCenter.value != 0f) {
+            scope.launch(start = CoroutineStart.UNDISPATCHED) { reboundCenter.snapTo(0f) }
+        }
+    }
 
     internal fun updateContainerCoordinates(coordinates: LayoutCoordinates) {
         containerCoordinates = coordinates
@@ -203,7 +268,16 @@ internal class GlassPopupAnchorNode(
         val placeable = measurable.measure(constraints)
         return layout(placeable.width, placeable.height) {
             placeable.placeWithLayer(0, 0) {
-                alpha = if (anchor.contentHidden) 0f else 1f
+                val hidden = anchor.contentHidden
+                alpha = if (hidden) 0f else 1f
+                if (!hidden) {
+                    val boundsVal = anchor.reboundBounds.value
+                    val centerVal = anchor.reboundCenter.value
+                    scaleX = (1f + anchor.reboundScaleXFactor * boundsVal).coerceAtLeast(0.5f)
+                    scaleY = (1f + anchor.reboundScaleYFactor * boundsVal).coerceAtLeast(0.5f)
+                    translationX = anchor.reboundOffsetX * centerVal
+                    translationY = anchor.reboundOffsetY * centerVal
+                }
             }
         }
     }
@@ -255,7 +329,12 @@ private class GlassPopupAnchorContentNode(
 
 /** One anchor owner across the menu's opening and closing lifecycle. */
 @Composable
-fun rememberGlassPopupAnchor(): GlassPopupAnchor = remember { GlassPopupAnchor() }
+fun rememberGlassPopupAnchor(): GlassPopupAnchor {
+    val scope = rememberCoroutineScope()
+    val anchor = remember { GlassPopupAnchor() }
+    SideEffect { anchor.coroutineScope = scope }
+    return anchor
+}
 
 /**
  * Reports a control's bounds to [anchor] and hides it while its menu is open.

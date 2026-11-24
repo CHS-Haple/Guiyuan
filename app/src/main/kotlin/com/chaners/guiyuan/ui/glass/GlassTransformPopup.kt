@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
@@ -44,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import androidx.compose.ui.util.fastRoundToInt
 
+// GlassMotion.TRANSFORM_VISIBILITY_THRESHOLD is internal to MIUIX.
+private const val TransformVisibilityThreshold = 0.0015f
 private const val GuiyuanPopupMaskVisibleChange = 1f / 256f
 
 // Upstream GlassMotion keeps this spring internal; the adapted popup owns its mask.
@@ -131,7 +136,39 @@ fun BoxScope.GlassTransformPopup(
         animationSpec = guiyuanPopupMaskSpring(stacked),
         label = "glassTransformMask",
     )
-    val active = show || transition.currentState || transition.isRunning
+    val active by remember(show, bounds, center) {
+        derivedStateOf {
+            show ||
+                bounds.value > TransformVisibilityThreshold ||
+                center.value > TransformVisibilityThreshold
+        }
+    }
+    val currentShow by rememberUpdatedState(show)
+    val closeVelocity = remember { CloseVelocityTracker() }
+    val travel = remember { TransformTravel() }
+    LaunchedEffect(active, show) {
+        if (!show && active) {
+            var prevBounds = bounds.value
+            var prevCenter = center.value
+            var prevNanos = withFrameNanos { it }
+            while (true) {
+                val now = withFrameNanos { it }
+                val currBounds = bounds.value
+                val currCenter = center.value
+                val dt = (now - prevNanos) / 1_000_000_000f
+                if (dt > 0f) {
+                    closeVelocity.boundsVelocity = (currBounds - prevBounds) / dt
+                    closeVelocity.centerVelocity = (currCenter - prevCenter) / dt
+                }
+                prevBounds = currBounds
+                prevCenter = currCenter
+                prevNanos = now
+            }
+        } else {
+            closeVelocity.boundsVelocity = 0f
+            closeVelocity.centerVelocity = 0f
+        }
+    }
     val backProgress = rememberGlassPopupBackProgress(
         show = show,
         active = active,
@@ -146,7 +183,35 @@ fun BoxScope.GlassTransformPopup(
     }
     DisposableEffect(active, anchor) {
         anchor.contentHidden = active
-        onDispose { anchor.contentHidden = false }
+        if (active) anchor.cancelCloseRebound()
+        onDispose {
+            anchor.contentHidden = false
+            if (!currentShow) {
+                val anchorRect = anchor.containerBounds
+                val scaleXFactor = if (anchorRect.width > 0f && travel.endWidth > anchorRect.width) {
+                    (travel.endWidth / anchorRect.width) - 1f
+                } else {
+                    0f
+                }
+                val scaleYFactor = if (anchorRect.height > 0f && travel.endHeight > anchorRect.height) {
+                    (travel.endHeight / anchorRect.height) - 1f
+                } else {
+                    0f
+                }
+                val offsetX = if (anchorRect.width > 0f) travel.endCenterX - anchorRect.center.x else 0f
+                val offsetY = if (anchorRect.height > 0f) travel.endCenterY - anchorRect.center.y else 0f
+                anchor.startCloseRebound(
+                    boundsValue = bounds.value,
+                    boundsVelocity = closeVelocity.boundsVelocity,
+                    centerValue = center.value,
+                    centerVelocity = closeVelocity.centerVelocity,
+                    scaleXFactor = scaleXFactor,
+                    scaleYFactor = scaleYFactor,
+                    offsetX = offsetX,
+                    offsetY = offsetY,
+                )
+            }
+        }
     }
     if (!active) return
 
@@ -189,7 +254,6 @@ fun BoxScope.GlassTransformPopup(
         geometryProgress = geometryProgress(),
         iconMaterial = iconProgress(),
     )
-    val travel = remember { TransformTravel() }
     val hostOrigin = remember { mutableStateOf(Offset.Zero) }
     val shadowAlpha = remember(anchorSurface, visuals.alpha, materialProgress) {
         {
@@ -237,6 +301,7 @@ fun BoxScope.GlassTransformPopup(
             travel.endCenterX = settled.rect.center.x
             travel.endCenterY = settled.rect.center.y
             travel.endWidth = end.width
+            travel.endHeight = end.height
             transformFrame(
                 anchor = rect,
                 end = end,
@@ -335,4 +400,10 @@ private class TransformTravel {
     var endCenterX: Float = 0f
     var endCenterY: Float = 0f
     var endWidth: Float = 0f
+    var endHeight: Float = 0f
+}
+
+private class CloseVelocityTracker {
+    var boundsVelocity: Float = 0f
+    var centerVelocity: Float = 0f
 }

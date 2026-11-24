@@ -99,7 +99,7 @@ internal fun rememberOs4SearchMotion(expanded: Boolean): Os4SearchMotion {
         },
         label = "cancelMaterial",
     ) { if (it) 1f else 0f }
-    return Os4SearchMotion(progress, cancelAlpha, expanded || transition.currentState || transition.isRunning)
+    return Os4SearchMotion(progress, cancelAlpha, expanded || progress > 1f / 255f)
 }
 
 /** Reveal only a title hidden by search; keep an already visible large title intact. */
@@ -162,7 +162,7 @@ internal fun Os4SearchMode(
                 translationY = -statusInset * (1f - motion.progress)
             },
     ) {
-        // A fading search row must still consume clicks until its exit animation finishes.
+        // Consume clicks while the fading search row is visibly mounted.
         Box(
             modifier = Modifier
                 .matchParentSize()
