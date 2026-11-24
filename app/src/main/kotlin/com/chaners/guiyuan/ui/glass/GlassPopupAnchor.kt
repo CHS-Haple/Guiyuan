@@ -33,6 +33,7 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
+import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassStyle
 
 /**
@@ -145,6 +146,7 @@ internal data class GlassAnchorSurface(
     val underlayMaterial: GlassMaterial?,
     val stroke: EdgeStroke?,
     val fill: Color,
+    val shadow: GlassShadow?,
 )
 
 /** Marks the button's modifier so its renderer can publish the actual surface to this anchor. */

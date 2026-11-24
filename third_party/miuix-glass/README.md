@@ -7,19 +7,16 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The active source and Maven graph use the successfully published MIUIX
-  snapshot `0.9.5-28d45984-SNAPSHOT` at full revision
-  `28d459841e1ff7d873097991c3f923c94a98adf7`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45061606326)
-  and [tests](https://github.com/compose-miuix-ui/miuix/actions/runs/45061606276)
-  passed for the exact source revision. This remains a pre-release snapshot,
-  **not** a stable v0.9.5 release. Relative to `c83aacd8`, the graph adds
-  Glass dialog motion, GlassCard, Switch dragging, and drawing/caching fixes.
-  Device acceptance of the new snapshot, especially OS4 glass dialogs, blur,
-  menu dismissal, navigation, and OS3-style controls, is still required.
-  Keep source checkout and published Maven graph on the same exact revision.
-  Guiyuan-specific Back, long-press, touch-extension and title clip boundaries
-  remain locally owned.
+- The candidate source and Maven graph use MIUIX snapshot
+  `0.9.5-07d48590-SNAPSHOT` at full revision
+  `07d4859021d7aed1a1f78afaee12c5c8a6917466`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45226040998)
+  succeeded; the exact-source [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45226041186)
+  passed Android assembly, desktop and web jobs, but the Apple job was cancelled.
+  This is a pre-release snapshot, not stable v0.9.5. Keep source and Maven
+  revisions identical; Guiyuan source/Maven builds and focused device validation
+  remain required. Guiyuan-specific Back, long-press, touch-extension and title
+  clip boundaries remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
@@ -192,3 +189,39 @@ locally maintained vector paths. No alternate vendor resource pack was
 found in the live app source set. Non-public rail, popup and native-title
 behavior remains adapted because it has no behavior-equivalent published
 entrypoint.
+
+## 07d48590 alignment and optional API decisions
+
+- **Adopt, both UI styles:** MIUIX owns Slider tap-to-seek, ColorPicker
+  bounds, Squircle's drawing and zero-radius fast paths, TopAppBarState
+  observation and navigation runtime fixes. No app-local reimplementation.
+  Native OverlayBottomSheet uses SheetMotion.Default, GlassBottomSheet uses
+  SheetMotion.Glass internally (#496); do not add a redundant motion setting
+  or a second scrim/drag clock.
+- **Adopt, OS4:** the controlled search field uses public SearchClearButton
+  and keeps query/focus ownership and a localized accessibility label. The
+  adapted transformed menu carries its glass anchor shadow receipt and reads
+  shadow alpha during drawing. It calculates settled placement once, with
+  unchanged window-safe end alignment. The host already mounts on demand and
+  retires after both menu exits; the upstream lazy initial mount does not
+  justify a second visibility owner.
+- **Optional, defer until a caller needs it:** upstream Popup supports Start,
+  Center and End horizontal alignment; Guiyuan's current toolbar/scheme
+  menus use End, so no unused parameter or setting is added to local adapters.
+  Public library callers can use the new option directly.
+- **Optional, defer route expansion:** #486 supplies route-bound source
+  geometry, shape morph and predictive Back with a missing-source fallback.
+  The current app's page routes have ordinary slide navigation, and onboarding
+  deliberately uses a different step transition. Expansion would need
+  verified same-window anchors, opaque destination containers and stable
+  source identity (including search and restored entries); it is not a
+  replacement for bottom tab/rail selection or transformed popup ownership.
+  Revisit for a real card-to-detail use case, not a global animation toggle.
+  Align ordinary navigation with the example's multi-window-only corner
+  disabling; retain onboarding's existing no-corner policy.
+- Icon updates (XiaomiListen/CheckSelection and private backing names) are
+  consumed through upstream dependencies; the app's regular glass icon
+  accessors use unrelated names. Example desktop packaging, example icon
+  lists and baseline-profile changes are not app source migrations.
+  Experimental effect PR #321 and resume PR #461 are not in the pinned
+  published revision and are not copied into the app.

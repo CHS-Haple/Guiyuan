@@ -188,12 +188,22 @@ fun BoxScope.GlassTransformPopup(
     )
     val travel = remember { TransformTravel() }
     val hostOrigin = remember { mutableStateOf(Offset.Zero) }
+    val shadowAlpha = remember(anchorSurface, visuals.alpha, materialProgress) {
+        {
+            if (anchorSurface != null && anchorSurface.shadow == null) {
+                visuals.alpha * materialProgress.value
+            } else {
+                visuals.alpha
+            }
+        }
+    }
 
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         backdrop = menuBackdrop,
         sizing = sizing,
         visuals = visuals,
+        shadowAlpha = shadowAlpha,
         contentPadding = contentPadding,
         panelLayer = {
             alpha = panelAlpha()
@@ -212,20 +222,9 @@ fun BoxScope.GlassTransformPopup(
             }
         },
         frame = { end, windowBounds ->
-            val frame = transformFrame(
-                anchor = startRect,
-                end = end,
-                window = windowBounds,
-                margin = sizing.safeMargin.toPx(),
-                gap = gap.toPx(),
-                sizeFraction = geometryProgress(),
-                positionFraction = centerProgress(),
-                startRadius = startRadius,
-                endRadius = cornerRadius,
-                layoutDirection = layoutDirection,
-            )
+            val rect = startRect
             val settled = placeGlassPopup(
-                startRect.translate(0f, gap.toPx()),
+                rect.translate(0f, gap.toPx()),
                 end,
                 sizing.safeMargin.toPx(),
                 windowBounds,
@@ -234,7 +233,15 @@ fun BoxScope.GlassTransformPopup(
             travel.endCenterX = settled.rect.center.x
             travel.endCenterY = settled.rect.center.y
             travel.endWidth = end.width
-            frame
+            transformFrame(
+                anchor = rect,
+                end = end,
+                placement = settled,
+                sizeFraction = geometryProgress(),
+                positionFraction = centerProgress(),
+                startRadius = startRadius,
+                endRadius = cornerRadius,
+            )
         },
         contentLayer = { end, _ ->
             val width = startRect.width + (end.width - startRect.width) * geometryProgress()

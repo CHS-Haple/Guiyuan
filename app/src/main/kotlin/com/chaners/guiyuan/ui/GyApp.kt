@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalLayoutDirection
 import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.AppLang
@@ -129,12 +131,15 @@ internal fun GyApp(
             }
         }
 
+        // Re-evaluate on configuration changes; only multi-window loses the outer screen corner.
+        LocalConfiguration.current
+        val navCornerRadius = if (hostActivity?.isInMultiWindowMode == true) 0.dp else rememberNavSystemCornerRadius()
         NavDisplay(
             backStack = backStack,
             onBack = ::navigateBack,
             transition = NavTransitions.MiuixDefault,
             effects = NavDisplayEffects(
-                cornerClipRadius = rememberNavSystemCornerRadius(),
+                cornerClipRadius = navCornerRadius,
                 backdropColor = MiuixTheme.colorScheme.surface,
             ),
         ) {

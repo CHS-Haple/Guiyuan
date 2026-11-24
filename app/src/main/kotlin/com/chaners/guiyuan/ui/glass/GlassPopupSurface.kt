@@ -9,7 +9,6 @@ import top.yukonga.miuix.kmp.glass.GlassPopupFrame
 
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.glass
-import top.yukonga.miuix.kmp.glass.glassShadow
 import top.yukonga.miuix.kmp.glass.GlassPopupSizing
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 
@@ -170,6 +169,7 @@ internal fun GlassPopupSurface(
     contentLayer: GraphicsLayerScope.(end: Size, rect: Rect) -> Unit,
     modifier: Modifier = Modifier,
     reveal: Modifier = Modifier,
+    shadowAlpha: () -> Float = { visuals.alpha },
     surface: (@Composable BoxScope.(GlassShape) -> Unit)? = null,
     onMeasured: ((Size) -> Unit)? = null,
     interactive: Boolean = true,
@@ -242,7 +242,7 @@ internal fun GlassPopupSurface(
                 outsets = shadowOutsets
             }
             .then(reveal)
-            .glassShadow(shape, visuals.shadow, visuals.alpha)
+            .glassShadow(shape, visuals.shadow, shadowAlpha)
             .clip(shape)
             .drawWithContent {
                 drawContent()
