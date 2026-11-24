@@ -9,9 +9,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
-import com.chaners.guiyuan.ui.LocalUiStyle
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
@@ -30,8 +27,7 @@ private const val ProgressiveTopBarBlendAlpha = 0.3f
 
 @Composable
 internal fun rememberTopBarBackdrop(): LayerBackdrop? {
-    // OS4 still needs the sampled backdrop for Glass controls when progressive blur is off.
-    if (LocalUiStyle.current == UiStyle.OS3 && !LocalTopBarProgressiveBlur.current) return null
+    // Glass controls still need the sampled backdrop when progressive blur is off.
     if (!isRuntimeShaderSupported()) return null
 
     val surface = MiuixTheme.colorScheme.surface

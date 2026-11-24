@@ -14,16 +14,12 @@ import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.XposedStatus
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.components.HotReloadAction
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
 internal data class HomeScreenSources(
@@ -68,28 +64,14 @@ internal fun HomeScreenTopBar(
             )
         }
     }
-    if (LocalUiStyle.current == UiStyle.OS4) {
-        GlassTopAppBar(
-            progressiveBlur = LocalTopBarProgressiveBlur.current,
-            isContentScrolled = frame.listState.canScrollBackward,
-            title = stringResource(R.string.home_title),
-            titleAlpha = LocalGlassRailProgress.current,
-            backdrop = frame.backdrop,
-            scrollBehavior = frame.scrollBehavior,
-            actions = buttons,
-            unclippedActions = true,
-        )
-    } else {
-        MiuixBlurredTopBar(
-            backdrop = frame.backdrop,
-            scrollBehavior = frame.scrollBehavior,
-        ) { barColor ->
-            TopAppBar(
-                title = stringResource(R.string.home_title),
-                color = barColor,
-                actions = buttons,
-                scrollBehavior = frame.scrollBehavior,
-            )
-        }
-    }
+    GlassTopAppBar(
+        progressiveBlur = LocalTopBarProgressiveBlur.current,
+        isContentScrolled = frame.listState.canScrollBackward,
+        title = stringResource(R.string.home_title),
+        titleAlpha = LocalGlassRailProgress.current,
+        backdrop = frame.backdrop,
+        scrollBehavior = frame.scrollBehavior,
+        actions = buttons,
+        unclippedActions = true,
+    )
 }

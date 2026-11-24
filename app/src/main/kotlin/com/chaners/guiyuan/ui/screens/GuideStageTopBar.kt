@@ -4,22 +4,15 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Refresh
 
 internal data class GuideStageBarFrame(
     val step: Int,
@@ -40,54 +33,30 @@ internal fun GuideStageTopBar(
     val navigation: @Composable () -> Unit = {
         UiTopBarNavigationIcon(onBack = onBack)
     }
-    // Match the native in-app Settings title behavior for both OS styles.
-    if (LocalUiStyle.current == UiStyle.OS4) {
-        GlassTopAppBar(
-            progressiveBlur = LocalTopBarProgressiveBlur.current,
-            title = "",
-            isContentScrolled = frame.contentScrolled,
-            backdrop = frame.backdrop,
-            scrollBehavior = frame.scrollBehavior,
-            compact = true,
-            navigationIcon = navigation,
-            actions = refreshAction,
-            unclippedNavigationIcon = true,
-            unclippedActions = frame.step == 1,
-        )
-    } else {
-        MiuixBlurredTopBar(
-            backdrop = frame.backdrop,
-            scrollBehavior = frame.scrollBehavior,
-        ) { barColor ->
-            SmallTopAppBar(
-                title = "",
-                color = barColor,
-                scrollBehavior = frame.scrollBehavior,
-                navigationIcon = navigation,
-                actions = refreshAction,
-            )
-        }
-    }
+    // Match the in-app Settings title behavior.
+    GlassTopAppBar(
+        progressiveBlur = LocalTopBarProgressiveBlur.current,
+        title = "",
+        isContentScrolled = frame.contentScrolled,
+        backdrop = frame.backdrop,
+        scrollBehavior = frame.scrollBehavior,
+        compact = true,
+        navigationIcon = navigation,
+        actions = refreshAction,
+        unclippedNavigationIcon = true,
+        unclippedActions = frame.step == 1,
+    )
 }
 
 @Composable
 private fun GuideStageRefreshAction(onRefresh: () -> Unit) {
     val label = stringResource(R.string.guide_refresh_status)
     TooltipBox(text = label) {
-        if (LocalUiStyle.current == UiStyle.OS4) {
-            GlassIconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = Os4GlassRefresh,
-                    contentDescription = label,
-                )
-            }
-        } else {
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = MiuixIcons.Regular.Refresh,
-                    contentDescription = label,
-                )
-            }
+        GlassIconButton(onClick = onRefresh) {
+            Icon(
+                imageVector = Os4GlassRefresh,
+                contentDescription = label,
+            )
         }
     }
 }
