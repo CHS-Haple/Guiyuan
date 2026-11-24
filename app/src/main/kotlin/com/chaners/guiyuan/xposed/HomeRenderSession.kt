@@ -703,38 +703,7 @@ internal object HomeRenderSession {
 
         private fun layoutProbe(source: String = "native-layout") {
             if (!resolveNativeAnchor(observedAnchorRect)) {
-                val nativeLayoutPending =
-                    host.get()?.isLayoutRequested == true ||
-                        batteryContainer.get()?.isLayoutRequested == true ||
-                        statusIcons.get()?.isLayoutRequested == true ||
-                        batteryCarrier.get()?.isLayoutRequested == true
-                val hostAttached = batteryContainer.get()?.isAttachedToWindow == true
-                val carrierAttached = batteryCarrier.get()?.isAttachedToWindow == true
-                if (
-                    shouldRetireUnresolvedAnchor(
-                        wasReady = layoutReady,
-                        hostAttached = hostAttached,
-                        carrierAttached = carrierAttached,
-                        nativePreDraw = source == "native-pre-draw",
-                        layoutPending = nativeLayoutPending,
-                    )
-                ) {
-                    layoutReady = false
-                    deferredNativeAnchor = false
-                    emitEvent {
-                        "homeRenderNativeAnchor state=invalid source=" + source +
-                            " nativeLayoutPending=" + nativeLayoutPending +
-                            " hostAttached=" + hostAttached +
-                            " carrierAttached=" + carrierAttached
-                    }
-                    dispatchPresentationReadiness("native-anchor-invalid")
-                } else if (layoutReady && !deferredNativeAnchor) {
-                    deferredNativeAnchor = true
-                    emitEvent {
-                        "homeRenderNativeAnchor state=deferred source=" + source +
-                            " nativeLayoutPending=" + nativeLayoutPending
-                    }
-                }
+                handleUnresolvedAnchor(source)
                 return
             }
             if (deferredNativeAnchor) {
@@ -774,6 +743,41 @@ internal object HomeRenderSession {
                 }
             }
             dispatchPresentationReadiness("layout")
+        }
+
+        private fun handleUnresolvedAnchor(source: String) {
+            val nativeLayoutPending =
+                host.get()?.isLayoutRequested == true ||
+                    batteryContainer.get()?.isLayoutRequested == true ||
+                    statusIcons.get()?.isLayoutRequested == true ||
+                    batteryCarrier.get()?.isLayoutRequested == true
+            val hostAttached = batteryContainer.get()?.isAttachedToWindow == true
+            val carrierAttached = batteryCarrier.get()?.isAttachedToWindow == true
+            if (
+                shouldRetireUnresolvedAnchor(
+                    wasReady = layoutReady,
+                    hostAttached = hostAttached,
+                    carrierAttached = carrierAttached,
+                    nativePreDraw = source == "native-pre-draw",
+                    layoutPending = nativeLayoutPending,
+                )
+            ) {
+                layoutReady = false
+                deferredNativeAnchor = false
+                emitEvent {
+                    "homeRenderNativeAnchor state=invalid source=" + source +
+                        " nativeLayoutPending=" + nativeLayoutPending +
+                        " hostAttached=" + hostAttached +
+                        " carrierAttached=" + carrierAttached
+                }
+                dispatchPresentationReadiness("native-anchor-invalid")
+            } else if (layoutReady && !deferredNativeAnchor) {
+                deferredNativeAnchor = true
+                emitEvent {
+                    "homeRenderNativeAnchor state=deferred source=" + source +
+                        " nativeLayoutPending=" + nativeLayoutPending
+                }
+            }
         }
 
         private fun applyResolvedVisibility(): Boolean {
