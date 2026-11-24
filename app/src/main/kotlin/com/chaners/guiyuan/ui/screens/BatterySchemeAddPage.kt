@@ -54,48 +54,54 @@ internal fun BatteryAddSchemePage(
                 name = stringResource(R.string.battery_custom_scheme_new),
                 previewPage = BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS),
             )
-            Text(
-                text = stringResource(R.string.battery_scheme_initial_palette),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.fillMaxWidth().padding(top = BATTERY_SCHEME_VERTICAL_GAP),
-                textAlign = TextAlign.Center,
-            )
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(BATTERY_SCHEME_VERTICAL_GAP),
-            ) {
-                IconButton(
-                    onClick = onClick,
-                    enabled = enabled,
-                    minWidth = FloatingActionButtonDefaults.MinWidth,
-                    minHeight = FloatingActionButtonDefaults.MinHeight,
-                    backgroundColor =
-                        if (enabled) MiuixTheme.colorScheme.primary
-                        else MiuixTheme.colorScheme.disabledPrimaryButton,
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Add,
-                        contentDescription = stringResource(R.string.battery_custom_scheme_new),
-                        modifier = Modifier.size(32.dp),
-                        tint =
-                            if (enabled) MiuixTheme.colorScheme.onPrimary
-                            else MiuixTheme.colorScheme.disabledOnPrimaryButton,
-                    )
-                }
+            BatterySchemeActionArea {
                 Text(
-                    text = stringResource(
-                        if (enabled) R.string.battery_scheme_new_summary
-                        else R.string.battery_custom_scheme_limit,
-                    ),
+                    text = stringResource(R.string.battery_scheme_initial_palette),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
                 )
             }
-            HorizontalDivider()
-            BatterySchemeCapacityStatus(count, enabled)
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(BATTERY_SCHEME_VERTICAL_GAP),
+                ) {
+                    IconButton(
+                        onClick = onClick,
+                        enabled = enabled,
+                        minWidth = FloatingActionButtonDefaults.MinWidth,
+                        minHeight = FloatingActionButtonDefaults.MinHeight,
+                        backgroundColor =
+                            if (enabled) MiuixTheme.colorScheme.primary
+                            else MiuixTheme.colorScheme.disabledPrimaryButton,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Add,
+                            contentDescription = stringResource(R.string.battery_custom_scheme_new),
+                            modifier = Modifier.size(32.dp),
+                            tint =
+                                if (enabled) MiuixTheme.colorScheme.onPrimary
+                                else MiuixTheme.colorScheme.disabledOnPrimaryButton,
+                        )
+                    }
+                    Text(
+                        text = stringResource(
+                            if (enabled) R.string.battery_scheme_new_summary
+                            else R.string.battery_custom_scheme_limit,
+                        ),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                HorizontalDivider()
+                BatterySchemeCapacityStatus(count, enabled)
+            }
         }
     }
 }
