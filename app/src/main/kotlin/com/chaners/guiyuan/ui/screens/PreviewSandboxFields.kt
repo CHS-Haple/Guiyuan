@@ -3,7 +3,8 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -19,12 +20,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 import com.chaners.guiyuan.R
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
@@ -138,11 +141,6 @@ internal fun UiTabRow(
 ) {
     if (tabs.isEmpty()) return
     if (isRuntimeShaderSupported()) {
-        val layoutDirection = LocalLayoutDirection.current
-        val density = LocalDensity.current
-        val trackPaddingPx = with(density) { GlassSegmentedTabRowDefaults.TrackPadding.toPx() }
-        val tabGapPx = with(density) { GlassSegmentedTabRowDefaults.TabGap.toPx() }
-        val currentOnSelect = rememberUpdatedState(onTabSelected)
         // A tab inside the scrolling page must not sample the page's own
         // backdrop: that recorder also contains this tab. Record only its base.
         val surface = if (inCard) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.background
@@ -156,26 +154,9 @@ internal fun UiTabRow(
                 backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Upstream's glass segment drag recognizes horizontal movement without
-            // ruling out a vertical page swipe. In the Sandbox use tap selection
-            // only, so Compose's normal verticalScroll wins on an actual drag.
-            Box(
-                Modifier.matchParentSize().pointerInput(tabs.size, layoutDirection, trackPaddingPx, tabGapPx) {
-                    detectTapGestures { position ->
-                        val width = (size.width.toFloat() - trackPaddingPx * 2).coerceAtLeast(0f)
-                        val slot = ((width - tabGapPx * (tabs.size - 1)) / tabs.size).coerceAtLeast(0f)
-                        if (slot <= 0f) return@detectTapGestures
-                        val x = if (layoutDirection == LayoutDirection.Rtl) {
-                            size.width - position.x
-                        } else {
-                            position.x
-                        }
-                        val index = ((x - trackPaddingPx) / (slot + tabGapPx)).toInt()
-                            .coerceIn(0, tabs.lastIndex)
-                        currentOnSelect.value(index)
-                    }
-                },
-            )
+            // Sandbox handles axis arbitration above the native glass surface.
+            // The native component keeps material, selected-indicator motion and accessibility.
+            SandboxTabPointerSurface(tabs, selectedTabIndex, onTabSelected)
         }
     } else {
         TabRowWithContour(
@@ -188,4 +169,95 @@ internal fun UiTabRow(
             ),
         )
     }
+}
+
+internal enum class SandboxTabDragAxis { Pending, Horizontal, Vertical }
+
+// Use the platform touch slop and lock to the dominant gesture direction.
+internal fun sandboxTabDragAxis(dx: Float, dy: Float, touchSlop: Float): SandboxTabDragAxis {
+    val horizontal = abs(dx)
+    val vertical = abs(dy)
+    if (maxOf(horizontal, vertical) <= touchSlop) return SandboxTabDragAxis.Pending
+    return if (horizontal > vertical) SandboxTabDragAxis.Horizontal else SandboxTabDragAxis.Vertical
+}
+
+// Match the native segmented row's equal slots and RTL origin; the gap belongs
+// to the preceding tab, exactly as in MIUIX's indexAt logic.
+internal fun sandboxTabIndexAt(
+    x: Float,
+    width: Float,
+    count: Int,
+    trackPadding: Float,
+    gap: Float,
+    rtl: Boolean,
+): Int {
+    if (count == 0) return -1
+    val trackWidth = (width - trackPadding * 2).coerceAtLeast(0f)
+    val slot = ((trackWidth - gap * (count - 1)) / count).coerceAtLeast(0f)
+    if (slot <= 0f) return -1
+    val logicalX = if (rtl) width - x else x
+    return ((logicalX - trackPadding) / (slot + gap)).toInt().coerceIn(0, count - 1)
+}
+
+@Composable
+private fun SandboxTabPointerSurface(
+    tabs: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+) {
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val currentOnSelect = rememberUpdatedState(onSelect)
+    val currentSelected = rememberUpdatedState(selectedIndex)
+    val trackPadding = with(density) { GlassSegmentedTabRowDefaults.TrackPadding.toPx() }
+    val gap = with(density) { GlassSegmentedTabRowDefaults.TabGap.toPx() }
+    Box(
+        Modifier.matchParentSize().pointerInput(tabs.size, layoutDirection, trackPadding, gap) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                var axis = SandboxTabDragAxis.Pending
+                var lastSelected = currentSelected.value
+                fun selectedAt(x: Float) = sandboxTabIndexAt(
+                    x = x,
+                    width = size.width.toFloat(),
+                    count = tabs.size,
+                    trackPadding = trackPadding,
+                    gap = gap,
+                    rtl = layoutDirection == LayoutDirection.Rtl,
+                )
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if (change.isConsumed) break
+                    if (!change.pressed) {
+                        if (change.changedToUp() && axis != SandboxTabDragAxis.Vertical) {
+                            val index = selectedAt(change.position.x)
+                            if (index >= 0 && (axis == SandboxTabDragAxis.Pending || index != lastSelected)) {
+                                currentOnSelect.value(index)
+                            }
+                            change.consume()
+                        }
+                        break
+                    }
+                    if (axis == SandboxTabDragAxis.Pending) {
+                        axis = sandboxTabDragAxis(
+                            change.position.x - down.position.x,
+                            change.position.y - down.position.y,
+                            viewConfiguration.touchSlop,
+                        )
+                    }
+                    if (axis == SandboxTabDragAxis.Horizontal) {
+                        val index = selectedAt(change.position.x)
+                        if (index >= 0 && index != lastSelected) {
+                            currentOnSelect.value(index)
+                            lastSelected = index
+                        }
+                        change.consume()
+                    }
+                    // Vertical: deliberately do not consume or change selection.
+                    // The parent Column.verticalScroll retains full drag ownership.
+                }
+            }
+        },
+    )
 }
