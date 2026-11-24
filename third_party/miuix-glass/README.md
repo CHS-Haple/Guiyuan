@@ -94,6 +94,17 @@ The published MIUIX Glass module is now linked directly. The app uses its
 and `glassPanel` APIs instead of maintaining corresponding component copies.
 Its published material, edge and shader APIs also remain authoritative.
 The preview sandbox's segmented Glass tabs use the published upstream `GlassSegmentedTabRow` and defaults; the app-local `GlassTabRow.kt` source copy is retired.
+The scroll-safe segmented tab adapter in `ui/glass/ScrollAwareGlassSegmentedTabRow.kt` now
+owns only the X/Y gesture arbitration needed for scrollable containers. In the pinned
+upstream `a09d4f32`, `GlassTabRow.kt` claims a drag by X touch-slop without first
+excluding a dominant vertical swipe; current upstream main has the same recognizer.
+Guiyuan still delegates all material, indicator motion, selection and accessibility
+to the published native Glass tab. The screen-only gesture duplicate is removed.
+On each MIUIX revision update, check this recognizer and exercise vertical,
+horizontal, diagonal and RTL gestures; when the upstream component fixes axis
+arbitration, delete the adapter's pointer overlay without modifying its callers.
+The standard basic contour TabRow, intentional 2D color picker, and the pager
+header indicator are different gesture owners and are not patched speculatively.
 Navigation destinations and `GlassNavigationBarDefaults` now also use the upstream public types; local navigation/rail still owns only Guiyuan-specific gestures, geometry and hit-area extension.
 The identical `GlassNavigationRailDefaults` object is likewise taken from upstream; app-specific rail state remains local because it uses a private morph clock and supports a trailing action absent from the public upstream Rail API.
 The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.

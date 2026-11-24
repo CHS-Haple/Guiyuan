@@ -3,8 +3,6 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -15,22 +13,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.changedToUp
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.glass.ScrollAwareGlassSegmentedTabRow
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -147,16 +140,13 @@ internal fun UiTabRow(
         val backdrop = rememberLayerBackdrop { drawRect(surface) }
         Box(modifier = modifier) {
             Box(Modifier.matchParentSize().layerBackdrop(backdrop))
-            GlassSegmentedTabRow(
+            ScrollAwareGlassSegmentedTabRow(
                 tabs = tabs,
                 selectedIndex = selectedTabIndex,
                 onSelect = onTabSelected,
                 backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Sandbox handles axis arbitration above the native glass surface.
-            // The native component keeps material, selected-indicator motion and accessibility.
-            SandboxTabPointerSurface(tabs, selectedTabIndex, onTabSelected)
         }
     } else {
         TabRowWithContour(
@@ -171,93 +161,3 @@ internal fun UiTabRow(
     }
 }
 
-internal enum class SandboxTabDragAxis { Pending, Horizontal, Vertical }
-
-// Use the platform touch slop and lock to the dominant gesture direction.
-internal fun sandboxTabDragAxis(dx: Float, dy: Float, touchSlop: Float): SandboxTabDragAxis {
-    val horizontal = abs(dx)
-    val vertical = abs(dy)
-    if (maxOf(horizontal, vertical) <= touchSlop) return SandboxTabDragAxis.Pending
-    return if (horizontal > vertical) SandboxTabDragAxis.Horizontal else SandboxTabDragAxis.Vertical
-}
-
-// Match the native segmented row's equal slots and RTL origin; the gap belongs
-// to the preceding tab, exactly as in MIUIX's indexAt logic.
-internal data class SandboxTabSlotGeometry(
-    val width: Float,
-    val count: Int,
-    val trackPadding: Float,
-    val gap: Float,
-    val rtl: Boolean,
-) {
-    fun indexAt(x: Float): Int {
-        if (count <= 0) return -1
-        val trackWidth = (width - trackPadding * 2).coerceAtLeast(0f)
-        val slot = ((trackWidth - gap * (count - 1)) / count).coerceAtLeast(0f)
-        if (slot <= 0f) return -1
-        val logicalX = if (rtl) width - x else x
-        return ((logicalX - trackPadding) / (slot + gap)).toInt().coerceIn(0, count - 1)
-    }
-}
-
-@Composable
-private fun SandboxTabPointerSurface(
-    tabs: List<String>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-) {
-    val density = LocalDensity.current
-    val layoutDirection = LocalLayoutDirection.current
-    val currentOnSelect = rememberUpdatedState(onSelect)
-    val currentSelected = rememberUpdatedState(selectedIndex)
-    val trackPadding = with(density) { GlassSegmentedTabRowDefaults.TrackPadding.toPx() }
-    val gap = with(density) { GlassSegmentedTabRowDefaults.TabGap.toPx() }
-    Box(
-        Modifier.matchParentSize().pointerInput(tabs.size, layoutDirection, trackPadding, gap) {
-            awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false)
-                var axis = SandboxTabDragAxis.Pending
-                var lastSelected = currentSelected.value
-                val slots = SandboxTabSlotGeometry(
-                    width = size.width.toFloat(),
-                    count = tabs.size,
-                    trackPadding = trackPadding,
-                    gap = gap,
-                    rtl = layoutDirection == LayoutDirection.Rtl,
-                )
-                while (true) {
-                    val event = awaitPointerEvent()
-                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                    if (change.isConsumed) break
-                    if (!change.pressed) {
-                        if (change.changedToUp() && axis != SandboxTabDragAxis.Vertical) {
-                            val index = slots.indexAt(change.position.x)
-                            if (index >= 0 && (axis == SandboxTabDragAxis.Pending || index != lastSelected)) {
-                                currentOnSelect.value(index)
-                            }
-                            change.consume()
-                        }
-                        break
-                    }
-                    if (axis == SandboxTabDragAxis.Pending) {
-                        axis = sandboxTabDragAxis(
-                            change.position.x - down.position.x,
-                            change.position.y - down.position.y,
-                            viewConfiguration.touchSlop,
-                        )
-                    }
-                    if (axis == SandboxTabDragAxis.Horizontal) {
-                        val index = slots.indexAt(change.position.x)
-                        if (index >= 0 && index != lastSelected) {
-                            currentOnSelect.value(index)
-                            lastSelected = index
-                        }
-                        change.consume()
-                    }
-                    // Vertical: deliberately do not consume or change selection.
-                    // The parent Column.verticalScroll retains full drag ownership.
-                }
-            }
-        },
-    )
-}
