@@ -1796,41 +1796,43 @@ class GyModule : XposedModule() {
             SysUiBatteryRuntime.attach(
                 module = this,
                 classLoader = classLoader,
-                onRuntimeFailure = { source, error ->
-                    onPresentationCallbackFailure("battery-" + source, error)
-                },
-                onBatteryState = { state ->
-                    val trace = beginRenderTrace("battery")
-                    val previousCharging = StatusStateStore.snapshot().battery?.charging
-                    StatusStateStore.updateBattery(state)?.let { snapshot ->
-                        if (detailedDiagnosticsEnabled && previousCharging != state.charging) {
-                            logDiagnostic(
-                                level = Log.INFO,
-                                event = "battery.stateCommitted",
-                                component = "batteryState",
-                                state = if (state.charging) "charging" else "not-charging",
-                                "semantic" to (state.semanticState?.name ?: "unavailable"),
-                                "commitElapsedRealtimeMs" to SystemClock.elapsedRealtime(),
-                            )
-                        }
-                        onCombinedStateChanged(
-                            snapshot = snapshot,
-                            trace = markStateCommitted(trace),
-                        )
-                    }
-                },
-                onChargingIconResource = { resourceId ->
-                    val trace = beginRenderTrace("battery-charging-glyph")
-                    StatusStateStore.updateBatteryChargingIcon(resourceId)
-                        ?.let { snapshot ->
+                sinks = SysUiBatterySource.Sinks(
+                    onRuntimeFailure = { source, error ->
+                        onPresentationCallbackFailure("battery-" + source, error)
+                    },
+                    onBatteryState = { state ->
+                        val trace = beginRenderTrace("battery")
+                        val previousCharging = StatusStateStore.snapshot().battery?.charging
+                        StatusStateStore.updateBattery(state)?.let { snapshot ->
+                            if (detailedDiagnosticsEnabled && previousCharging != state.charging) {
+                                logDiagnostic(
+                                    level = Log.INFO,
+                                    event = "battery.stateCommitted",
+                                    component = "batteryState",
+                                    state = if (state.charging) "charging" else "not-charging",
+                                    "semantic" to (state.semanticState?.name ?: "unavailable"),
+                                    "commitElapsedRealtimeMs" to SystemClock.elapsedRealtime(),
+                                )
+                            }
                             onCombinedStateChanged(
                                 snapshot = snapshot,
                                 trace = markStateCommitted(trace),
                             )
                         }
-                },
-                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                    },
+                    onChargingIconResource = { resourceId ->
+                        val trace = beginRenderTrace("battery-charging-glyph")
+                        StatusStateStore.updateBatteryChargingIcon(resourceId)
+                            ?.let { snapshot ->
+                                onCombinedStateChanged(
+                                    snapshot = snapshot,
+                                    trace = markStateCommitted(trace),
+                                )
+                            }
+                    },
+                    onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
+                    isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                ),
             )
         }.onSuccess { hooks ->
             val ready = hooks == SysUiBatterySource.HOOK_COUNT

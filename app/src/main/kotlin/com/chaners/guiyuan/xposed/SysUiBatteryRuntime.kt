@@ -12,21 +12,13 @@ internal object SysUiBatteryRuntime {
     fun attach(
         module: XposedModule,
         classLoader: ClassLoader,
-        onBatteryState: (StatusStateStore.BatteryState) -> Unit,
-        onChargingIconResource: (Int) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: SysUiBatterySource.Sinks,
     ): Int {
         hooks =
             SysUiBatterySource.install(
                 module = module,
                 classLoader = classLoader,
-                onBatteryState = onBatteryState,
-                onChargingIconResource = onChargingIconResource,
-                onRuntimeFailure = onRuntimeFailure,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                sinks = sinks,
             ).size
         return hooks
     }
