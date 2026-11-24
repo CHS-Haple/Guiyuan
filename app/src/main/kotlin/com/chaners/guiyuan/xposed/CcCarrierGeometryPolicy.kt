@@ -1,6 +1,28 @@
 package com.chaners.guiyuan.xposed
 
 internal object CcCarrierGeometryPolicy {
+    // A transition source is frozen in the root's coordinate frame.
+    // Reuse is safe only while that native frame retains the same dimensions;
+    // rotation may retain every View identity but invalidate all frozen points.
+    fun sameNativeRootFrame(
+        capturedWidth: Int,
+        capturedHeight: Int,
+        liveWidth: Int,
+        liveHeight: Int,
+    ): Boolean =
+        capturedWidth > 0 && capturedHeight > 0 &&
+            capturedWidth == liveWidth && capturedHeight == liveHeight
+
+    // Only a completed SystemUI FAKE-host width epoch can replace the
+    // carrier-to-root anchor. A peer-row-only relayout keeps its held motion.
+    fun shouldRecaptureFakeRootOffset(
+        capturedHostWidthPx: Int?,
+        liveHostWidthPx: Int,
+        hostLayoutRequested: Boolean,
+    ): Boolean =
+        liveHostWidthPx > 0 && !hostLayoutRequested &&
+            capturedHostWidthPx != liveHostWidthPx
+
     fun composeSourceGeometry(
         positionAuthority: FloatArray,
         basisAuthority: FloatArray,
@@ -23,7 +45,9 @@ internal object CcCarrierGeometryPolicy {
         logicalWidth: Int,
         isRtl: Boolean,
     ): FloatArray? =
-        endAnchoredSlotGeometry(
+        // This is a virtual motion reference, not a physical slot. Its
+        // captured width can exceed the current host after a rotation.
+        endAnchoredGeometry(
             hostGeometry = carrierGeometry,
             hostWidth = carrierWidth,
             hostHeight = carrierHeight,
@@ -38,12 +62,22 @@ internal object CcCarrierGeometryPolicy {
         slotWidth: Int,
         isRtl: Boolean,
     ): FloatArray? {
+        if (slotWidth > hostWidth) return null
+        return endAnchoredGeometry(hostGeometry, hostWidth, hostHeight, slotWidth, isRtl)
+    }
+
+    private fun endAnchoredGeometry(
+        hostGeometry: FloatArray,
+        hostWidth: Int,
+        hostHeight: Int,
+        slotWidth: Int,
+        isRtl: Boolean,
+    ): FloatArray? {
         if (
             hostGeometry.size != 6 ||
             hostWidth <= 0 ||
             hostHeight <= 0 ||
-            slotWidth <= 0 ||
-            slotWidth > hostWidth
+            slotWidth <= 0
         ) {
             return null
         }

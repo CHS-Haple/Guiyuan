@@ -30,6 +30,10 @@ internal object CcRenderSession {
     private var current: Session? = null
     private var pendingPrearm: PendingPrearm? = null
     private var sceneEligible = false
+    private var sourceScene = SourceScene.UNKNOWN
+    // This affects only the FAKE RenderView. Native QS slot masks stay owned
+    // by the actual onVisibleChanged lifecycle until SystemUI retires them.
+    private var panelVisualOwner = false
 
     internal data class AttachFailure(
         val reason: String,
@@ -144,6 +148,8 @@ internal object CcRenderSession {
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 onProjectionReadinessChanged = onProjectionReadinessChanged,
                 initialSceneEligible = sceneEligible,
+                initialSourceScene = sourceScene,
+                initialPanelVisualOwner = panelVisualOwner,
             )
         current = session
         return try {
@@ -167,11 +173,20 @@ internal object CcRenderSession {
     }
 
     @Synchronized
-    fun beginVisibleCycle(): Boolean =
-        SysUiPresentationOwner.onCcVisibilityChanged(true)
+    fun visualState(): String? = current?.visualState()
 
     @Synchronized
-    fun visualState(): String? = current?.visualState()
+    fun setPanelVisualOwner(owned: Boolean) {
+        if (panelVisualOwner == owned) return
+        panelVisualOwner = owned
+        current?.setPanelVisualOwner(owned)
+    }
+
+    internal fun resolveFakeVisible(
+        nativeRequested: Boolean,
+        projectionReady: Boolean,
+        panelVisualOwner: Boolean,
+    ): Boolean = nativeRequested && projectionReady && panelVisualOwner
 
     @Synchronized
     fun setRequestedVisible(visible: Boolean): Boolean =
@@ -187,6 +202,13 @@ internal object CcRenderSession {
         } else {
             session?.prepareNativePresentation(reused = true)
         }
+    }
+
+    @Synchronized
+    fun setSourceScene(next: SourceScene) {
+        if (sourceScene == next) return
+        sourceScene = next
+        current?.setSourceScene(next)
     }
 
     @Synchronized
@@ -561,6 +583,8 @@ internal object CcRenderSession {
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         private val onProjectionReadinessChanged: (Boolean) -> Unit,
         initialSceneEligible: Boolean,
+        initialSourceScene: SourceScene,
+        initialPanelVisualOwner: Boolean,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val statusBarArea = WeakReference(statusBarArea)
@@ -575,6 +599,8 @@ internal object CcRenderSession {
 
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
+        private var sourceScene = initialSourceScene
+        private var panelVisualOwner = initialPanelVisualOwner
         private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
@@ -701,31 +727,21 @@ internal object CcRenderSession {
         fun visualState(): String =
             "requested=" + requestedVisible +
                 ":eligible=" + sceneEligible +
+                ":childVisibility=" + renderView.visibility +
                 ":childShown=" + renderView.isShown +
                 ":childAlpha=" + renderView.alpha +
                 ":hostShown=" + (host.get()?.isShown ?: "unavailable") +
-                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable")
+                ":hostAlpha=" + (host.get()?.alpha ?: "unavailable") +
+                ":sourceScene=" + sourceScene +
+                ":panelVisualOwner=" + panelVisualOwner +
+                ":effectiveTint=" + (currentTint?.appliedTint?.let(::tintHexDigits) ?: "none") +
+                ":homeTint=" + (HomeRenderSession.currentTintState()?.appliedTint?.let(::tintHexDigits) ?: "none") +
+                ":nativeFakeTint=" + (battery.get()
+                    ?.let(SysUiTintSource::currentState)
+                    ?.appliedTint?.let(::tintHexDigits) ?: "none")
 
         fun setRequestedVisible(visible: Boolean): Boolean {
             if (retired) return false
-            if (
-                !requestedVisible &&
-                visible &&
-                !SysUiPresentationOwner.onCcVisibilityChanged(true)
-            ) {
-                syncPresentation("visibility-visible-cycle-failed")
-                return false
-            }
-            if (requestedVisible && !visible &&
-                !SysUiPresentationOwner.onCcVisibilityChanged(false)
-            ) {
-                requestedVisible = false
-                releaseAll(
-                    { syncPresentation("visibility-hidden-release-failed") },
-                    { SysUiPresentationOwner.failCcPresentation("fake-carrier-hidden-release-unverified") },
-                )
-                return false
-            }
             requestedVisible = visible
             syncPresentation("visibility")
             return projectionReady()
@@ -860,8 +876,21 @@ internal object CcRenderSession {
 
         fun updateTint(update: SysUiTintSource.TintUpdate) {
             val batteryView = battery.get() ?: return
-            if (update.sourceView !== batteryView) return
-            applyTint(update.state, "battery")
+            // A Home-origin fake must also follow changes on the Home source.
+            if (update.sourceView !== batteryView && sourceScene != SourceScene.HOME) return
+            refreshTint()
+        }
+
+        fun setSourceScene(next: SourceScene) {
+            if (sourceScene == next) return
+            sourceScene = next
+            refreshTint()
+        }
+
+        fun setPanelVisualOwner(owned: Boolean) {
+            if (panelVisualOwner == owned) return
+            panelVisualOwner = owned
+            applyVisibility()
         }
 
         fun setSceneEligible(eligible: Boolean) {
@@ -890,8 +919,23 @@ internal object CcRenderSession {
 
         private fun refreshTint() {
             val batteryView = battery.get() ?: return
-            val state = SysUiTintSource.currentState(batteryView) ?: return
-            applyTint(state, "surface")
+            val fakeTint = SysUiTintSource.currentState(batteryView)
+            val homeTint =
+                if (sourceScene == SourceScene.HOME) {
+                    HomeRenderSession.currentTintState()
+                } else {
+                    null
+                }
+            val resolved =
+                CcTintPolicy.resolveSourceTint(
+                    sourceScene = sourceScene,
+                    homeTint = homeTint,
+                    fakeTint = fakeTint,
+                ) ?: return
+            applyTint(
+                resolved,
+                if (resolved === homeTint) "home-source" else "fake-native",
+            )
         }
 
         private fun applyTint(
@@ -912,6 +956,9 @@ internal object CcRenderSession {
             val hostView = host.get() ?: return markLayoutUnavailable()
             val statusArea = statusBarArea.get() ?: return markLayoutUnavailable()
             val carrierView = carrier.get() ?: return markLayoutUnavailable()
+            if (!hostView.isAttachedToWindow || !statusArea.isAttachedToWindow ||
+                !carrierView.isAttachedToWindow
+            ) return markLayoutUnavailable()
             val carrierWidth =
                 SysUiCarrierMetrics.resolveWidthPx(carrierView)
                     ?: return markLayoutUnavailable()
@@ -996,7 +1043,9 @@ internal object CcRenderSession {
                 modelReady = modelReady,
                 tintReady = tintReady,
                 layoutReady = layoutReady,
-                hostAttached = host.get()?.isAttachedToWindow == true,
+                hostAttached = host.get()?.isAttachedToWindow == true &&
+                    statusBarArea.get()?.isAttachedToWindow == true &&
+                    carrier.get()?.isAttachedToWindow == true,
                 nativePresentationReady = nativePresentationReady,
             )
 
@@ -1007,8 +1056,13 @@ internal object CcRenderSession {
         }
 
         private fun applyVisibility() {
-            val visible = requestedVisible && projectionReady()
-            renderView.updateRenderVisibility(visible)
+            renderView.updateRenderVisibility(
+                resolveFakeVisible(
+                    nativeRequested = requestedVisible,
+                    projectionReady = projectionReady(),
+                    panelVisualOwner = panelVisualOwner,
+                ),
+            )
         }
 
         private fun dispatchReadiness(source: String) {

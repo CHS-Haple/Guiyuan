@@ -463,6 +463,7 @@ internal object NativeStatusObserver {
         return IslandVisibilityState(
             visibleState = (readCachedField(fields.visibleState, state) as? Number)?.toInt(),
             inIslandState = (readCachedField(fields.inIslandState, state) as? Number)?.toInt(),
+            hiddenBySpace = readCachedField(fields.hiddenBySpace, state) as? Boolean,
         )
     }
 
@@ -510,6 +511,7 @@ internal object NativeStatusObserver {
             ?: TransitionStateFields(
                 visibleState = resolveCachedField(stateClass, "visibleState"),
                 inIslandState = resolveCachedField(stateClass, "inIslandState"),
+                hiddenBySpace = resolveCachedField(stateClass, "hiddenBySpace"),
             ).let { resolved ->
                 transitionStateFieldCache.putIfAbsent(stateClass, resolved) ?: resolved
             }
@@ -538,11 +540,13 @@ internal object NativeStatusObserver {
     internal data class IslandVisibilityState(
         val visibleState: Int?,
         val inIslandState: Int?,
+        val hiddenBySpace: Boolean?,
     )
 
     private data class TransitionStateFields(
         val visibleState: Field?,
         val inIslandState: Field?,
+        val hiddenBySpace: Field?,
     )
 
     @Synchronized

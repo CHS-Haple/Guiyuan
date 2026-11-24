@@ -38,6 +38,34 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun detachedHomeCarrierCannotBeReady() {
+        assertFalse(HomeRenderSession.resolveOwnerReady(
+            featureEnabled = true,
+            modelReady = true,
+            tintReady = true,
+            layoutReady = true,
+            hostAttached = false,
+        ))
+    }
+
+    @Test
+    fun nativeIntermediateLayoutDoesNotDiscardVerifiedHomeOwnership() {
+        val retire = HomeRenderSession::shouldRetireUnresolvedAnchor
+        assertFalse(retire(true, true, true, false, false))
+        assertFalse(retire(true, true, true, false, true))
+        assertFalse(retire(true, true, true, true, true))
+        assertFalse(retire(false, true, true, true, false))
+    }
+
+    @Test
+    fun completedNativeFrameAndRealDetachReleaseUnsafeHomeOwnership() {
+        val retire = HomeRenderSession::shouldRetireUnresolvedAnchor
+        assertTrue(retire(true, true, true, true, false))
+        assertTrue(retire(true, false, true, false, true))
+        assertTrue(retire(true, true, false, false, true))
+    }
+
+    @Test
     fun overlayVisibilityRequiresControlCenterOwnership() {
         assertTrue(
             HomeRenderSession.resolveOverlayVisible(
@@ -179,6 +207,39 @@ class HomeRenderSessionTest {
         assertEquals(133, resolved.physicalHeightPx)
         assertEquals(18, resolved.logicalTopInsetPx)
         assertEquals(115, resolved.physicalTopPx + resolved.physicalHeightPx)
+    }
+
+    @Test
+    fun homeParentAnchorDoesNotFollowIndependentChargingBatteryMotion() {
+        val parent = requireNotNull(SteadyLayoutResolver.resolve(587, 108, 105, false))
+        assertEquals(482, parent.left)
+        assertEquals(587, parent.right)
+        assertTrue(610 > parent.right) // B1908 transient native Battery endpoint
+        assertEquals(parent, SteadyLayoutResolver.resolve(587, 108, 105, false))
+        val wide = requireNotNull(SteadyLayoutResolver.resolve(1361, 108, 105, false))
+        assertEquals(1256, wide.left)
+        assertEquals(1361, wide.right)
+    }
+
+    @Test
+    fun chargeIslandCanRetainHomeWhileChildLayoutWidthIsTransientlyZero() {
+        val nativeWidth = NativeSlotGeometry.resolveStableChildWidth(
+            layoutWidth = 0,
+            measuredWidth = 105,
+        )
+        assertEquals(105, nativeWidth)
+        val stable = requireNotNull(
+            SteadyLayoutResolver.resolve(587, 108, requireNotNull(nativeWidth), false),
+        )
+        assertEquals(482, stable.left)
+        assertEquals(587, stable.right)
+    }
+
+    @Test
+    fun invalidHomeHostDoesNotClaimTheOverlay() {
+        assertEquals(null, SteadyLayoutResolver.resolve(0, 108, 105, false))
+        assertEquals(null, SteadyLayoutResolver.resolve(587, 0, 105, false))
+        assertEquals(null, SteadyLayoutResolver.resolve(587, 108, 0, false))
     }
 
     @Test

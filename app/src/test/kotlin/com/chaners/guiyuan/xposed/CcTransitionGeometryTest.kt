@@ -8,6 +8,61 @@ import org.junit.Test
 
 class CcTransitionGeometryTest {
     @Test
+    fun rotationInvalidatesFrozenCcGeometryEvenWithSameNativeViewIdentities() {
+        assertTrue(
+            CcCarrierGeometryPolicy.sameNativeRootFrame(
+                capturedWidth = 1440,
+                capturedHeight = 3200,
+                liveWidth = 1440,
+                liveHeight = 3200,
+            ),
+        )
+        // The original CC session matched only the identities of its Views,
+        // so it could continue carrying portrait source frames into landscape.
+        assertFalse(
+            CcCarrierGeometryPolicy.sameNativeRootFrame(
+                capturedWidth = 1440,
+                capturedHeight = 3200,
+                liveWidth = 3200,
+                liveHeight = 1440,
+            ),
+        )
+        assertFalse(
+            CcCarrierGeometryPolicy.sameNativeRootFrame(
+                capturedWidth = 3200,
+                capturedHeight = 1440,
+                liveWidth = 1440,
+                liveHeight = 3200,
+            ),
+        )
+        assertFalse(CcCarrierGeometryPolicy.sameNativeRootFrame(0, 0, 1440, 3200))
+        assertTrue(CcCarrierGeometryPolicy.sameNativeRootFrame(3200, 1440, 3200, 1440))
+    }
+
+    @Test
+    fun settledNativeFakeHostReflowRecapturesCachedCarrierOffset() {
+        val policy = CcCarrierGeometryPolicy
+        assertFalse(policy.shouldRecaptureFakeRootOffset(587, 1361, true))
+        assertFalse(policy.shouldRecaptureFakeRootOffset(587, 0, false))
+        assertFalse(policy.shouldRecaptureFakeRootOffset(587, 587, false))
+        assertTrue(policy.shouldRecaptureFakeRootOffset(587, 1361, false))
+        assertTrue(policy.shouldRecaptureFakeRootOffset(null, 587, false))
+        assertTrue(policy.shouldRecaptureFakeRootOffset(1361, 587, false))
+
+        val carrier = floatArrayOf(180f, 70f, 105f, 0f, 0f, 108f)
+        val fakeRoot = floatArrayOf(100f, 70f, 587f, 0f, 0f, 108f)
+        val stale = CcTransitionSpatialPolicy.rootAnchoredCarrier(
+            carrier = carrier, root = fakeRoot, rootRelativeX = 30f,
+        )
+        val corrected = CcTransitionSpatialPolicy.rootAnchoredCarrier(
+            carrier = carrier, root = fakeRoot,
+            rootRelativeX = carrier[0] - fakeRoot[0],
+        )
+        assertEquals(130f, stale[0], 0.0001f)
+        assertEquals(180f, corrected[0], 0.0001f)
+    }
+
+    @Test
     fun nativeWifiReflowUsesLastCoherentBatteryRelativeTarget() {
         val normalWifi = floatArrayOf(1195.5f, 240f, 75f, 0f, 0f, 75f)
         val battery = floatArrayOf(1330.5f, 240f, 135f, 0f, 0f, 169f)
@@ -140,6 +195,35 @@ class CcTransitionGeometryTest {
                     currentCarrier = logicalCarrier,
                 )
         assertEquals(1240f, carried[0], 0.0001f)
+    }
+
+    @Test
+    fun virtualMotionCarrierRetainsEndAnchorWhenNativeHostContracts() {
+        val host = floatArrayOf(872f, 129.5f, 710f, 0f, 0f, 169f)
+        val ltr = requireNotNull(
+            CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
+                host, 710, 169, 1220, false,
+            ),
+        )
+        val rtl = requireNotNull(
+            CcCarrierGeometryPolicy.endAnchoredMotionCarrierGeometry(
+                host, 710, 169, 1220, true,
+            ),
+        )
+        assertEquals(617f, ltr[0], 0.0001f)
+        assertEquals(1127f, rtl[0], 0.0001f)
+        assertEquals(1220f, ltr[2], 0.0001f)
+        assertEquals(1220f, rtl[2], 0.0001f)
+
+        val sourceCarrier = floatArrayOf(2240f, 54f, 1220f, 0f, 0f, 108f)
+        val source = floatArrayOf(2902.5f, 55f, 105f, 0f, 0f, 108f)
+        val carried = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
+            source, sourceCarrier, ltr,
+        )
+        assertEquals(1279.5f, carried[0], 0.0001f)
+        assertEquals(105f, carried[2], 0.0001f)
+        assertNull(CcCarrierGeometryPolicy.endAnchoredSlotGeometry(host, 710, 169, 1220, false))
+        assertNull(CcCarrierGeometryPolicy.endAnchoredSlotGeometry(host, 710, 169, 1220, true))
     }
 
     @Test
@@ -519,4 +603,75 @@ class CcTransitionTopologyTest {
             ParticipantVisualSnapshot.classifyComponents(composite),
         )
     }
+
+    @Test
+    fun nativePeerMotionReachesFinalWithoutChangingMeasuredRowOrDrifting() {
+        val first = CcTransitionSpatialPolicy.nativePeerTranslationX(
+            baselineX = 0f, appliedX = 0f,
+            fakePeerRootX = 1100f, finalPeerRootX = 925f,
+            localToRootScaleX = 1f, progress = 0.6f,
+        )
+        assertEquals(-105f, first!!, 0.001f)
+        val held = CcTransitionSpatialPolicy.nativePeerTranslationX(
+            baselineX = 0f, appliedX = first,
+            fakePeerRootX = 995f, finalPeerRootX = 925f,
+            localToRootScaleX = 1f, progress = 0.6f,
+        )
+        assertEquals(first, held!!, 0.001f)
+        val reverse = CcTransitionSpatialPolicy.nativePeerTranslationX(
+            baselineX = 0f, appliedX = first,
+            fakePeerRootX = 995f, finalPeerRootX = 925f,
+            localToRootScaleX = 1f, progress = 0.2f,
+        )
+        assertEquals(-35f, reverse!!, 0.001f)
+        val endpoint = CcTransitionSpatialPolicy.nativePeerTranslationX(
+            baselineX = 0f, appliedX = reverse,
+            fakePeerRootX = 1065f, finalPeerRootX = 925f,
+            localToRootScaleX = 1f, progress = 1f,
+        )
+        assertEquals(-175f, endpoint!!, 0.001f)
+        assertEquals(
+            0f,
+            CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = 0f, appliedX = first,
+                fakePeerRootX = 995f, finalPeerRootX = 925f,
+                localToRootScaleX = 1f, progress = 0f,
+            )!!,
+            0.001f,
+        )
+        assertEquals(
+            -147f,
+            CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = 3f, appliedX = -47f,
+                fakePeerRootX = 975f, finalPeerRootX = 900f,
+                localToRootScaleX = 0.5f, progress = 0.75f,
+            )!!,
+            0.001f,
+        )
+        assertEquals(
+            -15f,
+            CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = 0f, appliedX = -10f,
+                fakePeerRootX = 1020f, finalPeerRootX = 1060f,
+                localToRootScaleX = -2f, progress = 0.5f,
+            )!!,
+            0.001f,
+        )
+        assertNull(
+            CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = 0f, appliedX = 0f,
+                fakePeerRootX = -Float.MAX_VALUE,
+                finalPeerRootX = Float.MAX_VALUE,
+                localToRootScaleX = 1f, progress = 0.5f,
+            ),
+        )
+        assertNull(
+            CcTransitionSpatialPolicy.nativePeerTranslationX(
+                baselineX = 0f, appliedX = 0f,
+                fakePeerRootX = 1100f, finalPeerRootX = 925f,
+                localToRootScaleX = 0f, progress = 0.5f,
+            ),
+        )
+    }
+
 }

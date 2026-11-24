@@ -4,6 +4,7 @@ import android.graphics.Rect
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.prefs.VisualPrefsOwner
@@ -52,15 +53,11 @@ internal object SysUiPresentationOwner {
     private const val HOT_RELOAD_OLD_GENERATION = "hotReload-oldGeneration"
     private const val FAIL_NATIVE_SOURCE_PREFIX = "fail-native:"
     private const val REASON_STATUS_ICON_GROUP_RELEASED = "status-icon-group-released"
-    private const val LOG_LIVE_WIDTH = " liveWidth="
-    private const val LOG_APPLIED_WIDTH = " appliedWidth="
     private const val LOG_CARRIER_RESERVATION_END_PADDING = "carrierReservation=status-icons-end-padding "
     private const val LOG_NATIVE_IGNORED_SLOT_EXCLUSION = " slotExclusion=session-native-ignored-slots "
     private const val LOG_BATTERY_CARRIER_CLIP_AUTHORITY = "carrierAuthority=battery_icon_container visualMask=clipBounds "
     private const val LOG_NEXT_NATIVE_STATUS_ICON_LAYOUT = " next=native-status-icons-onLayout"
-    private const val LOG_CC_FAKE_SESSION_OWNER = " owner=control-center-fake-session"
     private const val LOG_APPLIED_PADDING_END = " appliedPaddingEnd="
-    private const val LOG_NATIVE_WIDTH = " nativeWidth="
 
     private val representedSlots =
         linkedSetOf("wifi", "mobile", "stacked_mobile", "airplane", "no_sim")
@@ -160,8 +157,32 @@ internal object SysUiPresentationOwner {
     internal fun homeClaimed(): Boolean =
         current?.hasPresentationClaim() == true
 
+    @Synchronized
+    internal fun homeReleased(): Boolean =
+        current == null && homeRetirement.pending == null
+
+    @Synchronized
+    internal fun keyguardFamilyReleased(): Boolean =
+        keyguardFamilyCurrent == null && familyRetirement.pending == null
+
+    @Synchronized
+    internal fun ccReleased(): Boolean =
+        controlCenterCurrent == null && ccRetirement.pending == null
+
+    @Synchronized
+    internal fun allScenesReleased(): Boolean =
+        current == null &&
+            controlCenterCurrent == null &&
+            keyguardFamilyCurrent == null &&
+            homeRetirement.pending == null &&
+            ccRetirement.pending == null &&
+            familyRetirement.pending == null
+
     internal fun homeCarrierVisible(): Boolean =
         current?.isNativeCarrierPresentationVisible() == true
+
+    @Synchronized
+    internal fun homeBatteryNativeHidden(): Boolean? = current?.nativeHomeBatteryHidden()
 
     @Synchronized
     internal fun homePrivacyOccupiesEnd(batteryHost: ViewGroup): Boolean? =
@@ -597,7 +618,8 @@ internal object SysUiPresentationOwner {
         }
         nativeLayoutTarget.requestLayout()
         eventSink?.invoke(
-            "homePresentation active carrier=MiuiStatusBatteryContainer.overlay " +
+            "homePresentation active nativeCarrier=MiuiStatusBatteryContainer " +
+                "renderHost=MiuiNotificationStatusContainer.overlay " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
                 LOG_MASKED_VIEWS + masked +
                 " slotExclusion=scoped-native-measure-layout " +
@@ -911,7 +933,7 @@ internal object SysUiPresentationOwner {
                 batteryCarrier = batteryCarrier,
             ) == true
         if (!sameHost && (host.width <= 0 || host.layoutParams?.width != host.width)) {
-            // The fake carrier must finish its native layout before we lease its width.
+            // The fake carrier must finish the native width layout before projection.
             return Result.Failure("fake-carrier-native-layout-pending", retryAfterLayout = true)
         }
         if (sameHost) {
@@ -1021,24 +1043,6 @@ internal object SysUiPresentationOwner {
             controlCenterReadySink = null
         }
     }
-
-    @Synchronized
-    fun onCcVisibilityChanged(visible: Boolean): Boolean =
-        controlCenterCurrent?.onCcVisibilityChanged(visible) ?: true
-
-    @Synchronized
-    fun updateCcTransitionReservation(
-        requestedSlotWidthPx: Int,
-    ): Boolean =
-        controlCenterCurrent
-            ?.updateTransitionReservation(requestedSlotWidthPx)
-            ?: false
-
-    @Synchronized
-    fun clearCcTransitionReservation(source: String): Boolean =
-        controlCenterCurrent
-            ?.clearTransitionReservation(source)
-            ?: true
 
     @Synchronized
     fun failCcPresentation(reason: String): Boolean {
@@ -1225,17 +1229,8 @@ internal object SysUiPresentationOwner {
                         ?: keyguardFamilyCurrent?.takeIf { candidate -> candidate.owns(target) }
                 } ?: return@Hooker chain.proceed()
 
-            emitDiagnostic {
-                session.traceFakeCarrierWidth(
-                    if (refreshMasksAfter) "layout-before" else "measure-before",
-                )
-            }
             val result = session.withRepresentedSlotsIgnored { chain.proceed() }
-            emitDiagnostic {
-                session.traceFakeCarrierWidth(
-                    if (refreshMasksAfter) "layout-after" else "measure-after",
-                )
-            }
+            if (refreshMasksAfter) emitDiagnostic { session.observeNativeFakeCarrierGeometry() }
             afterNativeCallback(
                 session,
                 if (refreshMasksAfter) "layout-post-native" else "measure-post-native",
@@ -1245,6 +1240,7 @@ internal object SysUiPresentationOwner {
                 }
                 if (
                     refreshMasksAfter &&
+                    session.reconcileCcNativeLayout() &&
                     session.validateNativeLayoutBeforeVisualMask()
                 ) {
                     val masked = session.refreshClipMasks()
@@ -1450,7 +1446,7 @@ internal object SysUiPresentationOwner {
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
                 LOG_MASKED_VIEWS + maskedViews +
                 LOG_NATIVE_IGNORED_SLOT_EXCLUSION +
-                "carrierReservation=qs-fake-capacity-lease+status-icons-end-padding " +
+                "carrierReservation=status-icons-end-padding(native-fake-width-observed) " +
                 LOG_BATTERY_CARRIER_CLIP_AUTHORITY +
                 "cutover=compact-layout-ready nativeLayoutReservationOwner=single",
         )
@@ -1564,41 +1560,15 @@ internal object SysUiPresentationOwner {
         private var mirrorIslandSuppressionLogged = false
         private var nativePadding: PaddingState? = null
         private var appliedPadding: PaddingState? = null
-        private var nativeFakeCarrierLayoutWidthPx: Int? = null
-        private var fakeCarrierParentWidth: Int? = null
-        private var appliedFakeCarrierWidthPx: Int? = null
-        private var fakeCarrierCapacityDeltaPx: Int? = null
-        private enum class LeasePhase {
-            PREARM,
-            VISIBLE,
-            SUPPRESSED,
-        }
-
-        private var capacityLeaseAwaitingLayout = false
-        private var nativeOverhangAccepted = false
-        private var firstLeaseWidthMismatch: String? = null
-        private var leasePhase = LeasePhase.PREARM
-        private var pendingNativeCarrierWidth: Int? = null
+        // One temporary FAKE width receipt; native owns every unleased epoch.
+        private var ccNativeWidthPx: Int? = null
+        private var ccAppliedWidthPx: Int? = null
+        private var lastObservedNativeFakeWidthPx: Int? = null
         private var batteryWidthUnavailable = false
         private var aodPeersReleased = false
         private var aodBatteryReleased = false
         private var nativeLayoutOwnershipDeferred = false
         private var ownedPersistentIgnoredSlots: List<String>? = null
-        private var transitionRequestedSlotWidthPx: Int? = null
-        private val fakePeerMetrics =
-            if (
-                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                statusIcons.javaClass.name ==
-                    "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
-            ) {
-                optionalNativeRead {
-                    val cls = statusIcons.javaClass
-                    cls.getDeclaredField("measureViews").apply { isAccessible = true } to
-                        cls.getDeclaredField("iconSpacing").apply { isAccessible = true }
-                }
-            } else {
-                null
-            }
         private val clipStates = mutableListOf<ClipState>()
         private val mirroredPeerClipStates = mutableListOf<ClipState>()
         // Both views report width changes to the same reservation owner.
@@ -1618,6 +1588,160 @@ internal object SysUiPresentationOwner {
                     syncEndReservation()
                 }
             }
+
+        // Native QS_FAKE's own width changes on rotation, independently of
+        // battery/carrier layout. Reconcile its receipt after a complete frame.
+        private val ccFakeHostLayoutListener =
+            View.OnLayoutChangeListener {
+                    _,
+                    left,
+                    _,
+                    right,
+                    _,
+                    oldLeft,
+                    _,
+                    oldRight,
+                    _,
+                ->
+                if (right - left != oldRight - oldLeft) awaitCcFakeHostReflow()
+            }
+        private var ccReflowObserver: ViewTreeObserver? = null
+        private var ccReflowListener: ViewTreeObserver.OnPreDrawListener? = null
+
+        private fun releaseCcReflowListener() {
+            val observer = ccReflowObserver
+            val listener = ccReflowListener
+            if (observer != null && listener != null && observer.isAlive) {
+                observer.removeOnPreDrawListener(listener)
+            }
+            ccReflowObserver = null
+            ccReflowListener = null
+        }
+
+        private fun awaitCcFakeHostReflow() {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                !active || !started || !compactLayoutReady
+            ) return
+            val fakeHost = host.get()?.takeIf { it.isAttachedToWindow } ?: return
+            val observer = fakeHost.viewTreeObserver.takeIf { it.isAlive } ?: return
+            if (ccReflowListener != null) {
+                if (ccReflowObserver === observer) return
+                // A rotated/replaced native tree may leave an old observer alive.
+                releaseCcReflowListener()
+            }
+            val listener = ViewTreeObserver.OnPreDrawListener {
+                afterNativeCallback(this, "cc-fake-host-reflow-pre-draw") {
+                    val nativeParent = fakeHost.parent as? View
+                    val peerRow = statusIcons.get()
+                    if (!active || !started || !compactLayoutReady ||
+                        !fakeHost.isAttachedToWindow
+                    ) {
+                        releaseCcReflowListener()
+                    } else if (
+                        nativeParent?.isLayoutRequested != true &&
+                        peerRow?.isLayoutRequested == false &&
+                        nativeFakeCarrierLayoutSettled()
+                    ) {
+                        val applied = ccAppliedWidthPx
+                        val replaced =
+                            applied != null &&
+                                FakeCarrierNativeGeometryPolicy.nativeReplacedLease(
+                                    applied,
+                                    fakeHost.layoutParams?.width ?: -1,
+                                )
+                        if (!syncEndReservation()) {
+                            releaseCcReflowListener()
+                        } else if (replaced && ccAppliedWidthPx == null) {
+                            // Do not reborrow in the callback that yielded
+                            // SystemUI's new width. Recheck its next drawn frame.
+                            fakeHost.postInvalidateOnAnimation()
+                        } else {
+                            releaseCcReflowListener()
+                        }
+                    }
+                }
+                true
+            }
+            ccReflowObserver = observer
+            ccReflowListener = listener
+            observer.addOnPreDrawListener(listener)
+        }
+
+        // One native traversal is needed after applying persistent ignored slots.
+        // A child's onLayout may finish before its parent's isLayoutRequested clears;
+        // commit CC cutover only at pre-draw, after the complete native layout.
+        private var ccCutoverObserver: ViewTreeObserver? = null
+        private var ccCutoverListener: ViewTreeObserver.OnPreDrawListener? = null
+
+        private fun releaseCcCutoverListener() {
+            val observer = ccCutoverObserver
+            val listener = ccCutoverListener
+            ccCutoverObserver = null
+            ccCutoverListener = null
+            if (observer?.isAlive == true && listener != null) {
+                observer.removeOnPreDrawListener(listener)
+            }
+        }
+
+        private fun awaitCcNativeLayout(group: ViewGroup) {
+            if (
+                surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                !active || !started || !deferVisualMaskUntilLayout ||
+                compactLayoutReady || nativeLayoutOwnershipDeferred ||
+                ccCutoverListener != null
+            ) return
+            val observer = group.viewTreeObserver
+            if (!observer.isAlive) {
+                onEvent(eventPrefix + " nativeCutover=deferred reason=view-tree-unavailable")
+                return
+            }
+
+            val listener = ViewTreeObserver.OnPreDrawListener {
+                var draw = true
+                afterNativeCallback(this, "cc-native-cutover-pre-draw") {
+                    if (!active || !started || compactLayoutReady || nativeLayoutOwnershipDeferred) {
+                        releaseCcCutoverListener()
+                    } else if (shouldAdoptNativeLayout(group)) {
+                        if (!syncEndReservation()) {
+                            releaseCcCutoverListener()
+                        } else if (shouldAdoptNativeLayout(group)) {
+                            releaseCcCutoverListener()
+                            val masked = refreshClipMasks()
+                            onNativeLayoutCompleted(masked, "native-pre-draw-after-complete-layout")
+                        } else if (group.isLayoutRequested) {
+                            // An end-padding write requested a second native measure pass.
+                            draw = false
+                        }
+                    }
+                    // A completed native frame with no pending layout and an
+                    // invalid host contract cannot become ready by waiting longer.
+                    // Release the affected CC owner instead of leaving ignored
+                    // slots active with no replacement visual.
+                    val nativeHost = host.get()
+                    if (
+                        ccCutoverListener != null &&
+                        nativeHost?.isAttachedToWindow == true &&
+                        !nativeHost.isLayoutRequested &&
+                        !group.isLayoutRequested &&
+                        group.isLaidOut &&
+                        !nativeFakeCarrierLayoutSettled()
+                    ) {
+                        releaseCcCutoverListener()
+                        onFailNative("fake-native-carrier-layout-contract-invalid")
+                    }
+                }
+                draw
+            }
+            ccCutoverObserver = observer
+            ccCutoverListener = listener
+            observer.addOnPreDrawListener(listener)
+            if (!group.isLayoutRequested) group.requestLayout()
+            onEvent(
+                eventPrefix + " nativeCutover=await-native-layout" +
+                    " iconsLayoutRequested=" + group.isLayoutRequested +
+                    " hostSettled=" + nativeFakeCarrierLayoutSettled(),
+            )
+        }
 
         fun matches(
             host: ViewGroup,
@@ -1668,8 +1792,15 @@ internal object SysUiPresentationOwner {
                     ownedPersistentIgnoredSlots != null ||
                         aodBatteryReleased ||
                         clipStates.isNotEmpty() ||
-                        appliedPadding != null
+                        appliedPadding != null ||
+                        ccAppliedWidthPx != null
                 )
+
+        fun nativeHomeBatteryHidden(): Boolean? {
+            if (!active || surfaceName != HOME_SURFACE) return null
+            val container = batteryContainer.get() ?: return null
+            return optionalNativeRead { batteryHideField.getBoolean(container) }
+        }
 
         fun nativeHomePrivacyOccupiesEnd(): Boolean? {
             if (!active || surfaceName != HOME_SURFACE) return null
@@ -1739,11 +1870,12 @@ internal object SysUiPresentationOwner {
                     compactLayoutReady = false
                     return refreshClipMasks()
                 }
-                syncEndReservation()
+                if (!syncEndReservation()) return 0
                 if (isLayoutCutoverReady()) {
                     layoutReadyCallback = null
                     return refreshClipMasks()
                 }
+                statusIcons.get()?.let(::awaitCcNativeLayout)
                 return if (
                     deferVisualMaskUntilLayout && preMaskBeforeLayout
                 ) {
@@ -1764,6 +1896,9 @@ internal object SysUiPresentationOwner {
             nativePadding = PaddingState.from(group)
             battery.get()?.addOnLayoutChangeListener(reservationWidthListener)
             batteryCarrier.get()?.addOnLayoutChangeListener(reservationWidthListener)
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                host.get()?.addOnLayoutChangeListener(ccFakeHostLayoutListener)
+            }
             if (deferNativeLayoutOwnershipUntilCommit) {
                 nativeLayoutOwnershipDeferred = true
                 compactLayoutReady = false
@@ -1811,6 +1946,7 @@ internal object SysUiPresentationOwner {
                             "native-until-native-layout"
                         },
                 )
+                awaitCcNativeLayout(group)
                 return masked
             }
 
@@ -1950,11 +2086,12 @@ internal object SysUiPresentationOwner {
             layoutReadyCallback = null
             compactLayoutReady = false
             nativeLayoutOwnershipDeferred = false
-            leasePhase = LeasePhase.PREARM
-            pendingNativeCarrierWidth = null
             deferVisualMaskUntilLayout = false
 
             val failures = ArrayList<Throwable>(1)
+            releaseAttempt(failures) { releaseCcCutoverListener() }
+            releaseAttempt(failures) { releaseCcReflowListener() }
+            releaseAttempt(failures) { host.get()?.removeOnLayoutChangeListener(ccFakeHostLayoutListener) }
             releaseAttempt(failures) { host.get()?.removeOnAttachStateChangeListener(this) }
             releaseAttempt(failures) {
                 battery.get()?.removeOnLayoutChangeListener(reservationWidthListener)
@@ -1970,14 +2107,16 @@ internal object SysUiPresentationOwner {
             if (appliedPadding != null) {
                 failures += IllegalStateException("native-padding-restore-incomplete")
             }
-            if (appliedFakeCarrierWidthPx != null) {
-                failures += IllegalStateException("native-capacity-restore-incomplete")
-            }
             releaseAttempt(failures) {
                 ignoredSlotsRestored = restorePersistentIgnoredSlots(requestLayout)
             }
             if (ownedPersistentIgnoredSlots != null) {
                 failures += IllegalStateException("native-ignored-slots-restore-incomplete")
+            }
+            releaseAttempt(failures) {
+                if (!restoreCcFakeCapacityLease()) {
+                    failures += IllegalStateException("cc-fake-width-restore-incomplete")
+                }
             }
             releaseAttempt(failures) { restored += restoreClipMasks(clipStates, failures) }
             releaseAttempt(failures) {
@@ -2011,10 +2150,9 @@ internal object SysUiPresentationOwner {
                 deferVisualMaskUntilLayout = deferVisualMaskUntilLayout,
                 laidOut = group.isLaidOut,
                 layoutRequested = group.isLayoutRequested,
-                capacityLeaseAwaitingLayout = capacityLeaseAwaitingLayout,
                 width = group.width,
                 height = group.height,
-            )
+            ) && (surfaceName != CONTROL_CENTER_FAKE_SURFACE || nativeFakeCarrierLayoutSettled())
 
         // Notify native fallback without allowing callback errors to replace the cause.
         @Suppress("TooGenericExceptionCaught")
@@ -2142,6 +2280,11 @@ internal object SysUiPresentationOwner {
                 return false
             }
             ownedPersistentIgnoredSlots = owned
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && owned.isNotEmpty()) {
+                // Native icon-row measurement must reflect the newly ignored slots,
+                // even when SystemUI's addIgnoredSlots leaves prior bounds intact.
+                group.requestLayout()
+            }
             onEvent(
                 eventPrefix + " ignoredSlots active lifetime=presentation-session" +
                     " owned=" + owned.joinToString(",") +
@@ -2229,152 +2372,24 @@ internal object SysUiPresentationOwner {
             return restored
         }
 
-        fun onCcVisibilityChanged(visible: Boolean): Boolean {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
-            if (visible) {
-                if (leasePhase == LeasePhase.VISIBLE) {
-                    return true
-                }
-                leasePhase = LeasePhase.PREARM
-
-                // The first visible edge is the ownership handoff from hidden/prearm
-                // to the visible QS_FAKE cycle. Reconcile while hidden ownership is
-                // still in force so a native hidden relayout can be adopted instead
-                // of being misclassified as a visible writer conflict.
-                if (!syncEndReservation()) {
-                    return false
-                }
-                leasePhase = LeasePhase.VISIBLE
-                return true
-            }
-
-            if (leasePhase == LeasePhase.SUPPRESSED) return true
-
-            // Close the transition reservation while native layout writes are
-            // still allowed. Only then suppress/release the capacity lease.
-            // This keeps abrupt visible=false edges from retaining expanded
-            // peer padding if HyperOS skips a fraction=0 sample.
-            if (!clearTransitionReservation("visible-cycle-hidden")) {
-                return false
-            }
-            // Suppress reentrant leasing until the native width receipt is released.
-            leasePhase = LeasePhase.SUPPRESSED
-            return try {
-                releaseCapacityLeaseAtHidden()
-            } finally {
-                if (active && appliedFakeCarrierWidthPx != null) {
-                    leasePhase = LeasePhase.VISIBLE
-                }
-            }
-        }
-
-        fun updateTransitionReservation(
-            requestedSlotWidthPx: Int,
-        ): Boolean {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return false
-            val normalized = requestedSlotWidthPx.coerceAtLeast(0)
-            if (transitionRequestedSlotWidthPx == normalized) return true
-            transitionRequestedSlotWidthPx = normalized
-            return syncEndReservation()
-        }
-
-        fun clearTransitionReservation(source: String): Boolean {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
-            if (transitionRequestedSlotWidthPx == null) return true
-            transitionRequestedSlotWidthPx = null
-            val restored = syncEndReservation()
-            onEvent(
-                eventPrefix +
-                    " transitionReservation cleared source=" + source +
-                    " restoredCompact=" + restored,
-            )
-            return restored
-        }
-
-        private fun measuredNativePeerWidth(group: ViewGroup): Int? {
-            val (viewsField, spacingField) = fakePeerMetrics ?: return null
-            val views = optionalNativeRead { viewsField.get(group) as? List<*> } ?: return null
-            val spacing = optionalNativeRead { spacingField.getInt(group) }
-                ?: return null
-            if (spacing < 0 || views.size > group.childCount) return null
-
-            // Match the native onMeasure inputs, including its ignored-slot filter.
-            var width = group.paddingStart.toLong()
-            views.forEachIndexed { index, item ->
-                val view = item as? View ?: return null
-                if (view.parent !== group || view.measuredWidth < 0) return null
-                val measured =
-                    view.measuredWidth.toLong() + view.paddingStart + view.paddingEnd
-                if (measured < 0L) return null
-                if (measured > 0L) {
-                    width += measured
-                    if (index > 0) width += spacing
-                }
-            }
-            return width.takeIf {
-                it >= 0L && it <= Int.MAX_VALUE.toLong()
-            }?.toInt()
-        }
-
-        // The fake carrier lease and the actual native peer row are distinct
-        // capacity witnesses; reject only when neither can fit the reservation.
-        private fun ViewGroup.checkedFakeCarrierCapacityDelta(
-            hostView: ViewGroup,
-            baseline: PaddingState,
-            nativeHide: Boolean,
-            compactSlotWidthPx: Int,
-            requestedReservationDelta: Int,
-        ): Int? {
-            val capacityDeltaPx =
-                ensureFakeCarrierCapacityLease(hostView)
-                    ?: return null
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
-                val capacityBound =
-                    EndReservationPolicy.resolveCapacityBoundedReservationDelta(
-                        nativeHide = nativeHide,
-                        compactSlotWidthPx = compactSlotWidthPx,
-                        requestedReservationDeltaPx = requestedReservationDelta,
-                        capacityDeltaPx = capacityDeltaPx,
-                    )
-                if (requestedReservationDelta > capacityBound) {
-                    // A fake carrier's width lease does not bound the icon row's
-                    // end padding when the native measured peers still fit.
-                    val contentWidth =
-                        measuredNativePeerWidth(this)
-                            ?: run {
-                                onFailNative("fake-native-peer-measure-unavailable")
-                                return null
-                            }
-                    if (
-                        !EndReservationPolicy.fitsFakeNativePeerRow(
-                            rowWidthPx = width,
-                            contentWidthPx = contentWidth,
-                            targetPaddingEndPx = baseline.end + requestedReservationDelta,
-                        )
-                    ) {
-                        onFailNative("fake-native-peer-row-overflow")
-                        return null
-                    }
-                }
-            }
-            return capacityDeltaPx
-        }
-
         fun syncEndReservation(): Boolean {
             if (!active || aodPeersReleased) return true
-            if (nativeLayoutOwnershipDeferred) {
-                return true
-            }
-            if (
-                surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
-                leasePhase == LeasePhase.SUPPRESSED
-            ) {
-                return true
-            }
+            if (nativeLayoutOwnershipDeferred) return true
+            if (!ensureCcFakeCapacityLease()) return false
             val group = statusIcons.get() ?: run { onFailNative(REASON_STATUS_ICON_GROUP_RELEASED); return false }
             val container = batteryContainer.get() ?: run { onFailNative("battery-container-released"); return false }
             val batteryView = battery.get() ?: run { onFailNative("battery-view-released"); return false }
             val hostView = host.get() ?: run { onFailNative(surfaceName + "-host-released"); return false }
+            // The native fake host can be settled while its peer row still has
+            // a pending measure after an orientation or battery-mode change.
+            // measureViews and its prior width are then not a capacity witness.
+            // The existing native onLayout/pre-draw reconciliation retries.
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE &&
+                !EndReservationPolicy.fakeNativePeerMeasureReady(
+                    carrierSettled = nativeFakeCarrierLayoutSettled(),
+                    peerRowLayoutRequested = group.isLayoutRequested,
+                )
+            ) return true
             val baseline = nativePadding ?: PaddingState.from(group).also { nativePadding = it }
             val live = PaddingState.from(group)
             val previousApplied = appliedPadding
@@ -2441,32 +2456,15 @@ internal object SysUiPresentationOwner {
                     baseSlotWidthPx = resolved.visualWidth,
                     userScale = VisualPrefsOwner.current().combinedScale,
                 )
-            val requestedSlotWidthPx =
-                EndReservationPolicy.resolveRequestedSlotWidth(
-                    compactSlotWidthPx = compactSlotWidthPx,
-                    transitionRequestedSlotWidthPx = transitionRequestedSlotWidthPx,
-                )
             val requestedReservationDelta =
                 EndReservationPolicy.resolvePaddingEndDelta(
                     nativeHide = nativeHide || homePrivacyOccupiesEnd,
                     actualBatteryWidthPx = actualBatteryWidthPx,
-                    requestedSlotWidthPx = requestedSlotWidthPx,
+                    requestedSlotWidthPx = compactSlotWidthPx,
                 )
-            val capacityDeltaPx =
-                group.checkedFakeCarrierCapacityDelta(
-                    hostView = hostView,
-                    baseline = baseline,
-                    nativeHide = nativeHide,
-                    compactSlotWidthPx = compactSlotWidthPx,
-                    requestedReservationDelta = requestedReservationDelta,
-                ) ?: return false
+            // Native status-icon onMeasure/onLayout owns peer underflow.
+            // Lease only the current projected occupancy via paddingEnd.
             val reservationDelta = requestedReservationDelta
-            val capacityReservationDeltaPx =
-                EndReservationPolicy.resolveFakeCarrierCapacityRequirement(
-                    nativeHide = nativeHide,
-                    compactSlotWidthPx = compactSlotWidthPx,
-                    reservationDeltaPx = reservationDelta,
-                )
             val target =
                 PaddingState(
                     baseline.start,
@@ -2485,11 +2483,7 @@ internal object SysUiPresentationOwner {
             if (lastReservationDelta != reservationDelta) {
                 lastReservationDelta = reservationDelta
                 val shouldReport =
-                    surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
-                        (
-                            isDetailedDiagnosticsEnabled() &&
-                                transitionRequestedSlotWidthPx == null
-                        )
+                    surfaceName != CONTROL_CENTER_FAKE_SURFACE || isDetailedDiagnosticsEnabled()
                 if (shouldReport) {
                     onEvent(
                         eventPrefix + " endReservation nativeHide=" + nativeHide +
@@ -2498,19 +2492,19 @@ internal object SysUiPresentationOwner {
                             " actualBatteryWidth=" + actualBatteryWidthPx +
                             " compactSlotWidth=" + compactSlotWidthPx +
                             " visualScale=" + VisualPrefsOwner.current().combinedScale +
-                            " requestedSlotWidth=" + requestedSlotWidthPx +
-                            " transitionRequestedSlotWidth=" +
-                            (transitionRequestedSlotWidthPx ?: -1) +
+                            " requestedSlotWidth=" + compactSlotWidthPx +
                             " requestedPaddingEndDelta=" + requestedReservationDelta +
                             " paddingEndDelta=" + reservationDelta +
-                            " capacityClamped=" + (reservationDelta != requestedReservationDelta) +
                             " basePaddingEnd=" + baseline.end +
                             LOG_APPLIED_PADDING_END + target.end +
-                            " fakeCarrierWidth=" + (appliedFakeCarrierWidthPx ?: -1) +
-                            " fakeCarrierCapacityDelta=" + capacityDeltaPx +
-                            " fakeCarrierCapacityRequired=" + capacityReservationDeltaPx +
-                            " carrierAuthority=battery_icon_container " +
-                            "owner=qs-fake-capacity-lease+statusIcons-paddingEnd",
+                            (if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                                " nativeFakeCarrierWidth=" + (hostView.layoutParams?.width ?: -1) +
+                                    " carrierAuthority=battery_icon_container " +
+                                    "owner=systemui-fake-width+statusIcons-paddingEnd"
+                            } else {
+                                " carrierAuthority=battery_icon_container " +
+                                    "owner=statusIcons-paddingEnd"
+                            }),
                     )
                 }
             }
@@ -2553,323 +2547,120 @@ internal object SysUiPresentationOwner {
             paddingFailure?.let(::rethrowFatal)
             // A native callback can reenter and acquire a newer padding receipt.
             if (!keepPadding && appliedPadding === applied) appliedPadding = null
-            val carrier = runCatching { restoreFakeCarrierCapacityLease() }
-            carrier.exceptionOrNull()?.let(::rethrowFatal)
-            if (paddingFailure != null) {
-                carrier.exceptionOrNull()
-                    ?.takeIf { it !== paddingFailure }
-                    ?.let(paddingFailure::addSuppressed)
-                throw paddingFailure
-            }
-            val carrierRestored = carrier.getOrThrow()
-            return paddingRestored && carrierRestored
+            paddingFailure?.let { throw it }
+            return paddingRestored
         }
 
-        private fun ensureFakeCarrierCapacityLease(hostView: ViewGroup): Int? {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return 0
-
-            val parent =
-                hostView.parent as? ViewGroup
-                    ?: run {
-                        onFailNative("fake-carrier-parent-unavailable")
-                        return null
-                    }
-            if (parent.childCount != 1 || parent.getChildAt(0) !== hostView) {
-                onFailNative("fake-carrier-exclusive-parent-contract-unavailable")
-                return null
+        // Lease only unused native parent capacity after the FAKE host settles.
+        private fun ensureCcFakeCapacityLease(): Boolean {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
+            val fake = host.get() ?: return true
+            val params = fake.layoutParams ?: return true
+            val applied = ccAppliedWidthPx
+            if (applied != null) {
+                if (!FakeCarrierNativeGeometryPolicy.nativeReplacedLease(applied, params.width)) {
+                    return true
+                }
+                // SystemUI reassigns this width on rotation / scene reflow.
+                // Yield only the width receipt; retaining CC presentation keeps
+                // its native peer masks and the Home handoff intact.
+                if (!restoreCcFakeCapacityLease()) {
+                    onFailNative("fake-carrier-width-receipt-release-incomplete")
+                    return false
+                }
+                // Never reborrow within the same native layout callback.
+                // The next settled native layout can admit a new lease.
+                return true
             }
-            val params =
-                hostView.layoutParams
-                    ?: run {
-                        onFailNative("fake-carrier-layout-params-unavailable")
-                        return null
-                    }
+            if (!nativeFakeCarrierLayoutSettled()) return true
+            val parent = fake.parent as? ViewGroup ?: return true
             val margins = params as? ViewGroup.MarginLayoutParams
-            if (
-                margins != null &&
-                (
-                    margins.marginStart != 0 ||
-                        margins.marginEnd != 0 ||
-                        margins.leftMargin != 0 ||
-                        margins.rightMargin != 0
-                )
-            ) {
-                onFailNative("fake-carrier-horizontal-margin-contract-unsupported")
-                return null
-            }
-
-            val parentContentWidthPx =
-                (
-                    parent.width -
-                        parent.paddingLeft -
-                        parent.paddingRight
-                ).takeIf { width -> width > 0 }
-                    ?: run {
-                        onFailNative("fake-carrier-parent-width-unavailable")
-                        return null
-                    }
-            if (!isFakeCarrierEndAnchored(hostView, parent)) {
-                onFailNative("fake-carrier-end-anchor-unverified")
-                return null
-            }
-
-            val existingAppliedWidthPx = appliedFakeCarrierWidthPx
-            if (existingAppliedWidthPx != null) {
-                when (
-                    FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
-                        visibleCycleActive = leasePhase == LeasePhase.VISIBLE,
-                        liveWidthPx = params.width,
-                        appliedWidthPx = existingAppliedWidthPx,
-                        currentParentContentWidthPx = parentContentWidthPx,
-                        leasedParentContentWidthPx = fakeCarrierParentWidth,
-                        verifiedNativeOverhang =
-                            leasePhase == LeasePhase.PREARM &&
-                                params.width > parentContentWidthPx &&
-                                !hostView.isLayoutRequested &&
-                                !parent.isLayoutRequested &&
-                                isVerifiedNativeOverhang(hostView, parent),
-                    )
-                ) {
-                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.REUSE ->
-                        return fakeCarrierCapacityDeltaPx
-
-                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE -> {
-                        val adoptedNativeWidthPx = params.width
-                        val previousNativeWidthPx = nativeFakeCarrierLayoutWidthPx
-                        clearCapacityLeaseSnapshot()
-                        pendingNativeCarrierWidth = adoptedNativeWidthPx
-                        onEvent(
-                            eventPrefix +
-                                " fakeCarrierCapacity lease=adopt-native-hidden-prearm" +
-                                LOG_LIVE_WIDTH + adoptedNativeWidthPx +
-                                LOG_APPLIED_WIDTH + existingAppliedWidthPx +
-                                " previousNativeWidth=" + (previousNativeWidthPx ?: -1) +
-                                LOG_CC_FAKE_SESSION_OWNER,
-                        )
-                    }
-
-                    FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.FAIL_WRITER_CONFLICT -> {
-                        onFailNative("fake-carrier-width-writer-conflict")
-                        return null
-                    }
-                }
-            }
-
-            val pendingNativeBaselineWidthPx =
-                pendingNativeCarrierWidth
-            val baselineWidthPx =
-                when {
-                    pendingNativeBaselineWidthPx != null &&
-                        params.width == pendingNativeBaselineWidthPx ->
-                        pendingNativeBaselineWidthPx
-
-                    hostView.width > 0 &&
-                        params.width == hostView.width ->
-                        hostView.width
-
-                    else -> {
-                        onFailNative("fake-carrier-width-contract-unavailable")
-                        return null
-                    }
-                }
-            if (baselineWidthPx <= 0) {
-                onFailNative("fake-carrier-width-unavailable")
-                return null
-            }
-            if (baselineWidthPx > parentContentWidthPx) {
-                if (!isVerifiedNativeOverhang(hostView, parent)) {
-                    onFailNative("fake-carrier-native-overhang-unverified")
-                    return null
-                }
-                if (!nativeOverhangAccepted) {
-                    onEvent(
-                        eventPrefix + " fakeCarrierCapacity mode=native-end-overhang" +
-                            LOG_NATIVE_WIDTH + baselineWidthPx +
-                            " parentContentWidth=" + parentContentWidthPx +
-                            " left=" + hostView.left +
-                            " right=" + hostView.right +
-                            " lease=none owner=systemui-native-layout",
-                    )
-                }
-                nativeOverhangAccepted = true
-                // Zero extra width is owned. End padding is still separately
-                // admitted only when the native measured icon row can fit it.
-                return 0
-            }
-            nativeOverhangAccepted = false
-            val capacityDeltaPx =
-                EndReservationPolicy.resolveFakeCarrierCapacityDelta(
-                    nativeCarrierWidthPx = baselineWidthPx,
-                    parentContentWidthPx = parentContentWidthPx,
-                ) ?: run {
-                    onFailNative("fake-carrier-capacity-unavailable")
-                    return null
-                }
-
-            nativeFakeCarrierLayoutWidthPx = baselineWidthPx
-            fakeCarrierParentWidth = parentContentWidthPx
-            fakeCarrierCapacityDeltaPx = capacityDeltaPx
-            pendingNativeCarrierWidth = null
-            // LayoutParams may mutate in place before the framework setter returns.
-            appliedFakeCarrierWidthPx = parentContentWidthPx
-
-            if (params.width != parentContentWidthPx) {
-                params.width = parentContentWidthPx
-                hostView.layoutParams = params
-                capacityLeaseAwaitingLayout = true
-            }
-            if (hostView.layoutParams?.width != parentContentWidthPx) {
-                onFailNative("fake-carrier-capacity-lease-apply-failed")
-                return null
-            }
-            onEvent(
-                eventPrefix +
-                    " fakeCarrierCapacity lease=active" +
-                    LOG_NATIVE_WIDTH + baselineWidthPx +
-                    " leasedWidth=" + parentContentWidthPx +
-                    " capacityDelta=" + capacityDeltaPx +
-                    LOG_CC_FAKE_SESSION_OWNER,
-            )
-            return capacityDeltaPx
-        }
-
-        private fun isVerifiedNativeOverhang(
-            hostView: ViewGroup,
-            parent: ViewGroup,
-        ): Boolean {
-            if (parent.childCount != 1 || parent.getChildAt(0) !== hostView) return false
-            val params = hostView.layoutParams ?: return false
-            val margins = params as? ViewGroup.MarginLayoutParams
-            if (margins != null &&
-                (margins.marginStart != 0 || margins.marginEnd != 0 ||
-                    margins.leftMargin != 0 || margins.rightMargin != 0)
-            ) return false
-            return FakeCarrierCapacityLeasePolicy.mayInheritNativeOverhang(
-                nativeCarrierWidthPx = params.width,
+            val clearMargins = margins == null ||
+                (margins.leftMargin == 0 && margins.rightMargin == 0 &&
+                    margins.marginStart == 0 && margins.marginEnd == 0)
+            val targetWidth = FakeCarrierNativeGeometryPolicy.leaseWidth(
+                nativeWidthPx = params.width,
                 parentContentWidthPx = parent.width - parent.paddingLeft - parent.paddingRight,
-                laidOutCarrierWidthPx = hostView.width,
-                attached = hostView.isAttachedToWindow,
-                endAnchored = isFakeCarrierEndAnchored(hostView, parent),
+                clearMargins = clearMargins,
+            ) ?: return true
+            ccNativeWidthPx = params.width
+            // The setter may reenter or throw after mutating LayoutParams in place.
+            ccAppliedWidthPx = targetWidth
+            params.width = targetWidth
+            fake.layoutParams = params
+            if (fake.layoutParams?.width != targetWidth) {
+                onFailNative("fake-carrier-width-lease-apply-failed")
+                return false
+            }
+            onEvent(eventPrefix + " fakeCarrierCapacity lease=active" +
+                " nativeWidth=" + ccNativeWidthPx + " leasedWidth=" + targetWidth +
+                " source=parent-native-capacity")
+            return true
+        }
+
+        private fun restoreCcFakeCapacityLease(): Boolean {
+            val applied = ccAppliedWidthPx ?: return true
+            val original = ccNativeWidthPx ?: return false
+            val fake = host.get() ?: return false
+            val params = fake.layoutParams ?: return false
+            if (!FakeCarrierNativeGeometryPolicy.nativeReplacedLease(applied, params.width)) {
+                params.width = original
+                fake.layoutParams = params
+                if (fake.layoutParams?.width != original) return false
+            } else {
+                // Never overwrite SystemUI's newer width at a scene boundary.
+                onEvent(eventPrefix + " fakeCarrierCapacity lease=yield-native" +
+                    " liveWidth=" + params.width + " appliedWidth=" + applied)
+            }
+            ccAppliedWidthPx = null
+            ccNativeWidthPx = null
+            return true
+        }
+
+        // The native controller updates QS_FAKE width from realSystemIcons.
+        private fun nativeFakeCarrierLayoutSettled(): Boolean {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
+            val nativeHost = host.get() ?: return false
+            val parent = nativeHost.parent as? ViewGroup ?: return false
+            val width = nativeHost.layoutParams?.width ?: return false
+            return FakeCarrierNativeGeometryPolicy.isSettled(
+                nativeWidthPx = width,
+                laidOutWidthPx = nativeHost.width,
+                attached = nativeHost.isAttachedToWindow,
+                layoutRequested = nativeHost.isLayoutRequested,
+                exclusiveParent = parent.childCount == 1 && parent.getChildAt(0) === nativeHost,
+                endAnchored = isFakeCarrierEndAnchored(nativeHost, parent),
             )
         }
 
-        private fun isFakeCarrierEndAnchored(
-            hostView: View,
-            parent: ViewGroup,
-        ): Boolean {
+        private fun isFakeCarrierEndAnchored(nativeHost: View, parent: ViewGroup): Boolean {
             val contentLeft = parent.paddingLeft
             val contentRight = parent.width - parent.paddingRight
             if (contentRight <= contentLeft) return false
-            return if (hostView.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
-                hostView.left == contentLeft
+            return if (nativeHost.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+                nativeHost.left == contentLeft
             } else {
-                hostView.right == contentRight
+                nativeHost.right == contentRight
             }
         }
 
-        private fun releaseCapacityLeaseAtHidden(): Boolean {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
-            val appliedWidthPx = appliedFakeCarrierWidthPx
-            if (appliedWidthPx == null) {
-                clearCapacityLeaseSnapshot()
-                return true
-            }
-            val hostView = host.get()
-            val baselineLayoutWidthPx = nativeFakeCarrierLayoutWidthPx
-            val params = hostView?.layoutParams
-            if (hostView == null || baselineLayoutWidthPx == null || params == null) {
-                clearCapacityLeaseSnapshot()
-                return false
-            }
-
-            val liveWidthPx = params.width
-            var nextNativeBaselineWidthPx = liveWidthPx
-            val restored =
-                when (liveWidthPx) {
-                    appliedWidthPx -> {
-                        params.width = baselineLayoutWidthPx
-                        hostView.layoutParams = params
-                        nextNativeBaselineWidthPx = baselineLayoutWidthPx
-                        hostView.layoutParams?.width == baselineLayoutWidthPx
-                    }
-
-                    baselineLayoutWidthPx -> true
-
-                    else -> {
-                        // The native hidden boundary may already have replaced
-                        // the fake carrier geometry. Ownership ends here; do
-                        // not race that writer. The next visible cycle will
-                        // establish a fresh baseline from the live native View.
-                        onEvent(
-                            eventPrefix +
-                                " fakeCarrierCapacity release=adopt-native-hidden-width" +
-                                LOG_LIVE_WIDTH + liveWidthPx +
-                                LOG_APPLIED_WIDTH + appliedWidthPx +
-                                " baselineWidth=" + baselineLayoutWidthPx,
-                        )
-                        true
-                    }
-                }
-            if (!restored) return false
-            clearCapacityLeaseSnapshot()
-            pendingNativeCarrierWidth =
-                nextNativeBaselineWidthPx.takeIf { width -> width > 0 }
-            onEvent(
-                eventPrefix +
-                    " fakeCarrierCapacity lease=hidden-released" +
-                    " restored=" + restored +
-                    " nextNativeBaselineWidth=" +
-                    (pendingNativeCarrierWidth ?: -1) +
-                    " owner=control-center-fake-visible-cycle",
-            )
-            return restored
+        fun observeNativeFakeCarrierGeometry() {
+            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE || !isDetailedDiagnosticsEnabled()) return
+            val nativeHost = host.get() ?: return
+            val width = nativeHost.layoutParams?.width ?: return
+            if (lastObservedNativeFakeWidthPx == width) return
+            val previous = lastObservedNativeFakeWidthPx
+            lastObservedNativeFakeWidthPx = width
+            val parent = nativeHost.parent as? ViewGroup
+            onEvent(eventPrefix + " fakeCarrierNativeGeometry writer=systemui" +
+                " width=" + width + " previousWidth=" + (previous ?: -1) +
+                " laidOutWidth=" + nativeHost.width + " parentContentWidth=" +
+                (parent?.let { it.width - it.paddingLeft - it.paddingRight } ?: -1) +
+                " settled=" + nativeFakeCarrierLayoutSettled())
         }
 
-        private fun restoreFakeCarrierCapacityLease(): Boolean {
-            if (surfaceName != CONTROL_CENTER_FAKE_SURFACE) return true
-
-            val appliedWidthPx = appliedFakeCarrierWidthPx
-            if (appliedWidthPx == null) {
-                clearCapacityLeaseSnapshot()
-                return true
-            }
-            val hostView = host.get()
-            val baselineLayoutWidthPx = nativeFakeCarrierLayoutWidthPx
-            if (hostView == null || baselineLayoutWidthPx == null) return false
-            val params = hostView.layoutParams ?: return false
-            if (params.width != appliedWidthPx) {
-                try {
-                    onEvent(
-                        eventPrefix +
-                            " fakeCarrierCapacity restore=skipped reason=writer-changed" +
-                            LOG_LIVE_WIDTH + params.width +
-                            LOG_APPLIED_WIDTH + appliedWidthPx,
-                    )
-                } finally {
-                    clearCapacityLeaseSnapshot()
-                }
-                return false
-            }
-
-            params.width = baselineLayoutWidthPx
-            hostView.layoutParams = params
-            val restored = hostView.layoutParams?.width == baselineLayoutWidthPx
-            if (restored) {
-                clearCapacityLeaseSnapshot()
-                pendingNativeCarrierWidth = null
-            }
-            return restored
-        }
-
-        private fun clearCapacityLeaseSnapshot() {
-            firstLeaseWidthMismatch = null
-            nativeFakeCarrierLayoutWidthPx = null
-            fakeCarrierParentWidth = null
-            appliedFakeCarrierWidthPx = null
-            fakeCarrierCapacityDeltaPx = null
-            capacityLeaseAwaitingLayout = false
-            nativeOverhangAccepted = false
-        }
+        fun reconcileCcNativeLayout(): Boolean =
+            surfaceName != CONTROL_CENTER_FAKE_SURFACE || syncEndReservation()
 
         fun isLayoutCutoverReady(): Boolean =
             active &&
@@ -2887,9 +2678,6 @@ internal object SysUiPresentationOwner {
             if (!syncEndReservation()) {
                 return null
             }
-            if (capacityLeaseAwaitingLayout) {
-                return null
-            }
             val masked = refreshClipMasks()
             if (compactLayoutReady) {
                 return masked
@@ -2905,121 +2693,31 @@ internal object SysUiPresentationOwner {
             return masked
         }
 
-        fun traceFakeCarrierWidth(boundary: String) {
-            if (
-                surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
-                !capacityLeaseAwaitingLayout ||
-                firstLeaseWidthMismatch != null
-            ) return
-            val hostView = host.get() ?: return
-            val appliedWidth = appliedFakeCarrierWidthPx ?: return
-            val liveWidth = hostView.layoutParams?.width ?: return
-            if (liveWidth == appliedWidth) return
+        fun validateNativeLayoutBeforeVisualMask(): Boolean =
+            active && started &&
+                (surfaceName != CONTROL_CENTER_FAKE_SURFACE ||
+                    (nativeFakeCarrierLayoutSettled() &&
+                        statusIcons.get()?.isLayoutRequested != true))
 
-            firstLeaseWidthMismatch = boundary
-            emitDiagnostic {
-                val parent = hostView.parent as? ViewGroup
-                onEvent(
-                    eventPrefix + " fakeCarrierCapacity boundary=width-mismatch" +
-                        " firstObserved=" + boundary +
-                        LOG_LIVE_WIDTH + liveWidth +
-                        LOG_APPLIED_WIDTH + appliedWidth +
-                        LOG_NATIVE_WIDTH + nativeFakeCarrierLayoutWidthPx +
-                        " viewWidth=" + hostView.width +
-                        " measuredWidth=" + hostView.measuredWidth +
-                        " layoutRequested=" + hostView.isLayoutRequested +
-                        " parentContentWidth=" +
-                        (parent?.let { it.width - it.paddingLeft - it.paddingRight } ?: "unavailable") +
-                        " endAnchored=" +
-                        (parent?.let { isFakeCarrierEndAnchored(hostView, it) } ?: "unavailable") +
-                        " phase=" + leasePhase.name,
-                )
-            }
-        }
-
-        fun validateNativeLayoutBeforeVisualMask(): Boolean {
-            if (!active || !started) return false
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE && appliedFakeCarrierWidthPx == null) {
-                if (!nativeOverhangAccepted) return false
-                val nativeHost = host.get()
-                val nativeParent = nativeHost?.parent as? ViewGroup
-                val nativeStillVerified =
-                    nativeHost != null && nativeParent != null &&
-                        isVerifiedNativeOverhang(nativeHost, nativeParent)
-                if (!nativeStillVerified) {
-                    onFailNative("fake-carrier-native-overhang-changed")
-                    return false
-                }
-            }
-            if (!capacityLeaseAwaitingLayout) return true
-
-            val hostView =
-                host.get()
-                    ?: run {
-                        onFailNative("fake-carrier-post-lease-host-released")
-                        return false
-                    }
-            val parent =
-                hostView.parent as? ViewGroup
-                    ?: run {
-                        onFailNative("fake-carrier-post-lease-parent-unavailable")
-                        return false
-                    }
-            val expectedWidthPx =
-                appliedFakeCarrierWidthPx
-                    ?: run {
-                        onFailNative("fake-carrier-post-lease-state-invalid")
-                        return false
-                    }
-            val liveWidthPx = hostView.layoutParams?.width
-            val endAnchored = isFakeCarrierEndAnchored(hostView, parent)
-            if (liveWidthPx != expectedWidthPx || !endAnchored) {
-                val parentWidthPx =
-                    parent.width - parent.paddingLeft - parent.paddingRight
-                if (
-                    leasePhase == LeasePhase.PREARM &&
-                    endAnchored &&
-                    liveWidthPx != null &&
-                    FakeCarrierCapacityLeasePolicy.resolveExistingLeaseAction(
-                        visibleCycleActive = false,
-                        liveWidthPx = liveWidthPx,
-                        appliedWidthPx = expectedWidthPx,
-                        currentParentContentWidthPx = parentWidthPx,
-                        leasedParentContentWidthPx = fakeCarrierParentWidth,
-                    ) == FakeCarrierCapacityLeasePolicy.ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
-                ) {
-                    // Native changed its hidden carrier; the next visible edge must lease afresh.
-                    clearCapacityLeaseSnapshot()
-                    pendingNativeCarrierWidth = liveWidthPx
-                    onEvent(
-                        eventPrefix + " fakeCarrierCapacity lease=yield-hidden-prearm" +
-                            LOG_LIVE_WIDTH + liveWidthPx +
-                            " next=visible-cycle",
-                    )
-                    return false
-                }
-                onFailNative("fake-carrier-post-lease-layout-invalid")
-                return false
-            }
-            return true
-        }
-
-        fun onNativeLayoutCompleted(maskedViews: Int) {
+        fun onNativeLayoutCompleted(
+            maskedViews: Int,
+            source: String = "native-status-icons-onLayout",
+        ) {
             if (
                 !active ||
                 !started ||
                 !deferVisualMaskUntilLayout ||
-                compactLayoutReady ||
                 nativeLayoutOwnershipDeferred
             ) {
                 return
             }
-            capacityLeaseAwaitingLayout = false
+            if (compactLayoutReady) return
+            releaseCcCutoverListener()
             compactLayoutReady = true
             val callback = layoutReadyCallback
             layoutReadyCallback = null
             onEvent(
-                eventPrefix + " layoutReady source=native-status-icons-onLayout" +
+                eventPrefix + " layoutReady source=" + source +
                     LOG_MASKED_VIEWS + maskedViews,
             )
             callback?.invoke(maskedViews)

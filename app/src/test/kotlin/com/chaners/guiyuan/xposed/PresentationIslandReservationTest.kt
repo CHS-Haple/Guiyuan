@@ -1,118 +1,24 @@
 package com.chaners.guiyuan.xposed
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PresentationIslandReservationTest {
     @Test
-    fun chargingIslandCapacityCountsOnlyExpansionBeyondCompactSlot() {
-        assertEquals(
-            0,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 105,
-                ),
-        )
-        assertEquals(
-            144,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 354,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveFakeCarrierCapacityRequirement(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    reservationDeltaPx = 249,
-                ),
-        )
-    }
-
-    @Test
-    fun controlCenterNativeReservationStopsAtPhysicalCarrierCapacity() {
-        assertEquals(
-            354,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 354,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            354,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = true,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 382,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            200,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 200,
-                    capacityDeltaPx = 249,
-                ),
-        )
-        assertEquals(
-            249,
-            EndReservationPolicy
-                .resolveCapacityBoundedReservationDelta(
-                    nativeHide = false,
-                    compactSlotWidthPx = 105,
-                    requestedReservationDeltaPx = 382,
-                    capacityDeltaPx = 249,
-                ),
-        )
-    }
-
-    @Test
-    fun nativeFakePeerRowUsesMeasuredSlackBeyondCarrierLease() {
-        // Synthetic native measure boundaries, not a claim about device pixels.
-        assertTrue(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 200, contentWidthPx = 120, targetPaddingEndPx = 80,
-            ),
-        )
-        assertFalse(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 200, contentWidthPx = 121, targetPaddingEndPx = 80,
-            ),
-        )
-        assertFalse(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 0, contentWidthPx = 0, targetPaddingEndPx = 0,
-            ),
-        )
-        assertFalse(
-            EndReservationPolicy.fitsFakeNativePeerRow(
-                rowWidthPx = 200, contentWidthPx = 120, targetPaddingEndPx = -1,
-            ),
-        )
+    fun nativeFakeLayoutWaitsForHostAndPeerRow() {
+        assertFalse(EndReservationPolicy.fakeNativePeerMeasureReady(
+            carrierSettled = false,
+            peerRowLayoutRequested = false,
+        ))
+        assertFalse(EndReservationPolicy.fakeNativePeerMeasureReady(
+            carrierSettled = true,
+            peerRowLayoutRequested = true,
+        ))
+        assertTrue(EndReservationPolicy.fakeNativePeerMeasureReady(
+            carrierSettled = true,
+            peerRowLayoutRequested = false,
+        ))
     }
 
     @Test

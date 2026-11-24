@@ -47,6 +47,21 @@ execution ownership is in [architecture](../architecture/README.md).
   receipts. Failed independent release must keep ownership/ineligibility
   visible rather than declaring a successful rollback or reusing the session.
   Do not modify native FINAL geometry to hide drawing differences.
+- **Open SystemUI work [#1817](https://github.com/CHS-Haple/Guiyuan/pull/1817):**
+  retain Home and CC projections in their separate native lifecycles.
+  Exact ROM403 source confirms native peer-row underflow, signal exceptions
+  and `paddingEnd` ownership. The work-branch retains only the compact steady QS_FAKE end reservation;
+  the unfolding component envelope now controls visual reveal only and no
+  longer writes extra native peer padding. The parallel all-candidate width
+  cap and canvas clipping remain removed. Native FAKE host
+  width, native FINAL, native alpha/motion and Hot Reload remain OEM-owned.
+  The rotated FAKE native capacity lease is reacquired only after settled
+  native layout; a virtual motion carrier may exceed the current physical
+  host width without relaxing physical slot admission. The signed B1939
+  Canary passed the reported landscape-to-portrait first upward-close
+  disappearance on the maintainer's device. This does not certify every
+  crowded peer, charging/island, slow-close or alternative ROM scenario.
+  See the PR for exact-source acceptance and remaining integration checks.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)

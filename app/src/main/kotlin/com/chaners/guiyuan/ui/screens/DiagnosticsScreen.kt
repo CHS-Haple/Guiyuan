@@ -146,15 +146,24 @@ internal fun DiagnosticsScreen(
     }
 
     fun withReport(onReady: suspend (String) -> Unit) {
-        val captured = snapshot ?: return
-        if (reportBusy) return
+        if (snapshot == null || reportBusy || loading) return
         reportBusy = true
         scope.launch {
             try {
+                // Share/export must capture the current SystemUI session, not the
+                // screen snapshot taken when Diagnostics was opened.
+                val captured = DiagSnapshot.capture(context.applicationContext)
+                snapshot = captured
+                onSnapshot(captured)
+                expandedKey = null
                 val report = withContext(Dispatchers.Default) {
                     DiagReport.build(captured)
                 }
                 onReady(report)
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                snackbarHostState.showSnackbar(refreshFailedMsg)
             } finally {
                 reportBusy = false
             }

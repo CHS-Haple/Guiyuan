@@ -18,11 +18,8 @@ The accepted Home path uses the existing native end-side host:
 
 ```text
 MiuiNotificationStatusContainer / system_icon_area
-  -> MiuiStatusBatteryContainer / system_icons
-  -> Guiyuan child
-  -> logical viewport
-  -> SteadyLayoutResolver
-  -> renderer
+  + ViewGroupOverlay -> Guiyuan RenderView -> logical viewport -> renderer
+  + MiuiStatusBatteryContainer / system_icons -> native Battery and status icons
 ```
 
 SystemUI owns:
@@ -36,7 +33,7 @@ SystemUI owns:
 
 Guiyuan owns:
 
-- its child View and renderer;
+- its host-overlay View and renderer;
 - the logical replacement viewport;
 - transparent drawing overflow above that viewport when required;
 - replacement-slot intent;
@@ -85,7 +82,10 @@ transition owners.
 ### Home carrier width
 
 Home resolves the live `battery_icon_container` under the bound
-`MiuiBatteryMeterView` and uses its stable body width as carrier authority.
+`MiuiBatteryMeterView` for stable body **width**. The independent
+`system_icon_area` host is the Home overlay's position and native island
+motion owner. A charging Battery child can move and fade independently, so
+its translated window edge is **not** Home slot position authority.
 
 The full Battery root width is not a safe replacement-width authority because
 charging presentation can make the root wider than the stable body.
@@ -126,7 +126,7 @@ Visual suppression is not layout ownership.
 
 ## End reservation
 
-The Guiyuan render child does not participate in native measurement. A narrow,
+The Guiyuan host-overlay View does not participate in native measurement. A narrow,
 reversible `MiuiStatusIconContainer.paddingEnd` reservation exposes the compact
 replacement occupancy to native peer layout.
 
@@ -149,23 +149,24 @@ The reservation must:
 - fall back to native presentation if carrier, width, hide state, or writer
   ownership is ambiguous.
 
-## QS_FAKE capacity lease
+## QS_FAKE native width and native peer layout
 
-The bounded Control Center bridge may temporarily use otherwise-unused width
-already available inside the verified QS_FAKE parent.
+SystemUI's `ControlCenterFakeViewController.updateFakeStatusIconsSize()`
+owns `QS_FAKE.system_icon_area.layoutParams.width` and updates it from the
+selected `realSystemIcons` on rotation and scene changes. Guiyuan never
+writes, leases or restores this property.
 
-This is a capacity lease, not motion:
-
-- acquire it only from a verified end-anchored carrier with compatible parent
-  geometry;
-- apply it before compact cutover;
-- never animate carrier width as gesture motion;
-- keep `paddingEnd` as the sole per-progress layout reservation writer;
-- release the width lease at the native visible-to-hidden boundary;
-- treat an unexpected live width change as a competing writer and fall back to
-  native presentation.
-
-Transition geometry must not interpret leased capacity as carrier displacement.
+The bridge observes native geometry in either portrait (native area narrower
+than its parent) or landscape (native end-anchored overhang). It waits for the
+native area to finish its own layout before cutover or end-reservation updates.
+Only `MiuiStatusIconContainer.paddingEnd` remains a reversible, owner-scoped
+transition occupancy writer. The current projected peer-side extent is
+reserved through that native end-padding lease. On the fingerprinted ROM403,
+`MiuiStatusIconContainer.onMeasure/onLayout` owns native icon spacing,
+underflow, signal exceptions and hidden-by-space choices. Guiyuan must not
+apply a parallel all-candidate `measureViews` width cap or crop its canvas
+to an inferred lane. Native owner/layout and restore failures still fail
+native locally. FAKE width, FINAL layout and native motion stay OEM-owned.
 
 ## Motion ownership
 
@@ -175,7 +176,7 @@ Current production paths either need no independent Guiyuan motion or keep
 positioning/transition motion under SystemUI. No current scene grants Guiyuan
 ownership of native motion.
 
-Home inherits native end-side motion from its carrier and must not add a second
+Home inherits native end-side motion from system_icon_area and must not add a second
 Battery-translation follower, animator or timing curve.
 
 For Control Center, Guiyuan may read verified native source/target transforms

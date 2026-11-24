@@ -54,6 +54,19 @@ class CcRenderSessionTest {
     }
 
     @Test
+    fun detachedFakeNativeAnchorCannotRemainProjectionReady() {
+        assertFalse(CcRenderSession.resolveProjectionReady(
+            featureEnabled = true,
+            sceneEligible = true,
+            modelReady = true,
+            tintReady = true,
+            layoutReady = true,
+            hostAttached = false,
+            nativePresentationReady = true,
+        ))
+    }
+
+    @Test
     fun hotReloadRestoreRequiresAttachedLaidOutHostOutsideNativeLayout() {
         assertTrue(
             CcRenderSession
@@ -93,4 +106,38 @@ class CcRenderSessionTest {
         )
     }
 
+
+    @Test
+    fun fakeVisualRetiresAtHomeCutoverWithoutRetiringNativePanelLease() {
+        assertTrue(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = true,
+                projectionReady = true,
+                panelVisualOwner = true,
+            ),
+        )
+        // Native visible=true may outlive native fraction zero; it must not
+        // keep Guiyuan FAKE painting over the newly returned Home projection.
+        assertFalse(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = true,
+                projectionReady = true,
+                panelVisualOwner = false,
+            ),
+        )
+        assertFalse(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = false,
+                projectionReady = true,
+                panelVisualOwner = true,
+            ),
+        )
+        assertFalse(
+            CcRenderSession.resolveFakeVisible(
+                nativeRequested = true,
+                projectionReady = false,
+                panelVisualOwner = true,
+            ),
+        )
+    }
 }

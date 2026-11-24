@@ -101,6 +101,16 @@ The bridge must not introduce:
 At the native final appearance handoff, Guiyuan yields to the native Control
 Center surface.
 
+For the CC→Home return, the native positive expansion fraction retains CC
+scene authority regardless of whether the optional QS_FAKE projection was
+able to draw. A local FAKE failure must not reveal Home while the native CC
+scene is expanded. The native expansion callback is intercepted before
+SystemUI executes the update; its fraction-zero Home visibility cutover
+must commit **after** the same native callback body completes, to avoid
+competing with the OEM's final alpha/translation/visibility writes.
+The native hidden callback remains an independent completed handoff.
+No additional timer, animator, or native visibility writer is introduced.
+
 ## Keyguard and AOD family
 
 Keyguard and AOD share one verified host-scoped family presentation owner.
