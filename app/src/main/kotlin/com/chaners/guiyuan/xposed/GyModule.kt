@@ -2289,9 +2289,7 @@ class GyModule : XposedModule() {
 
         val releaseTransientHomeKeyguard =
             ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
-                featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguard,
-                aodEnabled = settings.aod,
+                settings = settings,
                 homeNativeAodFallbackCandidate =
                     (homeAodFallback == HomeAodFallback.CANDIDATE),
                 homePresentationOwnedAtFullAodStart = homeOwnedAtStart,
@@ -2523,9 +2521,7 @@ class GyModule : XposedModule() {
         val settings = FeaturePrefsOwner.current()
         val eligible =
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguard,
-                aodEnabled = settings.aod,
+                settings = settings,
                 lastStableFamilyScene = stableFamilyScene,
                 nativeToLockScreenTarget = nativeToLockScreenTarget,
                 homeNativeAodFallbackActive = (homeAodFallback == HomeAodFallback.ACTIVE),
@@ -2561,9 +2557,7 @@ class GyModule : XposedModule() {
                 carrierWidth > 0
         val precommit =
             ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
-                featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguard,
-                aodEnabled = settings.aod,
+                settings = settings,
                 lastStableFamilyScene = stableFamilyScene,
                 nativeToLockScreenTarget =
                     SysUiKeyguardNativeSignals.nativeToLockScreenTarget(
@@ -2827,8 +2821,7 @@ class GyModule : XposedModule() {
 
         val currentOriginEligible =
             ScenePolicy.shouldArmHomeAodTargetPrearm(
-                featureEnabled = settings.enabled,
-                aodEnabled = settings.aod,
+                settings = settings,
                 steadySourceScene = steadyStatusSourceScene,
                 lastStableFamilyScene = stableFamilyScene,
                 homePresentationOwned = homeOwned,
@@ -2901,9 +2894,7 @@ class GyModule : XposedModule() {
             aodWindow !is AodWindow.Running &&
                 ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = (homeAodFallback == HomeAodFallback.CANDIDATE),
-                featureEnabled = settings.enabled,
-                keyguardEnabled = settings.keyguard,
-                aodEnabled = settings.aod,
+                settings = settings,
                 toAod = update.toAod,
                 isAodAnimate = update.isAodAnimate,
             )
@@ -3341,9 +3332,7 @@ class GyModule : XposedModule() {
         val nativeBattery = SysUiKeyguardAodSource.currentState(host.battery)
             ?: return false
         return ScenePolicy.shouldHoldKeyguardForAodBattery(
-            featureEnabled = cfg.enabled,
-            keyguardEnabled = cfg.keyguard,
-            aodEnabled = cfg.aod,
+            settings = cfg,
             sourceScene = steadyStatusSourceScene,
             nativeToLockScreenTarget =
                 SysUiKeyguardNativeSignals.nativeToLockScreenTarget(host),

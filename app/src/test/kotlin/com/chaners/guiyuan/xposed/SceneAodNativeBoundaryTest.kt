@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.FeatureCfg
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
@@ -9,8 +10,7 @@ class SceneAodNativeBoundaryTest {
     fun homeAodTargetPrearmRejectsReverseOrKnownFamilyOrigin() {
         assertFalse(
             ScenePolicy.shouldArmHomeAodTargetPrearm(
-                featureEnabled = true,
-                aodEnabled = true,
+                settings = FeatureCfg(enabled = true, aod = true),
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
@@ -20,8 +20,7 @@ class SceneAodNativeBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldArmHomeAodTargetPrearm(
-                featureEnabled = true,
-                aodEnabled = true,
+                settings = FeatureCfg(enabled = true, aod = true),
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
