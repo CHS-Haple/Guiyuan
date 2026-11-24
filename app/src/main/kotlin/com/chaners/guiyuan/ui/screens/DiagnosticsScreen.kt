@@ -353,15 +353,9 @@ internal fun DiagnosticsScreen(
         diagnosticsLogItems(
             view = DiagnosticsLogPresentation(
                 snapshot = snapshot,
-                entries = filteredLog.entries,
-                filteredEntries = filteredLog.filteredEntries,
-                showRootGuide = captureStatus.showRootGuide,
+                filteredLog = filteredLog,
+                captureStatus = captureStatus,
                 loading = loading,
-                filterActive = filteredLog.filterActive,
-                captureTruncated = captureStatus.captureTruncated,
-                detailStatus = captureStatus.detailStatus,
-                detailActive = captureStatus.detailActive,
-                integrityNotice = captureStatus.integrityNotice,
                 expandedKey = expandedKey,
                 rise = rise,
                 risePx = risePx,
