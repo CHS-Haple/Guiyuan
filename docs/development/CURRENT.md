@@ -98,7 +98,7 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
-- MIUIX `07d48590` updates both native and Glass sheet motion,
+- MIUIX `a09d4f32` retains the earlier native and Glass sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
   navigation runtime through the matched dependency graph. Search uses
   the public `SearchClearButton`; transformed menus share one settled placement
@@ -116,6 +116,19 @@ reference, not this public repository.
   This is a focused device acceptance, not exhaustive certification. Integrate
   source without a second distribution Build; the delivered B1940 identity
   remains attached to its original signed work-branch artifact.
+- The subsequent overlay update releases touch blocking at the visible exit
+  boundary and transfers any closing rebound to the persistent anchor. The
+  controlled search uses the matching visible-progress mount gate. Native
+  Dialog/Sheet motion and dropdown lifecycle come from the pinned graph;
+  local host retirement, submenu and Back ownership stay unchanged. The
+  overlay and newer Sheet revision require focused device acceptance; B1952
+  is the prior accepted baseline. The new public GlassBottomSheet header
+  consumes actual current-page scroll offset in the battery scheme deck;
+  content padding follows the measured header, with the existing dot rail
+  in the fixed header slot. The detail Back button inherits upstream header
+  context and the agreement/colour editor scroll containers consume the
+  supplied padding. Dynamic glass fills and modal/overscroll fixes follow
+  upstream defaults.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
   uses app-local Glass adapters. Do not adopt upstream changes or
@@ -128,6 +141,13 @@ reference, not this public repository.
   its upstream shading, width and additive-blend conditions; Guiyuan retains
   the adapted backdrop/refraction and its own popup, button and Back lifecycle
   boundaries.
+- Dynamic color follows the pinned ThemeController and style-first example:
+  system palette delegates to MIUIX; custom style uses the existing wallpaper
+  seed, exposes every ThemePaletteStyle, and displays the effective fixed
+  Spec2026 for CMF or Spec2021 for styles without 2025 support. The requested
+  specification and palette style remain independent of the source preference;
+  legacy nullable specification settings retain their previous source choice.
+  App and sandbox share this contract; MIUIX owns actual color generation.
 - The single MIUIX interface retains Glass navigation's selection-before-Pager
   contract, release-committed pointer selection, fixed icons and noninteractive
   preview. Standard/Blur floating navigation, native Rail and native capability
@@ -145,9 +165,10 @@ reference, not this public repository.
   and preserves the scheme/editor hierarchy. Its custom-scheme More control
   uses upstream `basic.IconButton` without the floating glass shadow.
   Separate Glass back controls retain the source-matched `Regular` shadow.
-- Single-interface migration requires focused device acceptance; prior B1940
-  and B1941 acceptance does not certify it. Test upgrades, all navigation
-  choices, light/dark, narrow/wide, search, modal and sandbox lifecycle.
+- Single-interface migration and battery color controls received focused
+  B1952 device acceptance in [#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866);
+  the integrated source tree matched that candidate and dev CI passed. This
+  does not certify the newer overlay motion revision.
   Exhaustive RTL, extreme font scale, GPU resume, keyboard/cutout geometry,
   predictive Back and every Framework/ROM combination remain unverified.
 

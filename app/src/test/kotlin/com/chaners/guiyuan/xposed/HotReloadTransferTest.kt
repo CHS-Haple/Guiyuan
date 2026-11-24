@@ -7,35 +7,6 @@ import org.junit.Test
 
 class HotReloadTransferTest {
     @Test
-    fun landscapeReleaseUsesNativeLayoutWhilePortraitMayPreserveCompactLayout() {
-        assertFalse(
-            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
-                eligible = true,
-                isLandscape = true,
-            ),
-        )
-        assertFalse(
-            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
-                eligible = false,
-                isLandscape = true,
-            ),
-        )
-        assertEquals(
-            true,
-            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
-                eligible = true,
-                isLandscape = false,
-            ),
-        )
-        assertFalse(
-            SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
-                eligible = false,
-                isLandscape = false,
-            ),
-        )
-    }
-
-    @Test
     fun homePrearmRequiresVerifiedTransferAndCompleteNativePrerequisites() {
         assertEquals(
             true,

@@ -154,7 +154,7 @@ internal fun BatteryColorBottomSheet(
         }
     } else null
     CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
-        BatteryColorDetailSheet(environment, state, sheetBackdrop, detailBackdrop)
+        BatteryColorDetailSheet(environment, state, detailBackdrop)
         BatteryColorModalDialogs(environment, state)
     }
 }

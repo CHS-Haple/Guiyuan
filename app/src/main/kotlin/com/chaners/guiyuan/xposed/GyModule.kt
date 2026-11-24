@@ -314,35 +314,9 @@ class GyModule : XposedModule() {
             "controlCenterCompactReady" to prepared.controlCenterCompactReady,
         )
 
-        // Take the compact-layout eligibility snapshot on the same SystemUI
-        // main-thread turn that retires Home ownership. A scene transition
-        // between callback entry and posted teardown must not reuse a stale
-        // decision about suppressing native relayout.
         val retired =
             runCatching {
-                SysUiHotReload.retireOnMain {
-                    // API 102 retires the old clip masks and renderer before
-                    // the new module may attach. In landscape, restoring the
-                    // native slot layout now is essential: otherwise visible
-                    // native peers inherit the old compact targets until the
-                    // next generation finally requests its own layout.
-                    val compactHomeHandoff =
-                        SysUiHotReload.shouldRetainCompactHomeLayoutOnRetire(
-                            SysUiHotReload.shouldPrearmHome(
-                                transferEligible =
-                                    SysUiCcSource.currentHomeEligibility() == true &&
-                                        SysUiPresentationOwner.homeClaimed(),
-                                featureEnabled = FeaturePrefsOwner.current().enabled && !failNativeGate.suspended,
-                                mobileReady = SysUiNetworkRuntime.mobileReady,
-                                batteryReady = StatusStateStore.snapshot().battery != null,
-                            ),
-                            isLandscape =
-                                (prepared.host as? android.view.View)
-                                    ?.resources?.configuration?.orientation ==
-                                    android.content.res.Configuration.ORIENTATION_LANDSCAPE,
-                        )
-                    teardownOldGeneration(compactHomeHandoff)
-                }
+                SysUiHotReload.retireOnMain(::teardownOldGeneration)
             }.onFailure { error ->
                 SysUiHotReload.rethrowFatal(error)
                 log(Log.ERROR, TAG, "Hot reload old-generation retirement failed", error)
@@ -4058,7 +4032,7 @@ class GyModule : XposedModule() {
         )
     }
 
-    private fun teardownOldGeneration(compactHomeHandoff: Boolean) {
+    private fun teardownOldGeneration() {
         retiredForHotReload = true
         clearHotReloadSceneState()
         homeAodTargetPrearmPending = false
@@ -4081,19 +4055,14 @@ class GyModule : XposedModule() {
 
         release { CcTransitionOwner.detach("hotReload-oldGeneration") }
         release { CcRenderSession.detach(source = "hotReload-oldGeneration") }
-        // Preserve compact native layout only when the generation transfer
-        // can safely skip the native fallback. Landscape always restores the
-        // native slot layout before the next module generation is ready.
-        release {
-            HomeRenderSession.detach(notifyReadinessOnStop = !compactHomeHandoff)
-        }
+        // The outgoing renderer and masks are retired before the next generation.
+        // Restore native layout in both orientations; compact slots are no longer owned.
+        release { HomeRenderSession.detach() }
         release { KeyguardRenderSession.detach() }
         release { KeyguardRenderSession.detachAod() }
         var restoredViews: Int? = null
         release {
-            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload(
-                homeRequestLayout = !compactHomeHandoff,
-            )
+            restoredViews = SysUiPresentationOwner.releaseGenerationForHotReload()
         }
         release { NativeStatusObserver.deactivate() }
         release { StatusBarStableSession.detach() }
@@ -4309,10 +4278,7 @@ class GyModule : XposedModule() {
                 when (
                     SysUiPresentationOwner.activate(
                         host = host,
-                        requestNativeStatusIconLayout =
-                            (host as? android.view.View)
-                                ?.resources?.configuration?.orientation ==
-                                android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+                        requestNativeStatusIconLayout = true,
                     )
                 ) {
                     is SysUiPresentationOwner.Result.Active -> true

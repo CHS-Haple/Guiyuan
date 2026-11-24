@@ -1,9 +1,14 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -13,6 +18,12 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -22,9 +33,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.basic.IconButtonDefaults
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
@@ -45,6 +63,7 @@ private data class SchemeDeckContext(
     val pager: PagerState,
     val scope: kotlinx.coroutines.CoroutineScope,
     val canCreateCustom: Boolean,
+    val scrollStates: Map<String, ScrollState>,
 )
 
 internal data class SchemeNavigation(
@@ -74,9 +93,17 @@ internal data class BatterySchemeOverviewActions(
 
 @Composable
 internal fun BatterySchemeOverview(
+    show: Boolean,
+    sheetBackdrop: LayerBackdrop?,
+    allowDismiss: Boolean,
+    onDismissRequest: () -> Unit,
     model: BatterySchemeOverviewModel,
     actions: BatterySchemeOverviewActions,
 ) {
+    // The header and pager share state outside the sheet body; retire it on native dismissal.
+    var retained by remember { mutableStateOf(false) }
+    if (!show && !retained) return
+    SideEffect { if (show) retained = true }
     val (library, requestedSchemeKey, canCreateCustom) = model
     val onRequestedSchemeHandled = actions.onRequestedSchemeHandled
     val navigation = actions.navigation
@@ -99,24 +126,52 @@ internal fun BatterySchemeOverview(
     SchemeDotNavigationEffect(target.intValue, pagerState) {
         if (target.intValue == it) target.intValue = -1
     }
+    val scrollStates = pages.associate { page ->
+        page.key to key(page.key) { rememberScrollState() }
+    }
+    val currentScrollOffset: () -> Float = remember(pages, pagerState, scrollStates) {
+        { pages.getOrNull(pagerState.currentPage)?.let { scrollStates[it.key]?.value }?.toFloat() ?: 0f }
+    }
     val context = SchemeDeckContext(
-        library, pages, pagerState, scope, canCreateCustom,
+        library, pages, pagerState, scope, canCreateCustom, scrollStates,
     )
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        BatterySchemeIndicatorRail(
-            pages = pages,
-            pagerState = pagerState,
-            targetPage = target.intValue,
-            onPageSelect = { next ->
-                if (next != pagerState.currentPage || target.intValue >= 0 || pagerState.isScrollInProgress) {
-                    target.intValue = next
-                }
-            },
-        )
-        BatterySchemeDeck(context, navigation, catalog)
+    UiOverlayBottomSheet(
+        show = show,
+        modifier = Modifier.fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
+            .then(if (sheetBackdrop != null) Modifier.layerBackdrop(sheetBackdrop) else Modifier),
+        title = stringResource(R.string.battery_colors),
+        backgroundColor = MiuixTheme.colorScheme.background,
+        insideMargin = DpSize(0.dp, 0.dp),
+        startAction = {
+            Spacer(Modifier.size(width = IconButtonDefaults.MinWidth, height = IconButtonDefaults.MinHeight))
+        },
+        allowDismiss = allowDismiss,
+        // The naming dialog, not the non-editable deck, owns IME avoidance.
+        defaultWindowInsetsPadding = false,
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = { if (!show) retained = false },
+        headerBottomContent = {
+            BatterySchemeIndicatorRail(
+                pages = pages,
+                pagerState = pagerState,
+                targetPage = target.intValue,
+                onPageSelect = { next ->
+                    if (next != pagerState.currentPage || target.intValue >= 0 || pagerState.isScrollInProgress) {
+                        target.intValue = next
+                    }
+                },
+            )
+        },
+        scrollOffset = currentScrollOffset,
+    ) { innerPadding ->
+        CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                BatterySchemeDeck(context, navigation, catalog, innerPadding)
+            }
+        }
     }
 }
 
@@ -162,6 +217,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
     context: SchemeDeckContext,
     navigation: SchemeNavigation,
     catalog: SchemeCatalog,
+    contentPadding: PaddingValues,
 ) {
     val pager = context.pager
     val flingBehavior = PagerDefaults.flingBehavior(
@@ -181,8 +237,11 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
         contentPadding = PaddingValues(horizontal = BottomSheetDefaults.insideMargin.width),
         pageSpacing = 12.dp,
         verticalAlignment = Alignment.Top,
+        // A scheme insertion changes pageCount; an old key lookup may still be measured
+        // against its previous list. Let Pager use its index identity instead.
+        // Per-scheme scroll states are already owned by page.key.
     ) { index ->
-        BatterySchemeDeckPage(context.pages[index], context, navigation, catalog)
+        BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
     }
 }
 
@@ -192,7 +251,9 @@ private fun BatterySchemeDeckPage(
     context: SchemeDeckContext,
     navigation: SchemeNavigation,
     catalog: SchemeCatalog,
+    contentPadding: PaddingValues,
 ) {
+    val scrollState = context.scrollStates.getValue(page.key)
     when (page) {
         is BatterySchemePage.BuiltIn, is BatterySchemePage.Custom ->
             BatterySchemePageContent(
@@ -211,6 +272,8 @@ private fun BatterySchemeDeckPage(
                         }
                     } else null,
                 ),
+                scrollState = scrollState,
+                contentPadding = contentPadding,
                 actions = BatterySchemePageActions(
                     onApply = { navigation.onApply(page.key) },
                     onSlotClick = { slot ->
@@ -234,6 +297,8 @@ private fun BatterySchemeDeckPage(
             BatteryAddSchemePage(
                 count = context.library.customSchemes.size,
                 enabled = context.canCreateCustom,
+                scrollState = scrollState,
+                contentPadding = contentPadding,
                 onClick = catalog.onAdd,
             )
     }
@@ -254,6 +319,8 @@ private data class BatterySchemePageActions(
 @Composable
 private fun BatterySchemePageContent(
     state: BatterySchemePageState,
+    scrollState: ScrollState,
+    contentPadding: PaddingValues,
     actions: BatterySchemePageActions,
 ) {
     val (page, isActive, canCreateCustom, manageMenu) = state
@@ -265,14 +332,14 @@ private fun BatterySchemePageContent(
         is BatterySchemePage.Custom -> customSchemeName(page.scheme)
         BatterySchemePage.Add -> return
     }
-    val scrollState = rememberScrollState()
     val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState)
+                .padding(contentPadding),
     ) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),

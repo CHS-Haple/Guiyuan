@@ -1013,7 +1013,6 @@ internal object SysUiPresentationOwner {
     @Suppress("TooGenericExceptionCaught")
     fun releaseGenerationForHotReload(
         requestLayout: Boolean = true,
-        homeRequestLayout: Boolean = requestLayout,
     ): Int {
         val failures = ArrayList<Throwable>(1)
         fun stop(release: () -> Int): Int =
@@ -1034,7 +1033,7 @@ internal object SysUiPresentationOwner {
         val home = current ?: homeRetirement.pending
         current = null
         val homeRestored = stop {
-            home?.let { stopHome(it, HOT_RELOAD_OLD_GENERATION, homeRequestLayout) } ?: 0
+            home?.let { stopHome(it, HOT_RELOAD_OLD_GENERATION, requestLayout) } ?: 0
         }
 
         val keyguard = keyguardFamilyCurrent ?: familyRetirement.pending

@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -39,15 +38,17 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 internal fun BatteryAddSchemePage(
     count: Int,
     enabled: Boolean,
+    scrollState: ScrollState,
+    contentPadding: PaddingValues,
     onClick: () -> Unit,
 ) {
-    val scrollState = rememberScrollState()
     val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            .padding(contentPadding),
     ) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
@@ -165,9 +166,8 @@ private fun BatterySchemeCapacityStatus(count: Int, enabled: Boolean) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = count.toString(),
-                    style = MiuixTheme.textStyles.title4,
+                    style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(

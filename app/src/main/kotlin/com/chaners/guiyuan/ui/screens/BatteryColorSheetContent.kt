@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui.screens
 
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -15,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
@@ -25,8 +23,7 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.customSchemeKey
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButtonDefaults
-import com.chaners.guiyuan.ui.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
@@ -60,51 +57,17 @@ internal fun BatteryColorOverviewSheet(
     sheetBackdrop: LayerBackdrop?,
     onDismiss: () -> Unit,
 ) {
-    val show = environment.show
-    UiOverlayBottomSheet(
-        show = show,
-        modifier = Modifier
-            .fillMaxHeight(BATTERY_COLOR_SHEET_HEIGHT_FRACTION)
-            .then(if (sheetBackdrop != null) Modifier.layerBackdrop(sheetBackdrop) else Modifier),
-        title = stringResource(R.string.battery_colors),
-        backgroundColor = MiuixTheme.colorScheme.background,
-        insideMargin = DpSize(0.dp, 0.dp),
-        startAction = {
-            Spacer(
-                modifier =
-                    Modifier.size(
-                        width = IconButtonDefaults.MinWidth,
-                        height = IconButtonDefaults.MinHeight,
-                    ),
-            )
-        },
-        // Keep the parent inert until the child sheet's native dismiss animation finishes.
-        allowDismiss = state.detailRequest == null,
-        // The foreground naming dialog, not this non-editable deck, owns IME avoidance.
-        defaultWindowInsetsPadding = false,
-        onDismissRequest = {
-            if (state.detailRequest == null) {
-                onDismiss()
-            }
-        },
-    ) {
-        CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
-            BatteryColorOverviewContent(environment, state)
-        }
-    }
-
-}
-
-@Composable
-private fun BatteryColorOverviewContent(
-    environment: BatterySheetEnvironment,
-    state: BatteryColorSheetState,
-) {
     val library = environment.library
     val repository = environment.repository
     val nextCustomId = environment.creation.nextId
     val context = LocalContext.current
     BatterySchemeOverview(
+        show = environment.show,
+        sheetBackdrop = sheetBackdrop,
+        allowDismiss = state.detailRequest == null,
+        onDismissRequest = {
+            if (state.detailRequest == null) onDismiss()
+        },
         model = BatterySchemeOverviewModel(
             library = library,
             requestedSchemeKey = state.requestedSchemeKey,
@@ -175,7 +138,6 @@ private fun batterySchemeCatalog(
 internal fun BatteryColorDetailSheet(
     environment: BatterySheetEnvironment,
     state: BatteryColorSheetState,
-    sheetBackdrop: LayerBackdrop?,
     detailBackdrop: LayerBackdrop?,
 ) {
     val show = environment.show
@@ -200,10 +162,10 @@ internal fun BatteryColorDetailSheet(
         insideMargin = BottomSheetDefaults.insideMargin,
         enableWindowDim = false,
         startAction = {
-            BatteryColorDetailBackAction(state, sheetBackdrop)
+            BatteryColorDetailBackAction(state)
         },
         onDismissRequest = { state.showDetail = false },
-    ) {
+    ) { innerPadding ->
         // Release the request only when the native child content is disposed.
         val hostedRequest = state.detailRequest
         DisposableEffect(hostedRequest) {
@@ -218,6 +180,7 @@ internal fun BatteryColorDetailSheet(
                 BatteryCustomModeEditor(
                     custom = detailCustom,
                     slot = detailSlot,
+                    contentPadding = innerPadding,
                     onSourceChange = { source ->
                         repository.setCustomSource(detailCustom.id, detailSlot, source)
                     },
@@ -234,12 +197,10 @@ internal fun BatteryColorDetailSheet(
 @Composable
 private fun BatteryColorDetailBackAction(
     state: BatteryColorSheetState,
-    sheetBackdrop: LayerBackdrop?,
 ) {
     TooltipBox(text = stringResource(R.string.back)) {
         GlassIconButton(
             onClick = { state.showDetail = false },
-            backdrop = sheetBackdrop,
         ) {
             Icon(
                 imageVector = Os4GlassBack,
