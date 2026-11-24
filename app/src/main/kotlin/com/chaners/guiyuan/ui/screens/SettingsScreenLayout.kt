@@ -24,13 +24,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassRailProgress
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
@@ -42,9 +39,7 @@ import top.yukonga.miuix.kmp.basic.RefreshState
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -77,7 +72,6 @@ internal fun SettingsPage(
     val scrollBehavior = MiuixScrollBehavior()
     val resolvedListState = listState ?: rememberLazyListState()
     val topBarBackdrop = rememberTopBarBackdrop()
-    val os4 = LocalUiStyle.current == UiStyle.OS4
     val railProgress = LocalGlassRailProgress.current
     val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
         { offset -> scrollBehavior.state.overscrollOffset = offset }
@@ -90,49 +84,32 @@ internal fun SettingsPage(
     Scaffold(
         snackbarHost = snackbarHost,
         topBar = {
-            if (os4) {
-                GlassTopAppBar(
-                    progressiveBlur = LocalTopBarProgressiveBlur.current,
-                    isContentScrolled = resolvedListState.canScrollBackward,
-                    title = title,
-                    expandable = !keepCompactTitle,
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                    titleAlpha = { titleAlpha * railProgress() },
-                    compact = compactTopBar,
-                    titlePadding = titlePadding,
-                    navigationIcon = navigationIcon,
-                    actions = {
-                        if (glassActions) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                actions()
-                            }
-                        } else {
+            GlassTopAppBar(
+                progressiveBlur = LocalTopBarProgressiveBlur.current,
+                isContentScrolled = resolvedListState.canScrollBackward,
+                title = title,
+                expandable = !keepCompactTitle,
+                backdrop = topBarBackdrop,
+                scrollBehavior = scrollBehavior,
+                titleAlpha = { titleAlpha * railProgress() },
+                compact = compactTopBar,
+                titlePadding = titlePadding,
+                navigationIcon = navigationIcon,
+                actions = {
+                    if (glassActions) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             actions()
                         }
-                    },
-                    unclippedNavigationIcon = true,
-                    unclippedActions = glassActions,
-                )
-            } else {
-                MiuixBlurredTopBar(
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                ) { barColor ->
-                    SmallTopAppBar(
-                        title = title,
-                        color = barColor,
-                        titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha),
-                        scrollBehavior = scrollBehavior,
-                        titlePadding = titlePadding,
-                        navigationIcon = navigationIcon,
-                        actions = actions,
-                    )
-                }
-            }
+                    } else {
+                        actions()
+                    }
+                },
+                unclippedNavigationIcon = true,
+                unclippedActions = glassActions,
+            )
         },
     ) { paddingValues ->
         Box(
@@ -151,7 +128,7 @@ internal fun SettingsPage(
             @Composable
             fun SettingsList(allowEdgeHaptic: Boolean = true) {
                 val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
-                val glassOverscroll = os4 && pullToRefresh == null && userScrollEnabled && canScroll
+                val glassOverscroll = pullToRefresh == null && userScrollEnabled && canScroll
                 LazyColumn(
                     state = resolvedListState,
                     userScrollEnabled = userScrollEnabled,

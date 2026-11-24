@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,15 +10,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import top.yukonga.miuix.kmp.glass.glassSearchBarTransition
 import top.yukonga.miuix.kmp.glass.rememberGlassSearchBarAlpha
-import top.yukonga.miuix.kmp.basic.SearchBar
-import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Search
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,17 +41,13 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.icons.Os4GlassSearch
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
@@ -75,8 +63,6 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import top.yukonga.miuix.kmp.material.GlassShadows
 import com.chaners.guiyuan.ui.glass.popupShadowOutsets
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun AnimatedPreferenceGroup(
@@ -107,13 +93,12 @@ internal fun HubPage(
     val filtering = search?.filtering == true
     val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
-    val os4 = LocalUiStyle.current == UiStyle.OS4
     val railProgress = LocalGlassRailProgress.current
     val density = LocalDensity.current
     val browsingScroll = MiuixScrollBehavior()
-    val resultsScroll = if (os4) MiuixScrollBehavior() else browsingScroll
+    val resultsScroll = MiuixScrollBehavior()
     val scrollBehavior = if (filtering) resultsScroll else browsingScroll
-    val glassOverscroll = os4 && canScroll
+    val glassOverscroll = canScroll
     val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
         { offset -> scrollBehavior.state.overscrollOffset = offset }
     }
@@ -121,11 +106,10 @@ internal fun HubPage(
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(filtering, search?.query) {
         if (filtering) {
-            if (os4) resultsState.requestScrollToItem(0)
-            else resultsState.scrollToItem(0)
+            resultsState.requestScrollToItem(0)
         }
     }
-    val searchExpanded = os4 && search?.active == true
+    val searchExpanded = search?.active == true
     val searchMotion = rememberOs4SearchMotion(searchExpanded)
     var revealTitleOnExit by remember { mutableStateOf(false) }
     // Navigation may open search directly; clear any title-reveal flag from its previous exit.
@@ -137,14 +121,9 @@ internal fun HubPage(
         collapsed = browsingScroll.state.collapsedFraction >= 1f,
     )
     val barAlpha = rememberGlassSearchBarAlpha(searchExpanded)
-    val os3SearchActionAlpha by animateFloatAsState(
-        targetValue = if (!os4 && search?.active == true) 0f else 1f,
-        animationSpec = tween(150),
-        label = "os3SearchAction",
-    )
     // Search shadow follows its surface material transition; geometry has its own motion.
     val searchMaterial = animateFloatAsState(
-        targetValue = if (os4 && (listState.canScrollBackward || scrollBehavior.state.overscrollOffset < -1f)) 1f else 0f,
+        targetValue = if (listState.canScrollBackward || scrollBehavior.state.overscrollOffset < -1f) 1f else 0f,
         animationSpec = GlassMotion.topBarButtonFloat(),
         label = "os4SearchMaterial",
     )
@@ -156,28 +135,21 @@ internal fun HubPage(
     val searchAction: @Composable RowScope.() -> Unit = {
         if (search != null && !searchInNavigationBar) {
             val label = stringResource(R.string.feature_search)
-            val ready = !search.active && (!os4 || !searchMotion.mounted)
+            val ready = !search.active && !searchMotion.mounted
             TooltipBox(text = label, enabled = ready) {
                 Box(
                     Modifier
                         .graphicsLayer {
-                            alpha = if (os4) barAlpha.value else os3SearchActionAlpha
-                            if (os4) outsets = searchActionOutsets
+                            alpha = barAlpha.value
+                            outsets = searchActionOutsets
                         }
                         .then(if (ready) Modifier else Modifier.clearAndSetSemantics {}),
                 ) {
-                    if (os4) {
-                        GlassIconButton(onClick = { if (ready) { revealTitleOnExit = false; search.open() } }) {
-                            Icon(
-                                Os4GlassSearch,
-                                contentDescription = label,
-                            )
-                        }
-                    } else IconButton(
-                        onClick = search::open,
-                        enabled = ready,
-                    ) {
-                        Icon(MiuixIcons.Search, contentDescription = label)
+                    GlassIconButton(onClick = { if (ready) { revealTitleOnExit = false; search.open() } }) {
+                        Icon(
+                            Os4GlassSearch,
+                            contentDescription = label,
+                        )
                     }
                 }
             }
@@ -185,85 +157,66 @@ internal fun HubPage(
     }
     val searchContent: @Composable () -> Unit = {
         if (search != null) {
-            if (os4) {
-                if (searchMotion.mounted) {
-                    Os4SearchMode(
-                        motion = searchMotion,
-                        expanded = search.active,
-                        query = search.query,
-                        backdrop = topBarBackdrop,
-                        materialProgress = searchMaterial,
-                        onQueryChange = search::update,
-                        onSearch = { keyboardController?.hide() },
-                        onClose = {
-                            // close() clears the query immediately; record which title was covered.
-                            revealTitleOnExit = search.filtering || browsingScroll.state.collapsedFraction >= 1f
-                            search.close()
-                        },
-                    )
-                }
-            } else {
-                Os3HubSearch(search = search, onSearch = { keyboardController?.hide() })
+            if (searchMotion.mounted) {
+                Os4SearchMode(
+                    motion = searchMotion,
+                    expanded = search.active,
+                    query = search.query,
+                    backdrop = topBarBackdrop,
+                    materialProgress = searchMaterial,
+                    onQueryChange = search::update,
+                    onSearch = { keyboardController?.hide() },
+                    onClose = {
+                        // close() clears the query immediately; record which title was covered.
+                        revealTitleOnExit = search.filtering || browsingScroll.state.collapsedFraction >= 1f
+                        search.close()
+                    },
+                )
             }
         }
     }
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
     Scaffold(
         topBar = {
-            if (os4) {
-                Box(Modifier.fillMaxWidth()) {
-                    GlassTopAppBar(
-                        // The published transition owns foreground scale/blur/fade; the
-                        // independently placed search action keeps its own opacity because
-                        // the native title layout still clips glass button shadows.
-                        contentModifier = Modifier.glassSearchBarTransition(
-                            expanded = searchExpanded,
-                            barAlpha = { barAlpha.value },
-                        ),
-                        progressiveBlur = LocalTopBarProgressiveBlur.current,
-                        title = if (searchMotion.mounted && searchExpanded) "" else title,
-                        titleAlpha = { titleReveal.value * railProgress() },
-                        largeTitle = title,
-                        compact = filtering,
-                        isContentScrolled = listState.canScrollBackward,
-                        backdrop = topBarBackdrop,
-                        scrollBehavior = scrollBehavior,
-                        actions = searchAction,
-                        unclippedActions = search != null && !searchInNavigationBar,
-                    )
-                    if (search != null) {
-                        // An overlaid search row keeps the bar's measured height stable.
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                                .windowInsetsPadding(WindowInsets.statusBars)
-                                .padding(horizontal = GlassTopAppBarDefaults.HorizontalPadding)
-                                .padding(top = 4.dp)
-                                .offset {
-                                    val clearance = with(density) {
-                                        (GlassNavigationRailDefaults.CollapsedTop +
-                                            GlassNavigationRailDefaults.CollapsedHeight + 4.dp).toPx()
-                                    }
-                                    IntOffset(0, (clearance * (1f - railProgress())).roundToInt())
-                                },
-                        ) {
-                            searchContent()
-                        }
-                    }
-                }
-            } else {
-                MiuixBlurredTopBar(
+            Box(Modifier.fillMaxWidth()) {
+                GlassTopAppBar(
+                    // The published transition owns foreground scale/blur/fade; the
+                    // independently placed search action keeps its own opacity because
+                    // the native title layout still clips glass button shadows.
+                    contentModifier = Modifier.glassSearchBarTransition(
+                        expanded = searchExpanded,
+                        barAlpha = { barAlpha.value },
+                    ),
+                    progressiveBlur = LocalTopBarProgressiveBlur.current,
+                    title = if (searchMotion.mounted && searchExpanded) "" else title,
+                    titleAlpha = { titleReveal.value * railProgress() },
+                    largeTitle = title,
+                    compact = filtering,
+                    isContentScrolled = listState.canScrollBackward,
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
-                ) { barColor ->
-                    TopAppBar(
-                        title = title,
-                        color = barColor,
-                        scrollBehavior = scrollBehavior,
-                        actions = searchAction,
-                        bottomContent = searchContent,
-                    )
+                    actions = searchAction,
+                    unclippedActions = search != null && !searchInNavigationBar,
+                )
+                if (search != null) {
+                    // An overlaid search row keeps the bar's measured height stable.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(horizontal = GlassTopAppBarDefaults.HorizontalPadding)
+                            .padding(top = 4.dp)
+                            .offset {
+                                val clearance = with(density) {
+                                    (GlassNavigationRailDefaults.CollapsedTop +
+                                        GlassNavigationRailDefaults.CollapsedHeight + 4.dp).toPx()
+                                }
+                                IntOffset(0, (clearance * (1f - railProgress())).roundToInt())
+                            },
+                    ) {
+                        searchContent()
+                    }
                 }
             }
         },
@@ -295,46 +248,4 @@ internal fun HubPage(
         overlay()
     }
     }
-}
-
-@Composable
-private fun Os3HubSearch(search: PageSearch, onSearch: () -> Unit) {
-    AnimatedVisibility(
-        visible = search.active,
-        modifier = Modifier.fillMaxWidth(),
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut(),
-    ) {
-        SearchBar(
-            modifier = Modifier.fillMaxWidth(),
-            inputField = {
-                InputField(
-                    query = search.query,
-                    onQueryChange = search::update,
-                    onSearch = { onSearch() },
-                    expanded = search.active,
-                    onExpandedChange = { if (!it) search.close() },
-                    label = stringResource(R.string.feature_search),
-                )
-            },
-            expanded = search.active,
-            onExpandedChange = { if (!it) search.close() },
-            outsideEndAction = {
-                Text(
-                    modifier = Modifier
-                        .padding(start = 4.dp, end = 16.dp)
-                        .clickable(
-                            interactionSource = null,
-                            indication = null,
-                            onClick = search::close,
-                        ),
-                    text = stringResource(R.string.cancel),
-                    fontWeight = FontWeight.Bold,
-                    color = MiuixTheme.colorScheme.primary,
-                )
-            },
-            content = {},
-        )
-    }
-
 }

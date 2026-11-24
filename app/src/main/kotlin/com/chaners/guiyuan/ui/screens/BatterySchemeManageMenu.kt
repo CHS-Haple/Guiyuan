@@ -19,8 +19,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
 import com.chaners.guiyuan.ui.icons.Os4GlassEdit
@@ -37,7 +35,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Edit
-import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import com.chaners.guiyuan.ui.glass.GlassTransformPopup
@@ -57,7 +54,7 @@ internal fun BatterySchemeManageMenu(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+    if (isRuntimeShaderSupported()) {
         BatterySchemeGlassManageMenu(modifier, canCopy, onRename, onCopy, onDelete)
     } else {
         BatterySchemeNativeManageMenu(modifier, canCopy, onRename, onCopy, onDelete)
@@ -256,7 +253,7 @@ private fun BatterySchemeNativeManageMenu(
             modifier = modifier,
         ) {
             Icon(
-                imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+                imageVector = Os4GlassMore,
                 contentDescription = stringResource(R.string.battery_custom_scheme_manage),
             )
         }

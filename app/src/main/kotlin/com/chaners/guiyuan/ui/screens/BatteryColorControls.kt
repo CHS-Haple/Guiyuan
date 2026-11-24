@@ -13,9 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
@@ -133,7 +131,7 @@ internal fun BatteryColorBottomSheet(
     }
     // First backdrop is captured by the parent sheet, not the overlaid popup.
     val sheetColor = MiuixTheme.colorScheme.background
-    val sheetBackdrop = if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+    val sheetBackdrop = if (isRuntimeShaderSupported()) {
         rememberLayerBackdrop {
             drawRect(sheetColor)
             drawContent()

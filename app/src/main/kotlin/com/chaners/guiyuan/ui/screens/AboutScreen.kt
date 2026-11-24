@@ -15,8 +15,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
-import com.chaners.guiyuan.ui.LocalUiStyle
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.screens.about.GyBgEffect
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -54,7 +52,7 @@ internal fun AboutScreen(
         title = stringResource(R.string.about_title),
         onBack = onBack,
         listState = scroll.list,
-        compactTopBar = LocalUiStyle.current == UiStyle.OS4,
+        compactTopBar = true,
         titleAlpha = titleAlpha,
         background = {
             GyBgEffect(
