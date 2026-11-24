@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui
 
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
@@ -38,8 +37,8 @@ class NavigationActionPolicyTest {
     }
 
     @Test
-    fun os4GlassAndLiquidUseTheirExistingBottomNavActionLayout() {
-        val appearance = Appearance(uiStyle = UiStyle.OS4, navEnabled = true, navStyle = NavStyle.Glass)
+    fun glassAndLiquidUseTheirExistingBottomNavActionLayout() {
+        val appearance = Appearance(navEnabled = true, navStyle = NavStyle.Glass)
         assertTrue(hasOs4NavigationActionSlot(appearance, true, false, false, false))
         assertTrue(hasOs4NavigationActionSlot(appearance.copy(navStyle = NavStyle.Liquid), false, true, false, false))
         assertFalse(hasOs4NavigationActionSlot(appearance.copy(navStyle = NavStyle.Liquid), true, false, false, false))
@@ -47,12 +46,11 @@ class NavigationActionPolicyTest {
     }
 
     @Test
-    fun unsupportedStylesOs3AndRailFallbackPreserveTopBarAction() {
-        val appearance = Appearance(uiStyle = UiStyle.OS4, navEnabled = true)
+    fun unsupportedStylesAndRailFallbackPreserveTopBarAction() {
+        val appearance = Appearance(navEnabled = true)
         for (style in listOf(NavStyle.Standard, NavStyle.Blur)) {
             assertFalse(hasOs4NavigationActionSlot(appearance.copy(navStyle = style), true, true, false, false))
         }
-        assertFalse(hasOs4NavigationActionSlot(appearance.copy(uiStyle = UiStyle.OS3), true, true, false, false))
         assertFalse(hasOs4NavigationActionSlot(appearance.copy(navEnabled = false), true, true, false, false))
         for (style in listOf(NavStyle.Glass, NavStyle.Liquid)) {
             val styled = appearance.copy(navStyle = style)
@@ -62,12 +60,11 @@ class NavigationActionPolicyTest {
     }
 
     @Test
-    fun os4RailOnlyExposesActionInGlassAndLiquid() {
-        val glass = Appearance(uiStyle = UiStyle.OS4, navEnabled = true, navStyle = NavStyle.Glass)
+    fun railOnlyExposesActionInGlassAndLiquid() {
+        val glass = Appearance(navEnabled = true, navStyle = NavStyle.Glass)
         assertTrue(hasOs4RailActionSlot(glass, true))
         assertTrue(hasOs4RailActionSlot(glass.copy(navStyle = NavStyle.Liquid), true))
         assertFalse(hasOs4RailActionSlot(glass.copy(navStyle = NavStyle.Standard), true))
-        assertFalse(hasOs4RailActionSlot(glass.copy(uiStyle = UiStyle.OS3), true))
         assertFalse(hasOs4RailActionSlot(glass.copy(navEnabled = false), true))
         assertFalse(hasOs4RailActionSlot(glass, false))
     }

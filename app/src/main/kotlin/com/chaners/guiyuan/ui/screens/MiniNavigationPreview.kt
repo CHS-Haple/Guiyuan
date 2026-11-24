@@ -26,7 +26,6 @@ import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -59,7 +58,7 @@ internal fun MiniNavigationPreview(
     appearance: Appearance,
     dark: Boolean,
 ) {
-    val os4Glass = appearance.uiStyle == UiStyle.OS4 && appearance.navEnabled && appearance.navStyle == NavStyle.Glass
+    val os4Glass = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
         appearance.navEnabled && appearance.navStyle.requiresTextureBackdrop && isRuntimeShaderSupported()
     val liquidMaterialActive =
@@ -103,7 +102,7 @@ internal fun MiniNavigationPreview(
         when {
             standardNav -> MiniStandardNavigationPreview(appearance.navContent, os4Glass)
             liquidBackdrop != null -> MiniLiquidNavigationPreview(appearance.navContent, appearance.liquidMode, dark, liquidBackdrop)
-            else -> MiniFloatingNavigationPreview(appearance.navContent, appearance.uiStyle, appearance.navStyle, dark, miuixBackdrop)
+            else -> MiniFloatingNavigationPreview(appearance.navContent, appearance.navStyle, dark, miuixBackdrop)
         }
     }
 }
@@ -226,7 +225,6 @@ private fun MiniLiquidNavigationPreview(
 @Composable
 private fun MiniFloatingNavigationPreview(
     content: NavContent,
-    uiStyle: UiStyle,
     style: NavStyle,
     dark: Boolean,
     miuixBackdrop: LayerBackdrop?,
@@ -241,9 +239,8 @@ private fun MiniFloatingNavigationPreview(
         } else {
             Modifier
         }
-    val previewInteractive = uiStyle != UiStyle.OS4
     FloatingNavigationBar(
-        modifier = if (previewInteractive) floatingModifier else floatingModifier.clearAndSetSemantics {},
+        modifier = floatingModifier.clearAndSetSemantics {},
         color =
             if (miuixBackdrop != null) {
                 Color.Transparent
@@ -258,7 +255,7 @@ private fun MiniFloatingNavigationPreview(
             onClick = {},
             icon = MiuixIcons.Normal.Home,
             label = stringResource(R.string.nav_home),
-            interactive = previewInteractive,
+            interactive = false,
         )
         NavContentItem(
             content = content,
@@ -266,7 +263,7 @@ private fun MiniFloatingNavigationPreview(
             onClick = {},
             icon = MiuixIcons.Normal.Tune,
             label = stringResource(R.string.nav_features),
-            interactive = previewInteractive,
+            interactive = false,
         )
         NavContentItem(
             content = content,
@@ -274,7 +271,7 @@ private fun MiniFloatingNavigationPreview(
             onClick = {},
             icon = MiuixIcons.Normal.Settings,
             label = stringResource(R.string.nav_settings),
-            interactive = previewInteractive,
+            interactive = false,
         )
     }
 }

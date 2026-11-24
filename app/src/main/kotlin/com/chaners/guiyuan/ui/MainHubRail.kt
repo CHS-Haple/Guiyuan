@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
@@ -51,8 +50,8 @@ internal fun useNativeRailFor(
     direction: LayoutDirection,
 ): Boolean {
     if (!appearance.navEnabled) return false
-    // OS4 Glass and Liquid share the original GlassRail layout; OS3 uses native Rail.
-    if (appearance.uiStyle == UiStyle.OS4 && glassBackdropAvailable &&
+    // Glass and Liquid share the Glass rail; preserve native fallback when material is unavailable.
+    if (glassBackdropAvailable &&
         (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)
     ) return false
     return canPlaceNativeRail(

@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui
 
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
 
 internal enum class NavigationAction { HotReload, Search }
 
@@ -14,7 +13,7 @@ internal fun hasOs4NavigationActionSlot(
     glassRailActive: Boolean,
     nativeRailActive: Boolean,
 ): Boolean {
-    if (appearance.uiStyle != UiStyle.OS4 || !appearance.navEnabled ||
+    if (!appearance.navEnabled ||
         glassRailActive || nativeRailActive
     ) return false
     return when (appearance.navStyle) {
@@ -38,5 +37,5 @@ internal fun navigationActionFor(
 
 /** A native-morph OS4 Glass/Liquid rail can own an independent search action. */
 internal fun hasOs4RailActionSlot(appearance: Appearance, glassRailActive: Boolean): Boolean =
-    appearance.uiStyle == UiStyle.OS4 && appearance.navEnabled && glassRailActive &&
+    appearance.navEnabled && glassRailActive &&
         (appearance.navStyle == NavStyle.Glass || appearance.navStyle == NavStyle.Liquid)
