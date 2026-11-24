@@ -26,8 +26,6 @@ internal enum class ThemeMode {
 
 internal enum class UiStyle { OS3, OS4 }
 
-internal val uiStyleMenuOrder = listOf(UiStyle.OS4, UiStyle.OS3)
-
 internal enum class NavStyle {
     Standard,
     Blur,
@@ -48,7 +46,6 @@ internal enum class LiquidMode(val stored: String) {
 
 internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
-    val uiStyle: UiStyle = UiStyle.OS4,
     val topBarProgressiveBlur: Boolean = true,
     val dynamicColor: Boolean = false,
     val colorSpec: ThemeColorSpec? = null,
@@ -62,6 +59,9 @@ internal data class Appearance(
     val swipeBack: Boolean = true,
     val uiScalePercent: Int = 100,
 ) {
+    // Transitional until the remaining UI callers lose their style branches.
+    val uiStyle: UiStyle get() = UiStyle.OS4
+
     val activeNavContent: NavContent
         get() = if (navStyle == NavStyle.Liquid) liquidContent else navContent
 }
@@ -132,20 +132,22 @@ private val topBarProgressiveBlurKey = booleanPreferencesKey("top_bar_progressiv
 private val navContentKey = stringPreferencesKey("floating_navigation_content")
 private val os4UpgradeKey = booleanPreferencesKey("ui_style_os4_upgrade_done")
 
-internal fun migrateOs4Appearance(prefs: MutablePreferences) {
-    if (prefs[os4UpgradeKey] == true) return
-
+internal fun migrateAppearance(prefs: MutablePreferences) {
     val freshInstall = prefs.asMap().isEmpty()
-    prefs[uiStyleKey] = UiStyle.OS4.name
-    if (freshInstall) prefs[navContentKey] = NavContent.IconAndText.name
-    prefs[os4UpgradeKey] = true
+    prefs.remove(uiStyleKey)
+    prefs.remove(os4UpgradeKey)
+    // Preserve the legacy icon-only default if retiring the style keys empties an existing store.
+    // Other existing preferences (including the shared legacy Liquid label key) remain untouched.
+    if (prefs.asMap().isEmpty()) {
+        prefs[navContentKey] = if (freshInstall) NavContent.IconAndText.name else NavContent.IconOnly.name
+    }
 }
 
 internal class AppearanceRepo(context: Context) {
     private val store = context.applicationContext.appearanceStore
 
     val settings: Flow<Appearance> = store.data
-        .onStart { store.edit { prefs -> migrateOs4Appearance(prefs) } }
+        .onStart { store.edit { prefs -> migrateAppearance(prefs) } }
         .catch { error ->
             if (error is IOException) {
                 emit(emptyPreferences())
@@ -169,7 +171,6 @@ internal class AppearanceRepo(context: Context) {
             val colorSpec = decodeColorSpec(prefs[colorSpecKey])
             Appearance(
                 theme = theme.mode,
-                uiStyle = UiStyle.entries.firstOrNull { it.name == prefs[uiStyleKey] } ?: UiStyle.OS3,
                 topBarProgressiveBlur = prefs[topBarProgressiveBlurKey] ?: true,
                 dynamicColor = theme.dynamicColor,
                 colorSpec = colorSpec,
@@ -189,13 +190,6 @@ internal class AppearanceRepo(context: Context) {
                 uiScalePercent = uiScalePercent(prefs[uiScaleKey]),
             )
         }
-
-    suspend fun setUiStyle(style: UiStyle) {
-        store.edit { prefs ->
-            prefs[uiStyleKey] = style.name
-            prefs[os4UpgradeKey] = true
-        }
-    }
 
     suspend fun setTopBarProgressiveBlur(enabled: Boolean) {
         store.edit { prefs -> prefs[topBarProgressiveBlurKey] = enabled }

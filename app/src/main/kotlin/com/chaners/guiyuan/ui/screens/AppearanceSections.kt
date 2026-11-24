@@ -9,8 +9,6 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.settings.uiStyleMenuOrder
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.preference.SliderPreference
@@ -33,22 +31,6 @@ private fun ColumnScope.appearanceStyle(
     appearance: Appearance,
     actions: AppearanceStyleActions,
 ) {
-    UiDropdownPreference(
-        items = listOf(
-            stringResource(R.string.ui_style_os4),
-            stringResource(R.string.ui_style_os3),
-        ),
-        selectedIndex = uiStyleMenuOrder.indexOf(appearance.uiStyle),
-        title = stringResource(R.string.ui_style_title),
-        summary = stringResource(R.string.ui_style_summary),
-        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_layers) },
-        showValue = true,
-        onSelectedIndexChange = { index ->
-            uiStyleMenuOrder.getOrNull(index)?.let { style ->
-                if (style != appearance.uiStyle) actions.onUiStyleChange(style)
-            }
-        },
-    )
     SwitchPreference(
         title = stringResource(R.string.top_bar_progressive_blur),
         summary = stringResource(R.string.top_bar_progressive_blur_summary),
@@ -115,10 +97,7 @@ private fun ColumnScope.appearanceNavigationStyle(
     val floatingStyleOptions = listOf(
         stringResource(R.string.floating_navigation_style_standard),
         stringResource(R.string.floating_navigation_style_blur),
-        stringResource(
-            if (appearance.uiStyle == UiStyle.OS4) R.string.floating_navigation_style_soft_glass
-            else R.string.floating_navigation_style_glass,
-        ),
+        stringResource(R.string.floating_navigation_style_soft_glass),
         stringResource(R.string.floating_navigation_style_liquid),
     )
     UiDropdownPreference(

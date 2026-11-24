@@ -86,14 +86,12 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
-    fun freshInstallUsesOs4GlassWithCaptions() {
+    fun freshInstallUsesGlassWithCaptions() {
         val settings = Appearance()
 
         assertTrue(settings.navEnabled)
         assertTrue(settings.navTouchExtension)
-        assertEquals(UiStyle.OS4, settings.uiStyle)
         assertTrue(settings.topBarProgressiveBlur)
-        assertEquals(listOf(UiStyle.OS4, UiStyle.OS3), uiStyleMenuOrder)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconAndText, settings.navContent)
         assertEquals(NavContent.IconAndText, settings.liquidContent)
@@ -102,10 +100,9 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
-    fun progressiveTopBarBlurSettingIsSharedAcrossUiStyles() {
+    fun progressiveTopBarBlurRemainsConfigurable() {
         val disabled = Appearance(topBarProgressiveBlur = false)
-        assertFalse(disabled.copy(uiStyle = UiStyle.OS3).topBarProgressiveBlur)
-        assertFalse(disabled.copy(uiStyle = UiStyle.OS4).topBarProgressiveBlur)
+        assertFalse(disabled.topBarProgressiveBlur)
         assertTrue(disabled.copy(topBarProgressiveBlur = true).topBarProgressiveBlur)
     }
 
@@ -118,35 +115,35 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
-    fun os4MigrationUpdatesExistingUserWithoutResettingNavigation() {
+    fun retiringStylePreservesExistingNavigation() {
         val uiStyle = stringPreferencesKey(TEST_UI_STYLE_KEY)
         val navStyle = stringPreferencesKey("floating_navigation_style")
         val navContent = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val navEnabled = booleanPreferencesKey("floating_navigation_bar_enabled")
         val prefs = mutablePreferencesOf(
-            uiStyle to UiStyle.OS3.name,
+            uiStyle to "OS3",
             navStyle to NavStyle.Liquid.name,
             navContent to NavContent.IconOnly.name,
             navEnabled to false,
         )
 
-        migrateOs4Appearance(prefs)
+        migrateAppearance(prefs)
 
-        assertEquals(UiStyle.OS4.name, prefs[uiStyle])
+        assertEquals(null, prefs[uiStyle])
         assertEquals(NavStyle.Liquid.name, prefs[navStyle])
         assertEquals(NavContent.IconOnly.name, prefs[navContent])
         assertEquals(false, prefs[navEnabled])
 
-        prefs[uiStyle] = UiStyle.OS3.name
-        migrateOs4Appearance(prefs)
-        assertEquals(UiStyle.OS3.name, prefs[uiStyle])
+        val migrated = prefs.asMap().toMap()
+        migrateAppearance(prefs)
+        assertEquals(migrated, prefs.asMap())
     }
 
     @Test
-    fun cleanInstallGetsOs4AndIconText() {
+    fun cleanInstallGetsIconText() {
         val prefs = mutablePreferencesOf()
-        migrateOs4Appearance(prefs)
-        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
+        migrateAppearance(prefs)
+        assertEquals(null, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
         assertEquals(
             NavContent.IconAndText.name,
             prefs[stringPreferencesKey(TEST_NAV_CONTENT_KEY)],
@@ -162,7 +159,7 @@ class AppearanceCompatibilityTest {
             liquidKey to NavContent.IconAndText.name,
         )
 
-        migrateOs4Appearance(prefs)
+        migrateAppearance(prefs)
 
         assertEquals(NavContent.IconOnly.name, prefs[regularKey])
         assertEquals(NavContent.IconAndText.name, prefs[liquidKey])
@@ -180,24 +177,44 @@ class AppearanceCompatibilityTest {
     fun uiStyleMigrationDoesNotResetProgressiveBlurPreference() {
         val blurKey = booleanPreferencesKey("top_bar_progressive_blur")
         val prefs = mutablePreferencesOf(
-            stringPreferencesKey(TEST_UI_STYLE_KEY) to UiStyle.OS3.name,
+            stringPreferencesKey(TEST_UI_STYLE_KEY) to "OS3",
             blurKey to false,
         )
 
-        migrateOs4Appearance(prefs)
+        migrateAppearance(prefs)
 
         assertEquals(false, prefs[blurKey])
-        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
+        assertEquals(null, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
     }
 
     @Test
-    fun os4SelectionDoesNotRewriteOs3NavigationPreferences() {
-        val old = Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid, liquidMode = LiquidMode.Clear)
-        val experimental = old.copy(uiStyle = UiStyle.OS4)
-        assertEquals(NavStyle.Liquid, experimental.navStyle)
-        assertEquals(NavContent.IconAndText, experimental.activeNavContent)
-        assertEquals(LiquidMode.Clear, experimental.liquidMode)
-        assertEquals(old, experimental.copy(uiStyle = UiStyle.OS3))
+    fun retiringOnlyStyleKeysPreservesImplicitLegacyIconOnly() {
+        val style = stringPreferencesKey(TEST_UI_STYLE_KEY)
+        val upgraded = booleanPreferencesKey("ui_style_os4_upgrade_done")
+        val content = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
+        for (oldStyle in listOf("OS3", "OS4", "Unknown")) {
+            val prefs = mutablePreferencesOf(style to oldStyle, upgraded to true)
+            migrateAppearance(prefs)
+            assertEquals(null, prefs[style])
+            assertEquals(null, prefs[upgraded])
+            assertEquals(NavContent.IconOnly.name, prefs[content])
+            val migrated = prefs.asMap().toMap()
+            migrateAppearance(prefs)
+            assertEquals(migrated, prefs.asMap())
+        }
+    }
+
+    @Test
+    fun migrationKeepsMissingSharedLiquidContentKeyAbsent() {
+        val content = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
+        val nav = stringPreferencesKey("floating_navigation_style")
+        val prefs = mutablePreferencesOf(
+            stringPreferencesKey(TEST_UI_STYLE_KEY) to "OS3",
+            nav to NavStyle.Liquid.name,
+        )
+        migrateAppearance(prefs)
+        assertEquals(null, prefs[content])
+        assertEquals(NavStyle.Liquid.name, prefs[nav])
     }
 
 }
