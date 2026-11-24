@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -17,6 +18,29 @@ class SysUiPresentationRuntimeTest {
             fatal,
             runCatching {
                 SysUiPresentationRuntime.emitPassiveDiagnostic {
+                    throw InvocationTargetException(fatal)
+                }
+            }.exceptionOrNull(),
+        )
+    }
+
+    @Test
+    fun diagnosticWarningReceiptDoesNotDisableLaterEventsOrSwallowFatalErrors() {
+        val warned = AtomicBoolean(false)
+        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
+            throw IllegalStateException("diagnostic")
+        }
+        assertEquals(true, warned.get())
+        var delivered = false
+        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
+            delivered = true
+        }
+        assertEquals(true, delivered)
+        val fatal = OutOfMemoryError("diagnostic-fatal")
+        assertSame(
+            fatal,
+            runCatching {
+                SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
                     throw InvocationTargetException(fatal)
                 }
             }.exceptionOrNull(),
