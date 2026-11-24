@@ -10,6 +10,7 @@ import java.util.WeakHashMap
 // Passive native battery-icon reflection, performed only during requested detailed diagnostics.
 // The existing SysUiTintSource lock serializes all diagnostic caches and their retirement.
 internal object SysUiTintDiagnosticProbe {
+    private val firstEventLogged = WeakHashMap<View, Unit>()
     private val batteryIconStructureLogged = WeakHashMap<View, Unit>()
     private val batteryIconClipFields = HashMap<Class<*>, List<Field>>()
     private val colorFilterColorGetters = HashMap<Class<*>, java.lang.reflect.Method>()
@@ -56,6 +57,35 @@ internal object SysUiTintDiagnosticProbe {
                 " semanticTints=" + semanticTintsText,
         )
         synchronized(SysUiTintSource) { batteryIconStructureLogged[iconView] = Unit }
+    }
+
+    inline fun probeFirstNativeArguments(
+        sourceView: View,
+        state: TintState,
+        onEvent: (String) -> Unit,
+        getArg: (Int) -> Any?,
+    ) {
+        if (synchronized(SysUiTintSource) { firstEventLogged.containsKey(sourceView) }) return
+        val darkIntensity =
+            (getArg(1) as? Number)?.toFloat()
+                ?: Float.NaN
+        val lightColor =
+            (getArg(3) as? Number)?.toInt() ?: 0
+        val darkColor =
+            (getArg(4) as? Number)?.toInt() ?: 0
+        val useTint =
+            getArg(5) as? Boolean ?: false
+        onEvent(
+            "tintSource receiver=" +
+                sourceView.javaClass.simpleName +
+                " batteryApplied=" + colorHex(state.appliedTint) +
+                " authority=battery-anchor-fallback" +
+                " intensity=" + darkIntensity +
+                " light=" + colorHex(lightColor) +
+                " dark=" + colorHex(darkColor) +
+                " useTint=" + useTint,
+        )
+        synchronized(SysUiTintSource) { firstEventLogged[sourceView] = Unit }
     }
 
     private fun readColorFilterColor(filter: android.graphics.ColorFilter?): Int? {
@@ -131,10 +161,12 @@ internal object SysUiTintDiagnosticProbe {
     }
 
     fun resetTransient() = synchronized(SysUiTintSource) {
+        firstEventLogged.clear()
         batteryIconStructureLogged.clear()
     }
 
     fun clearAll() = synchronized(SysUiTintSource) {
+        firstEventLogged.clear()
         batteryIconStructureLogged.clear()
         batteryIconClipFields.clear()
         colorFilterColorGetters.clear()
