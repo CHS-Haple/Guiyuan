@@ -720,7 +720,7 @@ internal object SysUiPresentationOwner {
         keyguardFamilyReadySink = onReady
 
         val existing = keyguardFamilyCurrent
-        if (
+        val session = if (
             existing?.matches(
                 host = resolved.host,
                 statusIcons = resolved.statusIcons,
@@ -734,34 +734,9 @@ internal object SysUiPresentationOwner {
                 surfaceName = surface.surfaceName,
                 eventPrefix = surface.eventPrefix,
             )
-            val masked =
-                existing.start(
-                    deferVisualMaskUntilLayout = true,
-                    preMaskBeforeLayout = preMaskBeforeLayout,
-                    deferNativeLayoutOwnershipUntilCommit =
-                        deferNativeLayoutOwnershipUntilCommit,
-                    onLayoutReady = { maskedViews ->
-                        onKeyguardFamilyLayoutReady(
-                            session = existing,
-                            surface = surface,
-                            maskedViews = maskedViews,
-                            reused = true,
-                        )
-                    },
-                )
-            if (
-                keyguardFamilyCurrent !== existing ||
-                    keyguardFamilySurface != surface
-            ) {
-                return Result.Failure(
-                    surface.surfaceName + "-reuse-aborted-after-fail-native",
-                )
-            }
-            return startResult(existing, masked, reused = true)
-        }
-
-        existing?.let { stopFamily(it, surface.surfaceName + "-host-replaced") }
-        val session =
+            existing
+        } else {
+            existing?.let { stopFamily(it, surface.surfaceName + "-host-replaced") }
             Session(
                 host = resolved.host,
                 statusIcons = resolved.statusIcons,
@@ -778,9 +753,12 @@ internal object SysUiPresentationOwner {
                 retainReservationOnWidthLoss = false,
                 onEvent = { event -> keyguardFamilyEventSink?.invoke(event) },
                 onFailure = ::onKeyguardFamilySessionFailure,
-            )
-        keyguardFamilyCurrent = session
-        keyguardFamilySurface = surface
+            ).also { created ->
+                keyguardFamilyCurrent = created
+                keyguardFamilySurface = surface
+            }
+        }
+        val reused = session === existing
         val masked =
             session.start(
                 deferVisualMaskUntilLayout = true,
@@ -792,7 +770,7 @@ internal object SysUiPresentationOwner {
                         session = session,
                         surface = surface,
                         maskedViews = maskedViews,
-                        reused = false,
+                        reused = reused,
                     )
                 },
             )
@@ -801,10 +779,11 @@ internal object SysUiPresentationOwner {
                 keyguardFamilySurface != surface
         ) {
             return Result.Failure(
-                surface.surfaceName + "-activation-aborted-after-fail-native",
+                surface.surfaceName +
+                    (if (reused) "-reuse-aborted-after-fail-native" else "-activation-aborted-after-fail-native"),
             )
         }
-        return startResult(session, masked, reused = false)
+        return startResult(session, masked, reused = reused)
     }
 
     private fun deactivateKeyguardFamily(
@@ -910,30 +889,10 @@ internal object SysUiPresentationOwner {
             // The fake carrier must finish the native width layout before projection.
             return Result.Failure("fake-carrier-native-layout-pending", retryAfterLayout = true)
         }
-        if (sameHost) {
-            val masked =
-                existing.start(
-                    deferVisualMaskUntilLayout = true,
-                    onLayoutReady = { maskedViews ->
-                        onCcLayoutReady(
-                            session = existing,
-                            maskedViews = maskedViews,
-                            reused = true,
-                        )
-                    },
-                )
-            if (
-                controlCenterCurrent !== existing
-            ) {
-                return Result.Failure(
-                    "control-center-reuse-aborted-after-fail-native",
-                )
-            }
-            return startResult(existing, masked, reused = true)
-        }
-
-        existing?.let { stopCc(it, "host-replaced") }
-        val session =
+        val session = if (sameHost) {
+            existing
+        } else {
+            existing?.let { stopCc(it, "host-replaced") }
             Session(
                 host = host,
                 statusIcons = statusIcons,
@@ -951,8 +910,10 @@ internal object SysUiPresentationOwner {
                 onEvent = { event -> controlCenterEventSink?.invoke(event) },
                 onFailure = ::onCcSessionFailure,
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-            )
-        controlCenterCurrent = session
+            ).also { created ->
+                controlCenterCurrent = created
+            }
+        }
         val masked =
             session.start(
                 deferVisualMaskUntilLayout = true,
@@ -960,7 +921,7 @@ internal object SysUiPresentationOwner {
                     onCcLayoutReady(
                         session = session,
                         maskedViews = maskedViews,
-                        reused = false,
+                        reused = sameHost,
                     )
                 },
             )
@@ -968,10 +929,11 @@ internal object SysUiPresentationOwner {
             controlCenterCurrent !== session
         ) {
             return Result.Failure(
-                "control-center-activation-aborted-after-fail-native",
+                if (sameHost) "control-center-reuse-aborted-after-fail-native"
+                else "control-center-activation-aborted-after-fail-native",
             )
         }
-        return startResult(session, masked, reused = false)
+        return startResult(session, masked, reused = sameHost)
     }
 
     @Synchronized
