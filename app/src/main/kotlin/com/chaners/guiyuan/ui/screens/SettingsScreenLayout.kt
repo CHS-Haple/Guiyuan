@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,6 +35,9 @@ import com.chaners.guiyuan.ui.layout.pageContentPadding
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.RefreshState
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
@@ -49,6 +53,7 @@ internal data class SettingsPullToRefresh(
     val texts: List<String>,
 )
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun SettingsPage(
     title: String,
@@ -157,6 +162,14 @@ internal fun SettingsPage(
                 }
             } else {
                 SettingsList()
+            }
+            if (userScrollEnabled) {
+                VerticalScrollBar(
+                    adapter = rememberScrollBarAdapter(resolvedListState),
+                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                    trackPadding = contentPadding,
+                    topAppBarScrollBehavior = scrollBehavior,
+                )
             }
             foreground(contentPadding)
         }

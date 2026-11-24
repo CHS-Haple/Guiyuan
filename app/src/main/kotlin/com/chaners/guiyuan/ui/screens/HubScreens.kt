@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -55,6 +56,9 @@ import kotlin.math.roundToInt
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalDensity
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.basic.Scaffold
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassMotion
@@ -78,6 +82,7 @@ internal fun AnimatedPreferenceGroup(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun HubPage(
     title: String,
@@ -227,6 +232,11 @@ internal fun HubPage(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
+            val contentPadding = pageContentPadding(
+                innerPadding = paddingValues,
+                outerBottomPadding = bottomContentPadding,
+                extraBottom = 12.dp,
+            )
             LazyColumn(
                 state = listState,
                 overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
@@ -236,12 +246,14 @@ internal fun HubPage(
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = pageContentPadding(
-                    innerPadding = paddingValues,
-                    outerBottomPadding = bottomContentPadding,
-                    extraBottom = 12.dp,
-                ),
+                contentPadding = contentPadding,
                 content = content,
+            )
+            VerticalScrollBar(
+                adapter = rememberScrollBarAdapter(listState),
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                trackPadding = contentPadding,
+                topAppBarScrollBehavior = scrollBehavior,
             )
         }
 

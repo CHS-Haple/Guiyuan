@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -66,6 +67,9 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
@@ -103,6 +107,7 @@ internal fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 private fun HomeScreenScrollingContent(
     contents: HomeScreenContents,
@@ -114,6 +119,11 @@ private fun HomeScreenScrollingContent(
     val onOverscrollChanged: (Float) -> Unit = remember(frame.scrollBehavior) {
         { offset -> frame.scrollBehavior.state.overscrollOffset = offset }
     }
+    val contentPadding = pageContentPadding(
+        innerPadding = padding,
+        outerBottomPadding = contents.layout.bottomContentPadding,
+        extraBottom = 12.dp,
+    )
     Box(Modifier.fillMaxSize().topBarBackdropSource(frame.backdrop)) {
         LazyColumn(
             state = frame.listState,
@@ -123,11 +133,7 @@ private fun HomeScreenScrollingContent(
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                 .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                 .nestedScroll(frame.scrollBehavior.nestedScrollConnection),
-            contentPadding = pageContentPadding(
-                innerPadding = padding,
-                outerBottomPadding = contents.layout.bottomContentPadding,
-                extraBottom = 12.dp,
-            ),
+            contentPadding = contentPadding,
         ) {
             item { HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources) }
             item {
@@ -141,6 +147,12 @@ private fun HomeScreenScrollingContent(
                 )
             }
         }
+        VerticalScrollBar(
+            adapter = rememberScrollBarAdapter(frame.listState),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            trackPadding = contentPadding,
+            topAppBarScrollBehavior = frame.scrollBehavior,
+        )
     }
 }
 

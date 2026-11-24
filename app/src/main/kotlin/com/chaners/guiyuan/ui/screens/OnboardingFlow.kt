@@ -57,6 +57,8 @@ import top.yukonga.miuix.kmp.nav.core.navBackStackOf
 import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.verticalScrollBar
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -102,6 +104,7 @@ private enum class PermissionWarningPhase {
 
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun OnboardingFlow(
     config: OnboardingConfig,
@@ -297,7 +300,8 @@ internal fun OnboardingFlow(
                 Column(
                     modifier = Modifier.weight(1f).fillMaxWidth().then(
                         if (step == 2) Modifier
-                        else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
+                        else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .verticalScrollBar(scroll).verticalScroll(scroll),
                     ),
                 ) {
                     GuideStageHeading(step)

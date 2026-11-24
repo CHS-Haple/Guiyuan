@@ -33,7 +33,10 @@ import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import top.yukonga.miuix.kmp.basic.verticalScrollBar
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun BatteryAddSchemePage(
     count: Int,
@@ -47,6 +50,7 @@ internal fun BatteryAddSchemePage(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+            .verticalScrollBar(scrollState, trackPadding = contentPadding)
             .verticalScroll(scrollState)
             .padding(contentPadding),
     ) {
