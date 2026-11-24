@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -13,9 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.AnnotatedString
@@ -132,7 +136,13 @@ internal fun UiTabRow(
     modifier: Modifier = Modifier,
     inCard: Boolean = true,
 ) {
+    if (tabs.isEmpty()) return
     if (isRuntimeShaderSupported()) {
+        val layoutDirection = LocalLayoutDirection.current
+        val density = LocalDensity.current
+        val trackPaddingPx = with(density) { GlassSegmentedTabRowDefaults.TrackPadding.toPx() }
+        val tabGapPx = with(density) { GlassSegmentedTabRowDefaults.TabGap.toPx() }
+        val currentOnSelect = rememberUpdatedState(onTabSelected)
         // A tab inside the scrolling page must not sample the page's own
         // backdrop: that recorder also contains this tab. Record only its base.
         val surface = if (inCard) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.background
@@ -145,6 +155,26 @@ internal fun UiTabRow(
                 onSelect = onTabSelected,
                 backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth(),
+            )
+            // Upstream's glass segment drag recognizes horizontal movement without
+            // ruling out a vertical page swipe. In the Sandbox use tap selection
+            // only, so Compose's normal verticalScroll wins on an actual drag.
+            Box(
+                Modifier.matchParentSize().pointerInput(tabs.size, layoutDirection, trackPaddingPx, tabGapPx) {
+                    detectTapGestures { position ->
+                        val width = (size.width.toFloat() - trackPaddingPx * 2).coerceAtLeast(0f)
+                        val slot = ((width - tabGapPx * (tabs.size - 1)) / tabs.size).coerceAtLeast(0f)
+                        if (slot <= 0f) return@detectTapGestures
+                        val x = if (layoutDirection == LayoutDirection.Rtl) {
+                            size.width - position.x
+                        } else {
+                            position.x
+                        }
+                        val index = ((x - trackPaddingPx) / (slot + tabGapPx)).toInt()
+                            .coerceIn(0, tabs.lastIndex)
+                        currentOnSelect.value(index)
+                    }
+                },
             )
         }
     } else {
