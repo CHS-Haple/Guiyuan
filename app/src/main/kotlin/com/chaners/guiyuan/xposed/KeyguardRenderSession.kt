@@ -73,6 +73,7 @@ internal object KeyguardRenderSession {
         if (!sceneEligible) {
             return if (scene == Scene.AOD) "aod-not-active" else "keyguard-not-active"
         }
+        // Sessions can only be created or retargeted after this eligibility gate.
         if (retirement.pending != null) return "keyguard-render-release-incomplete"
         val featureEnabled =
             resolveFamilyFeatureEnabled(
@@ -87,7 +88,6 @@ internal object KeyguardRenderSession {
             existing.retarget(
                 scene = scene,
                 featureEnabled = featureEnabled,
-                sceneEligible = sceneEligible,
                 onPresentationReadinessChanged = onPresentationReadinessChanged,
             )
             existing.update(StatusStateStore.snapshot())
@@ -105,7 +105,6 @@ internal object KeyguardRenderSession {
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 scene = scene,
                 initialFeatureEnabled = featureEnabled,
-                initialSceneEligible = sceneEligible,
                 onPresentationReadinessChanged = onPresentationReadinessChanged,
             )
         current = session
@@ -283,7 +282,6 @@ internal object KeyguardRenderSession {
         private val isDetailedDiagnosticsEnabled: () -> Boolean,
         private var scene: Scene,
         initialFeatureEnabled: Boolean,
-        initialSceneEligible: Boolean,
         private var onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(resolved.host)
@@ -323,7 +321,6 @@ internal object KeyguardRenderSession {
 
         private var featureEnabled = initialFeatureEnabled
         private var nativeHandoffActive = true
-        private var sceneEligible = initialSceneEligible
         private var modelReady = false
         private var tintReady = false
         private var layoutReady = false
@@ -356,13 +353,11 @@ internal object KeyguardRenderSession {
         fun retarget(
             scene: Scene,
             featureEnabled: Boolean,
-            sceneEligible: Boolean,
             onPresentationReadinessChanged: ((Boolean) -> Unit)?,
         ) {
             val changedScene = this.scene != scene
             this.scene = scene
             this.featureEnabled = featureEnabled
-            this.sceneEligible = sceneEligible
             this.onPresentationReadinessChanged = onPresentationReadinessChanged
             if (changedScene) {
                 stopFollowingIconAlpha()
@@ -573,7 +568,7 @@ internal object KeyguardRenderSession {
                     " toAod=" + update.toAod +
                     " isAodAnimate=" + update.isAodAnimate +
                     " animToAod=" + (update.animToAod ?: "unavailable") +
-                    " sceneEligible=" + sceneEligible +
+                    " sceneEligible=true" +
                     " eligibilityAuthority=scene-policy" +
                     OVERLAY_VISIBLE_LOG_PREFIX + visible +
                     " childAlpha=" + renderView.alpha +
@@ -743,7 +738,7 @@ internal object KeyguardRenderSession {
                 resolveOverlayVisible(
                     featureEnabled = featureEnabled,
                     nativeHandoffActive = nativeHandoffActive,
-                    sceneEligible = sceneEligible,
+                    sceneEligible = true,
                 )
             if (visible) {
                 // The sibling combined view follows status icons, not Battery's separate AOD fade.
@@ -764,7 +759,7 @@ internal object KeyguardRenderSession {
                     tintReady = tintReady,
                     layoutReady = layoutReady,
                     hostAttached = systemIcons.get()?.isAttachedToWindow == true,
-                    sceneEligible = sceneEligible,
+                    sceneEligible = true,
                 )
             if (!force && ready == lastPresentationReady) return
             lastPresentationReady = ready
@@ -775,7 +770,7 @@ internal object KeyguardRenderSession {
                     " tintReady=" + tintReady +
                     " layoutReady=" + layoutReady +
                     " featureEnabled=" + featureEnabled +
-                    " sceneEligible=" + sceneEligible +
+                    " sceneEligible=true" +
                     " aodOwned=" + scene.aodOwned
             }
             onPresentationReadinessChanged?.invoke(ready)
