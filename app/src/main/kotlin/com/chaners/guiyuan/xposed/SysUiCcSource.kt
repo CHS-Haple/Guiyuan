@@ -58,14 +58,18 @@ internal object SysUiCcSource {
             "layoutTranslationX",
         )
 
+    internal class Callbacks(
+        val onUpdate: ((Update) -> Unit)? = null,
+        val onAfterNativeExpansion: ((Float) -> Unit)? = null,
+        val onFakePresentationAttached: ((ViewGroup) -> Unit)? = null,
+        val onRuntimeFailure: ((Throwable) -> Unit)? = null,
+    )
+
     @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onUpdate: ((Update) -> Unit)? = null,
-        onAfterNativeExpansion: ((Float) -> Unit)? = null,
-        onFakePresentationAttached: ((ViewGroup) -> Unit)? = null,
-        onRuntimeFailure: ((Throwable) -> Unit)? = null,
+        callbacks: Callbacks = Callbacks(),
         onEvent: ((String) -> Unit)? = null,
         isProbeEnabled: () -> Boolean = { false },
     ): List<HookHandle> {
@@ -129,90 +133,13 @@ internal object SysUiCcSource {
                 module
                     .hook(visibleMethod)
                     .setId(CONTROL_CENTER_VISIBLE_HOOK_ID)
-                    .intercept(
-                        Hooker { chain ->
-                            val result = chain.proceed()
-                            val handled = dispatchRuntimeCallback(
-                                callback = {
-                                    val visible = chain.getArg(0) as? Boolean
-                                    homeEligible = allowsHome(visible)
-                                    // One native header witness for this visibility event.
-                                    val contract = if (visible == true) anchorContract else null
-                                    val header =
-                                        if (visible == true) resolveHeader(chain.thisObject, contract)
-                                        else null
-                                    val presentationHost =
-                                        header?.let { contract?.fakePresentationRoot(it) }
-                                    val sourceScene =
-                                        if (visible == true) resolveSourceScene(contract, header)
-                                        else null
-                                    val transitionEndpoints =
-                                        header?.let { contract?.transitionEndpoints(it) }
-                                    val update =
-                                        Update(
-                                            source = Source.CONTROL_CENTER,
-                                            fraction = null,
-                                            expanded = null,
-                                            tracking = null,
-                                            visible = visible,
-                                            presentationHost = presentationHost,
-                                            sourceScene = sourceScene,
-                                            transitionEndpoints = transitionEndpoints,
-                                            batteryIslandActive =
-                                                header?.let { contract?.batteryIslandActive(it) },
-                                        )
-                                    onUpdate?.invoke(update)
-                                    dispatchRuntimeCallback(
-                                        callback = {
-                                            emitDiagnostic(update, onEvent, isProbeEnabled)
-                                        },
-                                    )
-                                },
-                                onFailure = onRuntimeFailure,
-                            )
-                            if (!handled) homeEligible = false
-                            result
-                        },
-                    )
+                    .intercept(visibleHooker(callbacks, onEvent, isProbeEnabled))
 
             handles +=
                 module
                     .hook(fakeAttachedMethod)
                     .setId(CONTROL_CENTER_FAKE_ATTACHED_HOOK_ID)
-                    .intercept(
-                        Hooker { chain ->
-                            val result = chain.proceed()
-                            var observed: ViewGroup? = null
-                            dispatchRuntimeCallback(
-                                callback = { observed = chain.thisObject as? ViewGroup },
-                                onFailure = onRuntimeFailure,
-                            )
-                            val root = observed
-                            if (root != null) {
-                                dispatchRuntimeCallback(
-                                    callback =
-                                        onFakePresentationAttached?.let { callback ->
-                                            { callback(root) }
-                                        },
-                                    onFailure = onRuntimeFailure,
-                                )
-                                dispatchRuntimeCallback(
-                                    callback = {
-                                        if (onEvent != null && isProbeEnabled()) {
-                                            onEvent(
-                                                "controlCenterFakeLifecycle attached " +
-                                                    "root=" + root.javaClass.name +
-                                                    " attachedToWindow=" +
-                                                    root.isAttachedToWindow,
-                                            )
-                                            describeFakeIslandContractOnce(root)?.let(onEvent)
-                                        }
-                                    },
-                                )
-                            }
-                            result
-                        },
-                    )
+                    .intercept(fakeAttachedHooker(callbacks, onEvent, isProbeEnabled))
 
             // Native visibility is the CC runtime authority.
             // Notification Shade keeps the native Home carrier lifecycle.
@@ -224,86 +151,13 @@ internal object SysUiCcSource {
                 module
                     .hook(expansionMethod)
                     .setId(CONTROL_CENTER_EXPANSION_HOOK_ID)
-                    .intercept(
-                        Hooker { chain ->
-                            var fraction: Float? = null
-                            // Commit the projection before native expansion without
-                            // letting a failed contract read suppress native execution.
-                            val handled = dispatchRuntimeCallback(
-                                callback = {
-                                    fraction =
-                                        nativeFraction(
-                                            (chain.getArg(0) as? Number)?.toFloat(),
-                                        )
-                                    val contract = anchorContract
-                                    val header = contract?.headerFromCallback(chain.thisObject)
-                                    val transitionEndpoints =
-                                        header?.let { contract?.transitionEndpoints(it) }
-                                    val batteryIslandActive =
-                                        header?.let { contract?.batteryIslandActive(it) }
-                                    val update =
-                                        Update(
-                                            source = Source.CONTROL_CENTER,
-                                            fraction = fraction,
-                                            expanded = null,
-                                            tracking = null,
-                                            visible = null,
-                                            transitionEndpoints = transitionEndpoints,
-                                            batteryIslandActive = batteryIslandActive,
-                                        )
-                                    onUpdate?.invoke(update)
-                                },
-                                onFailure = onRuntimeFailure,
-                            )
-                            val result = chain.proceed()
-                            val sample = fraction
-                            if (handled && sample != null) {
-                                // Commit the native fraction-zero Home handoff
-                                // only AFTER SystemUI finishes its own view
-                                // alpha/translation/visibility mutations.
-                                dispatchRuntimeCallback(
-                                    callback = { onAfterNativeExpansion?.invoke(sample) },
-                                    onFailure = onRuntimeFailure,
-                                )
-                            }
-                            result
-                        },
-                    )
+                    .intercept(expansionHooker(callbacks))
 
             handles +=
                 module
                     .hook(appearanceMethod)
                     .setId(CONTROL_CENTER_APPEARANCE_HOOK_ID)
-                    .intercept(
-                        Hooker { chain ->
-                            val result = chain.proceed()
-                            dispatchRuntimeCallback(
-                                callback = {
-                                    val first = chain.getArg(0) as? Boolean
-                                    val second = chain.getArg(1) as? Boolean
-                                    val contract = anchorContract
-                                    val header = contract?.headerFromCallback(chain.thisObject)
-                                    val update =
-                                        Update(
-                                            source = Source.CONTROL_CENTER,
-                                            fraction = null,
-                                            expanded = null,
-                                            tracking = null,
-                                            visible = null,
-                                            appearance = first,
-                                            appearanceAnimated = second,
-                                            transitionEndpoints =
-                                                header?.let { contract?.transitionEndpoints(it) },
-                                            batteryIslandActive =
-                                                header?.let { contract?.batteryIslandActive(it) },
-                                        )
-                                    onUpdate?.invoke(update)
-                                },
-                                onFailure = onRuntimeFailure,
-                            )
-                            result
-                        },
-                    )
+                    .intercept(appearanceHooker(callbacks))
 
             return handles
         } catch (error: Throwable) {
@@ -316,6 +170,155 @@ internal object SysUiCcSource {
             }
             throw error
         }
+    }
+
+    private fun visibleHooker(
+        callbacks: Callbacks,
+        onEvent: ((String) -> Unit)?,
+        isProbeEnabled: () -> Boolean,
+    ): Hooker = Hooker { chain ->
+        val result = chain.proceed()
+        val handled = dispatchRuntimeCallback(
+            callback = {
+                val visible = chain.getArg(0) as? Boolean
+                homeEligible = allowsHome(visible)
+                // One native header witness for this visibility event.
+                val contract = if (visible == true) anchorContract else null
+                val header =
+                    if (visible == true) resolveHeader(chain.thisObject, contract)
+                    else null
+                val presentationHost =
+                    header?.let { contract?.fakePresentationRoot(it) }
+                val sourceScene =
+                    if (visible == true) resolveSourceScene(contract, header)
+                    else null
+                val transitionEndpoints =
+                    header?.let { contract?.transitionEndpoints(it) }
+                val update =
+                    Update(
+                        visible = visible,
+                        presentationHost = presentationHost,
+                        sourceScene = sourceScene,
+                        transitionEndpoints = transitionEndpoints,
+                        batteryIslandActive =
+                            header?.let { contract?.batteryIslandActive(it) },
+                    )
+                callbacks.onUpdate?.invoke(update)
+                dispatchRuntimeCallback(
+                    callback = {
+                        emitDiagnostic(update, onEvent, isProbeEnabled)
+                    },
+                )
+            },
+            onFailure = callbacks.onRuntimeFailure,
+        )
+        if (!handled) homeEligible = false
+        result
+    }
+
+    private fun fakeAttachedHooker(
+        callbacks: Callbacks,
+        onEvent: ((String) -> Unit)?,
+        isProbeEnabled: () -> Boolean,
+    ): Hooker = Hooker { chain ->
+        val result = chain.proceed()
+        var observed: ViewGroup? = null
+        dispatchRuntimeCallback(
+            callback = { observed = chain.thisObject as? ViewGroup },
+            onFailure = callbacks.onRuntimeFailure,
+        )
+        val root = observed
+        if (root != null) {
+            dispatchRuntimeCallback(
+                callback =
+                    callbacks.onFakePresentationAttached?.let { callback ->
+                        { callback(root) }
+                    },
+                onFailure = callbacks.onRuntimeFailure,
+            )
+            dispatchRuntimeCallback(
+                callback = {
+                    if (onEvent != null && isProbeEnabled()) {
+                        onEvent(
+                            "controlCenterFakeLifecycle attached " +
+                                "root=" + root.javaClass.name +
+                                " attachedToWindow=" +
+                                root.isAttachedToWindow,
+                        )
+                        describeFakeIslandContractOnce(root)?.let(onEvent)
+                    }
+                },
+            )
+        }
+        result
+    }
+
+    private fun expansionHooker(
+        callbacks: Callbacks,
+    ): Hooker = Hooker { chain ->
+        var fraction: Float? = null
+        // Commit the projection before native expansion without
+        // letting a failed contract read suppress native execution.
+        val handled = dispatchRuntimeCallback(
+            callback = {
+                fraction =
+                    nativeFraction(
+                        (chain.getArg(0) as? Number)?.toFloat(),
+                    )
+                val contract = anchorContract
+                val header = contract?.headerFromCallback(chain.thisObject)
+                val transitionEndpoints =
+                    header?.let { contract?.transitionEndpoints(it) }
+                val batteryIslandActive =
+                    header?.let { contract?.batteryIslandActive(it) }
+                val update =
+                    Update(
+                        fraction = fraction,
+                        transitionEndpoints = transitionEndpoints,
+                        batteryIslandActive = batteryIslandActive,
+                    )
+                callbacks.onUpdate?.invoke(update)
+            },
+            onFailure = callbacks.onRuntimeFailure,
+        )
+        val result = chain.proceed()
+        val sample = fraction
+        if (handled && sample != null) {
+            // Commit the native fraction-zero Home handoff
+            // only AFTER SystemUI finishes its own view
+            // alpha/translation/visibility mutations.
+            dispatchRuntimeCallback(
+                callback = { callbacks.onAfterNativeExpansion?.invoke(sample) },
+                onFailure = callbacks.onRuntimeFailure,
+            )
+        }
+        result
+    }
+
+    private fun appearanceHooker(
+        callbacks: Callbacks,
+    ): Hooker = Hooker { chain ->
+        val result = chain.proceed()
+        dispatchRuntimeCallback(
+            callback = {
+                val first = chain.getArg(0) as? Boolean
+                val second = chain.getArg(1) as? Boolean
+                val contract = anchorContract
+                val header = contract?.headerFromCallback(chain.thisObject)
+                val update =
+                    Update(
+                        appearance = first,
+                        appearanceAnimated = second,
+                        transitionEndpoints =
+                            header?.let { contract?.transitionEndpoints(it) },
+                        batteryIslandActive =
+                            header?.let { contract?.batteryIslandActive(it) },
+                    )
+                callbacks.onUpdate?.invoke(update)
+            },
+            onFailure = callbacks.onRuntimeFailure,
+        )
+        result
     }
 
     val failedInstallHookCount: Int
@@ -524,10 +527,6 @@ internal object SysUiCcSource {
             return
         }
         val probe = probe
-        val expandedChanged =
-            update.expanded != null && update.expanded != probe.expanded
-        val trackingChanged =
-            update.tracking != null && update.tracking != probe.tracking
         val visibleChanged =
             update.visible != null && update.visible != probe.visible
         val sourceSceneChanged =
@@ -537,8 +536,6 @@ internal object SysUiCcSource {
             update.batteryIslandActive != null &&
                 update.batteryIslandActive != probe.batteryIsland
 
-        if (update.expanded != null) probe.expanded = update.expanded
-        if (update.tracking != null) probe.tracking = update.tracking
         if (update.visible != null) probe.visible = update.visible
         if (update.sourceScene != null) {
             probe.sourceScene = update.sourceScene
@@ -549,8 +546,6 @@ internal object SysUiCcSource {
 
         if (
             !DiagnosticPolicy.shouldReport(
-                expandedChanged = expandedChanged,
-                trackingChanged = trackingChanged,
                 visibleChanged = visibleChanged,
                 sourceSceneChanged = sourceSceneChanged,
                 batteryIslandChanged = batteryIslandChanged,
@@ -566,10 +561,9 @@ internal object SysUiCcSource {
         dispatchRuntimeCallback(
             callback = {
                 onEvent(
-                    "panelTransition source=" + update.source.logName +
+                    "panelTransition source=control-center" +
                         " fraction=" + (update.fraction ?: "none") +
-                        " expanded=" + (update.expanded ?: probe.expanded ?: "none") +
-                        " tracking=" + (update.tracking ?: probe.tracking ?: "none") +
+                        " expanded=none tracking=none" +
                         " visible=" + (update.visible ?: probe.visible ?: "none") +
                         sourceSceneSummary +
                         batteryIslandSummary +
@@ -580,11 +574,8 @@ internal object SysUiCcSource {
     }
 
     internal data class Update(
-        val source: Source,
-        val fraction: Float?,
-        val expanded: Boolean?,
-        val tracking: Boolean?,
-        val visible: Boolean?,
+        val fraction: Float? = null,
+        val visible: Boolean? = null,
         val presentationHost: ViewGroup? = null,
         val sourceScene: SourceScene? = null,
         val appearance: Boolean? = null,
@@ -592,12 +583,6 @@ internal object SysUiCcSource {
         val transitionEndpoints: TransitionEndpoints? = null,
         val batteryIslandActive: Boolean? = null,
     )
-
-    internal enum class Source(
-        val logName: String,
-    ) {
-        CONTROL_CENTER("control-center"),
-    }
 
     internal data class TransitionEndpoints(
         val fakeRoot: ViewGroup,
@@ -739,22 +724,16 @@ internal object SysUiCcSource {
 
     internal object DiagnosticPolicy {
         fun shouldReport(
-            expandedChanged: Boolean,
-            trackingChanged: Boolean,
             visibleChanged: Boolean,
             sourceSceneChanged: Boolean,
             batteryIslandChanged: Boolean,
         ): Boolean =
-            expandedChanged ||
-                trackingChanged ||
-                visibleChanged ||
+            visibleChanged ||
                 sourceSceneChanged ||
                 batteryIslandChanged
     }
 
     private data class ProbeState(
-        var expanded: Boolean? = null,
-        var tracking: Boolean? = null,
         var visible: Boolean? = null,
         var sourceScene: SourceScene? = null,
         var batteryIsland: Boolean? = null,
