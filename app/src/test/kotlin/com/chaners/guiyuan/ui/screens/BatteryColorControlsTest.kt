@@ -5,6 +5,7 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeSource
 import com.chaners.guiyuan.settings.BatteryColorSlot
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -64,6 +65,18 @@ class BatteryColorControlsTest {
                 BatteryColorSlot.NORMAL,
             ),
         )
+    }
+
+    @Test
+    fun foregroundIsCustomColorChoiceNotPresetStyle() {
+        assertEquals(4, BATTERY_COLOR_STYLE_OPTIONS.size)
+        assertFalse(BatteryColorSchemeSource.FOLLOW_SYSTEM in BATTERY_COLOR_STYLE_OPTIONS)
+        assertEquals(BatteryColorSchemeSource.CUSTOM, batteryColorStyleSource(BatteryColorSchemeSource.FOLLOW_SYSTEM))
+        BATTERY_COLOR_STYLE_OPTIONS.forEach { assertEquals(it, batteryColorStyleSource(it)) }
+        assertEquals(10, COMMON_BATTERY_COLORS.size)
+        assertEquals(1, COMMON_BATTERY_COLORS.count { it == null })
+        assertNull(COMMON_BATTERY_COLORS.last())
+        assertFalse(0xFF8E8E93.toInt() in COMMON_BATTERY_COLORS)
     }
 
     @Test

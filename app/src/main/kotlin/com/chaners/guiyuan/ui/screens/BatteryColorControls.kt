@@ -39,7 +39,7 @@ internal val COMMON_BATTERY_COLORS =
         0xFF5856D6.toInt(),
         0xFFAF52DE.toInt(),
         0xFFFF2D55.toInt(),
-        0xFF8E8E93.toInt(),
+        null, // Native foreground tint, not a fixed ARGB color.
     )
 
 internal val BATTERY_COLOR_PREVIEW_SLOTS = BatteryColorSlot.entries

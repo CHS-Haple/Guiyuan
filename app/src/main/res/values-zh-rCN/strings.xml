@@ -442,7 +442,7 @@
     <string name="battery_color_preset_hyperos_summary">使用 HyperOS 电量语义色</string>
     <string name="battery_color_preset_ios_summary">使用 iOS 系统色</string>
     <string name="battery_mode_colors">模式颜色</string>
-    <string name="battery_color_source">颜色来源</string>
+    <string name="battery_color_source">配色样式</string>
     <string name="battery_color_source_preset">方案颜色</string>
     <string name="battery_color_source_preset_summary">使用 %1$s 方案颜色</string>
     <string name="battery_color_source_preset_short">%1$s 方案</string>
@@ -474,7 +474,6 @@
     <string name="battery_common_color_indigo">靛蓝</string>
     <string name="battery_common_color_purple">紫色</string>
     <string name="battery_common_color_pink">粉色</string>
-    <string name="battery_common_color_gray">灰色</string>
     <string name="battery_color_full_adjustment">全色调节</string>
     <string name="battery_color_hue">色相</string>
     <string name="battery_color_saturation">饱和度</string>
@@ -483,7 +482,7 @@
     <string name="battery_color_hex">HEX</string>
     <string name="battery_color_follow_inversion">跟随系统前景色</string>
     <string name="battery_color_no_fixed_color">无固定颜色</string>
-    <string name="battery_color_no_fixed_color_summary">先选择固定颜色来源或设置自定义颜色，再调节这些参数</string>
+    <string name="battery_color_no_fixed_color_summary">先选择固定颜色或使用取色器，再调节这些参数</string>
     <string name="battery_color_settings">颜色设置</string>
     <string name="battery_color_edit_auto_custom">修改任意参数后自动切换为“自定义”</string>
     <string name="battery_color_restore_from_scheme">将此模式恢复为 %1$s 方案颜色</string>

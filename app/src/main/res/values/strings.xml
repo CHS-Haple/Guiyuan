@@ -443,7 +443,7 @@
     <string name="battery_color_preset_hyperos_summary">Use HyperOS semantic battery colors</string>
     <string name="battery_color_preset_ios_summary">Use iOS system colors</string>
     <string name="battery_mode_colors">Mode colors</string>
-    <string name="battery_color_source">Color source</string>
+    <string name="battery_color_source">Color style</string>
     <string name="battery_color_source_preset">Scheme color</string>
     <string name="battery_color_source_preset_summary">Use the %1$s scheme color</string>
     <string name="battery_color_source_preset_short">%1$s scheme</string>
@@ -475,7 +475,6 @@
     <string name="battery_common_color_indigo">Indigo</string>
     <string name="battery_common_color_purple">Purple</string>
     <string name="battery_common_color_pink">Pink</string>
-    <string name="battery_common_color_gray">Gray</string>
     <string name="battery_color_full_adjustment">Full color adjustment</string>
     <string name="battery_color_hue">Hue</string>
     <string name="battery_color_saturation">Saturation</string>
@@ -484,7 +483,7 @@
     <string name="battery_color_hex">HEX</string>
     <string name="battery_color_follow_inversion">Follow system tint</string>
     <string name="battery_color_no_fixed_color">No fixed color</string>
-    <string name="battery_color_no_fixed_color_summary">Choose a fixed color source or set a custom color before adjusting these controls</string>
+    <string name="battery_color_no_fixed_color_summary">Choose a fixed color or use the color picker before adjusting these controls</string>
     <string name="battery_color_settings">Color settings</string>
     <string name="battery_color_edit_auto_custom">Editing any value switches this mode to Custom</string>
     <string name="battery_color_restore_from_scheme">Restore this mode to the %1$s scheme color</string>

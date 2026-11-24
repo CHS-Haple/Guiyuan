@@ -90,7 +90,7 @@ internal fun BatteryCustomModeEditor(
             .padding(bottom = 24.dp),
     ) {
         BatteryColorSourceSelector(custom, slot, state, onSourceChange)
-        BatteryColorCommonGrid(custom, slot, state, onColorChange)
+        BatteryColorCommonGrid(custom, slot, state, onSourceChange, onColorChange)
         BatteryColorHsvPanel(state, onColorChange)
         BatteryColorPreciseFields(state, onColorChange)
     }
@@ -147,15 +147,9 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorSourceSel
     val entry = custom.entries.entryFor(slot)
     val resolved = batterySchemeEntryColor(entry, slot)
     val seed = batteryColorEditorSeed(entry, slot)
-    val sourceOptions = BatteryColorSchemeSource.entries
-    val sourceLabels = listOf(
-        batterySourceLabel(BatteryColorSchemeSource.HYPEROS),
-        batterySourceLabel(BatteryColorSchemeSource.IOS),
-        batterySourceLabel(BatteryColorSchemeSource.LOW_SATURATION),
-        batterySourceLabel(BatteryColorSchemeSource.FOLLOW_SYSTEM),
-        batterySourceLabel(BatteryColorSchemeSource.CUSTOM),
-    )
-    val selectedSourceIndex = sourceOptions.indexOf(entry.source).coerceAtLeast(0)
+    val sourceOptions = BATTERY_COLOR_STYLE_OPTIONS
+    val sourceLabels = sourceOptions.map { batterySourceLabel(it) }
+    val selectedSourceIndex = sourceOptions.indexOf(batteryColorStyleSource(entry.source))
     val currentValueText = when {
         resolved != null -> batteryColorHex(resolved)
         entry.source == BatteryColorSchemeSource.CUSTOM ->
@@ -172,8 +166,9 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorSourceSel
                 val shown = if (entry.source == BatteryColorSchemeSource.CUSTOM ||
                     state.wheel.editing.value != seed
                 ) state.wheel.editing.value ?: resolved else resolved
-                if (shown == null) BatteryColorMosaic(size = 24.dp)
-                else BatteryColorDot(color = shown, size = 24.dp)
+                if (entry.source == BatteryColorSchemeSource.FOLLOW_SYSTEM || shown == null) {
+                    BatteryColorMosaic(size = 24.dp)
+                } else BatteryColorDot(color = shown, size = 24.dp)
             },
             onSelectedIndexChange = { index ->
                 sourceOptions.getOrNull(index)?.let { source ->
@@ -192,6 +187,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
     custom: BatteryCustomColorScheme,
     slot: BatteryColorSlot,
     state: ColorEditorState,
+    onSourceChange: (BatteryColorSchemeSource) -> Unit,
     onColorChange: (Int) -> Unit,
 ) {
     val rows = remember { COMMON_BATTERY_COLORS.chunked(5) }
@@ -210,9 +206,18 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
                 colors.forEach { color ->
                     BatteryCommonColorButton(
                         color = color,
-                        selected = source == BatteryColorSchemeSource.CUSTOM && state.wheel.editing.value == color,
-                        visuallyInactive = false,
-                        onClick = { state.applyColor(color, onColorChange = onColorChange) },
+                        selected = if (color == null) {
+                            source == BatteryColorSchemeSource.FOLLOW_SYSTEM
+                        } else {
+                            source == BatteryColorSchemeSource.CUSTOM && state.wheel.editing.value == color
+                        },
+                        onClick = {
+                            if (color == null) {
+                                onSourceChange(BatteryColorSchemeSource.FOLLOW_SYSTEM)
+                            } else {
+                                state.applyColor(color, onColorChange = onColorChange)
+                            }
+                        },
                     )
                 }
             }
