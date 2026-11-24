@@ -17,6 +17,7 @@ class VisualPreferenceKeysTest {
     @Test
     fun acceptsThreeLayoutsGlobalAndProfileKeys() {
         assertTrue(isVisualPreferenceKey(null)) // SharedPreferences.clear()
+        assertFalse(isVisualPreferenceKey(NativeFontAxis.REQUEST_KEY))
         assertTrue(isVisualPreferenceKey(CONTENT_LAYOUT_KEY))
         assertTrue(isVisualPreferenceKey(DUAL_SIGNAL_ENABLED_KEY))
         assertTrue(isVisualPreferenceKey(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY))
@@ -36,6 +37,18 @@ class VisualPreferenceKeysTest {
         assertTrue(isVisualPreferenceKey("battery_center.battery_top_text_scale"))
         assertTrue(isVisualPreferenceKey("network_center.mobile_follows_battery_color"))
         assertTrue(isVisualPreferenceKey("battery_center.mobile_follows_battery_color"))
+    }
+
+    @Test
+    fun batterySlotKeysRetainReleasedOnDiskNames() {
+        val names = listOf(
+            "normal", "power_save", "performance", "super_power_save", "charging", "low",
+        )
+        assertEquals(names.size, BatteryColorSlot.entries.size)
+        BatteryColorSlot.entries.zip(names).forEach { (slot, name) ->
+            assertEquals("battery_color_mode_$name", batteryColorModeKey(slot))
+            assertEquals("battery_color_$name", batteryColorOverrideKey(slot))
+        }
     }
 
     @Test

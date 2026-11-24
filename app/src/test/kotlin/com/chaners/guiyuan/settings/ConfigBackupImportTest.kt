@@ -32,6 +32,22 @@ class ConfigBackupImportTest {
     }
 
     @Test
+    fun v1ExpansionRejectsIncompleteOrDuplicatedLayoutBanks() {
+        val source = sampleBackup()
+        val released = source.visual.profiles.filter { it.layout != ContentLayout.MOBILE_CENTER }
+        val duplicate = released.dropLast(1) + released.first()
+        val unexpected = released.mapIndexed { index, profile ->
+            if (index == 1) profile.copy(layout = ContentLayout.MOBILE_CENTER) else profile
+        }
+        for (profiles in listOf(duplicate, unexpected)) {
+            val archive = source.copy(visual = source.visual.copy(profiles = profiles))
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupFormat.decode(rawBackup(archive))
+            }
+        }
+    }
+
+    @Test
     fun importClampsAllBoundedVisualControlsAndLowBatteryThreshold() {
         val original = sampleBackup()
         val damaged = original.copy(

@@ -126,7 +126,7 @@ internal object SandboxHost {
     private fun staticMobileFace(context: Context): android.graphics.Typeface? {
         if (!staticMobileFaceChecked) {
             staticMobileFaceChecked = true
-            staticMobileFace = NativePresentationResolver.sandboxMobileTypeface(context)
+            staticMobileFace = NativeMobileTypePresentation.sandboxMobileTypeface(context)
         }
         return staticMobileFace
     }

@@ -41,17 +41,12 @@ internal object StatusBarHostCapture {
             executable.parameterCount == 0
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun hooker(
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,
     ): Hooker = Hooker { chain ->
         val result = chain.proceed()
-        val host =
-            try {
-                chain.thisObject
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
-                return@Hooker result
-            }
+        val host = SysUiPresentationRuntime.optionalNativeRead { chain.thisObject }
         host?.let { captured ->
             try {
                 SysUiHostRegistry.capture(captured)?.let(onCaptured)

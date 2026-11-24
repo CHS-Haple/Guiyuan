@@ -61,6 +61,7 @@ internal object SysUiCoreRuntime {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun detach() {
         // Each system callback must be released even if a sibling release fails.
         val failures = ArrayList<Throwable>(1)
@@ -75,10 +76,6 @@ internal object SysUiCoreRuntime {
         release { SysUiConnectivitySource.detach() }
         release { SysUiDefaultDataSubSource.detach() }
         release { SysUiAirplaneSource.detach() }
-        if (failures.isNotEmpty()) {
-            val error = IllegalStateException("core-source-release-incomplete", failures.first())
-            failures.drop(1).forEach(error::addSuppressed)
-            throw error
-        }
+        throwIfCleanupIncomplete("core-source-release-incomplete", failures)
     }
 }

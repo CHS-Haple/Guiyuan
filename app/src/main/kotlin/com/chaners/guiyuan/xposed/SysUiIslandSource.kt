@@ -17,6 +17,7 @@ internal object SysUiIslandSource {
     private var islandShowing: Boolean? = null
     private var lastDiagnosticShowing: Boolean? = null
 
+    @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,

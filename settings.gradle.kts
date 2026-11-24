@@ -56,11 +56,12 @@ dependencyResolutionManagement {
 rootProject.name = "Guiyuan"
 include(":app")
 
-// Opt-in source-matched OS4 graph. The default app still uses published MIUIX packages.
+// Opt-in source-matched MIUIX graph; keep the existing gy.os4.* build-tool inputs.
+// The default app still uses published MIUIX packages.
 providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.let { source ->
     val miuix = file(source)
-    // Native Glass Icons are source-substituted, while Glass UI remains app-local.
-    // This checks checkout completeness, not UI/API parity or published availability.
+    // Native Glass is source-substituted at the same pinned revision; Guiyuan extensions
+    // live in a separate package to avoid duplicate JVM classes.
     val requiredSourceModules = listOf(
         "miuix-core",
         "miuix-ui",
@@ -68,7 +69,7 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
         "miuix-preference",
         "miuix-icons",
         "miuix-nav",
-        "miuix-shader",
+        "miuix-material",
         "miuix-squircle",
         "miuix-glass",
         "miuix-glass-icons",
@@ -83,13 +84,14 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
     includeBuild(miuix) {
         dependencySubstitution {
             substitute(module("top.yukonga.miuix.kmp:miuix-core-android")).using(project(":miuix-core"))
-            substitute(module("top.yukonga.miuix.kmp:miuix-shader-android")).using(project(":miuix-shader"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-material-android")).using(project(":miuix-material"))
             substitute(module("top.yukonga.miuix.kmp:miuix-squircle-android")).using(project(":miuix-squircle"))
             substitute(module("top.yukonga.miuix.kmp:miuix-ui-android")).using(project(":miuix-ui"))
             substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))
             substitute(module("top.yukonga.miuix.kmp:miuix-preference-android")).using(project(":miuix-preference"))
             substitute(module("top.yukonga.miuix.kmp:miuix-icons-android")).using(project(":miuix-icons"))
             substitute(module("top.yukonga.miuix.kmp:miuix-glass-icons-android")).using(project(":miuix-glass-icons"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-glass-android")).using(project(":miuix-glass"))
             substitute(module("top.yukonga.miuix.kmp:miuix-nav-android")).using(project(":miuix-nav"))
         }
     }

@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.system
 
 import android.content.Context
-import com.chaners.guiyuan.BuildConfig
 import java.time.LocalDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,8 +8,6 @@ import kotlinx.coroutines.withContext
 internal object DiagLogReader {
     private const val TIMEOUT_SEC = 10L
     private const val MODULE_LOG_TAG = "CombinedStatus"
-    private const val SESSION_ID_FIELD = "sessionId"
-    private const val MODULE_LOADED_MESSAGE = "Module loaded in com.android.systemui"
     private const val HISTORY_PREFS = "guiyuan_diagnostics_history"
     private const val CLEAR_BOUNDARY_KEY = "cleared_at_local"
 
@@ -100,7 +97,7 @@ internal object DiagLogReader {
                 source = Source.LspModules,
                 result = lspResult,
                 lines = lspLines,
-                sessionLines = latestSession(lspLines),
+                sessionLines = DiagLogSessions.latestSession(lspLines),
                 clearedAt = boundary,
             )
         } else {
@@ -115,7 +112,7 @@ internal object DiagLogReader {
                 source = Source.LogcatFallback,
                 result = logcatResult,
                 lines = logcatLines,
-                sessionLines = latestSession(logcatLines),
+                sessionLines = DiagLogSessions.latestSession(logcatLines),
                 clearedAt = boundary,
             )
         }
@@ -152,113 +149,4 @@ internal object DiagLogReader {
             }
             .toList()
 
-    internal fun latestSession(lines: List<String>): List<String> {
-        if (lines.isEmpty()) {
-            return lines
-        }
-
-        // The new generation can fail before module.reloaded; old teardown may log later.
-        val tagged =
-            lines.mapIndexedNotNull { index, line ->
-                if ("sessionId=" in line) {
-                    DiagProtocol.parse(line)
-                        ?.takeIf { event -> event.fields[SESSION_ID_FIELD] != null }
-                        ?.let { event -> index to event }
-                } else {
-                    null
-                }
-            }
-        // Reuse the earliest event index for each generation while inspecting
-        // failed reloads and selecting the current session.
-        val firstIndexBySession = mutableMapOf<String, Int>()
-        tagged.forEach { (index, event) ->
-            event.fields[SESSION_ID_FIELD]?.let { id ->
-                firstIndexBySession.getOrPut(id) { index }
-            }
-        }
-        val latestStart =
-            tagged.lastOrNull { (_, event) ->
-                event.event == "module.loaded" || event.event == "module.reloaded"
-            }
-        val failedNewGeneration =
-            tagged.lastOrNull { (_, event) ->
-                if (
-                    event.event != "hotReload.complete" ||
-                    (event.state != "error" && event.state != "unavailable")
-                ) {
-                    false
-                } else {
-                    val first = event.fields[SESSION_ID_FIELD]?.let { id -> firstIndexBySession[id] }
-                    first != null && (latestStart == null || first > latestStart.first)
-                }
-            }
-        val sessionId =
-            (failedNewGeneration ?: latestStart ?: tagged.lastOrNull())
-                ?.second
-                ?.fields
-                ?.get(SESSION_ID_FIELD)
-        if (sessionId != null) {
-            val start = firstIndexBySession[sessionId] ?: return lines
-            val stale =
-                tagged.asSequence()
-                    .filter { (index, event) ->
-                        index >= start && event.fields[SESSION_ID_FIELD] != sessionId
-                    }
-                    .map { it.first }
-                    .toSet()
-            val pid = pidOf(lines[start])
-            return lines
-                .subList(start, lines.size)
-                .filterIndexed { index, line ->
-                    index + start !in stale && (pid == null || pidOf(line) == pid)
-                }
-        }
-
-        return latestSessionFromLegacyMarkers(lines)
-    }
-
-    private fun latestSessionFromLegacyMarkers(lines: List<String>): List<String> {
-        val buildToken = "build=" + BuildConfig.BUILD_ID
-        val buildAnchor =
-            lines.indexOfLast { line ->
-                line.contains(buildToken) &&
-                    (
-                        line.contains(MODULE_LOADED_MESSAGE) ||
-                            line.contains("Hot reload completed")
-                    )
-            }
-        val anchor =
-            if (buildAnchor >= 0) {
-                buildAnchor
-            } else {
-                lines.indexOfLast { line ->
-                    line.contains(MODULE_LOADED_MESSAGE)
-                }
-            }
-
-        if (anchor < 0) {
-            return lines
-        }
-
-        val pid = pidOf(lines[anchor]) ?: return lines.drop(anchor)
-        val start =
-            (anchor downTo 0).firstOrNull { index ->
-                pidOf(lines[index]) == pid &&
-                    lines[index].contains(MODULE_LOADED_MESSAGE)
-            } ?: anchor
-
-        return lines
-            .subList(start, lines.size)
-            .filter { line -> pidOf(line) == pid }
-    }
-
-    private fun pidOf(line: String): String? =
-        (lspPidRe.find(line) ?: logcatPidRe.find(line))
-            ?.groupValues?.getOrNull(1)
-
-    private val lspPidRe =
-        Regex(""":\s*(\d+):\s*\d+\s+[A-Z]/LSPosedFramework""")
-
-    private val logcatPidRe =
-        Regex("""^\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+(\d+)\s+\d+\s+[VDIWEAF]\s+""")
 }

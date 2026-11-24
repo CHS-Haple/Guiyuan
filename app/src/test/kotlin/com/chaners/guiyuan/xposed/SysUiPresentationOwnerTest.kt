@@ -2,7 +2,6 @@ package com.chaners.guiyuan.xposed
 
 import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -43,30 +42,6 @@ class SysUiPresentationOwnerTest {
         SysUiPresentationOwner.emitDiagnostic {
             throw InvocationTargetException(IllegalStateException("ordinary"))
         }
-    }
-
-    @Test
-    fun fatalMutationFailurePreservesOriginalCause() {
-        val threadDeath = ThreadDeath()
-        assertSame(
-            threadDeath,
-            runCatching {
-                SysUiPresentationOwner.rethrowFatal(InvocationTargetException(threadDeath))
-            }.exceptionOrNull(),
-        )
-
-        val vmError = OutOfMemoryError("synthetic")
-        assertSame(
-            vmError,
-            runCatching { SysUiPresentationOwner.rethrowFatal(vmError) }.exceptionOrNull(),
-        )
-        assertNull(
-            runCatching {
-                SysUiPresentationOwner.rethrowFatal(
-                    InvocationTargetException(IllegalStateException("ordinary")),
-                )
-            }.exceptionOrNull(),
-        )
     }
 
     @Test

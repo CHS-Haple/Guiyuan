@@ -23,6 +23,7 @@ internal object VisualPrefsOwner {
     fun current(): VisualCfg = state.get().cfg
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun bind(
         source: SharedPreferences,
         onAxisRequest: () -> Unit = {},
@@ -35,6 +36,7 @@ internal object VisualPrefsOwner {
         val lastRequest = AtomicLong(0L)
 
         // A remote request may already exist before this SystemUI binding is installed.
+        @Suppress("TooGenericExceptionCaught")
         fun deliverAxisRequest(request: Long) {
             if (request <= 0L || state.get().token !== token) return
             val previous = lastRequest.getAndSet(request)
@@ -49,26 +51,27 @@ internal object VisualPrefsOwner {
 
         val listener =
             SharedPreferences.OnSharedPreferenceChangeListener { changed, key ->
-                if (key != NativeFontAxis.REQUEST_KEY && !isVisualPreferenceKey(key)) {
-                    return@OnSharedPreferenceChangeListener
-                }
-                val before = state.get()
-                if (before.source !== changed || before.token !== token) {
-                    return@OnSharedPreferenceChangeListener
-                }
-                if (key == NativeFontAxis.REQUEST_KEY || key == null) {
-                    deliverAxisRequest(changed.getLong(NativeFontAxis.REQUEST_KEY, 0L))
-                }
-                if (!isVisualPreferenceKey(key)) return@OnSharedPreferenceChangeListener
-                val next = resolve(changed)
-                var latest = state.get()
-                while (latest.source === changed && latest.token === token && latest.cfg != next) {
-                    val pending = latest.copy(cfg = next)
-                    if (state.compareAndSet(latest, pending)) {
-                        deliverCommittedChange(latest, pending, next, onChanged)
-                        break
+                val axisRequest = key == NativeFontAxis.REQUEST_KEY
+                val visualKey = !axisRequest && isVisualPreferenceKey(key)
+                if (axisRequest || visualKey) {
+                    val before = state.get()
+                    if (before.source === changed && before.token === token) {
+                        if (axisRequest || key == null) {
+                            deliverAxisRequest(changed.getLong(NativeFontAxis.REQUEST_KEY, 0L))
+                        }
+                        if (visualKey) {
+                            val next = resolve(changed)
+                            var latest = state.get()
+                            while (latest.source === changed && latest.token === token && latest.cfg != next) {
+                                val pending = latest.copy(cfg = next)
+                                if (state.compareAndSet(latest, pending)) {
+                                    deliverCommittedChange(latest, pending, next, onChanged)
+                                    break
+                                }
+                                latest = state.get()
+                            }
+                        }
                     }
-                    latest = state.get()
                 }
             }
 
@@ -88,6 +91,7 @@ internal object VisualPrefsOwner {
     }
 
     // A committed generation owns its callback failure until a newer generation wins.
+    @Suppress("TooGenericExceptionCaught")
     private fun deliverCommittedChange(
         previous: State,
         pending: State,
@@ -103,6 +107,7 @@ internal object VisualPrefsOwner {
     }
 
     // Do not retire a new binding when its replaced generation fails late.
+    @Suppress("TooGenericExceptionCaught")
     private fun retireFailedBinding(token: Any, error: Throwable) {
         if (state.get().token !== token) return
         try {

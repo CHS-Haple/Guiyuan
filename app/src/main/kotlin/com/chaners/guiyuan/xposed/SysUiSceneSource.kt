@@ -1,7 +1,7 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
 import android.view.View
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -10,8 +10,6 @@ import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiSceneSource {
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     const val BATTERY_VIEW_CLASS_NAME =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
@@ -50,6 +48,21 @@ internal object SysUiSceneSource {
             ).apply { isAccessible = true }
 
         val warned = AtomicBoolean(false)
+        val onDiagnostic: ((SceneUpdate) -> Unit)? = onEvent?.let { sink ->
+            { update ->
+                SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Scene]") {
+                    if (isDetailedDiagnosticsEnabled()) {
+                        sink(
+                            "sceneState source=updateState" +
+                                " raw=" + update.rawState +
+                                " batteryState=" + update.surface.name +
+                                " authority=battery-status-state-readonly" +
+                                " homeVisibilityAuthority=host+panel-coordinator",
+                        )
+                    }
+                }
+            }
+        }
         val handle =
             module
                 .hook(updateStateMethod)
@@ -57,20 +70,19 @@ internal object SysUiSceneSource {
                 .intercept(
                     Hooker { chain ->
                         val result = chain.proceed()
-                        val sourceView = readOrNull { chain.thisObject as? View }
-                            ?: return@Hooker result
-                        val rawState = readOrNull { (chain.getArg(0) as? Number)?.toInt() }
-                            ?: return@Hooker result
-                        publish(
-                            sourceView = sourceView,
-                            rawState = rawState,
-                            source = "updateState",
-                            onSceneState = onSceneState,
-                            onRuntimeFailure = onRuntimeFailure,
-                            onEvent = onEvent,
-                            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                            warned = warned,
-                        )
+                        val sourceView = optionalNativeRead { chain.thisObject as? View }
+                        if (sourceView != null) {
+                            val rawState = optionalNativeRead { (chain.getArg(0) as? Number)?.toInt() }
+                            if (rawState != null) {
+                                publish(
+                                    sourceView = sourceView,
+                                    rawState = rawState,
+                                    onSceneState = onSceneState,
+                                    onRuntimeFailure = onRuntimeFailure,
+                                    onDiagnostic = onDiagnostic,
+                                )
+                            }
+                        }
                         result
                     },
                 )
@@ -81,11 +93,22 @@ internal object SysUiSceneSource {
 
     fun matches(handle: HookHandle): Boolean = handle.id == HOOK_ID
 
-    fun steadySourceScene(update: SceneUpdate): SourceScene {
-        val structural = steadySourceScene(update.sourceView)
-        return when (structural) {
+    fun steadySourceScene(update: SceneUpdate): SourceScene =
+        steadySourceScene(steadySourceScene(update.sourceView), update.surface)
+
+    // A new generation must re-read native state even if updateState never fires.
+    // Do not turn the read into a delivered hook callback or infer scene from ancestry alone.
+    fun currentSteadySourceScene(sourceView: View): SourceScene =
+        if (sourceView.isAttachedToWindow) {
+            steadySourceScene(steadySourceScene(sourceView), currentSurface(sourceView))
+        } else {
+            SourceScene.UNKNOWN
+        }
+
+    internal fun steadySourceScene(structural: SourceScene, surface: Surface?): SourceScene =
+        when (structural) {
             SourceScene.HOME ->
-                if (update.surface == Surface.UNLOCKED_STATUS_BAR) {
+                if (surface == Surface.UNLOCKED_STATUS_BAR) {
                     SourceScene.HOME
                 } else {
                     SourceScene.UNKNOWN
@@ -93,8 +116,8 @@ internal object SysUiSceneSource {
 
             SourceScene.KEYGUARD ->
                 if (
-                    update.surface == Surface.KEYGUARD ||
-                    update.surface == Surface.SHADE_LOCKED
+                    surface == Surface.KEYGUARD ||
+                    surface == Surface.SHADE_LOCKED
                 ) {
                     SourceScene.KEYGUARD
                 } else {
@@ -103,7 +126,6 @@ internal object SysUiSceneSource {
 
             SourceScene.UNKNOWN -> SourceScene.UNKNOWN
         }
-    }
 
     fun steadySourceScene(sourceView: View): SourceScene {
         var current: View? = sourceView
@@ -128,7 +150,7 @@ internal object SysUiSceneSource {
             states[sourceView]
                 ?: run {
                     val field = statusBarStateField ?: return null
-                    readOrNull { field.getInt(sourceView) }
+                    optionalNativeRead { field.getInt(sourceView) }
                         ?.also { states[sourceView] = it }
                         ?: return null
                 }
@@ -150,15 +172,13 @@ internal object SysUiSceneSource {
             else -> Surface.UNKNOWN
         }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun publish(
         sourceView: View,
         rawState: Int,
-        source: String,
         onSceneState: (SceneUpdate) -> Unit,
         onRuntimeFailure: (Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        warned: AtomicBoolean,
+        onDiagnostic: ((SceneUpdate) -> Unit)?,
     ) {
         val delivery =
             synchronized(this) {
@@ -194,26 +214,7 @@ internal object SysUiSceneSource {
             }
             return
         }
-        if (onEvent != null) {
-            try {
-                if (isDetailedDiagnosticsEnabled()) {
-                    onEvent(
-                        "sceneState source=" + source +
-                            " raw=" + rawState +
-                            " batteryState=" + update.surface.name +
-                            " authority=battery-status-state-readonly" +
-                            " homeVisibilityAuthority=host+panel-coordinator",
-                    )
-                }
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
-                if (warned.compareAndSet(false, true)) {
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        Log.w("Guiyuan[Scene]", "Diagnostic failed", error)
-                    }
-                }
-            }
-        }
+        onDiagnostic?.invoke(update)
     }
 
     internal enum class Surface {

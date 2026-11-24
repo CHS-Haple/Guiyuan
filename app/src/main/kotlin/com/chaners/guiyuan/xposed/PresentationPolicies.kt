@@ -28,68 +28,72 @@ internal object SteadyPeerMirrorPolicy {
         nativeIslandShowing && !steadyMirrorActive
 }
 
+// Native Control Center owns the screen while visible with positive
+// expansion, even if the QS_FAKE projection has locally failed native.
+// Only native fraction zero returns Home ownership.
+internal object CcHomeHandoffPolicy {
+    // Repeated native zero callbacks after Home is already restored must not
+    // hide and reveal the overlay in the same callback.
+    fun awaitNativeZeroCommit(
+        nativePanelVisible: Boolean,
+        previousFraction: Float,
+        currentFraction: Float,
+        ccOwnedBeforeCallback: Boolean,
+    ): Boolean =
+        nativePanelVisible &&
+            currentFraction == 0f &&
+            (previousFraction > 0f || ccOwnedBeforeCallback)
+
+    fun yieldToNativePanel(
+        nativePanelVisible: Boolean,
+        nativeExpansion: Float,
+        nativeZeroAwaitingCommit: Boolean = false,
+    ): Boolean =
+        nativePanelVisible &&
+            (nativeZeroAwaitingCommit ||
+                (nativeExpansion.isFinite() && nativeExpansion > 0f))
+}
+
 internal object VisualMaskPolicy {
     fun shouldAdoptExistingNativeLayout(
         deferVisualMaskUntilLayout: Boolean,
         laidOut: Boolean,
         layoutRequested: Boolean,
-        capacityLeaseAwaitingLayout: Boolean = false,
         width: Int,
         height: Int,
     ): Boolean =
         deferVisualMaskUntilLayout &&
             laidOut &&
             !layoutRequested &&
-            !capacityLeaseAwaitingLayout &&
             width > 0 &&
             height > 0
 }
 
-internal object FakeCarrierCapacityLeasePolicy {
-    enum class ExistingLeaseAction {
-        REUSE,
-        ADOPT_HIDDEN_NATIVE,
-        FAIL_WRITER_CONFLICT,
-    }
+// Native FAKE width must settle before an optional, receipt-scoped capacity
+// lease. Native end-overhang must not be narrowed by the module.
+internal object FakeCarrierNativeGeometryPolicy {
+    // Any overwrite ends this generation of a temporary width receipt.
+    // Native layout (including orientation reflow) is authoritative.
+    fun nativeReplacedLease(appliedWidthPx: Int, liveWidthPx: Int): Boolean =
+        appliedWidthPx != liveWidthPx
 
-    fun resolveExistingLeaseAction(
-        visibleCycleActive: Boolean,
-        liveWidthPx: Int,
-        appliedWidthPx: Int,
-        currentParentContentWidthPx: Int,
-        leasedParentContentWidthPx: Int?,
-    ): ExistingLeaseAction {
-        if (
-            leasedParentContentWidthPx == null ||
-            leasedParentContentWidthPx != currentParentContentWidthPx
-        ) {
-            return ExistingLeaseAction.FAIL_WRITER_CONFLICT
-        }
-        if (liveWidthPx == appliedWidthPx) {
-            return ExistingLeaseAction.REUSE
-        }
-        if (
-            !visibleCycleActive &&
-            liveWidthPx > 0 &&
-            liveWidthPx <= currentParentContentWidthPx
-        ) {
-            return ExistingLeaseAction.ADOPT_HIDDEN_NATIVE
-        }
-        return ExistingLeaseAction.FAIL_WRITER_CONFLICT
-    }
+    fun leaseWidth(nativeWidthPx: Int, parentContentWidthPx: Int, clearMargins: Boolean): Int? =
+        parentContentWidthPx.takeIf { clearMargins && nativeWidthPx > 0 && it > nativeWidthPx }
+
+    fun isSettled(
+        nativeWidthPx: Int,
+        laidOutWidthPx: Int,
+        attached: Boolean,
+        layoutRequested: Boolean,
+        exclusiveParent: Boolean,
+        endAnchored: Boolean,
+    ): Boolean =
+        nativeWidthPx > 0 &&
+            nativeWidthPx == laidOutWidthPx &&
+            attached && !layoutRequested && exclusiveParent && endAnchored
 }
 
 internal object EndReservationPolicy {
-    fun resolveRequestedSlotWidth(
-        compactSlotWidthPx: Int,
-        transitionRequestedSlotWidthPx: Int?,
-    ): Int {
-        val compact = compactSlotWidthPx.coerceAtLeast(0)
-        return transitionRequestedSlotWidthPx
-            ?.coerceAtLeast(compact)
-            ?: compact
-    }
-
     fun resolvePaddingEndDelta(
         nativeHide: Boolean,
         actualBatteryWidthPx: Int,
@@ -104,55 +108,12 @@ internal object EndReservationPolicy {
         }
     }
 
-    fun resolveCapacityBoundedReservationDelta(
-        nativeHide: Boolean,
-        compactSlotWidthPx: Int,
-        requestedReservationDeltaPx: Int,
-        capacityDeltaPx: Int,
-    ): Int {
-        val compact = compactSlotWidthPx.coerceAtLeast(0)
-        val capacity = capacityDeltaPx.coerceAtLeast(0)
-        val maxNativeReservation =
-            if (nativeHide) {
-                compact + capacity
-            } else {
-                capacity
-            }
-        return requestedReservationDeltaPx.coerceAtMost(maxNativeReservation)
-    }
-
-    // Native icon-row occupancy is distinct from the fake carrier width lease.
-    fun fitsFakeNativePeerRow(
-        rowWidthPx: Int,
-        contentWidthPx: Int,
-        targetPaddingEndPx: Int,
-    ): Boolean =
-        rowWidthPx > 0 &&
-            contentWidthPx >= 0 &&
-            targetPaddingEndPx >= 0 &&
-            contentWidthPx.toLong() + targetPaddingEndPx <= rowWidthPx.toLong()
-
-    fun resolveFakeCarrierCapacityRequirement(
-        nativeHide: Boolean,
-        compactSlotWidthPx: Int,
-        reservationDeltaPx: Int,
-    ): Int {
-        val reservation = reservationDeltaPx.coerceAtLeast(0)
-        return if (nativeHide) {
-            (reservation - compactSlotWidthPx.coerceAtLeast(0)).coerceAtLeast(0)
-        } else {
-            reservation
-        }
-    }
-
-    fun resolveFakeCarrierCapacityDelta(
-        nativeCarrierWidthPx: Int,
-        parentContentWidthPx: Int,
-    ): Int? {
-        if (nativeCarrierWidthPx <= 0 || parentContentWidthPx <= 0) return null
-        if (nativeCarrierWidthPx > parentContentWidthPx) return null
-        return parentContentWidthPx - nativeCarrierWidthPx
-    }
+    // FAKE host width and its native peer-row layout settle separately.
+    // Do not cut over while either native layout is still pending.
+    fun fakeNativePeerMeasureReady(
+        carrierSettled: Boolean,
+        peerRowLayoutRequested: Boolean,
+    ): Boolean = carrierSettled && !peerRowLayoutRequested
 }
 
 internal object OwnedEntries {
@@ -170,6 +131,7 @@ internal object OwnedEntries {
         return live.filterNot(owned::contains)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun <T> add(
         target: MutableList<T>,
         entries: Collection<T>,
@@ -193,6 +155,7 @@ internal object OwnedEntries {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun <T> restore(
         target: MutableList<T>,
         ownedEntries: List<T>,
@@ -203,7 +166,11 @@ internal object OwnedEntries {
                 target.remove(entry)
             } catch (error: Throwable) {
                 SysUiPresentationRuntime.throwIfFatal(error)
-                if (failure == null) failure = error else failure?.addSuppressed(error)
+                if (failure == null) {
+                    failure = error
+                } else if (failure !== error) {
+                    failure?.addSuppressed(error)
+                }
             }
         }
         failure?.let { throw it }

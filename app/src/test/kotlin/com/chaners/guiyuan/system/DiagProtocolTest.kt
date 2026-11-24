@@ -5,6 +5,29 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+private data class SessionMarker(
+    val id: String,
+    val sequence: String,
+    val uptimeMs: String,
+)
+
+private fun testSessionEvent(
+    event: String,
+    component: String,
+    state: String,
+    marker: SessionMarker,
+    extras: Map<String, String> = emptyMap(),
+): String = DiagProtocol.format(
+    event = event,
+    component = component,
+    state = state,
+    fields = mapOf(
+        "sessionId" to marker.id,
+        "sequence" to marker.sequence,
+        "uptimeMs" to marker.uptimeMs,
+    ) + extras,
+)
+
 class DiagProtocolTest {
     private companion object {
         const val SOURCE_INSTALL_EVENT = "source.install"
@@ -104,54 +127,21 @@ class DiagProtocolTest {
 
     @Test
     fun eventSnapshotScopesToLatestRuntimeSession() {
-        val lines =
-            listOf(
-                DiagProtocol.format(
-                    event = MODULE_LOADED_EVENT,
-                    component = MODULE_COMPONENT,
-                    state = READY_STATE,
-                    fields =
-                        mapOf(
-                            SESSION_ID_FIELD to "old",
-                            SEQUENCE_FIELD to "1",
-                            UPTIME_MS_FIELD to "100",
-                        ),
-                ),
-                DiagProtocol.format(
-                    event = SOURCE_INSTALL_EVENT,
-                    component = NETWORK_COMPONENT,
-                    state = "error",
-                    fields =
-                        mapOf(
-                            SESSION_ID_FIELD to "old",
-                            SEQUENCE_FIELD to "2",
-                            UPTIME_MS_FIELD to "110",
-                        ),
-                ),
-                DiagProtocol.format(
-                    event = MODULE_LOADED_EVENT,
-                    component = MODULE_COMPONENT,
-                    state = READY_STATE,
-                    fields =
-                        mapOf(
-                            SESSION_ID_FIELD to "new",
-                            SEQUENCE_FIELD to "1",
-                            UPTIME_MS_FIELD to "200",
-                        ),
-                ),
-                DiagProtocol.format(
-                    event = SOURCE_INSTALL_EVENT,
-                    component = NETWORK_COMPONENT,
-                    state = READY_STATE,
-                    fields =
-                        mapOf(
-                            SESSION_ID_FIELD to "new",
-                            SEQUENCE_FIELD to "2",
-                            UPTIME_MS_FIELD to "210",
-                            HOOKS_FIELD to HOOK_COUNT,
-                        ),
-                ),
-            )
+        val lines = listOf(
+            testSessionEvent(
+                MODULE_LOADED_EVENT, MODULE_COMPONENT, READY_STATE, SessionMarker("old", "1", "100"),
+            ),
+            testSessionEvent(
+                SOURCE_INSTALL_EVENT, NETWORK_COMPONENT, "error", SessionMarker("old", "2", "110"),
+            ),
+            testSessionEvent(
+                MODULE_LOADED_EVENT, MODULE_COMPONENT, READY_STATE, SessionMarker("new", "1", "200"),
+            ),
+            testSessionEvent(
+                SOURCE_INSTALL_EVENT, NETWORK_COMPONENT, READY_STATE,
+                SessionMarker("new", "2", "210"), mapOf(HOOKS_FIELD to HOOK_COUNT),
+            ),
+        )
 
         val snapshot = RuntimeEventSnapshot.fromLines(lines)
         val network = requireNotNull(snapshot.component(NETWORK_COMPONENT))

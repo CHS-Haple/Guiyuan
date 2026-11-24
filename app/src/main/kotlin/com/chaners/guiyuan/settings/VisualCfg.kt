@@ -128,7 +128,7 @@ internal data class BatteryColorOverrides(
         slot: BatteryColorSlot,
         color: Int?,
     ): BatteryColorOverrides {
-        val opaque = color?.let { it or 0xFF000000.toInt() }
+        val opaque = color?.opaqueArgb()
         return when (slot) {
             BatteryColorSlot.NORMAL -> copy(normal = opaque)
             BatteryColorSlot.POWER_SAVE -> copy(powerSave = opaque)
@@ -138,6 +138,16 @@ internal data class BatteryColorOverrides(
             BatteryColorSlot.LOW -> copy(low = opaque)
         }
     }
+
+    fun normalized(): BatteryColorOverrides =
+        copy(
+            normal = normal?.opaqueArgb(),
+            powerSave = powerSave?.opaqueArgb(),
+            performance = performance?.opaqueArgb(),
+            superPowerSave = superPowerSave?.opaqueArgb(),
+            charging = charging?.opaqueArgb(),
+            low = low?.opaqueArgb(),
+        )
 }
 
 internal object RecommendedBatteryPalette {
@@ -285,7 +295,15 @@ internal data class VisualCfg(
 internal fun Float.finiteIn(min: Float, max: Float, fallback: Float): Float =
     takeIf(Float::isFinite)?.coerceIn(min, max) ?: fallback
 
+internal fun Float.normalizedNetworkOffset(): Float =
+    finiteIn(NETWORK_TOP_OFFSET_MIN, NETWORK_TOP_OFFSET_MAX, NETWORK_TOP_OFFSET_DEFAULT)
+
 internal fun VisualCfg.normalized(): VisualCfg =
+    normalizedReadoutAndNetwork()
+        .normalizedSignalsAndBattery()
+        .normalizedSymbolDimensions()
+
+private fun VisualCfg.normalizedReadoutAndNetwork(): VisualCfg =
     copy(
         singleRowDotArrangement = singleRowDotArrangement.takeUnless {
             it == SignalDotArrangement.BOTH_SIDES
@@ -307,60 +325,29 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 BATTERY_TOP_VERTICAL_OFFSET_MAX,
                 topOffsetYDefault(layout),
             ),
-        wifiOffsetY =
-            wifiOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        mobileTypeOffsetY =
-            mobileTypeOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        curvedSignalDotOffsetY =
-            curvedSignalDotOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
+        wifiOffsetY = wifiOffsetY.normalizedNetworkOffset(),
+        mobileTypeOffsetY = mobileTypeOffsetY.normalizedNetworkOffset(),
+        curvedSignalDotOffsetY = curvedSignalDotOffsetY.normalizedNetworkOffset(),
         mobileTypeBottomOffsetY =
             mobileTypeBottomOffsetY.finiteIn(
                 NETWORK_TOP_OFFSET_MIN,
                 NETWORK_TOP_OFFSET_MAX,
                 mobileTypeBottomOffsetDefault(layout),
             ),
-        horizontalSignalDotOffsetY =
-            horizontalSignalDotOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        bothSidesSignalDotOffsetY =
-            bothSidesSignalDotOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
+        horizontalSignalDotOffsetY = horizontalSignalDotOffsetY.normalizedNetworkOffset(),
+    )
+
+private fun VisualCfg.normalizedSignalsAndBattery(): VisualCfg =
+    copy(
+        bothSidesSignalDotOffsetY = bothSidesSignalDotOffsetY.normalizedNetworkOffset(),
         bothSidesActivityScale =
             bothSidesActivityScale.finiteIn(
                 BOTH_SIDES_BOTTOM_INFO_SCALE_MIN,
                 BOTH_SIDES_BOTTOM_INFO_SCALE_MAX,
                 BOTH_SIDES_BOTTOM_INFO_SCALE_DEFAULT,
             ),
-        bothSidesActivityOffsetY =
-            bothSidesActivityOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
-        bothSidesChargingOffsetY =
-            bothSidesChargingOffsetY.finiteIn(
-                NETWORK_TOP_OFFSET_MIN,
-                NETWORK_TOP_OFFSET_MAX,
-                NETWORK_TOP_OFFSET_DEFAULT,
-            ),
+        bothSidesActivityOffsetY = bothSidesActivityOffsetY.normalizedNetworkOffset(),
+        bothSidesChargingOffsetY = bothSidesChargingOffsetY.normalizedNetworkOffset(),
         topChargingIconScale =
             topChargingIconScale.finiteIn(
                 BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
@@ -379,6 +366,10 @@ internal fun VisualCfg.normalized(): VisualCfg =
                 OUTER_WEIGHT_SCALE_MAX,
                 OUTER_WEIGHT_SCALE_DEFAULT,
             ),
+    )
+
+private fun VisualCfg.normalizedSymbolDimensions(): VisualCfg =
+    copy(
         wifiScale = wifiScale.finiteIn(
                 WIFI_SIZE_SCALE_MIN,
                 WIFI_SIZE_SCALE_MAX,
@@ -406,10 +397,5 @@ internal fun VisualCfg.normalized(): VisualCfg =
             ),
         mobileTypeWeight =
             mobileTypeWeight.coerceIn(MOBILE_TYPE_WEIGHT_MIN, MOBILE_TYPE_WEIGHT_MAX),
-        batteryColorOverrides =
-            BatteryColorSlot.entries.fold(
-                BatteryColorOverrides(),
-            ) { overrides, slot ->
-                overrides.withColor(slot, batteryColorOverrides.colorFor(slot))
-            },
+        batteryColorOverrides = batteryColorOverrides.normalized(),
     )

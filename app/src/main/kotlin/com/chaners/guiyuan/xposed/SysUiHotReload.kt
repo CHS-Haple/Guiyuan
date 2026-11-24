@@ -3,17 +3,14 @@ package com.chaners.guiyuan.xposed
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedModuleInterface.HotReloadedParam
 import io.github.libxposed.api.XposedModuleInterface.HotReloadingParam
-import java.lang.reflect.InvocationTargetException
 
 internal object SysUiHotReload {
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun rethrowFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     internal sealed interface PrepareResult {
         data class Ready(
@@ -123,17 +120,11 @@ internal object SysUiHotReload {
         return MainThreadRetire(handler::post, handler::removeCallbacks).run(cleanup)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun releaseOldHooks(param: HotReloadedParam): Int =
-        param.oldHookHandles.count { handle ->
-            try {
-                handle.unhook()
-                false
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                true
-            }
-        }
+        param.oldHookHandles.count { it.unhookFailed() }
 
+    @Suppress("TooGenericExceptionCaught")
     fun takeOverHooks(
         param: HotReloadedParam,
         onCaptured: (SysUiHostRegistry.Capture) -> Unit,
@@ -172,6 +163,44 @@ internal object SysUiHotReload {
             removedHooks = removed,
             classLoader = classLoader,
         )
+    }
+
+    // Preserve native for any incomplete in-place Home transfer; never prearm
+    // outside an eligible Hot Reload or when native replacement is unavailable.
+    internal fun shouldPrearmHome(
+        transferEligible: Boolean,
+        featureEnabled: Boolean,
+        mobileReady: Boolean,
+        batteryReady: Boolean,
+    ): Boolean =
+        transferEligible && featureEnabled && mobileReady && batteryReady
+
+    // Failure-only native fallback. Ordinary same-host transfer must not
+    // add a second native relayout after the new presentation is ready.
+    fun requestNativeHomeRelayoutAfterFailedTransfer(host: Any?) {
+        val view = host as? ViewGroup ?: return
+        val reflow = {
+            if (view.isAttachedToWindow) {
+                val battery =
+                    (0 until view.childCount)
+                        .map(view::getChildAt)
+                        .firstOrNull {
+                            it.javaClass.name ==
+                                "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
+                        } as? ViewGroup
+                val icons =
+                    battery?.let { parent ->
+                        (0 until parent.childCount)
+                            .map(parent::getChildAt)
+                            .firstOrNull {
+                                it.javaClass.name ==
+                                    "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
+                            }
+                    }
+                (icons ?: view).requestLayout()
+            }
+        }
+        if (Looper.myLooper() === Looper.getMainLooper()) reflow() else view.post(reflow)
     }
 
     fun restoreTransfer(param: HotReloadedParam): HotReloadTransfer.Restored? =

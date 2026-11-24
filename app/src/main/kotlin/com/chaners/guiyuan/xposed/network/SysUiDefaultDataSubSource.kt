@@ -5,20 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.telephony.SubscriptionManager
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
-import java.lang.reflect.InvocationTargetException
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 
 internal object SysUiDefaultDataSubSource {
     private const val DEFAULT_DATA_SUBSCRIPTION_CHANGED_ACTION =
         "android.intent.action.ACTION_DEFAULT_DATA_SUBSCRIPTION_CHANGED"
-
-    internal fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
-
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private var registeredContext: Context? = null
     private var receiver: BroadcastReceiver? = null
@@ -39,6 +32,7 @@ internal object SysUiDefaultDataSubSource {
     fun currentSubscriptionId(): Int = currentSubscriptionId
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun attach(
         context: Context,
         onChanged: (Int) -> Unit,
@@ -128,12 +122,13 @@ internal object SysUiDefaultDataSubSource {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun publish(
         source: String,
         force: Boolean,
     ) {
         val next =
-            readOrNull { SubscriptionManager.getDefaultDataSubscriptionId() }
+            optionalNativeRead { SubscriptionManager.getDefaultDataSubscriptionId() }
                 ?: return
 
         val deliver = onChanged
@@ -164,6 +159,7 @@ internal object SysUiDefaultDataSubSource {
         }
     }
 
+    // Roll back the delivery receipt for any callback failure, then rethrow.
     @Synchronized
     internal fun deliverSubscription(
         next: Int,
@@ -176,11 +172,12 @@ internal object SysUiDefaultDataSubSource {
         val previous = lastDelivery
         val pending = Delivery(next)
         lastDelivery = pending
+        var completed = false
         try {
             deliver(next)
-        } catch (error: Throwable) {
-            if (lastDelivery === pending) lastDelivery = previous
-            throw error
+            completed = true
+        } finally {
+            if (!completed && lastDelivery === pending) lastDelivery = previous
         }
         return true
     }

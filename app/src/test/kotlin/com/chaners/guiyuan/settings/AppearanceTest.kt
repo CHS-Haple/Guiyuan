@@ -4,17 +4,23 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import org.junit.Test
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
+private const val TEST_UI_STYLE_KEY = "ui_style"
+private const val TEST_NAV_CONTENT_KEY = "floating_navigation_content"
+private const val TEST_UNKNOWN_INPUT = "Unknown"
+
 class AppearanceTest {
     @Test
     fun legacyAppearanceKeepsTheUnmodifiedSystemPalette() {
         val old = Appearance(dynamicColor = true)
-        assertEquals(null, old.colorSpec)
+        assertFalse(old.customPalette)
+        assertEquals(ThemeColorSpec.Spec2021, old.colorSpec)
         assertEquals(ThemePaletteStyle.TonalSpot, old.paletteStyle)
         assertEquals(null, decodeColorSpec(null))
         assertEquals(null, decodeColorSpec("FutureSpec"))
@@ -23,50 +29,38 @@ class AppearanceTest {
     }
 
     @Test
-    fun paletteChoicesMatchNewMiuixSpecs() {
-        assertEquals(
-            listOf(9, 5),
-            ThemeColorSpec.entries.map { palettesFor(it).size },
-        )
+    fun legacySourceIsInferredOnlyWithoutAnExplicitChoice() {
+        for (stored in listOf(null, "FutureSpec", "Spec2021", "Spec2025", "Spec2026")) {
+            val spec = decodeColorSpec(stored)
+            assertEquals(spec != null, decodeCustomPalette(null, spec))
+            assertTrue(decodeCustomPalette(true, spec))
+            assertFalse(decodeCustomPalette(false, spec))
+        }
+    }
+
+    @Test
+    fun spec2025SupportMatchesPinnedMiuix() {
         assertEquals(
             listOf(
                 ThemePaletteStyle.TonalSpot,
                 ThemePaletteStyle.Neutral,
                 ThemePaletteStyle.Vibrant,
                 ThemePaletteStyle.Expressive,
-                ThemePaletteStyle.Cmf,
             ),
-            palettesFor(ThemeColorSpec.Spec2025),
+            ThemePaletteStyle.entries.filter { it.supportsSpec2025() },
         )
-        assertFalse(ThemePaletteStyle.Cmf in palettesFor(ThemeColorSpec.Spec2021))
-        assertFalse(ThemePaletteStyle.Rainbow in palettesFor(ThemeColorSpec.Spec2025))
+        assertFalse(ThemePaletteStyle.Cmf.supportsSpec2025())
     }
 
     @Test
-    fun legacySpec2026KeepsTheCmfPalette() {
-        val spec = decodeColorSpec("Spec2026")
-        assertEquals(ThemeColorSpec.Spec2025, spec)
-        assertEquals(ThemePaletteStyle.Cmf, compatiblePalette(spec, ThemePaletteStyle.Cmf))
-    }
-
-    @Test
-    fun incompatiblePalettesNormalizeWithoutChangingTheSystemSetting() {
-        assertEquals(
-            ThemePaletteStyle.Cmf,
-            compatiblePalette(ThemeColorSpec.Spec2025, ThemePaletteStyle.Cmf),
-        )
-        assertEquals(
-            ThemePaletteStyle.TonalSpot,
-            compatiblePalette(ThemeColorSpec.Spec2021, ThemePaletteStyle.Cmf),
-        )
-        assertEquals(
-            ThemePaletteStyle.TonalSpot,
-            compatiblePalette(ThemeColorSpec.Spec2025, ThemePaletteStyle.Rainbow),
-        )
-        assertEquals(
-            ThemePaletteStyle.Cmf,
-            compatiblePalette(null, ThemePaletteStyle.Cmf),
-        )
+    fun legacyCmfStyleAndRequestedSpecRoundTripIndependently() {
+        assertEquals(ThemeColorSpec.Spec2025, decodeColorSpec("Spec2026"))
+        for (style in ThemePaletteStyle.entries) {
+            assertEquals(style, decodePalette(style.name))
+        }
+        for (spec in ThemeColorSpec.entries) {
+            assertEquals(spec, decodeColorSpec(spec.name))
+        }
     }
 
 }
@@ -82,26 +76,21 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
-    fun freshInstallUsesOs4GlassWithCaptions() {
+    fun freshInstallUsesGlassWithCaptions() {
         val settings = Appearance()
 
         assertTrue(settings.navEnabled)
         assertTrue(settings.navTouchExtension)
-        assertEquals(UiStyle.OS4, settings.uiStyle)
         assertTrue(settings.topBarProgressiveBlur)
-        assertEquals(listOf(UiStyle.OS4, UiStyle.OS3), uiStyleMenuOrder)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconAndText, settings.navContent)
-        assertEquals(NavContent.IconAndText, settings.liquidContent)
-        assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
     }
 
     @Test
-    fun progressiveTopBarBlurSettingIsSharedAcrossUiStyles() {
+    fun progressiveTopBarBlurRemainsConfigurable() {
         val disabled = Appearance(topBarProgressiveBlur = false)
-        assertFalse(disabled.copy(uiStyle = UiStyle.OS3).topBarProgressiveBlur)
-        assertFalse(disabled.copy(uiStyle = UiStyle.OS4).topBarProgressiveBlur)
+        assertFalse(disabled.topBarProgressiveBlur)
         assertTrue(disabled.copy(topBarProgressiveBlur = true).topBarProgressiveBlur)
     }
 
@@ -114,56 +103,74 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
-    fun os4MigrationUpdatesExistingUserWithoutResettingNavigation() {
-        val uiStyle = stringPreferencesKey("ui_style")
+    fun retiringStylePreservesExistingNavigation() {
+        val uiStyle = stringPreferencesKey(TEST_UI_STYLE_KEY)
         val navStyle = stringPreferencesKey("floating_navigation_style")
-        val navContent = stringPreferencesKey("floating_navigation_content")
+        val navContent = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val navEnabled = booleanPreferencesKey("floating_navigation_bar_enabled")
         val prefs = mutablePreferencesOf(
-            uiStyle to UiStyle.OS3.name,
+            uiStyle to "OS3",
             navStyle to NavStyle.Liquid.name,
             navContent to NavContent.IconOnly.name,
             navEnabled to false,
+            stringPreferencesKey("theme_mode") to ThemeMode.Dark.name,
+            booleanPreferencesKey("dynamic_color_enabled") to true,
+            intPreferencesKey("ui_scale_percent") to 97,
+            booleanPreferencesKey("floating_navigation_touch_extension") to false,
+            booleanPreferencesKey("swipe_back_enabled") to false,
         )
+        val expected = prefs.asMap().toMap() - uiStyle
 
-        migrateOs4Appearance(prefs)
+        migrateAppearance(prefs)
 
-        assertEquals(UiStyle.OS4.name, prefs[uiStyle])
+        assertEquals(expected, prefs.asMap())
+        assertEquals(null, prefs[uiStyle])
         assertEquals(NavStyle.Liquid.name, prefs[navStyle])
         assertEquals(NavContent.IconOnly.name, prefs[navContent])
         assertEquals(false, prefs[navEnabled])
 
-        prefs[uiStyle] = UiStyle.OS3.name
-        migrateOs4Appearance(prefs)
-        assertEquals(UiStyle.OS3.name, prefs[uiStyle])
+        val migrated = prefs.asMap().toMap()
+        migrateAppearance(prefs)
+        assertEquals(migrated, prefs.asMap())
     }
 
     @Test
-    fun cleanInstallGetsOs4AndIconText() {
+    fun cleanInstallGetsIconText() {
         val prefs = mutablePreferencesOf()
-        migrateOs4Appearance(prefs)
-        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
+        migrateAppearance(prefs)
+        assertEquals(null, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
         assertEquals(
             NavContent.IconAndText.name,
-            prefs[stringPreferencesKey("floating_navigation_content")],
+            prefs[stringPreferencesKey(TEST_NAV_CONTENT_KEY)],
         )
     }
 
     @Test
-    fun existingNavigationLabelPreferencesRemainSeparateAcrossMigration() {
-        val regularKey = stringPreferencesKey("floating_navigation_content")
+    fun migrationUsesActiveStyleLabelChoiceAndRetiresSeparateKey() {
+        val regularKey = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val liquidKey = stringPreferencesKey("floating_navigation_liquid_content")
-        val prefs = mutablePreferencesOf(
-            regularKey to NavContent.IconOnly.name,
-            liquidKey to NavContent.IconAndText.name,
-        )
-
-        migrateOs4Appearance(prefs)
-
-        assertEquals(NavContent.IconOnly.name, prefs[regularKey])
-        assertEquals(NavContent.IconAndText.name, prefs[liquidKey])
-        assertEquals(NavContent.IconOnly, decodeNavContent(prefs[regularKey]))
-        assertEquals(NavContent.IconAndText, decodeNavContent(prefs[liquidKey], NavContent.IconAndText))
+        val navStyle = stringPreferencesKey("floating_navigation_style")
+        val liquidMode = stringPreferencesKey("floating_navigation_liquid_mode")
+        for (style in NavStyle.entries) {
+            for (regular in NavContent.entries) {
+                val liquid = NavContent.entries.first { it != regular }
+                val prefs = mutablePreferencesOf(
+                    navStyle to style.name,
+                    regularKey to regular.name,
+                    liquidKey to liquid.name,
+                    liquidMode to LiquidMode.Clear.stored,
+                )
+                migrateAppearance(prefs)
+                val expected = if (style == NavStyle.Liquid) liquid else regular
+                assertEquals(expected.name, prefs[regularKey])
+                assertEquals(null, prefs[liquidKey])
+                assertEquals(style.name, prefs[navStyle])
+                assertEquals(LiquidMode.Clear.stored, prefs[liquidMode])
+                val migrated = prefs.asMap().toMap()
+                migrateAppearance(prefs)
+                assertEquals(migrated, prefs.asMap())
+            }
+        }
     }
 
     @Test
@@ -176,24 +183,44 @@ class AppearanceCompatibilityTest {
     fun uiStyleMigrationDoesNotResetProgressiveBlurPreference() {
         val blurKey = booleanPreferencesKey("top_bar_progressive_blur")
         val prefs = mutablePreferencesOf(
-            stringPreferencesKey("ui_style") to UiStyle.OS3.name,
+            stringPreferencesKey(TEST_UI_STYLE_KEY) to "OS3",
             blurKey to false,
         )
 
-        migrateOs4Appearance(prefs)
+        migrateAppearance(prefs)
 
         assertEquals(false, prefs[blurKey])
-        assertEquals(UiStyle.OS4.name, prefs[stringPreferencesKey("ui_style")])
+        assertEquals(null, prefs[stringPreferencesKey(TEST_UI_STYLE_KEY)])
     }
 
     @Test
-    fun os4SelectionDoesNotRewriteOs3NavigationPreferences() {
-        val old = Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid, liquidMode = LiquidMode.Clear)
-        val experimental = old.copy(uiStyle = UiStyle.OS4)
-        assertEquals(NavStyle.Liquid, experimental.navStyle)
-        assertEquals(NavContent.IconAndText, experimental.activeNavContent)
-        assertEquals(LiquidMode.Clear, experimental.liquidMode)
-        assertEquals(old, experimental.copy(uiStyle = UiStyle.OS3))
+    fun retiringOnlyStyleKeysPreservesImplicitLegacyIconOnly() {
+        val style = stringPreferencesKey(TEST_UI_STYLE_KEY)
+        val upgraded = booleanPreferencesKey("ui_style_os4_upgrade_done")
+        val content = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
+        for (oldStyle in listOf("OS3", "OS4", "Unknown")) {
+            val prefs = mutablePreferencesOf(style to oldStyle, upgraded to true)
+            migrateAppearance(prefs)
+            assertEquals(null, prefs[style])
+            assertEquals(null, prefs[upgraded])
+            assertEquals(NavContent.IconOnly.name, prefs[content])
+            val migrated = prefs.asMap().toMap()
+            migrateAppearance(prefs)
+            assertEquals(migrated, prefs.asMap())
+        }
+    }
+
+    @Test
+    fun migrationPreservesImplicitLiquidLabelDefault() {
+        val content = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
+        val nav = stringPreferencesKey("floating_navigation_style")
+        val prefs = mutablePreferencesOf(
+            stringPreferencesKey(TEST_UI_STYLE_KEY) to "OS3",
+            nav to NavStyle.Liquid.name,
+        )
+        migrateAppearance(prefs)
+        assertEquals(NavContent.IconAndText.name, prefs[content])
+        assertEquals(NavStyle.Liquid.name, prefs[nav])
     }
 
 }
@@ -286,7 +313,7 @@ class AppearanceNavigationTest {
         )
         assertEquals(
             NavContent.IconOnly,
-            decodeNavContent("Unknown"),
+            decodeNavContent(TEST_UNKNOWN_INPUT),
         )
         assertEquals(
             NavContent.IconAndText,
@@ -295,30 +322,13 @@ class AppearanceNavigationTest {
     }
 
     @Test
-    fun liquidAndOtherStylesKeepSeparateContent() {
-        val liquid = Appearance(
-            navStyle = NavStyle.Liquid,
-            navContent = NavContent.IconOnly,
-            liquidContent = NavContent.IconAndText,
-        )
-        assertEquals(NavContent.IconAndText, liquid.activeNavContent)
-        assertEquals(NavContent.IconAndText, Appearance(navStyle = NavStyle.Liquid).activeNavContent)
-        assertEquals(NavContent.IconOnly, liquid.copy(navStyle = NavStyle.Glass).activeNavContent)
-
-        val changed = liquid.copy(
-            liquidContent = NavContent.IconOnly,
-            navContent = NavContent.IconAndText,
-        )
-        assertEquals(NavContent.IconOnly, changed.activeNavContent)
-        assertEquals(NavContent.IconAndText, changed.copy(navStyle = NavStyle.Blur).activeNavContent)
-        assertEquals(NavContent.IconAndText, changed.copy(navStyle = NavStyle.Standard).activeNavContent)
-    }
-
-    @Test
-    fun liquidContentDefaultsToIconsAndText() {
-        assertEquals(NavContent.IconAndText, decodeNavContent(null, NavContent.IconAndText))
-        assertEquals(NavContent.IconOnly, decodeNavContent("IconOnly", NavContent.IconAndText))
-        assertEquals(NavContent.IconAndText, decodeNavContent("Unknown", NavContent.IconAndText))
+    fun allNavigationStylesShareTheSameContentChoice() {
+        for (content in NavContent.entries) {
+            val appearance = Appearance(navContent = content)
+            NavStyle.entries.forEach { style ->
+                assertEquals(content, appearance.copy(navStyle = style).navContent)
+            }
+        }
     }
 
     @Test
@@ -326,7 +336,7 @@ class AppearanceNavigationTest {
         assertEquals(listOf(LiquidMode.Blur, LiquidMode.Balanced, LiquidMode.Clear), LiquidMode.entries)
         assertEquals(LiquidMode.Balanced, Appearance().liquidMode)
         assertEquals(LiquidMode.Balanced, decodeLiquidMode(null))
-        assertEquals(LiquidMode.Balanced, decodeLiquidMode("Unknown"))
+        assertEquals(LiquidMode.Balanced, decodeLiquidMode(TEST_UNKNOWN_INPUT))
         assertEquals(LiquidMode.Balanced, decodeLiquidMode("Blur"))
         assertEquals(LiquidMode.Blur, decodeLiquidMode("Blur8"))
         assertEquals(LiquidMode.Balanced, decodeLiquidMode("Default"))
@@ -383,7 +393,7 @@ class AppearanceThemeModeTest {
     fun unknownStoredModeFallsBackToSystem() {
         val result =
             decodeTheme(
-                storedMode = "Unknown",
+                storedMode = TEST_UNKNOWN_INPUT,
                 storedDynamicColorEnabled = null,
             )
 

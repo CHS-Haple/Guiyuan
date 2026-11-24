@@ -83,6 +83,47 @@ class VisualCfgPaletteTest {
     }
 
     @Test
+    fun visualNormalizationMakesEveryStoredOverrideOpaqueWithoutMutatingSource() {
+        val source =
+            BatteryColorOverrides(
+                normal = 0x00112233,
+                powerSave = null,
+                performance = 0x7F445566,
+                superPowerSave = 0xFF778899.toInt(),
+                charging = 0x0034C759,
+                low = 0,
+            )
+        val normalized = VisualCfg(batteryColorOverrides = source).normalized()
+        val values =
+            listOf(
+                0xFF112233.toInt(),
+                null,
+                0xFF445566.toInt(),
+                0xFF778899.toInt(),
+                0xFF34C759.toInt(),
+                0xFF000000.toInt(),
+            )
+
+        assertEquals(values, BatteryColorSlot.entries.map(normalized.batteryColorOverrides::colorFor))
+        assertEquals(0x00112233, source.normal)
+        assertEquals(0x7F445566, source.performance)
+        assertEquals(0, source.low)
+        assertEquals(normalized, normalized.normalized())
+    }
+
+    @Test
+    fun opaqueArgbPreservesRgbAndIsIdempotentForEveryAlpha() {
+        val rgb = 0x123456
+        for (alpha in listOf(0x00, 0x40, 0x7F, 0xFF)) {
+            val source = (alpha shl 24) or rgb
+            val opaque = source.opaqueArgb()
+            assertEquals(0xFF123456.toInt(), opaque)
+            assertEquals(opaque, opaque.opaqueArgb())
+        }
+        assertEquals(0xFF000000.toInt(), 0.opaqueArgb())
+    }
+
+    @Test
     fun customColorOverridesAreForcedOpaque() {
         val overrides =
             BatteryColorOverrides().withColor(

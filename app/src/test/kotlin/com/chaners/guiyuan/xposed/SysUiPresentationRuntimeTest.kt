@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import java.lang.reflect.InvocationTargetException
+import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -17,6 +18,29 @@ class SysUiPresentationRuntimeTest {
             fatal,
             runCatching {
                 SysUiPresentationRuntime.emitPassiveDiagnostic {
+                    throw InvocationTargetException(fatal)
+                }
+            }.exceptionOrNull(),
+        )
+    }
+
+    @Test
+    fun diagnosticWarningReceiptDoesNotDisableLaterEventsOrSwallowFatalErrors() {
+        val warned = AtomicBoolean(false)
+        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
+            throw IllegalStateException("diagnostic")
+        }
+        assertEquals(true, warned.get())
+        var delivered = false
+        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
+            delivered = true
+        }
+        assertEquals(true, delivered)
+        val fatal = OutOfMemoryError("diagnostic-fatal")
+        assertSame(
+            fatal,
+            runCatching {
+                SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
                     throw InvocationTargetException(fatal)
                 }
             }.exceptionOrNull(),
@@ -79,6 +103,79 @@ class SysUiPresentationRuntimeTest {
                     }
                 }.exceptionOrNull(),
             )
+        }
+    }
+
+    @Test
+    fun sharedFatalRethrowPreservesDirectAndReflectedOriginalErrors() {
+        for (fatal in listOf<Throwable>(ThreadDeath(), OutOfMemoryError("source-fatal"))) {
+            assertSame(
+                fatal,
+                runCatching { SysUiFatal.rethrow(fatal) }.exceptionOrNull(),
+            )
+            assertSame(
+                fatal,
+                runCatching {
+                    SysUiFatal.rethrow(InvocationTargetException(fatal))
+                }.exceptionOrNull(),
+            )
+        }
+        SysUiFatal.rethrow(InvocationTargetException(NoSuchMethodException("optional")))
+    }
+
+    @Test
+    fun hookInstallRunsOnceOnSuccessWithoutFallback() {
+        var installCalls = 0
+        var fallbackCalls = 0
+        val count =
+            SysUiPresentationRuntime.attemptHookInstall {
+                installCalls++
+                3
+            }.getOrElse {
+                fallbackCalls++
+                0
+            }
+        assertEquals(3, count)
+        assertEquals(1, installCalls)
+        assertEquals(0, fallbackCalls)
+    }
+
+    @Test
+    fun hookInstallFailureUsesOnlyItsNonfatalNativeFallback() {
+        val missing = IllegalStateException("missing-hook")
+        var installCalls = 0
+        var fallbackCalls = 0
+        val count =
+            SysUiPresentationRuntime.attemptHookInstall<Int> {
+                installCalls++
+                throw missing
+            }.getOrElse { error ->
+                assertSame(missing, error)
+                fallbackCalls++
+                -1
+            }
+        assertEquals(-1, count)
+        assertEquals(1, installCalls)
+        assertEquals(1, fallbackCalls)
+    }
+
+    @Test
+    fun hookInstallDirectAndReflectedFatalsNeverReachFallback() {
+        for (fatal in listOf<Throwable>(ThreadDeath(), OutOfMemoryError("hook-install"))) {
+            for (error in listOf(fatal, InvocationTargetException(fatal))) {
+                var fallbackCalls = 0
+                val thrown =
+                    runCatching {
+                        SysUiPresentationRuntime.attemptHookInstall<Int> {
+                            throw error
+                        }.getOrElse {
+                            fallbackCalls++
+                            0
+                        }
+                    }.exceptionOrNull()
+                assertSame(fatal, thrown)
+                assertEquals(0, fallbackCalls)
+            }
         }
     }
 

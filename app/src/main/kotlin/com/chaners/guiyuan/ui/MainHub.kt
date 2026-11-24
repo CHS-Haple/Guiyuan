@@ -1,98 +1,63 @@
 package com.chaners.guiyuan.ui
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.captionBar
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerDefaults
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.compose.ui.unit.offset
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.Appearance
-import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.system.RestartTarget
 import com.chaners.guiyuan.system.ScopeRestart
-import com.chaners.guiyuan.ui.components.NavContentItem
-import com.chaners.guiyuan.ui.components.floatingNavMaterial
-import com.chaners.guiyuan.ui.components.navTouchExtension
-import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
-import com.chaners.guiyuan.ui.components.liquid.liquidNavBackdropSource
+import com.chaners.guiyuan.ui.components.floatingNavBlur
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
-import com.chaners.guiyuan.ui.components.liquid.liquidNavSupported
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
-import com.chaners.guiyuan.ui.navigation.AppRoute
-import com.chaners.guiyuan.ui.screens.FeaturesScreen
-import com.chaners.guiyuan.ui.screens.HomeScreen
-import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
-import com.chaners.guiyuan.ui.screens.SettingsHubScreen
-import com.chaners.guiyuan.ui.screens.SemanticLeadingIcon
-import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import com.chaners.guiyuan.ui.screens.rememberPageSearch
+import com.chaners.guiyuan.ui.glass.GlassNavigationRail
+import com.chaners.guiyuan.ui.glass.GlassRailDestinations
+import com.chaners.guiyuan.ui.glass.RailLiquidPaint
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
+import com.chaners.guiyuan.ui.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
-import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
+import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import com.chaners.guiyuan.ui.components.UiDialogButton
-import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import top.yukonga.miuix.kmp.preference.CheckboxLocation
-import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
-import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -100,92 +65,43 @@ import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
-import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
-import top.yukonga.miuix.kmp.utils.pagerGestureOverride
-import top.yukonga.miuix.kmp.utils.springAnimateToPage
+import kotlin.math.roundToInt
 
 private const val TopLevelPageCount = 3
 
-// Use the same installed-package artwork the scope manager displays.
-@Composable
-private fun RestartAppIcon(pkg: String, fallback: Int) {
-    val ctx = LocalContext.current
-    val density = LocalDensity.current
-    val config = LocalConfiguration.current
-    val icon = remember(ctx, pkg, density.density, config) {
-        runCatching {
-            val side = with(density) { 48.dp.roundToPx() }
-            val drawable = ctx.packageManager.getApplicationIcon(pkg)
-            val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
-            drawable.setBounds(0, 0, side, side)
-            drawable.draw(Canvas(bitmap))
-            bitmap.asImageBitmap()
-        }.getOrNull()
-    }
-    if (icon != null) {
-        Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(24.dp))
-    } else {
-        SemanticLeadingIcon(fallback)
-    }
-}
-
-private data class WeightedNavigationItem(
-    val label: String,
-    val icon: ImageVector,
-    val selectedIcon: ImageVector,
-)
+/** Read the shared rail morph in drawing/layout; non-rail routes remain fully visible. */
+internal val LocalGlassRailProgress = staticCompositionLocalOf<() -> Float> { { 1f } }
 
 @Composable
 internal fun MainHub(
-    appearance: Appearance,
-    dark: Boolean,
-    lang: AppLang,
-    iconHidden: Boolean,
-    onHotReload: () -> Unit,
-    onLangChange: (AppLang) -> Unit,
-    onIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackChange: (Boolean) -> Unit,
-    previewState: PreviewSandboxUiState,
-    onNavigate: (AppRoute) -> Unit,
+    inputs: MainHubInputs,
+    callbacks: MainHubCallbacks,
 ) {
+    val (appearance, dark, lang, iconHidden, previewState) = inputs
+    val (onHotReload, onLangChange, onIconHiddenChange, onSwipeBackChange, onNavigate) = callbacks
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val featureSnackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val pageSelection = remember(pagerState, scope) { HubPagerSelection(pagerState, scope) }
+    // One search owner for both the Features page and its optional OS4 navigation action.
+    val featureSearch = rememberPageSearch()
+    LaunchedEffect(pagerState.currentPage) { pageSelection.syncActualPage() }
     val context = LocalContext.current
-    var restartPickerOpen by remember { mutableStateOf(false) }
+    val restartDialog = remember { RestartScopeDialogState() }
     val restartState by ScopeRestart.state.collectAsState()
     val restartInProgress = restartState is ScopeRestart.State.Running
     var scopeRequestInProgress by remember { mutableStateOf(false) }
     var scopeRequestFailed by remember { mutableStateOf(false) }
-    var availableTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
-    var selectedTargets by remember { mutableStateOf(emptySet<RestartTarget>()) }
-    var queuedRestart by remember { mutableStateOf(emptySet<RestartTarget>()) }
-    val failedTargets = (restartState as? ScopeRestart.State.Failed)?.targets
-    var failedTargetsForExit by remember { mutableStateOf(emptySet<RestartTarget>()) }
-    if (failedTargets != null) {
-        SideEffect { failedTargetsForExit = failedTargets }
-    }
     val app = context.applicationContext as GyApplication
     val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val hotReloadInProgress by app.hotReloadInFlight.collectAsState(initial = app.hotReloadActive)
     val onRestart = {
-        if (!restartInProgress && !hotReloadInProgress && !scopeRequestInProgress &&
-            !scopeBusy && app.canRestartScopes()
-        ) {
-            val scopes = app.enabledScopes()
-            availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
-                scopes != null && it.pkg in scopes
-            }
-            selectedTargets =
-                if (RestartTarget.SYS_UI in availableTargets) setOf(RestartTarget.SYS_UI)
-                else availableTargets
-            queuedRestart = emptySet()
-            restartPickerOpen = true
-        }
+        restartDialog.openIfAllowed(
+            app = app,
+            blocked = restartInProgress || hotReloadInProgress || scopeRequestInProgress || scopeBusy,
+        )
     }
-    val os4 = appearance.uiStyle == UiStyle.OS4
-    val os4Glass = os4 && appearance.navEnabled && appearance.navStyle == NavStyle.Glass
+    val glassNavigation = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
@@ -193,11 +109,11 @@ internal fun MainHub(
     val liquidMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle == NavStyle.Liquid &&
-            liquidNavSupported()
+            isRuntimeShaderSupported()
     val surfaceColor = MiuixTheme.colorScheme.surface
     // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
-        if (miuixMaterialActive || (os4 && isRuntimeShaderSupported())) {
+        if (isRuntimeShaderSupported()) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
@@ -206,50 +122,84 @@ internal fun MainHub(
             null
         }
     val navBackdrop = miuixBackdrop.takeIf { miuixMaterialActive }
+    // Reserve the rail's physical panel width and margins plus a usable phone-width page.
+    // Use the actual window, not orientation or device classification, for foldable/split-screen.
+    val railSafePadding = WindowInsets.systemBars
+        .union(WindowInsets.captionBar)
+        .union(WindowInsets.displayCutout)
+        .asPaddingValues()
+    val railStartInset = railSafePadding.calculateStartPadding(LocalLayoutDirection.current)
+    val railEndInset = railSafePadding.calculateEndPadding(LocalLayoutDirection.current)
+    val railTopInset = railSafePadding.calculateTopPadding()
+    val railBottomInset = railSafePadding.calculateBottomPadding()
+    val railVerticalInsets = railTopInset + railBottomInset
+    val railContentWidth = GlassNavigationRailDefaults.ExpandedWidth +
+        GlassNavigationRailDefaults.Margin * 2 + railStartInset
     val liquidBackdrop =
-        if (liquidMaterialActive) {
-            rememberLiquidNavBackdrop(surfaceColor)
-        } else {
-            null
-        }
-
-    val items = listOf(
-        WeightedNavigationItem(
-            label = stringResource(R.string.nav_home),
-            icon = MiuixIcons.Normal.Home,
-            selectedIcon = MiuixIcons.Medium.Home,
-        ),
-        WeightedNavigationItem(
-            label = stringResource(R.string.nav_features),
-            icon = MiuixIcons.Normal.Tune,
-            selectedIcon = MiuixIcons.Medium.Tune,
-        ),
-        WeightedNavigationItem(
-            label = stringResource(R.string.nav_settings),
-            icon = MiuixIcons.Normal.Settings,
-            selectedIcon = MiuixIcons.Medium.Settings,
-        ),
+        if (liquidMaterialActive) rememberLiquidNavBackdrop(surfaceColor) else null
+    val railBackdrop = if (glassNavigation) navBackdrop else liquidBackdrop
+    // The Glass rail owns geometry; Liquid changes only its material.
+    val useGlassRail = railBackdrop != null && canPlaceGlassRail(
+        LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets,
     )
-
-    fun selectPage(index: Int) {
-        if (pagerState.currentPage != index) {
-            scope.launch {
-                pagerState.springAnimateToPage(index)
-            }
-        }
+    val useNativeRail = useNativeRailFor(
+        appearance = appearance,
+        glassBackdropAvailable = navBackdrop != null || liquidBackdrop != null,
+        window = LocalWindowInfo.current.containerDpSize,
+        safePadding = railSafePadding,
+        direction = LocalLayoutDirection.current,
+    )
+    val actionInRail = hasRailActionSlot(appearance, useGlassRail)
+    val actionInBottomNav = hasNavigationActionSlot(
+        appearance = appearance,
+        glassBackdropAvailable = navBackdrop != null,
+        liquidBackdropAvailable = liquidBackdrop != null,
+        glassRailActive = useGlassRail,
+        nativeRailActive = useNativeRail,
+    )
+    val navigationActionSlot = actionInBottomNav || actionInRail
+    val navigationAction = navigationActionFor(
+        slotAvailable = navigationActionSlot,
+        selectedPage = pageSelection.selectedPage,
+        searchActive = featureSearch.active,
+    )
+    val hotReloadEnabled = !restartInProgress && !scopeRequestInProgress && !scopeBusy
+    val requestHotReload: () -> Unit = {
+        if (hotReloadEnabled && !hotReloadInProgress) onHotReload()
+    }
+    val actionControls = NavigationActionControls(
+        hotReloadEnabled,
+        hotReloadInProgress,
+        requestHotReload,
+        featureSearch::open,
+    )
+    val nativeRailState = rememberNavigationRailState()
+    val railState = rememberGlassNavigationRailState()
+    val railProgress = remember(useGlassRail, railState) {
+        { if (useGlassRail) railState.progress else 1f }
     }
 
+    val homeLabel = stringResource(R.string.nav_home)
+    val featuresLabel = stringResource(R.string.nav_features)
+    val settingsLabel = stringResource(R.string.nav_settings)
+    val items = remember(homeLabel, featuresLabel, settingsLabel) {
+        listOf(
+            MainNavItem(homeLabel, MiuixIcons.Normal.Home),
+            MainNavItem(featuresLabel, MiuixIcons.Normal.Tune),
+            MainNavItem(settingsLabel, MiuixIcons.Normal.Settings),
+        )
+    }
+
+
     TopLevelBackHandler(
-        pagerState = pagerState,
-        onBackToHome = { selectPage(0) },
+        selectedPage = pageSelection.selectedPage,
+        onBackToHome = { pageSelection.select(0) },
     )
 
     val navigationBarModifier =
-        if (navBackdrop != null && !os4Glass) {
-            Modifier.floatingNavMaterial(
+        if (navBackdrop != null && !glassNavigation) {
+            Modifier.floatingNavBlur(
                 backdrop = navBackdrop,
-                dark = dark,
-                style = appearance.navStyle,
             )
         } else {
             Modifier
@@ -260,162 +210,39 @@ internal fun MainHub(
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
-                os4Glass && navBackdrop != null -> {
-                    GlassNavigationBar(
-                        items = items.mapIndexed { index, item ->
-                            GlassNavigationItem(
-                                icon = if (pagerState.currentPage == index) item.selectedIcon else item.icon,
-                                label = item.label.takeIf { appearance.activeNavContent == NavContent.IconAndText },
-                                contentDescription = item.label,
-                            )
-                        },
-                        selectedIndex = pagerState.currentPage,
-                        onSelect = ::selectPage,
-                        backdrop = navBackdrop,
-                        touchExtension = appearance.navTouchExtension,
-                        modifier = Modifier
-                            .padding(start = 24.dp, end = 24.dp, top = 20.dp),
-                    )
-                }
-                // OS4 without a usable shader must fall back to native MIUIX,
-                // not resurrect a previously saved OS3 floating-bar style.
-                (os4Glass && navBackdrop == null) || !appearance.navEnabled -> {
-                    NavigationBar(
-                        mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
-                            NavigationBarDisplayMode.IconOnly
-                        } else {
-                            NavigationBarDisplayMode.IconAndText
-                        },
-                    ) {
-                        items.forEachIndexed { index, item ->
-                            val selected = pagerState.currentPage == index
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = { selectPage(index) },
-                                icon = if (selected) item.selectedIcon else item.icon,
-                                label = item.label,
-                            )
-                        }
-                    }
-                }
+                useGlassRail || useNativeRail -> Unit
+                glassNavigation && navBackdrop != null -> HubGlassBottomBar(
+                    appearance, dark, items, pageSelection, navBackdrop, navigationAction, actionControls,
+                )
+                // Glass without a usable shader falls back to native MIUIX.
+                (glassNavigation && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(
+                    appearance, items, pageSelection, glassNavigation,
+                )
 
-                liquidBackdrop != null -> {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .then(
-                                    if (appearance.navTouchExtension) {
-                                        Modifier.navTouchExtension(
-                                            bottomPadding = liquidBottomPadding,
-                                            horizontalPadding = LiquidNavSpec.sidePadding,
-                                            contentPadding = 4.dp,
-                                            itemCount = items.size,
-                                            rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
-                                            onSelect = ::selectPage,
-                                        )
-                                    } else {
-                                        Modifier
-                                    },
-                                )
-                                .padding(bottom = liquidBottomPadding),
-                    ) {
-                        LiquidNavBar(
-                            selectedIndex = { pagerState.currentPage },
-                            onSelected = ::selectPage,
-                            backdrop = liquidBackdrop,
-                            tabsCount = items.size,
-                            dark = dark,
-                            mode = appearance.liquidMode,
-                            modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
-                        ) {
-                            items.forEachIndexed { index, item ->
-                                LiquidNavEntry(
-                                    contentMode = appearance.activeNavContent,
-                                    onClick = { selectPage(index) },
-                                    icon = item.icon,
-                                    label = item.label,
-                                )
-                            }
-                        }
-                    }
-                }
+                liquidBackdrop != null -> HubLiquidBottomBar(
+                    appearance, dark, items, pageSelection, liquidBackdrop, navigationAction, actionControls,
+                    liquidBottomPadding,
+                )
 
-                else -> {
-                    val barBounds = remember(appearance.navStyle, appearance.uiStyle) {
-                        mutableStateOf<Rect?>(null)
-                    }
-                    val hostBounds = remember(appearance.navStyle, appearance.uiStyle) {
-                        mutableStateOf<Rect?>(null)
-                    }
-                    val itemBounds = remember(appearance.navStyle, appearance.uiStyle, items.size) {
-                        mutableStateListOf<Rect?>().apply {
-                            repeat(items.size) { add(null) }
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(
-                                if (appearance.navTouchExtension) {
-                                    Modifier
-                                        .onGloballyPositioned { coordinates ->
-                                            val bounds = coordinates.boundsInRoot()
-                                            if (hostBounds.value != bounds) hostBounds.value = bounds
-                                        }
-                                        .measuredNavTouchExtension(
-                                            hostBounds = hostBounds.value,
-                                            barBounds = barBounds.value,
-                                            itemBounds = itemBounds.toList(),
-                                            onSelect = ::selectPage,
-                                        )
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                    ) {
-                        FloatingNavigationBar(
-                            modifier = navigationBarModifier.then(
-                                if (appearance.navTouchExtension) {
-                                    Modifier.onGloballyPositioned { coordinates ->
-                                        val bounds = coordinates.boundsInRoot()
-                                        if (barBounds.value != bounds) barBounds.value = bounds
-                                    }
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                            color =
-                                if (navBackdrop != null) {
-                                    Color.Transparent
-                                } else {
-                                    MiuixTheme.colorScheme.surfaceContainer
-                                },
-                        ) {
-                            items.forEachIndexed { index, item ->
-                                val selected = pagerState.currentPage == index
-                                NavContentItem(
-                                    content = appearance.activeNavContent,
-                                    selected = selected,
-                                    onClick = { selectPage(index) },
-                                    icon = if (selected) item.selectedIcon else item.icon,
-                                    label = item.label,
-                                    modifier = if (appearance.navTouchExtension) {
-                                        Modifier.onGloballyPositioned { coordinates ->
-                                            val bounds = coordinates.boundsInRoot()
-                                            if (itemBounds[index] != bounds) itemBounds[index] = bounds
-                                        }
-                                    } else {
-                                        Modifier
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
+                else -> HubFloatingBottomBar(
+                    appearance, items, pageSelection, navigationBarModifier, navBackdrop,
+                )
             }
         },
     ) { innerPadding ->
+        // The weighted page occupies a stable Compose slot even when the rail becomes visible
+        // or disappears during rotation and split-screen resizing.
+        Row(Modifier.fillMaxSize()) {
+            if (useNativeRail) {
+                // Native rail remains available for ordinary navigation and missing Glass material.
+                HubNativeRail(
+                    state = nativeRailState,
+                    items = items,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = pageSelection::select,
+                )
+            }
+            Box(Modifier.weight(1f).fillMaxHeight()) {
         Box(
             modifier =
                 Modifier
@@ -428,171 +255,145 @@ internal fun MainHub(
                         },
                     )
                     .then(
-                        if (liquidBackdrop != null) {
-                            Modifier.liquidNavBackdropSource(liquidBackdrop)
+                        if (liquidBackdrop != null && !useNativeRail) {
+                            Modifier.layerBackdrop(liquidBackdrop)
                         } else {
                             Modifier
                         },
                     ),
         ) {
+            Box(
+                modifier = Modifier.fillMaxSize().then(
+                    if (useGlassRail) {
+                        Modifier.layout { measurable, constraints ->
+                            val start = (railContentWidth.toPx() * railState.progress)
+                                .roundToInt().coerceIn(0, constraints.maxWidth)
+                            val page = measurable.measure(constraints.offset(horizontal = -start))
+                            layout(constraints.maxWidth, page.height) {
+                                page.placeRelative(start, 0)
+                            }
+                        }
+                    } else {
+                        Modifier
+                    },
+                ),
+            ) {
+            CompositionLocalProvider(LocalGlassRailProgress provides railProgress) {
             TopLevelPager(
-                pagerState = pagerState,
-                bottomPadding = innerPadding,
-                featureSnackbarState = featureSnackbarState,
-                lang = lang,
-                iconHidden = iconHidden,
-                swipeBackEnabled = appearance.swipeBack,
-                hotReloadInProgress = hotReloadInProgress,
-                restartInProgress = restartInProgress,
-                scopeRequestInProgress = scopeRequestInProgress || scopeBusy,
-                onRestart = onRestart,
-                onRequestScope = {
-                    if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
-                        !scopeBusy
-                    ) {
-                        scopeRequestInProgress = true
-                        val accepted =
-                            (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
-                                scopeRequestInProgress = false
-                                if (!granted) scopeRequestFailed = true
-                            } ?: false
-                        if (!accepted) {
-                            scopeRequestInProgress = false
-                            scopeRequestFailed = true
+                bindings = TopLevelPagerBindings(
+                    scope = TopLevelPagerScope(
+                        pagerState = pagerState,
+                        bottomPadding = innerPadding,
+                        snackbar = featureSnackbarState,
+                        selectedPage = pageSelection.selectedPage,
+                        search = TopLevelPageSearch(featureSearch, navigationActionSlot),
+                    ),
+                    user = TopLevelPagerUser(
+                        lang = lang,
+                        iconHidden = iconHidden,
+                        swipeBackEnabled = appearance.swipeBack,
+                        preview = previewState,
+                    ),
+                    runtime = TopLevelPagerRuntime(
+                        hotReloadInProgress = hotReloadInProgress,
+                        restartInProgress = restartInProgress,
+                        scopeRequestInProgress = scopeRequestInProgress || scopeBusy,
+                        hotReloadInNavigation = navigationActionSlot,
+                    ),
+                    runtimeActions = TopLevelPagerRuntimeActions(
+                        restart = onRestart,
+                        requestScope = {
+                            if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
+                                !scopeBusy
+                            ) {
+                                scopeRequestInProgress = true
+                                val accepted =
+                                    (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
+                                        scopeRequestInProgress = false
+                                        if (!granted) scopeRequestFailed = true
+                                    } ?: false
+                                if (!accepted) {
+                                    scopeRequestInProgress = false
+                                    scopeRequestFailed = true
+                                }
+                            }
+                        },
+                        hotReload = requestHotReload,
+                    ),
+                    settingsActions = TopLevelPagerSettingsActions(
+                        changeLang = onLangChange,
+                        changeIconHidden = onIconHiddenChange,
+                        changeSwipeBack = onSwipeBackChange,
+                        navigate = onNavigate,
+                    ),
+                ),
+            )
+            }
+            }
+        }
+        // The rail is not recorded into the backdrop it samples.
+        if (useGlassRail) {
+            // Wide rails use labeled destinations, independent of compact bottom-bar preference.
+            val railItems = remember(items) {
+                items.map { item ->
+                    GlassNavigationItem(
+                        icon = item.icon,
+                        label = item.label,
+                        contentDescription = item.label,
+                    )
+                }
+            }
+            GlassNavigationRail(
+                destinations = GlassRailDestinations(
+                    items = railItems,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = pageSelection::select,
+                ),
+                backdrop = railBackdrop,
+                state = railState,
+                showToggle = true,
+                trailingAction = if (actionInRail) navigationAction?.let { action ->
+                    {
+                        railBackdrop?.let { backdrop ->
+                            NavigationTrailingAction(
+                                action = action,
+                                surface = NavigationActionSurface(
+                                    backdrop,
+                                    appearance.liquidMode.takeIf {
+                                        appearance.navStyle == NavStyle.Liquid
+                                    },
+                                    dark,
+                                    GlassNavigationRailDefaults.CollapsedHeight,
+                                ),
+                                controls = actionControls,
+                            )
                         }
                     }
-                },
-                onHotReload = {
-                    if (!hotReloadInProgress && !restartInProgress && !scopeRequestInProgress &&
-                        !scopeBusy
-                    ) {
-                        onHotReload()
-                    }
-                },
-                onLangChange = onLangChange,
-                onIconHiddenChange = onIconHiddenChange,
-                onSwipeBackChange = onSwipeBackChange,
-                previewState = previewState,
-                onNavigate = onNavigate,
+                } else null,
+                // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
+                materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
+                    RailLiquidPaint(
+                        panel = { backdrop, shape ->
+                            Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
+                        },
+                        indicator = { selectedBackdrop, pressed ->
+                            Modifier.liquidRailSelectedSurface(
+                                backdrop = selectedBackdrop,
+                                shape = RoundedCornerShape(percent = 50),
+                                pressed = pressed,
+                            )
+                        },
+                    )
+                } else null,
+                modifier = Modifier.fillMaxSize(),
             )
+        }
+            }
         }
 
         // Popups are hosted outside this page's backdrop recording.
-        CompositionLocalProvider(LocalGlassBackdrop provides if (os4) miuixBackdrop else null) {
-        UiOverlayDialog(
-            title = stringResource(R.string.restart_scope),
-            summary = stringResource(
-                if (availableTargets.isEmpty()) R.string.restart_scope_no_targets
-                else R.string.restart_scope_dialog_summary,
-            ),
-            show = restartPickerOpen,
-            onDismissRequest = {
-                queuedRestart = emptySet()
-                restartPickerOpen = false
-            },
-            onDismissFinished = {
-                if (queuedRestart.isNotEmpty() && !restartInProgress) {
-                    val targets = queuedRestart
-                    queuedRestart = emptySet()
-                    // Scope may have changed in the framework while the dialog was open.
-                    val liveScopes = app.enabledScopes().orEmpty()
-                    if (targets.any { it.pkg !in liveScopes }) {
-                        availableTargets = RestartTarget.entries.filterTo(mutableSetOf()) {
-                            it.pkg in liveScopes
-                        }
-                        selectedTargets = targets intersect availableTargets
-                        restartPickerOpen = true
-                    } else {
-                        if (!app.restartScopes(targets)) {
-                            restartPickerOpen = true
-                        }
-                    }
-                }
-            },
-        ) {
-            Column {
-                if (RestartTarget.SYS_UI in availableTargets) {
-                    CheckboxPreference(
-                        title = stringResource(R.string.restart_scope_sysui),
-                        summary = RestartTarget.SYS_UI.pkg,
-                        checked = RestartTarget.SYS_UI in selectedTargets,
-                        onCheckedChange = { checked ->
-                            selectedTargets =
-                                if (checked) selectedTargets + RestartTarget.SYS_UI
-                                else selectedTargets - RestartTarget.SYS_UI
-                        },
-                        checkboxLocation = CheckboxLocation.End,
-                        startAction = {
-                            RestartAppIcon(
-                                RestartTarget.SYS_UI.pkg,
-                                R.drawable.ic_material_symbol_dashboard,
-                            )
-                        },
-                    )
-                }
-                if (RestartTarget.SETTINGS in availableTargets) {
-                    CheckboxPreference(
-                        title = stringResource(R.string.restart_scope_settings),
-                        summary = RestartTarget.SETTINGS.pkg,
-                        checked = RestartTarget.SETTINGS in selectedTargets,
-                        onCheckedChange = { checked ->
-                            selectedTargets =
-                                if (checked) selectedTargets + RestartTarget.SETTINGS
-                                else selectedTargets - RestartTarget.SETTINGS
-                        },
-                        checkboxLocation = CheckboxLocation.End,
-                        startAction = {
-                            RestartAppIcon(
-                                RestartTarget.SETTINGS.pkg,
-                                R.drawable.ic_material_symbol_settings_applications,
-                            )
-                        },
-                    )
-                }
-                if (availableTargets.isNotEmpty()) {
-                    Spacer(Modifier.height(12.dp))
-                }
-                if (availableTargets.isEmpty()) {
-                    UiDialogButton(
-                        text = stringResource(R.string.confirm),
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { restartPickerOpen = false },
-                    )
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        UiDialogButton(
-                            text = stringResource(
-                                if (selectedTargets == availableTargets) {
-                                    R.string.restart_scope_clear_all
-                                } else {
-                                    R.string.restart_scope_select_all
-                                },
-                            ),
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                selectedTargets =
-                                    if (selectedTargets == availableTargets) emptySet()
-                                    else availableTargets
-                            },
-                        )
-                        Spacer(Modifier.width(dialogActionGap()))
-                        UiDialogButton(
-                            text = stringResource(R.string.restart),
-                            modifier = Modifier.weight(1f),
-                            enabled = selectedTargets.isNotEmpty(),
-                            role = GlassDialogButtonRole.Primary,
-                            onClick = {
-                                queuedRestart = selectedTargets intersect availableTargets
-                                restartPickerOpen = false
-                            },
-                        )
-                    }
-                }
-            }
-        }
+        CompositionLocalProvider(LocalGlassBackdrop provides miuixBackdrop) {
+        RestartScopeDialog(state = restartDialog, app = app, restartInProgress = restartInProgress)
 
         UiOverlayDialog(
             title = stringResource(R.string.home_scope_request_failed),
@@ -608,121 +409,8 @@ internal fun MainHub(
             )
         }
 
-        UiOverlayDialog(
-            title = stringResource(R.string.restart_scope_failed),
-            summary = stringResource(
-                R.string.restart_scope_failed_summary,
-                (failedTargets ?: failedTargetsForExit)
-                    .map {
-                        when (it) {
-                            RestartTarget.SYS_UI -> context.getString(R.string.restart_scope_sysui)
-                            RestartTarget.SETTINGS -> context.getString(R.string.restart_scope_settings)
-                        }
-                    }
-                    .joinToString(", "),
-            ),
-            show = restartState is ScopeRestart.State.Failed,
-            onDismissRequest = ScopeRestart::clearFailure,
-            onDismissFinished = { failedTargetsForExit = emptySet() },
-        ) {
-            UiDialogButton(
-                text = stringResource(R.string.confirm),
-                modifier = Modifier.fillMaxWidth(),
-                role = GlassDialogButtonRole.Primary,
-                onClick = ScopeRestart::clearFailure,
-            )
-        }
-        }
-    }
-}
+        RestartFailureDialog(restartState)
 
-@Composable
-private fun TopLevelBackHandler(
-    pagerState: PagerState,
-    onBackToHome: () -> Unit,
-) {
-    val isBackEnabled by remember {
-        derivedStateOf { pagerState.currentPage != 0 }
-    }
-    val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
-
-    NavigationBackHandler(
-        state = navigationEventState,
-        isBackEnabled = isBackEnabled,
-        onBackCompleted = onBackToHome,
-    )
-}
-
-@Composable
-private fun TopLevelPager(
-    pagerState: PagerState,
-    bottomPadding: PaddingValues,
-    featureSnackbarState: SnackbarHostState,
-    lang: AppLang,
-    iconHidden: Boolean,
-    swipeBackEnabled: Boolean,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
-    onRestart: () -> Unit,
-    onRequestScope: () -> Unit,
-    onHotReload: () -> Unit,
-    onLangChange: (AppLang) -> Unit,
-    onIconHiddenChange: (Boolean) -> Unit,
-    onSwipeBackChange: (Boolean) -> Unit,
-    previewState: PreviewSandboxUiState,
-    onNavigate: (AppRoute) -> Unit,
-) {
-    val flingBehavior = PagerDefaults.flingBehavior(
-        state = pagerState,
-        snapAnimationSpec = PagerNavigationSpringSpec,
-    )
-
-    HorizontalPager(
-        state = pagerState,
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .pagerGestureOverride(
-                    pagerState = pagerState,
-                    flingBehavior = flingBehavior,
-                ),
-        verticalAlignment = Alignment.Top,
-        userScrollEnabled = false,
-        flingBehavior = flingBehavior,
-        pageNestedScrollConnection = PagerGestureNestedScrollConnection,
-    ) { page ->
-        val bottom = bottomPadding.calculateBottomPadding()
-        when (page) {
-            0 -> HomeScreen(
-                bottomContentPadding = bottom,
-                hotReloadInProgress = hotReloadInProgress,
-                restartInProgress = restartInProgress,
-                scopeRequestInProgress = scopeRequestInProgress,
-                onRestart = onRestart,
-                onRequestScope = onRequestScope,
-                previewState = previewState,
-                onHotReload = onHotReload,
-                onOpenPreviewSandbox = { onNavigate(AppRoute.PreviewSandbox) },
-            )
-            1 -> FeaturesScreen(
-                bottomContentPadding = bottom,
-                visible = pagerState.currentPage == 1,
-                snackbarState = featureSnackbarState,
-                onNavigate = onNavigate,
-            )
-            2 -> SettingsHubScreen(
-                bottomContentPadding = bottom,
-                lang = lang,
-                iconHidden = iconHidden,
-                swipeBackEnabled = swipeBackEnabled,
-                runtimeBusy = restartInProgress || hotReloadInProgress || scopeRequestInProgress,
-                onRestart = onRestart,
-                onLangChange = onLangChange,
-                onIconHiddenChange = onIconHiddenChange,
-                onSwipeBackChange = onSwipeBackChange,
-                onNavigate = onNavigate,
-            )
         }
     }
 }

@@ -1,0 +1,83 @@
+package com.chaners.guiyuan.ui
+
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.NavStyle
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
+import org.junit.Test
+
+class NavigationActionPolicyTest {
+    @Test
+    fun sharedCallbackSelectionPreservesOwnersAndDoesNotInvokeActions() {
+        var reloadCalls = 0
+        var searchCalls = 0
+        val reload: () -> Unit = { reloadCalls++ }
+        val search: () -> Unit = { searchCalls++ }
+        val controls = NavigationActionControls(
+            hotReloadEnabled = true,
+            hotReloadInProgress = false,
+            onHotReload = reload,
+            onSearch = search,
+        )
+
+        val selectedReload = controls.callbackFor(NavigationAction.HotReload)
+        val selectedSearch = controls.callbackFor(NavigationAction.Search)
+
+        assertSame(reload, selectedReload)
+        assertSame(search, selectedSearch)
+        assertEquals(0, reloadCalls)
+        assertEquals(0, searchCalls)
+        selectedReload()
+        selectedSearch()
+        assertEquals(1, reloadCalls)
+        assertEquals(1, searchCalls)
+    }
+
+    @Test
+    fun glassAndLiquidUseTheirExistingBottomNavActionLayout() {
+        val appearance = Appearance(navEnabled = true, navStyle = NavStyle.Glass)
+        assertTrue(hasNavigationActionSlot(appearance, true, false, false, false))
+        assertTrue(hasNavigationActionSlot(appearance.copy(navStyle = NavStyle.Liquid), false, true, false, false))
+        assertFalse(hasNavigationActionSlot(appearance.copy(navStyle = NavStyle.Liquid), true, false, false, false))
+        assertFalse(hasNavigationActionSlot(appearance, false, true, false, false))
+    }
+
+    @Test
+    fun unsupportedStylesAndRailFallbackPreserveTopBarAction() {
+        val appearance = Appearance(navEnabled = true)
+        for (style in listOf(NavStyle.Standard, NavStyle.Blur)) {
+            assertFalse(hasNavigationActionSlot(appearance.copy(navStyle = style), true, true, false, false))
+        }
+        assertFalse(hasNavigationActionSlot(appearance.copy(navEnabled = false), true, true, false, false))
+        for (style in listOf(NavStyle.Glass, NavStyle.Liquid)) {
+            val styled = appearance.copy(navStyle = style)
+            assertFalse(hasNavigationActionSlot(styled, true, true, true, false))
+            assertFalse(hasNavigationActionSlot(styled, true, true, false, true))
+        }
+    }
+
+    @Test
+    fun railOnlyExposesActionInGlassAndLiquid() {
+        val glass = Appearance(navEnabled = true, navStyle = NavStyle.Glass)
+        assertTrue(hasRailActionSlot(glass, true))
+        assertTrue(hasRailActionSlot(glass.copy(navStyle = NavStyle.Liquid), true))
+        assertFalse(hasRailActionSlot(glass.copy(navStyle = NavStyle.Standard), true))
+        assertFalse(hasRailActionSlot(glass.copy(navEnabled = false), true))
+        assertFalse(hasRailActionSlot(glass, false))
+    }
+
+    @Test
+    fun sharedActionSlotRoutesHomeReloadAndFeaturesSearchWithoutSecondSlot() {
+        assertEquals(NavigationAction.HotReload, navigationActionFor(true, 0, false))
+        assertEquals(NavigationAction.HotReload, navigationActionFor(true, 0, true))
+        assertEquals(NavigationAction.Search, navigationActionFor(true, 1, false))
+        assertNull(navigationActionFor(true, 1, true))
+        assertNull(navigationActionFor(true, 2, false))
+        assertNull(navigationActionFor(false, 0, false))
+        assertNull(navigationActionFor(false, 1, false))
+        assertNull(navigationActionFor(true, -1, false))
+    }
+}

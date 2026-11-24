@@ -4,18 +4,16 @@ import android.graphics.drawable.Drawable
 import android.util.Log
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import io.github.libxposed.api.XposedModule
-import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal object SysUiPresentationRuntime {
     private var current: AttachResult? = null
 
-    internal fun throwIfFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
+    internal fun throwIfFatal(error: Throwable) = SysUiFatal.rethrow(error)
 
     // Passive evidence must never become a SystemUI callback failure.
+    @Suppress("TooGenericExceptionCaught")
     internal inline fun emitPassiveDiagnostic(block: () -> Unit) {
         try {
             block()
@@ -24,7 +22,25 @@ internal object SysUiPresentationRuntime {
         }
     }
 
+    // Each installation owns its warning receipt, not a second diagnostic state machine.
+    @Suppress("TooGenericExceptionCaught")
+    internal inline fun emitPassiveDiagnostic(
+        warned: AtomicBoolean,
+        tag: String,
+        block: () -> Unit,
+    ) {
+        try {
+            block()
+        } catch (error: Throwable) {
+            throwIfFatal(error)
+            if (warned.compareAndSet(false, true)) {
+                emitPassiveDiagnostic { Log.w(tag, "Diagnostic failed", error) }
+            }
+        }
+    }
+
     // Optional platform reads may be missing, but VM-fatal errors are not absence.
+    @Suppress("TooGenericExceptionCaught")
     internal inline fun <T> optionalNativeRead(block: () -> T): T? =
         try {
             block()
@@ -32,6 +48,26 @@ internal object SysUiPresentationRuntime {
             throwIfFatal(error)
             null
         }
+
+    // Hook installation may fall back to native only for nonfatal failures.
+    // Centralize the fatal gate; each owner retains its own fallback receipt.
+    internal inline fun <T> attemptHookInstall(block: () -> T): Result<T> =
+        runCatching(block).onFailure(::throwIfFatal)
+
+    // Preserve exact native signature selection; never guess among overloads.
+    internal inline fun requireUniqueHookMethod(
+        type: Class<*>,
+        name: String,
+        contract: String,
+        matches: (Method) -> Boolean,
+    ): Method {
+        val candidates = type.declaredMethods.filter { method ->
+            method.name == name && matches(method)
+        }
+        return candidates.singleOrNull()
+            ?.apply { isAccessible = true }
+            ?: error(contract + if (candidates.isEmpty()) "missing" else "ambiguous")
+    }
 
     val installedHookCount: Int
         @Synchronized get() =
@@ -82,30 +118,106 @@ internal object SysUiPresentationRuntime {
                     KeyguardIconTransitionSource.HOOK_COUNT
     }
 
+    // Callbacks belong to the installing generation; these are immutable routing inputs.
+    internal class KeyguardSinks(
+        val onAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
+        val onRuntimeFailure: (String, Throwable) -> Unit,
+        val onFullAodStarted: () -> Unit,
+        val onFullAodCommitted: () -> Unit,
+        val onIconTransition: () -> Unit,
+    )
+
+    internal class Sinks(
+        val onTintState: (SysUiTintSource.TintUpdate) -> Unit,
+        val onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
+        val onMobileTypeChanged: (Drawable) -> Unit,
+        val onRuntimeFailure: (String, Throwable) -> Unit,
+        val keyguard: KeyguardSinks,
+    )
+
+    private class KeyguardSourceHooks(
+        val aod: Int,
+        val fullAod: Int,
+        val statusIcon: Int,
+    )
+
     @Synchronized
     fun attach(
         module: XposedModule,
         classLoader: ClassLoader,
-        onTintState: (SysUiTintSource.TintUpdate) -> Unit,
-        onTintRuntimeFailure: (Throwable) -> Unit,
-        onSceneState: (SysUiSceneSource.SceneUpdate) -> Unit,
-        onSceneRuntimeFailure: (Throwable) -> Unit,
-        onKeyguardAodState: (SysUiKeyguardAodSource.AodUpdate) -> Unit,
-        onKeyguardRuntimeFailure: (String, Throwable) -> Unit,
-        onKeyguardFullAodTransitionStarted: () -> Unit,
-        onKeyguardFullAodTransitionCommitted: () -> Unit,
-        onKeyguardFullAodRuntimeFailure: (String, Throwable) -> Unit,
-        onKeyguardStatusIconTransition: () -> Unit,
-        onMobileTypeChanged: (Drawable) -> Unit,
-        onTintEvent: ((String) -> Unit)?,
+        sinks: Sinks,
+        onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
-        onSceneEvent: ((String) -> Unit)?,
-        onKeyguardAodEvent: ((String) -> Unit)?,
     ): AttachResult {
+        var tintFailure: String? = null
+        val tintHooks =
+            attemptHookInstall {
+                SysUiTintSource.install(
+                    module = module,
+                    classLoader = classLoader,
+                    onTintState = sinks.onTintState,
+                    onRuntimeFailure = { error -> sinks.onRuntimeFailure("tint", error) },
+                    onEvent = onEvent,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                ).size
+            }.getOrElse { error ->
+                tintFailure = error.message ?: error.javaClass.simpleName
+                SysUiTintSource.failedInstallHookCount
+            }
+        val keyguard = attachKeyguardSources(module, classLoader, sinks, onEvent, isDetailedDiagnosticsEnabled)
+        var sceneFailure: String? = null
+        val sceneHooks =
+            attemptHookInstall {
+                SysUiSceneSource.install(
+                    module = module,
+                    classLoader = classLoader,
+                    onSceneState = sinks.onSceneState,
+                    onRuntimeFailure = { error -> sinks.onRuntimeFailure("scene", error) },
+                    onEvent = onEvent,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                ).size
+            }.getOrElse { error ->
+                sceneFailure = error.message ?: error.javaClass.simpleName
+                0
+            }
+        var mobileTypeFailure: String? = null
+        val mobileTypeHooks =
+            attemptHookInstall {
+                SysUiMobileTypeSource.install(
+                    module = module,
+                    classLoader = classLoader,
+                    onChanged = sinks.onMobileTypeChanged,
+                ).size
+            }.getOrElse { error ->
+                mobileTypeFailure = error.message ?: error.javaClass.simpleName
+                0
+            }
+
+        return AttachResult(
+            tintHooks = tintHooks,
+            sceneHooks = sceneHooks,
+            mobileTypeHooks = mobileTypeHooks,
+            keyguardAodHooks = keyguard.aod,
+            keyguardFullAodHooks = keyguard.fullAod,
+            keyguardStatusIconHooks = keyguard.statusIcon,
+            tintFailure = tintFailure,
+            sceneFailure = sceneFailure,
+            mobileTypeFailure = mobileTypeFailure,
+        ).also { current = it }
+    }
+
+    private fun attachKeyguardSources(
+        module: XposedModule,
+        classLoader: ClassLoader,
+        sinks: Sinks,
+        onEvent: ((String) -> Unit)?,
+        isDetailedDiagnosticsEnabled: () -> Boolean,
+    ): KeyguardSourceHooks {
         val warned = AtomicBoolean(false)
+        @Suppress("TooGenericExceptionCaught")
         fun reportAodFailure(message: String) {
             try {
-                onKeyguardAodEvent?.invoke(message)
+                onEvent?.invoke(message)
             } catch (error: Throwable) {
                 throwIfFatal(error)
                 if (warned.compareAndSet(false, true)) {
@@ -115,36 +227,19 @@ internal object SysUiPresentationRuntime {
                 }
             }
         }
-        var tintFailure: String? = null
-        val tintHooks =
-            runCatching {
-                SysUiTintSource.install(
-                    module = module,
-                    classLoader = classLoader,
-                    onTintState = onTintState,
-                    onRuntimeFailure = onTintRuntimeFailure,
-                    onEvent = onTintEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
-                tintFailure = error.message ?: error.javaClass.simpleName
-                SysUiTintSource.failedInstallHookCount
-            }
         val keyguardAodHooks =
-            runCatching {
+            attemptHookInstall {
                 SysUiKeyguardAodSource.install(
                     module = module,
                     classLoader = classLoader,
-                    onAodState = onKeyguardAodState,
+                    onAodState = sinks.keyguard.onAodState,
                     onRuntimeFailure = { error ->
-                        onKeyguardRuntimeFailure("aod-state", error)
+                        sinks.keyguard.onRuntimeFailure("aod-state", error)
                     },
-                    onEvent = onKeyguardAodEvent,
+                    onEvent = onEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -153,18 +248,17 @@ internal object SysUiPresentationRuntime {
                 SysUiKeyguardAodSource.failedInstallHookCount
             }
         val keyguardFullAodHooks =
-            runCatching {
+            attemptHookInstall {
                 FullAodTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
-                    onTransitionStarted = onKeyguardFullAodTransitionStarted,
-                    onTransitionCommitted = onKeyguardFullAodTransitionCommitted,
-                    onRuntimeFailure = onKeyguardFullAodRuntimeFailure,
-                    onEvent = onKeyguardAodEvent,
+                    onTransitionStarted = sinks.keyguard.onFullAodStarted,
+                    onTransitionCommitted = sinks.keyguard.onFullAodCommitted,
+                    onRuntimeFailure = sinks.onRuntimeFailure,
+                    onEvent = onEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardFullAod install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -173,19 +267,18 @@ internal object SysUiPresentationRuntime {
                 0
             }
         val keyguardStatusIconHooks =
-            runCatching {
+            attemptHookInstall {
                 KeyguardIconTransitionSource.install(
                     module = module,
                     classLoader = classLoader,
-                    onTransition = onKeyguardStatusIconTransition,
+                    onTransition = sinks.keyguard.onIconTransition,
                     onRuntimeFailure = { error ->
-                        onKeyguardRuntimeFailure("icon-transition", error)
+                        sinks.keyguard.onRuntimeFailure("icon-transition", error)
                     },
-                    onEvent = onKeyguardAodEvent,
+                    onEvent = onEvent,
                     isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
                 ).size
             }.getOrElse { error ->
-                throwIfFatal(error)
                 reportAodFailure(
                     "keyguardStatusIconTransition install=unavailable reason=" +
                         (error.message ?: error.javaClass.simpleName) +
@@ -193,47 +286,7 @@ internal object SysUiPresentationRuntime {
                 )
                 0
             }
-        var sceneFailure: String? = null
-        val sceneHooks =
-            runCatching {
-                SysUiSceneSource.install(
-                    module = module,
-                    classLoader = classLoader,
-                    onSceneState = onSceneState,
-                    onRuntimeFailure = onSceneRuntimeFailure,
-                    onEvent = onSceneEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
-                sceneFailure = error.message ?: error.javaClass.simpleName
-                0
-            }
-        var mobileTypeFailure: String? = null
-        val mobileTypeHooks =
-            runCatching {
-                SysUiMobileTypeSource.install(
-                    module = module,
-                    classLoader = classLoader,
-                    onChanged = onMobileTypeChanged,
-                ).size
-            }.getOrElse { error ->
-                throwIfFatal(error)
-                mobileTypeFailure = error.message ?: error.javaClass.simpleName
-                0
-            }
-
-        return AttachResult(
-            tintHooks = tintHooks,
-            sceneHooks = sceneHooks,
-            mobileTypeHooks = mobileTypeHooks,
-            keyguardAodHooks = keyguardAodHooks,
-            keyguardFullAodHooks = keyguardFullAodHooks,
-            keyguardStatusIconHooks = keyguardStatusIconHooks,
-            tintFailure = tintFailure,
-            sceneFailure = sceneFailure,
-            mobileTypeFailure = mobileTypeFailure,
-        ).also { current = it }
+        return KeyguardSourceHooks(keyguardAodHooks, keyguardFullAodHooks, keyguardStatusIconHooks)
     }
 
     @Synchronized

@@ -10,18 +10,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
-import top.yukonga.miuix.kmp.glass.GlassIconButton
-import top.yukonga.miuix.kmp.glass.GlassIconDropdownMenu
-import top.yukonga.miuix.kmp.glass.glassPopupAnchor
-import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
-import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
+import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
+import com.chaners.guiyuan.ui.glass.GlassIconButton
+import com.chaners.guiyuan.ui.glass.GlassIconDropdownMenu
+import com.chaners.guiyuan.ui.glass.glassPopupAnchor
+import com.chaners.guiyuan.ui.glass.glassPopupAnchorContent
+import com.chaners.guiyuan.ui.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 
 /** Root-hosted OS4 toolbar menu; the upstream transform owns both menu motion and Back. */
@@ -29,6 +30,7 @@ import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 internal fun Os4CascadingMenu(
     entries: List<DropdownEntry>,
     collapseOnSelection: Boolean = true,
+    horizontalAlignment: Alignment.Horizontal = Alignment.End,
     content: @Composable () -> Unit,
 ) {
     val backdrop = LocalGlassBackdrop.current
@@ -36,14 +38,12 @@ internal fun Os4CascadingMenu(
     val anchor = rememberGlassPopupAnchor()
     var expanded by remember { mutableStateOf(false) }
     val mounted = remember { mutableStateOf(false) }
-    var hasExpanded by remember { mutableStateOf(false) }
     GlassIconButton(
         onClick = {
             if (expanded) {
                 expanded = false
             } else {
                 if (mounted.value) {
-                    hasExpanded = true
                     expanded = true
                 } else {
                     mounted.value = true
@@ -69,7 +69,6 @@ internal fun Os4CascadingMenu(
             Box(Modifier.fillMaxSize()) {
                 LaunchedEffect(Unit) {
                     // Record the opening request before publishing its visible state.
-                    hasExpanded = true
                     expanded = true
                 }
                 GlassIconDropdownMenu(
@@ -80,11 +79,9 @@ internal fun Os4CascadingMenu(
                     entries = entries,
                     backdrop = backdrop,
                     collapseOnSelection = collapseOnSelection,
+                    horizontalAlignment = horizontalAlignment,
                     onDismissFinished = {
-                        if (!expanded && hasExpanded) {
-                            mounted.value = false
-                            hasExpanded = false
-                        }
+                        if (!expanded) mounted.value = false
                     },
                 )
             }

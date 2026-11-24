@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
@@ -15,111 +14,13 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MAX as SETTINGS_NO_SIM_SIZ
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN as SETTINGS_NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX as SETTINGS_WIFI_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MIN as SETTINGS_WIFI_SIZE_SCALE_MIN
-import com.chaners.guiyuan.xposed.network.CenterIndicator
-import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.SignalDotArrangement
-import com.chaners.guiyuan.settings.topOffsetYUi
-import kotlin.math.acos
-import kotlin.math.atan2
+import com.chaners.guiyuan.settings.finiteIn
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
-
-internal object TopInfoOffsetPolicy {
-    fun readoutRequestedOffset(
-        layout: ContentLayout,
-        rawOffset: Float,
-    ): Float =
-        if (layout != ContentLayout.BATTERY_CENTER) {
-            rawOffset
-        } else {
-            BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
-        }
-
-    fun networkTranslationDelta(
-        layout: ContentLayout,
-        rawOffset: Float,
-        indicator: CenterIndicator? = null,
-        wifiOffset: Float = 0f,
-        mobileTypeOffset: Float = 0f,
-    ): Float =
-        if (layout == ContentLayout.BATTERY_CENTER) {
-            when (indicator) {
-                is CenterIndicator.Wifi -> -wifiOffset
-                is CenterIndicator.MobileType -> -mobileTypeOffset
-                else -> -topOffsetYUi(rawOffset)
-            }
-        } else {
-            0f
-        }
-}
-
-internal object MobileTypeScalePolicy {
-    fun localValue(
-        baseValue: Float,
-        canvasScale: Float,
-        combinedScale: Float,
-        scaleWithCanvas: Boolean,
-    ): Float {
-        if (scaleWithCanvas || !canvasScale.isFinite() || canvasScale <= 0f) {
-            return baseValue
-        }
-        val userScale =
-            combinedScale
-                .takeIf(Float::isFinite)
-                ?.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX)
-                ?: COMBINED_SCALE_DEFAULT
-        return baseValue * userScale / canvasScale
-    }
-}
-
-internal object MobileTypeSuffixPolicy {
-    fun morphProgress(
-        main: String,
-        suffix: String,
-        nativeTargetAvailable: Boolean,
-        progress: Float,
-    ): Float =
-        if (main == "5G" && suffix == "A" && nativeTargetAvailable && progress.isFinite()) {
-            progress.coerceIn(0f, 1f)
-        } else {
-            0f
-        }
-
-    fun verticalOffset(
-        suffix: String,
-        magnitude: Float,
-    ): Float =
-        if (suffix.trim().uppercase() == "A") {
-            magnitude
-        } else {
-            -magnitude
-        }
-}
-
-internal object MobileTypeSpacing {
-    data class Ink(val left: Float, val right: Float)
-    data class Fit(val suffixX: Float, val left: Float, val right: Float)
-
-    fun fit(main: Ink, suffix: Ink, clearance: Float): Fit? {
-        if (
-            !main.left.isFinite() || !main.right.isFinite() ||
-            !suffix.left.isFinite() || !suffix.right.isFinite() ||
-            !clearance.isFinite() ||
-            main.right <= main.left || suffix.right <= suffix.left
-        ) return null
-
-        // Keep the visible edge gap stable as native glyph advances change with weight.
-        val suffixX = main.right - suffix.left + clearance.coerceAtLeast(0f)
-        val left = min(main.left, suffixX + suffix.left)
-        val right = max(main.right, suffixX + suffix.right)
-        return Fit(suffixX, left, right)
-            .takeIf { it.suffixX.isFinite() && it.left.isFinite() && it.right.isFinite() }
-    }
-}
 
 internal fun nativeCenterTintEntryName(entryName: String): String {
     val base =
@@ -147,24 +48,49 @@ internal object NativeOpticalGeometry {
             get() = (opticalBottom - opticalTop).coerceAtLeast(0f)
     }
 
-    fun resolve(
-        currentIntrinsicWidth: Int,
-        currentIntrinsicHeight: Int,
-        currentOpticalLeft: Float,
-        currentOpticalTop: Float,
-        currentOpticalRight: Float,
-        currentOpticalBottom: Float,
-        fitIntrinsicWidth: Int,
-        fitIntrinsicHeight: Int,
-        fitOpticalLeft: Float,
-        fitOpticalTop: Float,
-        fitOpticalRight: Float,
-        fitOpticalBottom: Float,
-        centerX: Float,
-        centerY: Float,
-        maxWidth: Float,
-        maxHeight: Float,
-    ): Resolved? {
+    internal data class OpticalRectangle(
+        val left: Float,
+        val top: Float,
+        val right: Float,
+        val bottom: Float,
+    )
+
+    internal data class OpticalAsset(
+        val intrinsicWidth: Int,
+        val intrinsicHeight: Int,
+        val optical: OpticalRectangle,
+    )
+
+    internal data class OpticalViewport(
+        val centerX: Float,
+        val centerY: Float,
+        val maxWidth: Float,
+        val maxHeight: Float,
+    )
+
+    internal data class OpticalFitInput(
+        val current: OpticalAsset,
+        val reference: OpticalAsset,
+        val viewport: OpticalViewport,
+    )
+
+    fun resolve(input: OpticalFitInput): Resolved? {
+        val currentIntrinsicWidth = input.current.intrinsicWidth
+        val currentIntrinsicHeight = input.current.intrinsicHeight
+        val currentOpticalLeft = input.current.optical.left
+        val currentOpticalTop = input.current.optical.top
+        val currentOpticalRight = input.current.optical.right
+        val currentOpticalBottom = input.current.optical.bottom
+        val fitIntrinsicWidth = input.reference.intrinsicWidth
+        val fitIntrinsicHeight = input.reference.intrinsicHeight
+        val fitOpticalLeft = input.reference.optical.left
+        val fitOpticalTop = input.reference.optical.top
+        val fitOpticalRight = input.reference.optical.right
+        val fitOpticalBottom = input.reference.optical.bottom
+        val centerX = input.viewport.centerX
+        val centerY = input.viewport.centerY
+        val maxWidth = input.viewport.maxWidth
+        val maxHeight = input.viewport.maxHeight
         if (
             currentIntrinsicWidth <= 0 ||
             currentIntrinsicHeight <= 0 ||
@@ -225,47 +151,6 @@ internal object NativeOpticalGeometry {
 }
 
 
-internal data class NativeRenderTransform(
-    val scale: Float,
-    val offsetX: Float,
-    val offsetY: Float,
-)
-
-internal object NativeRenderGeometry {
-    internal data class PixelBounds(
-        val left: Int,
-        val top: Int,
-        val right: Int,
-        val bottom: Int,
-    )
-
-    fun resolvePixelBounds(
-        centerX: Float,
-        centerY: Float,
-        drawWidth: Float,
-        drawHeight: Float,
-        transform: NativeRenderTransform,
-    ): PixelBounds {
-        val physicalCenterX =
-            transform.offsetX + centerX * transform.scale
-        val physicalCenterY =
-            transform.offsetY + centerY * transform.scale
-        val width =
-            max(1, (drawWidth * transform.scale).roundToInt())
-        val height =
-            max(1, (drawHeight * transform.scale).roundToInt())
-        val left = (physicalCenterX - width / 2f).roundToInt()
-        val top = (physicalCenterY - height / 2f).roundToInt()
-        return PixelBounds(
-            left = left,
-            top = top,
-            right = left + width,
-            bottom = top + height,
-        )
-    }
-}
-
-
 internal object CenterGeometry {
     const val DEFAULT_WIFI_SIZE_SCALE = 1.00f
     const val DEFAULT_MOBILE_TYPE_SIZE_SCALE = 1.00f
@@ -316,27 +201,25 @@ internal object CenterGeometry {
         combinedScale: Float = COMBINED_SCALE_DEFAULT,
     ): Resolved {
         val wifi =
-            wifiScale.takeIf(Float::isFinite)?.coerceIn(MIN_WIFI_SIZE_SCALE, MAX_WIFI_SIZE_SCALE)
-                ?: DEFAULT_WIFI_SIZE_SCALE
-        val airplane =
-            airplaneScale.takeIf(Float::isFinite)
-                ?.coerceIn(MIN_AIRPLANE_SIZE_SCALE, MAX_AIRPLANE_SIZE_SCALE)
-                ?: DEFAULT_AIRPLANE_SIZE_SCALE
+            wifiScale.finiteIn(
+                MIN_WIFI_SIZE_SCALE, MAX_WIFI_SIZE_SCALE, DEFAULT_WIFI_SIZE_SCALE,
+            )
+        val airplane = airplaneScale.finiteIn(
+            MIN_AIRPLANE_SIZE_SCALE, MAX_AIRPLANE_SIZE_SCALE, DEFAULT_AIRPLANE_SIZE_SCALE,
+        )
         val noSim =
-            noSimScale.takeIf(Float::isFinite)
-                ?.coerceIn(MIN_NO_SIM_SIZE_SCALE, MAX_NO_SIM_SIZE_SCALE)
-                ?: DEFAULT_NO_SIM_SIZE_SCALE
-        val mobile =
-            mobileTypeScale.takeIf(Float::isFinite)
-                ?.coerceIn(MIN_MOBILE_TYPE_SIZE_SCALE, MAX_MOBILE_TYPE_SIZE_SCALE)
-                ?: DEFAULT_MOBILE_TYPE_SIZE_SCALE
+            noSimScale.finiteIn(
+                MIN_NO_SIM_SIZE_SCALE, MAX_NO_SIM_SIZE_SCALE, DEFAULT_NO_SIM_SIZE_SCALE,
+            )
+        val mobile = mobileTypeScale.finiteIn(
+            MIN_MOBILE_TYPE_SIZE_SCALE, MAX_MOBILE_TYPE_SIZE_SCALE, DEFAULT_MOBILE_TYPE_SIZE_SCALE,
+        )
         val weight =
             mobileTypeWeight.coerceIn(MIN_MOBILE_TYPE_WEIGHT, MAX_MOBILE_TYPE_WEIGHT)
         val combined =
-            combinedScale
-                .takeIf(Float::isFinite)
-                ?.coerceIn(COMBINED_SCALE_MIN, COMBINED_SCALE_MAX)
-                ?: COMBINED_SCALE_DEFAULT
+            combinedScale.finiteIn(
+                COMBINED_SCALE_MIN, COMBINED_SCALE_MAX, COMBINED_SCALE_DEFAULT,
+            )
         return Resolved(
             wifiScale = wifi,
             airplaneScale = airplane,
@@ -353,30 +236,6 @@ internal object CenterGeometry {
             combinedScale = combined,
         )
     }
-}
-
-internal object MobileDotRelocationPolicy {
-    fun shouldInterpolate(
-        previous: CenterIndicator?,
-        current: CenterIndicator,
-        centeredBefore: Boolean,
-        centeredNow: Boolean,
-    ): Boolean =
-        previous != null && previous != current && centeredBefore != centeredNow
-
-    // The caller reuses the center content's enter progress. No second clock.
-    fun coordinate(from: Float, to: Float, progress: Float): Float =
-        from + (to - from) * progress.coerceIn(0f, 1f)
-}
-
-internal object CenteredMobileTypePositionPolicy {
-    // Only dot clearance limits upward motion; overflow is handled by the render surface.
-    fun translation(
-        sourceTop: Float,
-        mobileBottom: Float,
-        requested: Float,
-        clearance: Float,
-    ): Float = max(requested, mobileBottom + clearance - sourceTop)
 }
 
 internal object OuterGeometry {
@@ -401,11 +260,8 @@ internal object OuterGeometry {
     const val MIN_WEIGHT_SCALE = 0.60f
     const val MAX_WEIGHT_SCALE = 2.00f
 
-    private const val LOWER_OPENING_LEFT_DEGREES = 30.0
-    private const val LOWER_OPENING_CENTER_DEGREES = 90.0
     private const val LOWER_OPENING_RIGHT_DEGREES = 150.0
-    private const val DOT_COUNT = 4
-    private const val SOLVER_ITERATIONS = 32
+    internal const val DOT_COUNT = 4
 
     data class Resolved(
         val weightScale: Float,
@@ -479,71 +335,6 @@ internal object OuterGeometry {
             return Math.toRadians(if (row == 0) angle else 180.0 - angle)
         }
 
-        // Balance visible ring-to-dot clearance against adjacent dot spacing.
-        fun followingLowerHalfGap(
-            dual: Boolean,
-            style: SignalDotArrangement,
-            offsetY: Float,
-            additionalContentHalfGap: Float = 0f,
-        ): Float {
-            if (dual && style == SignalDotArrangement.BOTH_SIDES) {
-                // The default layout reserves exactly the same lower half as
-                // fixed mode. Only the *change* in actual dot occupancy moves
-                // the opening when users move the entire lower assembly.
-                val baseline = requiredBothSidesHalfGap(style, 0f)
-                val current = requiredBothSidesHalfGap(style, offsetY)
-                return max(
-                    (90.0 + current - baseline).toFloat().coerceIn(72f, 110f),
-                    additionalContentHalfGap.coerceIn(0f, 110f),
-                )
-            }
-            val radius = if (dual) dualMobileDotRadius else mobileDotRadius
-            val dotGap = if (!dual && style == SignalDotArrangement.CURVED) balancedEdgeGap
-                else (horizontalDotSpan / (DOT_COUNT - 1) - 2f * radius).coerceAtLeast(0f)
-            val reach = (radius + ringStroke / 2f + dotGap).toDouble()
-            val ringRadius = RING_RADIUS.toDouble()
-            var halfGap = 0.0
-            for (row in 0 until (if (dual) 2 else 1)) {
-                for (index in 0 until DOT_COUNT) {
-                    val x = (if (dual) horizontalDotX(index) else singleDotX(index, style)).toDouble()
-                    val y = (if (dual) dualDotY(index, row, style, offsetY)
-                        else singleDotY(index, style, offsetY)).toDouble()
-                    val distance = sqrt(x * x + y * y)
-                    if (reach <= kotlin.math.abs(distance - ringRadius)) continue
-                    val spread = if (reach >= distance + ringRadius) 180.0 else Math.toDegrees(
-                        acos(((distance * distance + ringRadius * ringRadius - reach * reach) /
-                            (2.0 * distance * ringRadius)).coerceIn(-1.0, 1.0)),
-                    )
-                    halfGap = max(halfGap, kotlin.math.abs(Math.toDegrees(atan2(y, x)) - 90.0) + spread)
-                }
-            }
-            return halfGap.toFloat().coerceIn(0f, 90f)
-        }
-
-
-        private fun requiredBothSidesHalfGap(
-            style: SignalDotArrangement,
-            atOffset: Float,
-        ): Double {
-            val clearance = (bothSidesMobileDotRadius + ringStroke / 2f + 2f).toDouble()
-            val radius = RING_RADIUS.toDouble()
-            var half = 0.0
-            for (row in 0..1) for (index in 0 until DOT_COUNT) {
-                val x = dualDotX(index, row, style).toDouble()
-                val y = dualDotY(index, row, style, atOffset).toDouble()
-                val d = sqrt(x * x + y * y)
-                if (d <= 0.00001 || kotlin.math.abs(d - radius) >= clearance) continue
-                val spread = if (clearance >= d + radius) 180.0 else Math.toDegrees(
-                    acos(((d * d + radius * radius - clearance * clearance) /
-                        (2.0 * d * radius)).coerceIn(-1.0, 1.0)),
-                )
-                val angle = Math.toDegrees(atan2(y, x))
-                half = max(half, kotlin.math.abs(angle - 90.0) + spread)
-            }
-            return half
-        }
-
-
         fun dualDotY(
             index: Int,
             row: Int,
@@ -561,10 +352,7 @@ internal object OuterGeometry {
     }
 
     fun normalizeWeightScale(value: Float): Float =
-        value
-            .takeIf(Float::isFinite)
-            ?.coerceIn(MIN_WEIGHT_SCALE, MAX_WEIGHT_SCALE)
-            ?: DEFAULT_WEIGHT_SCALE
+        value.finiteIn(MIN_WEIGHT_SCALE, MAX_WEIGHT_SCALE, DEFAULT_WEIGHT_SCALE)
 
     fun resolve(weightScale: Float, bothSidesBottomIconVisible: Boolean = true): Resolved {
         val normalized = normalizeWeightScale(weightScale)
@@ -573,12 +361,12 @@ internal object OuterGeometry {
         val unavailableMarkStroke = BASE_UNAVAILABLE_MARK_STROKE * normalized
         val unavailableMarkHalfExtent = BASE_UNAVAILABLE_MARK_HALF_EXTENT * normalized
 
-        val step = solveOuterDotStep(ringStroke = ringStroke, dotRadius = dotRadius)
+        val step = RingGapPolicy.solveOuterDotStep(ringStroke = ringStroke, dotRadius = dotRadius)
         val firstCenter =
-            LOWER_OPENING_CENTER_DEGREES.toFloat() -
+            RingGapPolicy.LOWER_OPENING_CENTER_DEGREES.toFloat() -
                 1.5f * step
         val gap =
-            dotToDotEdgeGap(
+            RingGapPolicy.dotToDotEdgeGap(
                 stepDegrees = step,
                 dotRadius = dotRadius,
             )
@@ -587,13 +375,7 @@ internal object OuterGeometry {
         // Eight circles no longer fit the lower semicircle if their radii grow
         // without bound. Limit only the split presentation at extreme weights.
         val splitDotRadius = min(dualDotRadius, 6.5f)
-        val minimumChord = 2f * splitDotRadius + 1f
-        val bothSidesStep = max(
-            if (bothSidesBottomIconVisible) 16.0 else 18.0,
-            Math.toDegrees(2.0 * kotlin.math.asin(
-                (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
-            )),
-        )
+        val bothSidesStep = bothSidesDotStep(bothSidesBottomIconVisible, splitDotRadius)
         val ringClearance = ringStroke / 2f + splitDotRadius + 2f
         val endMargin = Math.toDegrees(2.0 * kotlin.math.asin(
             (ringClearance / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
@@ -613,14 +395,7 @@ internal object OuterGeometry {
             ((normalized - DEFAULT_WEIGHT_SCALE) * DUAL_ROW_TIGHTENING_RATE)
                 .coerceIn(0f, DUAL_MAX_ROW_TIGHTENING)
         val dualRowGap = naturalRowGap - rowTightening
-        val middleColumnX = horizontalDotSpan / (DOT_COUNT - 1) / 2f
-        val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)
-        val dualOpticalRise =
-            max(
-                DUAL_BASE_OPTICAL_RISE,
-                MOBILE_CENTER_Y + middleArcY + naturalRowGap / 2f + dualDotRadius +
-                    DUAL_BOTTOM_MARGIN - CANVAS_BOTTOM,
-            )
+        val dualOpticalRise = computeDualOpticalRise(horizontalDotSpan, naturalRowGap, dualDotRadius)
 
         return Resolved(
             weightScale = normalized,
@@ -643,30 +418,31 @@ internal object OuterGeometry {
         )
     }
 
-    // Match the opening ring-to-dot gap with the nearest dot-to-dot gap.
-    private fun solveOuterDotStep(ringStroke: Float, dotRadius: Float): Float {
-        var lowerStep = 1f
-        var upperStep = 39.5f
-        repeat(SOLVER_ITERATIONS) {
-            val candidate = (lowerStep + upperStep) / 2f
-            val difference =
-                ringToDotEdgeGap(
-                    stepDegrees = candidate,
-                    ringStroke = ringStroke,
-                    dotRadius = dotRadius,
-                ) -
-                    dotToDotEdgeGap(
-                        stepDegrees = candidate,
-                        dotRadius = dotRadius,
-                    )
-            if (difference > 0f) {
-                lowerStep = candidate
-            } else {
-                upperStep = candidate
-            }
-        }
+    private fun bothSidesDotStep(
+        bothSidesBottomIconVisible: Boolean,
+        splitDotRadius: Float,
+    ): Double {
+        val minimumChord = 2f * splitDotRadius + 1f
+        return max(
+            if (bothSidesBottomIconVisible) 16.0 else 18.0,
+            Math.toDegrees(2.0 * kotlin.math.asin(
+                (minimumChord / (2f * RING_RADIUS)).coerceIn(0f, 1f).toDouble(),
+            )),
+        )
+    }
 
-        return (lowerStep + upperStep) / 2f
+    private fun computeDualOpticalRise(
+        horizontalDotSpan: Float,
+        naturalRowGap: Float,
+        dualDotRadius: Float,
+    ): Float {
+        val middleColumnX = horizontalDotSpan / (DOT_COUNT - 1) / 2f
+        val middleArcY = sqrt(RING_RADIUS * RING_RADIUS - middleColumnX * middleColumnX)
+        return max(
+                DUAL_BASE_OPTICAL_RISE,
+                MOBILE_CENTER_Y + middleArcY + naturalRowGap / 2f + dualDotRadius +
+                    DUAL_BOTTOM_MARGIN - CANVAS_BOTTOM,
+            )
     }
 
     private fun balanceBothSidesFirst(
@@ -693,57 +469,4 @@ internal object OuterGeometry {
         }
         return (balancedLower + balancedUpper) / 2.0
     }
-
-    private fun ringToDotEdgeGap(
-        stepDegrees: Float,
-        ringStroke: Float,
-        dotRadius: Float,
-    ): Float {
-        val dotAngle =
-            Math.toRadians(
-                LOWER_OPENING_CENTER_DEGREES -
-                    1.5 * stepDegrees,
-            )
-        val ringAngle = Math.toRadians(LOWER_OPENING_LEFT_DEGREES)
-        val ringX = cos(ringAngle).toFloat() * RING_RADIUS
-        val ringY = sin(ringAngle).toFloat() * RING_RADIUS
-        val dotX = cos(dotAngle).toFloat() * MOBILE_ORBIT_RADIUS
-        val dotY = sin(dotAngle).toFloat() * MOBILE_ORBIT_RADIUS
-        val dx = dotX - ringX
-        val dy = dotY - ringY
-        return sqrt(dx * dx + dy * dy) -
-            ringStroke / 2f -
-            dotRadius
-    }
-
-    private fun dotToDotEdgeGap(
-        stepDegrees: Float,
-        dotRadius: Float,
-    ): Float {
-        val stepRadians = Math.toRadians(stepDegrees.toDouble())
-        val centerDistance =
-            2f *
-                MOBILE_ORBIT_RADIUS *
-                sin(stepRadians / 2.0).toFloat()
-        return centerDistance - 2f * dotRadius
-    }
-}
-
-
-internal object VisualIntensity {
-    fun resolveCanvasAlpha(
-        color: Int,
-        semanticAlpha: Int,
-        opacity: Float,
-    ): Int =
-        (
-            (color ushr 24) *
-                (semanticAlpha.coerceIn(0, 255) / 255f) *
-                opacity.coerceIn(0f, 1f)
-        ).toInt().coerceIn(0, 255)
-
-    fun resolveDrawableAlpha(opacity: Float): Int =
-        (255f * opacity.coerceIn(0f, 1f))
-            .roundToInt()
-            .coerceIn(0, 255)
 }

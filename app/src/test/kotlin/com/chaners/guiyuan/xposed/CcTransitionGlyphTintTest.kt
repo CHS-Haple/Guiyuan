@@ -33,7 +33,7 @@ class CcTransitionGlyphTintTest {
         val target = transitionGeometry(centerX = 100f, centerY = 200f, width = 30f, height = 24f)
 
         val result =
-            CcTransitionPolicy.interpolateGeometry(
+            CcTransitionMorphPolicy.interpolateGeometry(
                 source = source,
                 target = target,
                 progress = 1f,
@@ -206,7 +206,7 @@ class CcTransitionGlyphTintTest {
             )
 
         val follower =
-            CcTransitionPolicy.followAnchorGeometry(
+            CcCarrierGeometryPolicy.followAnchorGeometry(
                 follower = chargingSource,
                 sourceAnchor = numberSource,
                 currentAnchor = numberCurrent,
@@ -223,7 +223,7 @@ class CcTransitionGlyphTintTest {
 
     @Test
     fun transitionTintHoldsEndsAndChangesOnlyInMiddlePhase() {
-        val policy = CcTransitionPolicy
+        val policy = CcTintPolicy
         val source = 0xffff6600.toInt()
         val target = 0xe6ffffff.toInt()
 
@@ -261,7 +261,7 @@ class CcTransitionGlyphTintTest {
 
     @Test
     fun followSystemParticipantsUseLiveNativeTintWhileCustomTintUsesOptionalTransition() {
-        val policy = CcTransitionPolicy
+        val policy = CcTintPolicy
         val source = 0xff202020.toInt()
         val target = 0xffeeeeee.toInt()
 
@@ -305,5 +305,25 @@ class CcTransitionGlyphTintTest {
                 transitionEnabled = true,
             ),
         )
+    }
+
+    @Test
+    fun homeSourcedFakeProjectionUsesRealHomeTintAndPreservesAlpha() {
+        val home = TintState(appliedTint = 0xbf000000.toInt())
+        val fake = TintState(appliedTint = 0xff000000.toInt())
+
+        assertEquals(home, CcTintPolicy.resolveSourceTint(SourceScene.HOME, home, fake))
+        assertEquals(fake, CcTintPolicy.resolveSourceTint(SourceScene.KEYGUARD, home, fake))
+        assertEquals(fake, CcTintPolicy.resolveSourceTint(SourceScene.UNKNOWN, home, fake))
+        assertEquals(
+            fake,
+            CcTintPolicy.resolveSourceTint(
+                SourceScene.HOME,
+                TintState(appliedTint = 0),
+                fake,
+            ),
+        )
+        assertEquals(fake, CcTintPolicy.resolveSourceTint(SourceScene.HOME, null, fake))
+        assertEquals(null, CcTintPolicy.resolveSourceTint(SourceScene.HOME, null, null))
     }
 }

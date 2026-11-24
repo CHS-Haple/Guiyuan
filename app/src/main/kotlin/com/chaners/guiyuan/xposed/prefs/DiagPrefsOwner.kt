@@ -24,6 +24,7 @@ internal object DiagPrefsOwner {
     )
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun bind(
         prefs: SharedPreferences,
         forceDetailed: Boolean,

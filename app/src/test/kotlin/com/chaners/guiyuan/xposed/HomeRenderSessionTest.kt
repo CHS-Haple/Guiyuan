@@ -38,6 +38,34 @@ class HomeRenderSessionTest {
     }
 
     @Test
+    fun detachedHomeCarrierCannotBeReady() {
+        assertFalse(HomeRenderSession.resolveOwnerReady(
+            featureEnabled = true,
+            modelReady = true,
+            tintReady = true,
+            layoutReady = true,
+            hostAttached = false,
+        ))
+    }
+
+    @Test
+    fun nativeIntermediateLayoutDoesNotDiscardVerifiedHomeOwnership() {
+        val retire = HomeRenderSession::shouldRetireUnresolvedAnchor
+        assertFalse(retire(true, true, true, false, false))
+        assertFalse(retire(true, true, true, false, true))
+        assertFalse(retire(true, true, true, true, true))
+        assertFalse(retire(false, true, true, true, false))
+    }
+
+    @Test
+    fun completedNativeFrameAndRealDetachReleaseUnsafeHomeOwnership() {
+        val retire = HomeRenderSession::shouldRetireUnresolvedAnchor
+        assertTrue(retire(true, true, true, true, false))
+        assertTrue(retire(true, false, true, false, true))
+        assertTrue(retire(true, true, false, false, true))
+    }
+
+    @Test
     fun overlayVisibilityRequiresControlCenterOwnership() {
         assertTrue(
             HomeRenderSession.resolveOverlayVisible(
@@ -151,47 +179,5 @@ class HomeRenderSessionTest {
 
         assertEquals(null, seed)
         assertEquals(0, liveReads)
-    }
-    @Test
-    fun topOverflowExpandsOnlyPhysicalSurfaceWithoutMovingLogicalViewport() {
-        val resolved =
-            VerticalOverflowPolicy.resolve(
-                logicalTopPx = 0,
-                logicalHeightPx = 108,
-                requestedTopOverflowPx = 18,
-            )
-
-        assertEquals(-18, resolved.physicalTopPx)
-        assertEquals(126, resolved.physicalHeightPx)
-        assertEquals(18, resolved.logicalTopInsetPx)
-        assertEquals(0, resolved.physicalTopPx + resolved.logicalTopInsetPx)
-    }
-
-    @Test
-    fun bottomOverflowExtendsPhysicalSurfaceWithoutMovingLogicalOrigin() {
-        val resolved = VerticalOverflowPolicy.resolve(
-            logicalTopPx = 0,
-            logicalHeightPx = 108,
-            requestedTopOverflowPx = 18,
-            requestedBottomOverflowPx = 7,
-        )
-        assertEquals(-18, resolved.physicalTopPx)
-        assertEquals(133, resolved.physicalHeightPx)
-        assertEquals(18, resolved.logicalTopInsetPx)
-        assertEquals(115, resolved.physicalTopPx + resolved.physicalHeightPx)
-    }
-
-    @Test
-    fun noOverflowPreservesOriginalPhysicalBounds() {
-        val resolved =
-            VerticalOverflowPolicy.resolve(
-                logicalTopPx = 0,
-                logicalHeightPx = 108,
-                requestedTopOverflowPx = 0,
-            )
-
-        assertEquals(0, resolved.physicalTopPx)
-        assertEquals(108, resolved.physicalHeightPx)
-        assertEquals(0, resolved.logicalTopInsetPx)
     }
 }

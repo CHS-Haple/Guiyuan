@@ -6,6 +6,18 @@ import android.content.SharedPreferences
 @Suppress("TooManyFunctions")
 internal class VisualTestPreferences : SharedPreferences {
     private val values = mutableMapOf<String, Any>()
+    private val listeners = linkedSetOf<SharedPreferences.OnSharedPreferenceChangeListener>()
+    val listenerCount: Int get() = listeners.size
+
+    // Observability and failure injection for owner-generation lifecycle tests only.
+    var lastRegisteredListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
+        private set
+    var unregisterFailure: Throwable? = null
+
+    fun notifyPreferenceChanged(key: String?) {
+        listeners.toList().forEach { it.onSharedPreferenceChanged(this, key) }
+    }
+
     var writeCount = 0
         private set
     var failNextCommit = false
@@ -32,11 +44,19 @@ internal class VisualTestPreferences : SharedPreferences {
 
     override fun registerOnSharedPreferenceChangeListener(
         listener: SharedPreferences.OnSharedPreferenceChangeListener?,
-    ) = Unit
+    ) {
+        if (listener != null) {
+            listeners += listener
+            lastRegisteredListener = listener
+        }
+    }
 
     override fun unregisterOnSharedPreferenceChangeListener(
         listener: SharedPreferences.OnSharedPreferenceChangeListener?,
-    ) = Unit
+    ) {
+        unregisterFailure?.let { throw it }
+        listeners.remove(listener)
+    }
 
     override fun edit(): SharedPreferences.Editor = Editor()
 
@@ -71,10 +91,19 @@ internal class VisualTestPreferences : SharedPreferences {
 
         override fun commit(): Boolean {
             writeCount++
+            val changedKeys = linkedSetOf<String>()
+            val cleared = clearFirst && values.isNotEmpty()
             if (clearFirst) values.clear()
             changes.forEach { (key, value) ->
-                if (value == null) values.remove(key) else values[key] = value
+                if (value == null) {
+                    if (values.remove(key) != null) changedKeys += key
+                } else if (values[key] != value) {
+                    values[key] = value
+                    changedKeys += key
+                }
             }
+            if (cleared) notifyPreferenceChanged(null)
+            changedKeys.forEach(::notifyPreferenceChanged)
             // SharedPreferences may update memory even when durable commit fails.
             val durable = !failNextCommit
             failNextCommit = false

@@ -2,8 +2,11 @@ package com.chaners.guiyuan.xposed
 
 import android.graphics.Rect
 import android.os.Looper
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
+import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.xposed.prefs.FeaturePrefsOwner
@@ -23,32 +26,44 @@ internal object HomeRenderSession {
     private var current: Session? = null
     private val retirement = RetirementGate<Session>()
 
-    private fun stop(session: Session, removeVisual: Boolean = true) {
+    private fun stop(
+        session: Session,
+        removeVisual: Boolean = true,
+        notifyReadinessOnStop: Boolean = true,
+    ) {
         retirement.release(session) {
-            session.stop(removeVisual)
+            session.stop(removeVisual, notifyReadinessOnStop)
             0
         }
     }
 
+    // Callbacks remain bound to the attaching generation; no new runtime writer.
+    internal class Sinks(
+        val onEvent: (String) -> Unit,
+        val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
+        val isDetailedDiagnosticsEnabled: () -> Boolean = { true },
+        val onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
+        val onHomeFrameDrawn: (() -> Unit)? = null,
+        val onBatteryDrawn: ((RenderModel, Long) -> Unit)? = null,
+    )
+
     @Synchronized
     fun attach(
         host: Any,
-        onEvent: (String) -> Unit,
-        onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
-        isDetailedDiagnosticsEnabled: () -> Boolean = { true },
+        sinks: Sinks,
         initialNativeHandoffActive: Boolean = false,
+        initialControlCenterAllowsHome: Boolean = true,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
-        onPresentationReadinessChanged: ((Boolean) -> Unit)? = null,
     ): String? {
         if (retirement.pending != null) return "home-render-release-incomplete"
         val hostView = host as? ViewGroup
             ?: return "host-not-view-group"
-        val batteryContainer = hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
+        val batteryContainer = hostView.directNativeChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
             ?: return "battery-container-missing"
-        val statusIcons = batteryContainer.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
+        val statusIcons = batteryContainer.directNativeChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
             ?: return "status-icons-missing"
-        val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
+        val batteryView = batteryContainer.directNativeChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
             ?: return "battery-view-missing"
         val batteryCarrier =
             SysUiCarrierMetrics.resolveView(batteryView)
@@ -75,15 +90,13 @@ internal object HomeRenderSession {
             statusIcons = statusIcons,
             batteryView = batteryView,
             batteryCarrier = batteryCarrier,
-            onEvent = onEvent,
-            onLatencySample = onLatencySample,
-            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+            sinks = sinks,
             initialNativeHandoffActive = initialNativeHandoffActive,
+            initialControlCenterAllowsHome = initialControlCenterAllowsHome,
             initialTintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
                 FeaturePrefsOwner.current().enabled,
-            onPresentationReadinessChanged = onPresentationReadinessChanged,
         )
         current = session
         session.start()
@@ -135,6 +148,14 @@ internal object HomeRenderSession {
     @Synchronized
     fun isOverlayShown(): Boolean = current?.isOverlayShown() == true
 
+    // Native owner readiness is insufficient during scene return: the Home
+    // projection must also have valid live content and actual visibility.
+    @Synchronized
+    fun canDrawHome(): Boolean = current?.canDrawHome() == true
+
+    @Synchronized
+    fun visibilityWitness(): String = current?.visibilityWitness() ?: "home-session-unbound"
+
     @Synchronized
     fun setNativeHandoffActive(active: Boolean) {
         current?.setNativeHandoffActive(active)
@@ -148,9 +169,16 @@ internal object HomeRenderSession {
         current?.transitionSourceWitness()
 
     @Synchronized
-    fun detach(preserveVisual: Boolean = false) {
+    fun detach(
+        preserveVisual: Boolean = false,
+        notifyReadinessOnStop: Boolean = true,
+    ) {
         val session = current ?: retirement.pending ?: return
-        stop(session, removeVisual = !preserveVisual)
+        stop(
+            session,
+            removeVisual = !preserveVisual,
+            notifyReadinessOnStop = notifyReadinessOnStop,
+        )
         if (current === session) current = null
     }
 
@@ -175,6 +203,19 @@ internal object HomeRenderSession {
             tintReady &&
             layoutReady &&
             hostAttached
+
+    // A child onLayout can run before SystemUI's parent finishes its traversal.
+    // Retire an already verified Home owner only on actual detach, or at the
+    // complete native pre-draw boundary after pending layout has settled.
+    internal fun shouldRetireUnresolvedAnchor(
+        wasReady: Boolean,
+        hostAttached: Boolean,
+        carrierAttached: Boolean,
+        nativePreDraw: Boolean,
+        layoutPending: Boolean,
+    ): Boolean =
+        wasReady &&
+            (!hostAttached || !carrierAttached || (nativePreDraw && !layoutPending))
 
     internal data class InitialTintSeed(
         val state: TintState,
@@ -208,15 +249,6 @@ internal object HomeRenderSession {
         )
     }
 
-    private fun ViewGroup.directChild(className: String): ViewGroup? {
-        for (index in 0 until childCount) {
-            val child = getChildAt(index)
-            if (child.javaClass.name == className) {
-                return child as? ViewGroup
-            }
-        }
-        return null
-    }
 
     private class Session(
         host: ViewGroup,
@@ -224,89 +256,142 @@ internal object HomeRenderSession {
         statusIcons: ViewGroup,
         batteryView: ViewGroup,
         batteryCarrier: View,
-        private val onEvent: (String) -> Unit,
-        private val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)?,
-        private val isDetailedDiagnosticsEnabled: () -> Boolean,
+        private val sinks: Sinks,
         initialNativeHandoffActive: Boolean,
+        initialControlCenterAllowsHome: Boolean,
         private val initialTintState: TintState?,
         private val allowLiveTintSeed: Boolean,
         initialFeatureEnabled: Boolean,
-        private val onPresentationReadinessChanged: ((Boolean) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val batteryContainer = WeakReference(batteryContainer)
         private val statusIcons = WeakReference(statusIcons)
         private val batteryView = WeakReference(batteryView)
         private val batteryCarrier = WeakReference(batteryCarrier)
+        private var lastCompletedDrawElapsedRealtimeMs = 0L
+        private var lastDrawnCharging: Boolean? = null
+        private var lastDrawnBatterySemantic: BatterySemanticState? = null
         private val probeView =
-            RenderView(host.context) { latencyMs, committedOnMainThread, sample ->
-                if (sample != null && onLatencySample != null) {
-                    // Telemetry runs from RenderView.onDraw; it never owns drawing.
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        onLatencySample.invoke(sample)
+            RenderView(
+                context = host.context,
+                // Passive draw witness: the Overlay child may report isShown=false
+                // even when the native host actually dispatches its overlay.
+                onModelDrawn = { drawn ->
+                    if (HomeRenderSession.current === this &&
+                        (drawn.charging != lastDrawnCharging ||
+                            drawn.batterySemanticState != lastDrawnBatterySemantic)
+                    ) {
+                        lastDrawnCharging = drawn.charging
+                        lastDrawnBatterySemantic = drawn.batterySemanticState
+                        val drawElapsedMs = SystemClock.elapsedRealtime()
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            sinks.onBatteryDrawn?.invoke(drawn, drawElapsedMs)
+                        }
                     }
-                } else {
-                    emitEvent {
-                        "homeRenderLatency stateToDrawMs=" + latencyMs +
-                            " commitMainThread=" + committedOnMainThread +
-                            " scheduling=sameFramePreferred"
+                },
+                onDrawn = {
+                    lastCompletedDrawElapsedRealtimeMs = SystemClock.elapsedRealtime()
+                    if (
+                        !homeFrameDrawnAfterPanel &&
+                        HomeRenderSession.current === this &&
+                        featureEnabled &&
+                        controlCenterAllowsHome &&
+                        !nativeHandoffActive &&
+                        modelReady &&
+                        tintReady &&
+                        layoutReady &&
+                        this@Session.host.get()?.isShown == true
+                    ) {
+                        homeFrameDrawnAfterPanel = true
+                        sinks.onHomeFrameDrawn?.invoke()
                     }
-                }
-            }
+                },
+                onStateRendered = { latencyMs, committedOnMainThread, sample ->
+                    if (sample != null && sinks.onLatencySample != null) {
+                        SysUiPresentationRuntime.emitPassiveDiagnostic {
+                            sinks.onLatencySample.invoke(sample)
+                        }
+                    } else {
+                        emitEvent {
+                            "homeRenderLatency stateToDrawMs=" + latencyMs +
+                                " commitMainThread=" + committedOnMainThread +
+                                " scheduling=sameFramePreferred"
+                        }
+                    }
+                },
+            )
         private val renderController = RenderController(probeView)
         private var readyLogged = false
         private var layoutLogged = false
         private var deferredStateLogged = false
         private var rejectedTintLogged = false
         private var nativeTintObserved = false
-        // Control Center handoff is coordinator-owned. Source visibility is
-        // diagnostic context only until a projected carrier is ready.
-        private var controlCenterAllowsHome = true
+        // Home eligibility follows native CC ownership independently of the
+        // separate QS_FAKE projection readiness.
+        private var controlCenterAllowsHome = initialControlCenterAllowsHome
         private var nativeHandoffActive = initialNativeHandoffActive
         private var featureEnabled = initialFeatureEnabled
         private var modelReady = false
         private var tintReady = false
         private var layoutReady = false
         private var lastPresentationReady = false
+        private var homeFrameDrawnAfterPanel = false
         private val anchorRect = Rect()
+        private val observedAnchorRect = Rect()
+        private val carrierWindowLocation = IntArray(2)
+        private val hostWindowLocation = IntArray(2)
+        private var nativeDrawObserver: ViewTreeObserver? = null
+        private var deferredNativeAnchor = false
 
-        private val overlayHostLayoutListener =
-            View.OnLayoutChangeListener {
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                ->
-                layoutProbe()
-            }
-
-        // Native privacy-state transitions may change this child while the
-        // battery container itself retains its exact bounds. Follow its
-        // layout callback, not a timer or an estimated privacy width.
-        private val statusIconsLayoutListener =
+        // The privacy-sensitive icons group can relayout without its parent.
+        // Listen on all three native Views, with a separate receipt for each View.
+        private val nativeLayoutListener =
             View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                layoutProbe()
+                // Child layout callbacks are not evidence that the whole
+                // native status-bar frame has finished. An initial recovery
+                // cutover happens at the native pre-draw boundary instead.
+                if (layoutReady) layoutProbe()
+            }
+        // SystemUI may translate the carrier during a Control Center rotation
+        // without changing this host's measured size or firing onLayout.
+        // Read native geometry before drawing; only a changed anchor writes
+        // our own overlay bounds.
+        private val nativeDrawListener =
+            ViewTreeObserver.OnPreDrawListener {
+                if (
+                    featureEnabled &&
+                    this@Session.host.get()?.isAttachedToWindow == true
+                ) {
+                    val resolved = resolveNativeAnchor(observedAnchorRect)
+                    // Recheck an interrupted native layout even when the
+                    // previous invalidation already yielded to native.
+                    // The old nativeHandoffActive guard stranded that path
+                    // until a later, unrelated onLayout callback.
+                    if (!resolved || !layoutReady || observedAnchorRect != anchorRect) {
+                        layoutProbe("native-pre-draw")
+                    }
+                }
+                true
             }
 
-        private val carrierLayoutListener =
-            View.OnLayoutChangeListener {
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    _,
-                ->
-                layoutProbe()
+        private fun registerNativeDrawListener() {
+            val observer = host.get()
+                ?.takeIf { it.isAttachedToWindow }
+                ?.viewTreeObserver
+                ?.takeIf { it.isAlive }
+                ?: return
+            if (nativeDrawObserver === observer) return
+            unregisterNativeDrawListener()
+            nativeDrawObserver = observer
+            observer.addOnPreDrawListener(nativeDrawListener)
+        }
+
+        private fun unregisterNativeDrawListener() {
+            nativeDrawObserver?.let { observer ->
+                if (observer.isAlive) observer.removeOnPreDrawListener(nativeDrawListener)
             }
+            nativeDrawObserver = null
+        }
 
         fun matches(
             host: ViewGroup,
@@ -322,21 +407,21 @@ internal object HomeRenderSession {
                 this.batteryCarrier.get() === batteryCarrier
 
         fun start() {
-            host.get() ?: return
-            val overlayHost = batteryContainer.get() ?: return
+            val overlayHost = host.get() ?: return
+            val nativeContainer = batteryContainer.get() ?: return
             val battery = batteryView.get() ?: return
             val carrier = batteryCarrier.get() ?: return
 
             overlayHost.addOnAttachStateChangeListener(this)
-            overlayHost.addOnLayoutChangeListener(overlayHostLayoutListener)
-            carrier.addOnLayoutChangeListener(carrierLayoutListener)
-            statusIcons.get()?.addOnLayoutChangeListener(statusIconsLayoutListener)
+            overlayHost.addOnLayoutChangeListener(nativeLayoutListener)
+            nativeContainer.addOnLayoutChangeListener(nativeLayoutListener)
+            battery.addOnLayoutChangeListener(nativeLayoutListener)
+            carrier.addOnLayoutChangeListener(nativeLayoutListener)
+            statusIcons.get()?.addOnLayoutChangeListener(nativeLayoutListener)
+            registerNativeDrawListener()
             probeView.visibility = View.GONE
-            (probeView.parent as? ViewGroup)?.removeView(probeView)
-            overlayHost.addView(
-                probeView,
-                ViewGroup.LayoutParams(0, 0),
-            )
+            // Keep the visual outside the native battery child's hide/layout lifecycle.
+            overlayHost.overlay.add(probeView)
             renderController.updateVisualCfg(
                 VisualPrefsOwner.current(),
             )
@@ -359,46 +444,26 @@ internal object HomeRenderSession {
 
         fun transitionSourceWitness(): TransitionSourceWitness? {
             val motion = statusIcons.get() ?: return null
-            val render = probeView
-            if (
-                !ScenePolicy.retainedTransitionSourceWitnessAvailable(
-                    widthPx = render.width,
-                    heightPx = render.height,
-                    hostAttached =
-                        batteryContainer.get()?.isAttachedToWindow == true &&
-                            motion.isAttachedToWindow,
-                )
-            ) {
-                return null
+            return probeView.captureTransitionWitness(motion, host) {
+                SysUiPresentationOwner.homeSlots()
             }
-            if (
-                motion.width <= 0 ||
-                motion.height <= 0
-            ) {
-                return null
-            }
-            return TransitionSourceWitness(
-                renderView = render,
-                logicalLeftPx = 0,
-                logicalTopPx = render.currentLogicalViewportTopInsetPx(),
-                logicalWidthPx = render.currentLogicalViewportWidthPx(),
-                logicalHeightPx = render.currentLogicalViewportHeightPx(),
-                positionHost = batteryContainer.get() ?: return null,
-                motionCarrier = motion,
-                representedSlots =
-                    SysUiPresentationOwner.homeSlots(),
-            )
         }
 
-        fun stop(removeVisual: Boolean = true) {
+        fun stop(
+            removeVisual: Boolean = true,
+            notifyReadinessOnStop: Boolean = true,
+        ) {
             layoutReady = false
             releaseAll(
-                { dispatchPresentationReadiness("stop") },
-                { batteryContainer.get()?.removeOnAttachStateChangeListener(this) },
-                { batteryContainer.get()?.removeOnLayoutChangeListener(overlayHostLayoutListener) },
-                { batteryCarrier.get()?.removeOnLayoutChangeListener(carrierLayoutListener) },
-                { statusIcons.get()?.removeOnLayoutChangeListener(statusIconsLayoutListener) },
-                { if (removeVisual) (probeView.parent as? ViewGroup)?.removeView(probeView) },
+                { if (notifyReadinessOnStop) dispatchPresentationReadiness("stop") },
+                { host.get()?.removeOnAttachStateChangeListener(this) },
+                { host.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { batteryContainer.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { batteryView.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { batteryCarrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { statusIcons.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
+                { unregisterNativeDrawListener() },
+                { if (removeVisual) host.get()?.overlay?.remove(probeView) },
             )
         }
 
@@ -422,7 +487,9 @@ internal object HomeRenderSession {
                 return
             }
             controlCenterAllowsHome = homeEligible
+            if (!homeEligible) homeFrameDrawnAfterPanel = false
             if (SandboxHost.active()) update(StatusStateStore.snapshot())
+            if (homeEligible) layoutProbe("control-center-return")
             val visible = applyResolvedVisibility()
             emitEvent {
                 "homeRenderControlCenterEligibility" +
@@ -435,6 +502,50 @@ internal object HomeRenderSession {
         }
 
         fun isOverlayShown(): Boolean = probeView.isShown
+
+        fun canDrawHome(): Boolean =
+            featureEnabled &&
+                controlCenterAllowsHome &&
+                !nativeHandoffActive &&
+                modelReady &&
+                tintReady &&
+                layoutReady &&
+                probeView.visibility == View.VISIBLE &&
+                homeFrameDrawnAfterPanel &&
+                host.get()?.isAttachedToWindow == true &&
+                batteryContainer.get()?.isAttachedToWindow == true &&
+                batteryCarrier.get()?.isAttachedToWindow == true &&
+                host.get()?.isShown == true
+
+        fun visibilityWitness(): String {
+            val root = host.get()
+            val nativeContainer = batteryContainer.get()
+            return "renderVisibility=${probeView.visibility}" +
+                " renderShown=${probeView.isShown}" +
+                " renderShownSemantics=overlay-parent-unparented" +
+                " lastCompletedDrawElapsedRealtimeMs=$lastCompletedDrawElapsedRealtimeMs" +
+                " lastDrawAgeMs=" +
+                (if (lastCompletedDrawElapsedRealtimeMs > 0L) {
+                    SystemClock.elapsedRealtime() - lastCompletedDrawElapsedRealtimeMs
+                } else "never") +
+                " renderAlpha=${probeView.alpha}" +
+                " renderBounds=${probeView.left}..${probeView.right}" +
+                " overlayParent=${probeView.parent?.javaClass?.simpleName}" +
+                " rootShown=${root?.isShown}" +
+                " rootAlpha=${root?.alpha}" +
+                " rootTranslationX=${root?.translationX}" +
+                " rootBounds=${root?.left}..${root?.right}" +
+                " rootAttached=${root?.isAttachedToWindow}" +
+                " nativeContainerShown=${nativeContainer?.isShown}" +
+                " statusIconsShown=${statusIcons.get()?.isShown}" +
+                " statusIconsAlpha=${statusIcons.get()?.alpha}" +
+                " nativeContainerSize=${nativeContainer?.width}x${nativeContainer?.height}" +
+                " nativeBatteryWidth=${batteryView.get()?.width}" +
+                " nativeHide=${SysUiPresentationOwner.homeBatteryNativeHidden()}" +
+                " handoff=$nativeHandoffActive" +
+                " homeEligible=$controlCenterAllowsHome" +
+                " layoutReady=$layoutReady"
+        }
 
         fun setFeatureEnabled(enabled: Boolean) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
@@ -512,7 +623,7 @@ internal object HomeRenderSession {
                 emitEvent {
                     "homeRenderTint deferred source=" + source +
                         " applied=#" +
-                        state.appliedTint.toUInt().toString(16).padStart(8, '0') +
+                        tintHexDigits(state.appliedTint) +
                         " reason=transparent retainStable=true"
                 }
             }
@@ -573,48 +684,50 @@ internal object HomeRenderSession {
         }
 
         override fun onViewAttachedToWindow(view: View) {
+            registerNativeDrawListener()
             layoutProbe()
         }
 
         override fun onViewDetachedFromWindow(view: View) {
+            unregisterNativeDrawListener()
             if (layoutReady) {
                 layoutReady = false
                 dispatchPresentationReadiness("host-detached")
             }
         }
 
-        private fun layoutProbe() {
-            if (!resolveNativeAnchor(anchorRect)) {
-                if (layoutReady) {
-                    layoutReady = false
-                    dispatchPresentationReadiness("layout-unavailable")
-                }
+        private fun layoutProbe(source: String = "native-layout") {
+            if (!resolveNativeAnchor(observedAnchorRect)) {
+                handleUnresolvedAnchor(source)
                 return
             }
-            val topOverflowPx =
-                probeView.requiredTopOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            val bottomOverflowPx =
-                probeView.requiredBottomOverflowPx(
-                    logicalWidthPx = anchorRect.width(),
-                    logicalHeightPx = anchorRect.height(),
-                )
-            applyAnchorBounds(
-                bounds = anchorRect,
-                topOverflowPx = topOverflowPx,
-                bottomOverflowPx = bottomOverflowPx,
-            )
+            if (deferredNativeAnchor) {
+                deferredNativeAnchor = false
+                emitEvent { "homeRenderNativeAnchor state=recovered source=" + source }
+            }
+            val moved = observedAnchorRect != anchorRect
+            if (moved) {
+                anchorRect.set(observedAnchorRect)
+                if (layoutLogged) {
+                    emitEvent {
+                        "homeRenderNativeAnchor source=" + source +
+                            " carrierLeft=" + anchorRect.left +
+                            " carrierRight=" + anchorRect.right +
+                            " carrierWidth=" + anchorRect.width() +
+                            " hostWidth=" + (host.get()?.width ?: -1)
+                    }
+                }
+            }
+            probeView.layoutAtAnchor(anchorRect)
             layoutReady = true
 
             if (!layoutLogged) {
                 layoutLogged = true
                 emitEvent {
                     "homeRenderProbe attached " +
-                        "slot=homeSystemIconsOverflow anchor=carrierEnd " +
-                        "carrier=MiuiStatusBatteryContainer.child " +
-                        "carrierAuthority=battery_icon_container " +
+                        "slot=homeSystemIconsOverlay anchor=system_icon_area.end " +
+                        "carrier=MiuiNotificationStatusContainer.overlay " +
+                        "widthAuthority=battery_icon_container " +
                         "motion=system-ui-inherited " +
                         "bounds=" + anchorRect.left + "," + anchorRect.top + "-" +
                         anchorRect.right + "," + anchorRect.bottom +
@@ -627,6 +740,41 @@ internal object HomeRenderSession {
             dispatchPresentationReadiness("layout")
         }
 
+        private fun handleUnresolvedAnchor(source: String) {
+            val nativeLayoutPending =
+                host.get()?.isLayoutRequested == true ||
+                    batteryContainer.get()?.isLayoutRequested == true ||
+                    statusIcons.get()?.isLayoutRequested == true ||
+                    batteryCarrier.get()?.isLayoutRequested == true
+            val hostAttached = batteryContainer.get()?.isAttachedToWindow == true
+            val carrierAttached = batteryCarrier.get()?.isAttachedToWindow == true
+            if (
+                shouldRetireUnresolvedAnchor(
+                    wasReady = layoutReady,
+                    hostAttached = hostAttached,
+                    carrierAttached = carrierAttached,
+                    nativePreDraw = source == "native-pre-draw",
+                    layoutPending = nativeLayoutPending,
+                )
+            ) {
+                layoutReady = false
+                deferredNativeAnchor = false
+                emitEvent {
+                    "homeRenderNativeAnchor state=invalid source=" + source +
+                        " nativeLayoutPending=" + nativeLayoutPending +
+                        " hostAttached=" + hostAttached +
+                        " carrierAttached=" + carrierAttached
+                }
+                dispatchPresentationReadiness("native-anchor-invalid")
+            } else if (layoutReady && !deferredNativeAnchor) {
+                deferredNativeAnchor = true
+                emitEvent {
+                    "homeRenderNativeAnchor state=deferred source=" + source +
+                        " nativeLayoutPending=" + nativeLayoutPending
+                }
+            }
+        }
+
         private fun applyResolvedVisibility(): Boolean {
             val visible =
                 resolveOverlayVisible(
@@ -634,12 +782,7 @@ internal object HomeRenderSession {
                     controlCenterAllowsHome = controlCenterAllowsHome,
                     nativeHandoffActive = nativeHandoffActive,
                 )
-            probeView.visibility = if (visible) View.VISIBLE else View.GONE
-            if (visible) {
-                probeView.invalidate()
-            } else {
-                probeView.clearPendingLatency()
-            }
+            probeView.updateRenderVisibility(visible)
             return visible
         }
 
@@ -667,18 +810,22 @@ internal object HomeRenderSession {
                     " controlCenterHomeEligible=" + controlCenterAllowsHome +
                     " featureEnabled=" + featureEnabled
             }
-            onPresentationReadinessChanged?.invoke(ownerReady)
+            sinks.onPresentationReadinessChanged?.invoke(ownerReady, source)
         }
 
         private inline fun emitEvent(message: () -> String) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+                if (sinks.isDetailedDiagnosticsEnabled()) sinks.onEvent(message())
             }
         }
 
         private fun resolveNativeAnchor(out: Rect): Boolean {
-            val overlayHost = batteryContainer.get() ?: return false
+            val overlayHost = host.get() ?: return false
+            val nativeContainer = batteryContainer.get() ?: return false
             val carrier = batteryCarrier.get() ?: return false
+            if (!overlayHost.isAttachedToWindow || !nativeContainer.isAttachedToWindow ||
+                !carrier.isAttachedToWindow
+            ) return false
             val hostWidth = overlayHost.width
             val hostHeight = overlayHost.height
             val baseCarrierWidth =
@@ -697,25 +844,33 @@ internal object HomeRenderSession {
 
             val isRtl = overlayHost.layoutDirection == View.LAYOUT_DIRECTION_RTL
             val privacyOccupiesEnd =
-                SysUiPresentationOwner.homePrivacyOccupiesEnd(overlayHost)
+                SysUiPresentationOwner.homePrivacyOccupiesEnd(nativeContainer)
             val resolved =
                 if (privacyOccupiesEnd == true) {
                     val nativeIcons = statusIcons.get() ?: return false
-                    if (nativeIcons.parent !== overlayHost ||
-                        !nativeIcons.isLaidOut || nativeIcons.width <= 0
+                    if (nativeIcons.parent !== nativeContainer ||
+                        !nativeIcons.isAttachedToWindow || !nativeIcons.isLaidOut ||
+                        nativeIcons.width <= 0
                     ) return false
-                    // Exact target onLayout ends the icon group at the privacy
-                    // child's measured boundary. The module's end reservation
-                    // sits inside this group's native edge.
+                    nativeIcons.getLocationInWindow(carrierWindowLocation)
+                    overlayHost.getLocationInWindow(hostWindowLocation)
+                    val iconStart = carrierWindowLocation[0] - hostWindowLocation[0]
                     HomePrivacyAnchorPolicy.resolve(
                         hostWidthPx = hostWidth,
                         hostHeightPx = hostHeight,
                         baseCarrierWidthPx = baseCarrierWidth,
                         statusIconsEndPx =
-                            if (isRtl) nativeIcons.left else nativeIcons.right,
+                            if (isRtl) iconStart else iconStart + nativeIcons.width,
                         isRtl = isRtl,
                     )
                 } else {
+                    // Width is already resolved by resolveWidthPx above,
+                    // which accepts a valid native measuredWidth while the
+                    // battery_icon_container's laid-out width is transiently
+                    // zero during the charging-island layout traversal.
+                    // system_icon_area owns Home placement and island motion.
+                    // Battery child translation/fade on island exit must not
+                    // invalidate or move the independently hosted overlay.
                     SteadyLayoutResolver.resolve(
                         hostWidthPx = hostWidth,
                         hostHeightPx = hostHeight,
@@ -726,71 +881,7 @@ internal object HomeRenderSession {
             out.set(resolved.left, 0, resolved.right, hostHeight)
             return out.width() > 0 && out.height() > 0
         }
-
-        private fun applyAnchorBounds(
-            bounds: Rect,
-            topOverflowPx: Int,
-            bottomOverflowPx: Int,
-        ) {
-            val physical =
-                VerticalOverflowPolicy.resolve(
-                    logicalTopPx = bounds.top,
-                    logicalHeightPx = bounds.height(),
-                    requestedTopOverflowPx = topOverflowPx,
-                    requestedBottomOverflowPx = bottomOverflowPx,
-                )
-            probeView.setLogicalViewport(
-                widthPx = bounds.width(),
-                heightPx = bounds.height(),
-                topInsetPx = physical.logicalTopInsetPx,
-            )
-            if (
-                probeView.measuredWidth != bounds.width() ||
-                probeView.measuredHeight != physical.physicalHeightPx
-            ) {
-                val widthSpec = View.MeasureSpec.makeMeasureSpec(
-                    bounds.width(),
-                    View.MeasureSpec.EXACTLY,
-                )
-                val heightSpec = View.MeasureSpec.makeMeasureSpec(
-                    physical.physicalHeightPx,
-                    View.MeasureSpec.EXACTLY,
-                )
-                probeView.measure(widthSpec, heightSpec)
-            }
-            probeView.layout(
-                bounds.left,
-                physical.physicalTopPx,
-                bounds.right,
-                bounds.bottom + bottomOverflowPx,
-            )
-        }
     }
 
     private const val RENDER_OPACITY = 1f
-}
-
-
-internal object VerticalOverflowPolicy {
-    internal data class Resolved(
-        val physicalTopPx: Int,
-        val physicalHeightPx: Int,
-        val logicalTopInsetPx: Int,
-    )
-
-    fun resolve(
-        logicalTopPx: Int,
-        logicalHeightPx: Int,
-        requestedTopOverflowPx: Int,
-        requestedBottomOverflowPx: Int = 0,
-    ): Resolved {
-        val logicalHeight = logicalHeightPx.coerceAtLeast(0)
-        val top = requestedTopOverflowPx.coerceAtLeast(0)
-        val bottom = requestedBottomOverflowPx.coerceAtLeast(0)
-        return Resolved(
-            physicalTopPx = logicalTopPx - top,
-            physicalHeightPx = logicalHeight + top + bottom,
-            logicalTopInsetPx = top,
-        )
-    }
 }

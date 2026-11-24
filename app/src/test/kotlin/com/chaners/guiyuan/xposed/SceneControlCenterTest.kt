@@ -8,42 +8,42 @@ class SceneControlCenterTest {
     @Test
     fun controlCenterRequiresEligibleSourceAndSettings() {
         assertTrue(
-            ScenePolicy.controlCenterProjectionEligible(
+            SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.HOME,
                 keyguardEnabled = false,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = false,
             ),
         )
         assertTrue(
-            ScenePolicy.controlCenterProjectionEligible(
+            SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = true,
                 sourceScene = SourceScene.UNKNOWN,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
                 sourceScene = SourceScene.HOME,
                 keyguardEnabled = true,
             ),
         )
         assertFalse(
-            ScenePolicy.controlCenterProjectionEligible(
+            SceneCcPolicy.controlCenterProjectionEligible(
                 featureEnabled = false,
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardEnabled = true,
@@ -114,28 +114,28 @@ class SceneControlCenterTest {
     @Test
     fun hiddenControlCenterIgnoresKeyguardLifecycleChurnUntilItActuallyOpens() {
         assertFalse(
-            ScenePolicy.shouldReconcileCcForKeyguard(
+            SceneCcPolicy.shouldReconcileCcForKeyguard(
                 ccVisible = false,
                 nativeFraction = 0f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            ScenePolicy.shouldReconcileCcForKeyguard(
+            SceneCcPolicy.shouldReconcileCcForKeyguard(
                 ccVisible = true,
                 nativeFraction = 0f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            ScenePolicy.shouldReconcileCcForKeyguard(
+            SceneCcPolicy.shouldReconcileCcForKeyguard(
                 ccVisible = false,
                 nativeFraction = 0.1f,
                 leaseActive = false,
             ),
         )
         assertTrue(
-            ScenePolicy.shouldReconcileCcForKeyguard(
+            SceneCcPolicy.shouldReconcileCcForKeyguard(
                 ccVisible = false,
                 nativeFraction = 0f,
                 leaseActive = true,
@@ -146,7 +146,7 @@ class SceneControlCenterTest {
     @Test
     fun incomingKeyguardBoundaryPresentationCanBridgeStableReadiness() {
         assertTrue(
-            ScenePolicy.incomingKeyguardPresentationReady(
+            SceneCcPolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -155,7 +155,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.incomingKeyguardPresentationReady(
+            SceneCcPolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = false,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -164,7 +164,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.incomingKeyguardPresentationReady(
+            SceneCcPolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = false,
                 compactLayoutReady = true,
@@ -173,7 +173,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.incomingKeyguardPresentationReady(
+            SceneCcPolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = false,
@@ -182,7 +182,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.incomingKeyguardPresentationReady(
+            SceneCcPolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -191,7 +191,7 @@ class SceneControlCenterTest {
             ),
         )
         assertFalse(
-            ScenePolicy.incomingKeyguardPresentationReady(
+            SceneCcPolicy.incomingKeyguardPresentationReady(
                 visualHandoffActive = true,
                 layoutPrecommitActive = true,
                 compactLayoutReady = true,
@@ -232,14 +232,14 @@ class SceneControlCenterTest {
     @Test
     fun keyguardCcLeaseAcquiresOnlyWithNativeTransitionProgress() {
         assertTrue(
-            ScenePolicy.shouldAcquireKeyguardCcLease(
+            SceneCcPolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0.5f,
             ),
         )
         assertFalse(
-            ScenePolicy.shouldAcquireKeyguardCcLease(
+            SceneCcPolicy.shouldAcquireKeyguardCcLease(
                 sourceScene = SourceScene.KEYGUARD,
                 keyguardPresentationReady = true,
                 nativeFraction = 0f,

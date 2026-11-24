@@ -4,7 +4,7 @@
     <string name="app_description">An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact status bar indicator.</string>
 
     <string name="home_title">Guiyuan</string>
-    <string name="hot_reload">Hot reload Guiyuan</string>
+    <string name="hot_reload">Hot reload</string>
     <string name="nav_home">Home</string>
     <string name="nav_features">Features</string>
     <string name="nav_settings">Settings</string>
@@ -141,11 +141,14 @@
     <string name="dynamic_color_summary">Use colors generated from the system wallpaper</string>
     <string name="dynamic_color_on">Dynamic colors</string>
     <string name="dynamic_color_off">Default colors</string>
+    <string name="theme_palette_source">Palette source</string>
+    <string name="theme_palette_source_summary">Follow the system palette or customize its style</string>
+    <string name="theme_palette_source_system">System palette</string>
+    <string name="theme_palette_source_custom">Custom style</string>
     <string name="theme_color_spec">Color specification</string>
-    <string name="theme_color_spec_summary">Follow the system palette or choose a color generation specification</string>
-    <string name="theme_color_spec_system">System palette</string>
+    <string name="theme_color_spec_summary">Color generation specification for the selected style</string>
     <string name="theme_palette_style">Palette style</string>
-    <string name="theme_palette_style_summary">Choose a style supported by the selected specification</string>
+    <string name="theme_palette_style_summary">Choose how colors are generated from the system wallpaper</string>
     <string name="theme_palette_tonal_spot">Tonal Spot</string>
     <string name="theme_palette_neutral">Neutral</string>
     <string name="theme_palette_vibrant">Vibrant</string>
@@ -167,7 +170,6 @@
     <string name="floating_navigation_style_summary">Choose the material effect used by the floating bottom navigation bar</string>
     <string name="floating_navigation_style_standard">Standard</string>
     <string name="floating_navigation_style_blur">Blur</string>
-    <string name="floating_navigation_style_glass">Glass</string>
     <string name="floating_navigation_style_soft_glass">Soft Glass</string>
     <string name="floating_navigation_style_liquid">Liquid Glass</string>
     <string name="floating_navigation_liquid_mode">Liquid glass finish</string>
@@ -184,8 +186,6 @@
     <string name="section_about_project">Project</string>
     <string name="about_project_home_title">Project homepage</string>
     <string name="about_project_home_summary">View source code and project information</string>
-    <string name="about_repo_unavailable_title">Project link unavailable</string>
-    <string name="about_repo_unavailable_summary">This limited test build does not provide the project link yet. It will be available here later.</string>
     <string name="about_open_source_license_title">Open-source license</string>
     <string name="about_open_source_license_summary">GPL-3.0-only</string>
     <string name="about_third_party_title">Third-party dependencies</string>
@@ -220,11 +220,9 @@
     <string name="static_scope_entry_summary">View declared hosts and local versions</string>
     <string name="static_scope_primary_group">Primary scope</string>
     <string name="static_scope_optional_group">Optional scope</string>
-    <string name="static_scope_sysui_usage">Used by Guiyuan’s status bar, lock screen, always-on display, and Control Center features.</string>
-    <string name="static_scope_sysui_advice">Authorize this scope to use these core features.</string>
-    <string name="static_scope_settings_usage">Used to show the optional Guiyuan entry in system Settings.</string>
-    <string name="static_scope_settings_advice">Authorize this scope only if you use that entry. Core features work without it.</string>
-    <string name="static_scope_description">Shows declared hosts and their readable local versions.\nAuthorization reflects the scopes reported by the framework service.</string>
+    <string name="static_scope_sysui_usage">Required for Guiyuan’s status bar, lock screen, always-on display, and Control Center features.</string>
+    <string name="static_scope_settings_usage">Authorize to show the Guiyuan entry in system Settings. Core features work without it.</string>
+    <string name="static_scope_description">Shows declared hosts and locally readable versions. Authorization reflects the framework service’s scope records.</string>
     <string name="static_scope_sysui">System UI</string>
     <string name="static_scope_installed_version">Installed version %1$s</string>
     <string name="static_scope_version_unavailable">Version unavailable</string>
@@ -448,7 +446,7 @@
     <string name="battery_color_preset_hyperos_summary">Use HyperOS semantic battery colors</string>
     <string name="battery_color_preset_ios_summary">Use iOS system colors</string>
     <string name="battery_mode_colors">Mode colors</string>
-    <string name="battery_color_source">Color source</string>
+    <string name="battery_color_source">Color style</string>
     <string name="battery_color_source_preset">Scheme color</string>
     <string name="battery_color_source_preset_summary">Use the %1$s scheme color</string>
     <string name="battery_color_source_preset_short">%1$s scheme</string>
@@ -480,7 +478,6 @@
     <string name="battery_common_color_indigo">Indigo</string>
     <string name="battery_common_color_purple">Purple</string>
     <string name="battery_common_color_pink">Pink</string>
-    <string name="battery_common_color_gray">Gray</string>
     <string name="battery_color_full_adjustment">Full color adjustment</string>
     <string name="battery_color_hue">Hue</string>
     <string name="battery_color_saturation">Saturation</string>
@@ -489,16 +486,14 @@
     <string name="battery_color_hex">HEX</string>
     <string name="battery_color_follow_inversion">Follow system tint</string>
     <string name="battery_color_no_fixed_color">No fixed color</string>
-    <string name="battery_color_no_fixed_color_summary">Choose a fixed color source or set a custom color before adjusting these controls</string>
+    <string name="battery_color_no_fixed_color_summary">Choose a fixed color or use the color picker before adjusting these controls</string>
     <string name="battery_color_settings">Color settings</string>
     <string name="battery_color_edit_auto_custom">Editing any value switches this mode to Custom</string>
     <string name="battery_color_restore_from_scheme">Restore this mode to the %1$s scheme color</string>
     <string name="battery_custom_mode_title">%1$s · %2$s</string>
     <string name="battery_mode_editor_title">%1$s color</string>
-    <string name="battery_scheme_new_summary">Create a battery color scheme of your own</string>
-    <string name="battery_scheme_full_summary">You can save up to %1$d custom schemes</string>
-    <string name="battery_scheme_capacity">Custom scheme capacity</string>
-    <string name="battery_scheme_remaining">You can create %1$d more custom schemes</string>
+    <string name="battery_scheme_initial_palette">Start with the default HyperOS colors</string>
+    <string name="battery_scheme_capacity">Custom styles</string>
     <string name="battery_scheme_full_hint">Delete an existing custom scheme to create another</string>
     <string name="battery_custom_scheme_new">New custom style</string>
     <string name="battery_custom_scheme_add_page_title">New style</string>
@@ -547,12 +542,8 @@
     <string name="feature_search">Search features</string>
     <string name="feature_search_clear">Clear search text</string>
     <string name="feature_search_empty">No matching features</string>
-    <string name="ui_style_title">MIUIX interface standard</string>
-    <string name="ui_style_summary">Switch the app interface and interaction style</string>
     <string name="top_bar_progressive_blur">Progressive top bar blur</string>
     <string name="top_bar_progressive_blur_summary">Gradually blur the top bar background while scrolling</string>
-    <string name="ui_style_os3">OS3</string>
-    <string name="ui_style_os4">OS4 (Experimental)</string>
 
     <!-- First-run guide and offline privacy policy -->
     <string name="guide_progress">%1$d / %2$d</string>

@@ -7,7 +7,7 @@ import java.lang.ref.WeakReference
 import java.lang.reflect.Field
 
 internal object SysUiKeyguardHostResolver {
-    private const val KEYGUARD_HOST_CLASS =
+    internal const val KEYGUARD_HOST_CLASS =
         "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
     private const val STATUS_ICON_CONTAINER_CLASS =
         "com.android.systemui.statusbar.views.MiuiStatusIconContainer"
@@ -15,7 +15,6 @@ internal object SysUiKeyguardHostResolver {
         "com.android.systemui.statusbar.views.MiuiStatusBatteryContainer"
     private const val BATTERY_VIEW_CLASS =
         "com.android.systemui.statusbar.views.MiuiBatteryMeterView"
-    private const val TO_LOCK_SCREEN_FIELD = "mToLockScreen"
 
     // SystemUI may replace the Keyguard host; don't keep the old source alive.
     private var lastSourceView: WeakReference<View>? = null
@@ -57,64 +56,6 @@ internal object SysUiKeyguardHostResolver {
     ): Boolean =
         surface == SysUiSceneSource.Surface.KEYGUARD ||
             surface == SysUiSceneSource.Surface.SHADE_LOCKED
-
-    internal fun nativeToLockScreenTarget(
-        resolved: ResolvedHost,
-    ): Boolean? =
-        findField(resolved.host.javaClass, TO_LOCK_SCREEN_FIELD)
-            ?.let { field ->
-                SysUiPresentationRuntime.optionalNativeRead { field.get(resolved.host) as? Boolean }
-            }
-
-    // Native screen-off decision, sampled only by detailed AOD diagnostics.
-    internal fun sleepLinkageState(resolved: ResolvedHost): String? =
-        SysUiPresentationRuntime.optionalNativeRead {
-            fun field(owner: Any, name: String): Any? =
-                findField(owner.javaClass, name)?.get(owner)
-
-            val dep = field(resolved.host, "mDep") ?: return@optionalNativeRead null
-            val lazy = field(dep, "dozeServiceHost") ?: return@optionalNativeRead null
-            val doze = lazy.javaClass.methods
-                .firstOrNull { it.name == "get" && it.parameterCount == 0 }
-                ?.invoke(lazy) ?: return@optionalNativeRead null
-            if (doze.javaClass.name !=
-                "com.android.keyguard.injector.DozeServiceHostInjector"
-            ) {
-                return@optionalNativeRead null
-            }
-            val cc = field(doze, "mControlCenter") ?: return@optionalNativeRead null
-            val expanded = cc.javaClass.methods
-                .firstOrNull { it.name == "getExpanded" && it.parameterCount == 0 }
-                ?.invoke(cc) ?: return@optionalNativeRead null
-            "ccExpanded=" + expanded +
-                ":linkage=" + field(doze, "mScreenOffNeedLinkageAnim") +
-                ":fullAod=" + field(doze, "mScreenOffNeedFullAodAnim") +
-                ":screenFade=" + field(doze, "mNeedScreenFade") +
-                ":dozeAfterOff=" + field(doze, "mShouldDozeAfterScreenOff") +
-                ":sleepReason=" + field(doze, "mSleepReason") +
-                ":interactive=" + field(doze, "mDeviceInteractive")
-        }
-
-    internal fun statusIconsPresentationAlpha(
-        resolved: ResolvedHost,
-    ): Float? {
-        val statusIcons = resolved.statusIcons
-        if (!statusIcons.isAttachedToWindow) return null
-        return resolveStatusIconsPresentationAlpha(
-            visible = statusIcons.visibility == View.VISIBLE,
-            alpha = statusIcons.alpha,
-        )
-    }
-
-    internal fun resolveStatusIconsPresentationAlpha(
-        visible: Boolean,
-        alpha: Float,
-    ): Float =
-        if (visible) {
-            alpha.coerceIn(0f, 1f)
-        } else {
-            0f
-        }
 
     @Synchronized
     fun resetRuntimeState() {
@@ -182,7 +123,7 @@ internal object SysUiKeyguardHostResolver {
         )
     }
 
-    private fun findAncestor(
+    internal fun findAncestor(
         start: View,
         className: String,
     ): View? {
@@ -203,7 +144,7 @@ internal object SysUiKeyguardHostResolver {
         findField(owner.javaClass, fieldName)
             ?.let { field -> SysUiPresentationRuntime.optionalNativeRead { field.get(owner) as? View } }
 
-    private fun findField(
+    internal fun findField(
         type: Class<*>,
         name: String,
     ): Field? {

@@ -94,10 +94,7 @@ internal object HotReloadTransfer {
         val payload = raw as? Array<*> ?: return null
         val version = readPayloadVersion(payload.getOrNull(INDEX_VERSION))
             ?: return null
-        val expectedSize = payloadSizeFor(version) ?: return null
-        if (payload.size != expectedSize) {
-            return null
-        }
+        if (payload.size != payloadSizeFor(version)) return null
 
         val host = payload.getOrNull(INDEX_HOST) as? View ?: return null
         if (host.javaClass.name != StatusBarHostCapture.HOST_CLASS_NAME) {
@@ -140,11 +137,7 @@ internal object HotReloadTransfer {
             }
 
         val controlCenterCompactReady =
-            if (version == VERSION) {
-                payload.getOrNull(INDEX_CONTROL_CENTER_COMPACT_READY) as? Boolean ?: false
-            } else {
-                false
-            }
+            version == VERSION && payload[INDEX_CONTROL_CENTER_COMPACT_READY] == true
         return Restored(
             host = host,
             state = state,

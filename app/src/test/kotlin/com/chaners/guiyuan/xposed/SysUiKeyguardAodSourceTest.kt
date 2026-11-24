@@ -1,42 +1,38 @@
 package com.chaners.guiyuan.xposed
 
-import java.lang.reflect.InvocationTargetException
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SysUiKeyguardAodSourceTest {
     @Test
-    fun wrappedFatalAodCallbackPropagatesOriginalCause() {
-        val fatal = OutOfMemoryError("aod-callback")
-        assertSame(
-            fatal,
-            runCatching {
-                SysUiKeyguardAodSource.rethrowFatal(InvocationTargetException(fatal))
-            }.exceptionOrNull(),
-        )
-        SysUiKeyguardAodSource.rethrowFatal(
-            InvocationTargetException(IllegalStateException("ordinary")),
-        )
-    }
-
-    @Test
     fun pinnedToggleAodContractRequiresSingleBooleanParameter() {
         assertTrue(
-            SysUiKeyguardAodSource.matchesToggleAodSignature(
+            SysUiKeyguardAodEvidence.matchesToggleAodSignature(
                 parameterTypes = arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
                 returnType = Void.TYPE,
             ),
         )
+        assertTrue(
+            SysUiKeyguardAodEvidence.matchesToggleAodSignature(
+                parameterTypes = arrayOf<Class<*>>(Boolean::class.javaObjectType),
+                returnType = Void.TYPE,
+            ),
+        )
         assertFalse(
-            SysUiKeyguardAodSource.matchesToggleAodSignature(
+            SysUiKeyguardAodEvidence.matchesToggleAodSignature(
+                parameterTypes = arrayOf<Class<*>>(Boolean::class.javaPrimitiveType!!),
+                returnType = Boolean::class.javaPrimitiveType!!,
+            ),
+        )
+        assertFalse(
+            SysUiKeyguardAodEvidence.matchesToggleAodSignature(
                 parameterTypes = emptyArray(),
                 returnType = Void.TYPE,
             ),
         )
         assertFalse(
-            SysUiKeyguardAodSource.matchesToggleAodSignature(
+            SysUiKeyguardAodEvidence.matchesToggleAodSignature(
                 parameterTypes = arrayOf<Class<*>>(Int::class.javaPrimitiveType!!),
                 returnType = Void.TYPE,
             ),
@@ -45,17 +41,17 @@ class SysUiKeyguardAodSourceTest {
 
     @Test
     fun stableAodRequiresTargetAodWithNativeAnimationFinished() {
-        assertTrue(SysUiKeyguardAodSource.isStableAod(true, false))
-        assertFalse(SysUiKeyguardAodSource.isStableAod(true, true))
-        assertFalse(SysUiKeyguardAodSource.isStableAod(false, false))
-        assertFalse(SysUiKeyguardAodSource.isStableAod(false, true))
+        assertTrue(SysUiKeyguardAodPolicy.isStableAod(true, false))
+        assertFalse(SysUiKeyguardAodPolicy.isStableAod(true, true))
+        assertFalse(SysUiKeyguardAodPolicy.isStableAod(false, false))
+        assertFalse(SysUiKeyguardAodPolicy.isStableAod(false, true))
     }
 
     @Test
     fun nativeAodTransitionBlocksKeyguardProjection() {
-        assertFalse(SysUiKeyguardAodSource.blocksKeyguardProjection(false, false))
-        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(true, false))
-        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(false, true))
-        assertTrue(SysUiKeyguardAodSource.blocksKeyguardProjection(true, true))
+        assertFalse(SysUiKeyguardAodPolicy.blocksKeyguardProjection(false, false))
+        assertTrue(SysUiKeyguardAodPolicy.blocksKeyguardProjection(true, false))
+        assertTrue(SysUiKeyguardAodPolicy.blocksKeyguardProjection(false, true))
+        assertTrue(SysUiKeyguardAodPolicy.blocksKeyguardProjection(true, true))
     }
 }

@@ -3,24 +3,20 @@ package com.chaners.guiyuan.settings
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
-private val modernPalettes = listOf(
+// Mirrors the pinned MIUIX selector contract; ThemeController owns actual generation.
+internal fun ThemePaletteStyle.supportsSpec2025(): Boolean = when (this) {
     ThemePaletteStyle.TonalSpot,
     ThemePaletteStyle.Neutral,
     ThemePaletteStyle.Vibrant,
     ThemePaletteStyle.Expressive,
-)
+    -> true
 
-internal fun palettesFor(spec: ThemeColorSpec): List<ThemePaletteStyle> = when (spec) {
-    ThemeColorSpec.Spec2021 -> modernPalettes + listOf(
-        ThemePaletteStyle.Rainbow,
-        ThemePaletteStyle.FruitSalad,
-        ThemePaletteStyle.Monochrome,
-        ThemePaletteStyle.Fidelity,
-        ThemePaletteStyle.Content,
-    )
-    // CMF always uses its own 2026 scheme in newer MIUIX.
-    ThemeColorSpec.Spec2025 -> modernPalettes + ThemePaletteStyle.Cmf
+    else -> false
 }
+
+// Older versions selected the system palette by omitting the specification key.
+internal fun decodeCustomPalette(stored: Boolean?, legacySpec: ThemeColorSpec?): Boolean =
+    stored ?: (legacySpec != null)
 
 internal fun decodeColorSpec(value: String?): ThemeColorSpec? =
     if (value == "Spec2026") ThemeColorSpec.Spec2025
@@ -28,6 +24,3 @@ internal fun decodeColorSpec(value: String?): ThemeColorSpec? =
 
 internal fun decodePalette(value: String?): ThemePaletteStyle =
     ThemePaletteStyle.entries.firstOrNull { it.name == value } ?: ThemePaletteStyle.TonalSpot
-
-internal fun compatiblePalette(spec: ThemeColorSpec?, palette: ThemePaletteStyle): ThemePaletteStyle =
-    if (spec != null && palette !in palettesFor(spec)) ThemePaletteStyle.TonalSpot else palette

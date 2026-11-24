@@ -1,90 +1,66 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.BuildConfig
-import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
-import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.FeatureRepo
 import com.chaners.guiyuan.settings.VisualCfg
-import com.chaners.guiyuan.settings.VisualRepo
-import com.chaners.guiyuan.system.XposedStatus
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
-import com.chaners.guiyuan.ui.components.HotReloadAction
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
-import com.chaners.guiyuan.ui.theme.RuntimeSuccessAccent
-import com.chaners.guiyuan.ui.theme.RuntimeWarningAccent
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import com.chaners.guiyuan.ui.navigation.AppRoute
+import top.yukonga.miuix.kmp.nav.transition.navTransitionSource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
@@ -93,322 +69,118 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// Keep these in sync with resolveHomeRuntimeCardState.
-private val RuntimeTextVariants = listOf(
-    R.string.home_runtime_disabled to R.string.home_runtime_disabled_summary,
-    R.string.home_runtime_restarting to R.string.home_runtime_restarting_summary,
-    R.string.home_runtime_reloading to R.string.home_runtime_reloading_summary,
-    R.string.home_runtime_requesting to R.string.home_runtime_requesting_summary,
-    R.string.home_runtime_checking to R.string.home_runtime_checking_summary,
-    R.string.home_runtime_framework_unavailable to R.string.home_runtime_framework_unavailable_summary,
-    R.string.home_runtime_unknown to R.string.home_runtime_unknown_summary,
-    R.string.home_runtime_unhooked to R.string.home_runtime_unhooked_summary,
-    R.string.home_runtime_running to R.string.home_runtime_running_summary,
-    R.string.home_runtime_pending to R.string.home_runtime_restart_summary,
+private data class HomeScreenContents(
+    val layout: HomeScreenLayout,
+    val runtime: HomeScreenRuntime,
+    val actions: HomeScreenActions,
+    val sources: HomeScreenSources,
 )
 
 @Composable
 internal fun HomeScreen(
-    bottomContentPadding: Dp,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
-    onRestart: () -> Unit,
-    onRequestScope: () -> Unit,
-    previewState: PreviewSandboxUiState,
-    onHotReload: () -> Unit,
-    onOpenPreviewSandbox: () -> Unit,
+    layout: HomeScreenLayout,
+    runtime: HomeScreenRuntime,
+    actions: HomeScreenActions,
 ) {
-    val context = LocalContext.current
-    val application =
-        remember(context.applicationContext) {
-            context.applicationContext as GyApplication
-        }
-    val featureRepository =
-        remember(context.applicationContext) {
-            FeatureRepo(context.applicationContext)
-        }
-    val featureSettings =
-        featureRepository.settings.collectAsState(
-            initial = featureRepository.current(),
-        )
-    val visualRepo =
-        remember(context.applicationContext) {
-            VisualRepo(context.applicationContext)
-        }
-    val visual by
-        visualRepo.settings.collectAsState(
-            initial = visualRepo.current(),
-        )
-    val xposedStatus =
-        application.xposedStatus.collectAsState()
-    val previewResources =
-        remember(context.applicationContext) {
-            PreviewSysUiResources(context.applicationContext)
-        }
-
+    val sources = rememberHomeScreenSources()
     val listState = rememberLazyListState()
-    val canScroll = listState.canScrollBackward || listState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
-    val topBarBackdrop = rememberTopBarBackdrop()
-
-    val os4 = LocalUiStyle.current == UiStyle.OS4
-    val actions: @Composable RowScope.() -> Unit = {
-        HotReloadAction(
-            inProgress = hotReloadInProgress,
-            enabled = !restartInProgress && !scopeRequestInProgress,
-            onClick = onHotReload,
-        )
-    }
-
-    CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {
-    Scaffold(
-        topBar = {
-            if (os4) {
-                GlassTopAppBar(
-                    progressiveBlur = LocalTopBarProgressiveBlur.current,
-                    isContentScrolled = listState.canScrollBackward,
-                    title = stringResource(R.string.home_title),
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                    actions = actions,
-                    unclippedActions = true,
-                )
-            } else {
-                MiuixBlurredTopBar(
-                    backdrop = topBarBackdrop,
-                    scrollBehavior = scrollBehavior,
-                ) { barColor ->
-                    TopAppBar(
-                        title = stringResource(R.string.home_title),
-                        color = barColor,
-                        actions = actions,
-                        scrollBehavior = scrollBehavior,
-                    )
-                }
-            }
-        },
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .topBarBackdropSource(topBarBackdrop),
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding =
-                    pageContentPadding(
-                        innerPadding = paddingValues,
-                        outerBottomPadding = bottomContentPadding,
-                        extraBottom = 12.dp,
-                    ),
-            ) {
-                item {
-                    HomeRuntimeStatusCard(
-                        featureSettings = featureSettings,
-                        runtimeStatus = xposedStatus,
-                        hotReloadInProgress = hotReloadInProgress,
-                        restartInProgress = restartInProgress,
-                        scopeRequestInProgress = scopeRequestInProgress,
-                        onRestart = onRestart,
-                        onRequestScope = onRequestScope,
-                        onEnabledChange = featureRepository::setEnabled,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(top = 8.dp, bottom = 24.dp),
-                    )
-                }
-
-                item {
-                    HomePreviewSandboxCard(
-                        state = previewState,
-                        resources = previewResources,
-                        visual = visual,
-                        featureSettings = featureSettings,
-                        onOpen = onOpenPreviewSandbox,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                    )
-                }
-            }
+    val backdrop = rememberTopBarBackdrop()
+    val frame = HomeScreenFrame(listState, scrollBehavior, backdrop)
+    CompositionLocalProvider(LocalGlassBackdrop provides backdrop) {
+        Scaffold(
+            topBar = { HomeScreenTopBar(runtime, actions, frame) },
+        ) { padding ->
+            HomeScreenScrollingContent(
+                HomeScreenContents(layout, runtime, actions, sources), frame, padding,
+            )
         }
-    }
     }
 }
 
-private data class CardPaint(val accent: Color, val gradient: Brush)
-
-private data class CardTargetColors(
-    val accent: Color,
-    val surface: Color,
-    val container: Color,
-)
-
-// Resolve palette targets separately; keep the existing animation and gradient geometry unchanged.
 @Composable
-private fun runtimeCardTargetColors(
-    tone: RuntimeStatusTone,
-    enabled: Boolean,
-): CardTargetColors {
-    val targetAccentColor =
-        when (tone) {
-            RuntimeStatusTone.Success -> RuntimeSuccessAccent
-            RuntimeStatusTone.Warning -> RuntimeWarningAccent
-            RuntimeStatusTone.Error -> MiuixTheme.colorScheme.error
-            RuntimeStatusTone.Neutral ->
-                if (enabled) {
-                    MiuixTheme.colorScheme.onSurfaceContainerVariant
-                } else {
-                    lerp(
-                        MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                        MiuixTheme.colorScheme.primary,
-                        0.35f,
-                    )
-                }
-        }
-    val surfaceColor = MiuixTheme.colorScheme.surfaceContainer
-    val targetContainerColor =
-        when (tone) {
-            RuntimeStatusTone.Neutral ->
-                if (enabled) {
-                    surfaceColor
-                } else {
-                    MiuixTheme.colorScheme.primary
-                        .copy(alpha = 0.14f)
-                        .compositeOver(surfaceColor)
-                }
-            else ->
-                targetAccentColor
-                    .copy(alpha = 0.15f)
-                    .compositeOver(surfaceColor)
-        }
-    return CardTargetColors(
-        accent = targetAccentColor,
-        surface = surfaceColor,
-        container = targetContainerColor,
-    )
-}
-
-@Composable
-private fun runtimeCardPaint(state: HomeRuntimeCardState, enabled: Boolean): CardPaint {
-    val targets = runtimeCardTargetColors(state.tone, enabled)
-    val targetAccentColor = targets.accent
-    val surfaceColor = targets.surface
-    val targetContainerColor = targets.container
-    val accentColor by
-        animateColorAsState(
-            targetValue = targetAccentColor,
-            animationSpec = tween(StatusColorAnimMillis),
-            label = "runtimeAccent",
-        )
-    // Keep gradient stops fixed while the enabled state changes.
-    val topTarget =
-        if (enabled) {
-            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
-        } else {
-            targetContainerColor
-        }
-    val midTarget =
-        if (enabled) {
-            targetContainerColor
-        } else {
-            surfaceColor.copy(alpha = 0.24f).compositeOver(targetContainerColor)
-        }
-    val lowerTarget =
-        surfaceColor
-            .copy(alpha = if (enabled) 0.44f else 0.34f)
-            .compositeOver(targetContainerColor)
-    val topColor by animateColorAsState(
-        targetValue = topTarget,
-        animationSpec = tween(StatusColorAnimMillis),
-        label = "runtimeGradientTop",
-    )
-    val midColor by animateColorAsState(
-        targetValue = midTarget,
-        animationSpec = tween(StatusColorAnimMillis),
-        label = "runtimeGradientMid",
-    )
-    val lowerColor by animateColorAsState(
-        targetValue = lowerTarget,
-        animationSpec = tween(StatusColorAnimMillis),
-        label = "runtimeGradientLower",
-    )
-    val cardGradient =
-        Brush.verticalGradient(
-            0f to topColor,
-            0.35f to midColor,
-            0.6f to lowerColor,
-            1f to surfaceColor,
-        )
-
-    return CardPaint(accentColor, cardGradient)
-}
-
-@Composable
-private fun HomeRuntimeStatusCard(
-    featureSettings: State<FeatureCfg>,
-    runtimeStatus: State<XposedStatus>,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
-    onRestart: () -> Unit,
-    onRequestScope: () -> Unit,
-    onEnabledChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+private fun HomeScreenScrollingContent(
+    contents: HomeScreenContents,
+    frame: HomeScreenFrame,
+    padding: PaddingValues,
 ) {
-    // The native Tilt node belongs to the Card, not the changing runtime content.
+    val canScroll = frame.listState.canScrollBackward || frame.listState.canScrollForward
+    val glassOverscroll = canScroll
+    val onOverscrollChanged: (Float) -> Unit = remember(frame.scrollBehavior) {
+        { offset -> frame.scrollBehavior.state.overscrollOffset = offset }
+    }
+    Box(Modifier.fillMaxSize().topBarBackdropSource(frame.backdrop)) {
+        LazyColumn(
+            state = frame.listState,
+            overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
+                .nestedScroll(frame.scrollBehavior.nestedScrollConnection),
+            contentPadding = pageContentPadding(
+                innerPadding = padding,
+                outerBottomPadding = contents.layout.bottomContentPadding,
+                extraBottom = 12.dp,
+            ),
+        ) {
+            item { HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources) }
+            item {
+                HomePreviewSandboxCard(
+                    state = contents.layout.previewState,
+                    resources = contents.sources.previewResources,
+                    visual = contents.sources.visual.value,
+                    featureSettings = contents.sources.featureSettings,
+                    onOpen = contents.actions.onOpenPreviewSandbox,
+                    modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeRuntimeCardEntry(
+    runtime: HomeScreenRuntime,
+    actions: HomeScreenActions,
+    sources: HomeScreenSources,
+) {
+    // Keep runtime readiness observed by this list item, not by the full page.
+    val enabled = sources.featureSettings.value.enabled
+    val state = resolveHomeRuntimeCardState(
+        enabled = enabled,
+        runtimeStatus = sources.xposedStatus.value,
+        hotReloadInProgress = runtime.hotReloadInProgress,
+        restartInProgress = runtime.restartInProgress,
+        scopeRequestInProgress = runtime.scopeRequestInProgress,
+    )
     Card(
-        modifier = modifier,
+        modifier = Modifier.padding(horizontal = 12.dp).padding(top = 8.dp, bottom = 24.dp),
         pressFeedbackType = PressFeedbackType.Tilt,
     ) {
         HomeRuntimeCardBody(
-            featureSettings = featureSettings,
-            runtimeStatus = runtimeStatus,
-            hotReloadInProgress = hotReloadInProgress,
-            restartInProgress = restartInProgress,
-            scopeRequestInProgress = scopeRequestInProgress,
-            onRestart = onRestart,
-            onRequestScope = onRequestScope,
-            onEnabledChange = onEnabledChange,
+            state = state,
+            enabled = enabled,
+            onRestart = actions.onRestart,
+            onRequestScope = actions.onRequestScope,
+            onEnabledChange = sources.featureRepository::setEnabled,
         )
     }
 }
 
 @Composable
 private fun HomeRuntimeCardBody(
-    featureSettings: State<FeatureCfg>,
-    runtimeStatus: State<XposedStatus>,
-    hotReloadInProgress: Boolean,
-    restartInProgress: Boolean,
-    scopeRequestInProgress: Boolean,
+    state: HomeRuntimeCardState,
+    enabled: Boolean,
     onRestart: () -> Unit,
     onRequestScope: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
 ) {
-    val enabled = featureSettings.value.enabled
-    val state = resolveHomeRuntimeCardState(
-        enabled = enabled,
-        runtimeStatus = runtimeStatus.value,
-        hotReloadInProgress = hotReloadInProgress,
-        restartInProgress = restartInProgress,
-        scopeRequestInProgress = scopeRequestInProgress,
-    )
     val (accentColor, cardGradient) = runtimeCardPaint(state, enabled)
     val onCardClick = when (state.action) {
         HomeRuntimeAction.Restart -> onRestart
@@ -446,101 +218,6 @@ private fun HomeRuntimeCardBody(
 }
 
 @Composable
-private fun HomeRuntimeStatusDetails(
-    state: HomeRuntimeCardState,
-    accentColor: Color,
-) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-    ) {
-        val titleStyle = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.SemiBold)
-        val bodyStyle = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium)
-        val summaryStyle = MiuixTheme.textStyles.body2
-        val versionText = stringResource(R.string.home_version_line, BuildConfig.VERSION_NAME)
-        val buildText = stringResource(R.string.home_build_line, BuildConfig.BUILD_ID)
-        val textHeight = rememberRuntimeTextHeight(
-            titleStyle = titleStyle,
-            bodyStyle = bodyStyle,
-            summaryStyle = summaryStyle,
-            versionText = versionText,
-            buildText = buildText,
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f).heightIn(min = textHeight)) {
-                Text(
-                    text = stringResource(state.titleRes),
-                    style = titleStyle,
-                )
-                Text(
-                    text = versionText,
-                    modifier = Modifier.padding(top = 5.dp),
-                    style = bodyStyle,
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text = buildText,
-                    modifier = Modifier.padding(top = 1.dp),
-                    style = bodyStyle,
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                )
-                Text(
-                    text = stringResource(state.summaryRes),
-                    modifier = Modifier.padding(top = 12.dp),
-                    style = summaryStyle,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-            }
-            RuntimeStatusMark(
-                kind = state.mark,
-                color = accentColor,
-                modifier = Modifier.size(RuntimeStatusMarkSize),
-            )
-        }
-    }
-}
-
-@Composable
-private fun BoxWithConstraintsScope.rememberRuntimeTextHeight(
-    titleStyle: TextStyle,
-    bodyStyle: TextStyle,
-    summaryStyle: TextStyle,
-    versionText: String,
-    buildText: String,
-): Dp {
-    val density = LocalDensity.current
-    val textMeasurer = rememberTextMeasurer()
-    val configuration = LocalConfiguration.current
-    val context = LocalContext.current
-    val candidates = remember(context, configuration) {
-        RuntimeTextVariants.map { (title, summary) ->
-            context.getString(title) to context.getString(summary)
-        }
-    }
-    val textWidth = with(density) {
-        (maxWidth - RuntimeStatusMarkSize - 2.dp).roundToPx().coerceAtLeast(1)
-    }
-    val textConstraints = Constraints(maxWidth = textWidth)
-    return remember(candidates, textConstraints, titleStyle, bodyStyle, summaryStyle, versionText, buildText, textMeasurer, density) {
-        val fixedHeight =
-            textMeasurer.measure(versionText, style = bodyStyle, constraints = textConstraints).size.height +
-                textMeasurer.measure(buildText, style = bodyStyle, constraints = textConstraints).size.height
-        val changingHeight = candidates.maxOf { (title, summary) ->
-            textMeasurer.measure(title, style = titleStyle, constraints = textConstraints).size.height +
-                textMeasurer.measure(summary, style = summaryStyle, constraints = textConstraints).size.height
-        }
-        val spacing = with(density) { 5.dp.roundToPx() + 1.dp.roundToPx() + 12.dp.roundToPx() }
-        with(density) { (fixedHeight + changingHeight + spacing).toDp() }
-    }
-}
-
-@Composable
 private fun HomePreviewSandboxCard(
     state: PreviewSandboxUiState,
     resources: PreviewSysUiResources,
@@ -550,21 +227,49 @@ private fun HomePreviewSandboxCard(
     modifier: Modifier = Modifier,
 ) {
     val lowBatteryThreshold = featureSettings.value.lowBatteryThreshold
-    val model = remember(state, visual.dualSignal, resources, lowBatteryThreshold, LocalConfiguration.current) {
-        state.toRenderModel(
-            resources,
-            dualSignalEnabled = visual.dualSignal,
-            lowBatteryThreshold = lowBatteryThreshold,
-        )
-    }
+    val model = rememberPreviewRenderModel(
+        state = state,
+        visual = visual,
+        resources = resources,
+        lowBatteryThreshold = lowBatteryThreshold,
+    )
 
     Card(
-        modifier = modifier,
+        modifier = modifier.navTransitionSource(
+            route = AppRoute.PreviewSandbox,
+            cornerRadius = CardDefaults.CornerRadius,
+            containerColor = MiuixTheme.colorScheme.surfaceContainer,
+            sourceKey = "home-preview-sandbox",
+        ),
         insideMargin = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
         pressFeedbackType = PressFeedbackType.Tilt,
         showIndication = true,
         onClick = onOpen,
     ) {
+        HomePreviewSandboxHeader()
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(HomePreviewStageHeight)
+                    .padding(top = 2.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            StatusPreview(
+                model = model,
+                visual = visual,
+                modifier =
+                    Modifier
+                        .width(HomePreviewIconSize)
+                        .height(HomePreviewSurfaceHeight),
+            )
+        }
+        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.HomePreviewSandboxHeader() {
         Box(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.home_preview_open_title),
@@ -590,29 +295,11 @@ private fun HomePreviewSandboxCard(
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
         )
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(HomePreviewStageHeight)
-                    .padding(top = 2.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            StatusPreview(
-                model = model,
-                visual = visual,
-                modifier =
-                    Modifier
-                        .width(HomePreviewIconSize)
-                        .height(HomePreviewSurfaceHeight),
-            )
-        }
-        PreviewSummary(state, modifier = Modifier.padding(top = 4.dp))
-    }
 }
 
+
 @Composable
-private fun RuntimeStatusMark(
+internal fun RuntimeStatusMark(
     kind: RuntimeStatusMarkKind,
     color: Color,
     modifier: Modifier = Modifier,
@@ -656,62 +343,85 @@ private fun RuntimeStatusMark(
             // The outer ring stays shared while center strokes retract or grow.
             val reveal = ((ringProgress - 0.15f) / 0.85f).coerceIn(0f, 1f)
             val checkProgress = (check * reveal).coerceIn(0f, 1f)
-            if (checkProgress > 0f) {
-                val path = Path().apply {
-                    moveTo(size.width * 0.29f, size.height * 0.52f)
-                    lineTo(size.width * 0.44f, size.height * 0.66f)
-                    lineTo(size.width * 0.72f, size.height * 0.35f)
-                }
-                val measure = PathMeasure().apply { setPath(path, false) }
-                val visible = Path()
-                if (measure.getSegment(0f, measure.length * checkProgress, visible, true)) {
-                    drawPath(
-                        path = visible,
-                        color = markColor.copy(alpha = markColor.alpha * checkProgress),
-                        style = Stroke(
-                            width = symbolStroke,
-                            cap = StrokeCap.Round,
-                            join = StrokeJoin.Round,
-                        ),
-                    )
-                }
-            }
+            drawRuntimeCheck(markColor, symbolStroke, checkProgress)
 
             val alertProgress = (alert * reveal).coerceIn(0f, 1f)
-            if (alertProgress > 0f) {
-                val tint = markColor.copy(alpha = markColor.alpha * alertProgress)
-                drawLine(
-                    color = tint,
-                    start = Offset(size.width * 0.50f, size.height * 0.29f),
-                    end = Offset(size.width * 0.50f, size.height * (0.29f + 0.27f * alertProgress)),
-                    strokeWidth = symbolStroke,
-                    cap = StrokeCap.Round,
-                )
-                drawCircle(
-                    color = tint,
-                    radius = symbolStroke * 0.58f * alertProgress,
-                    center = Offset(size.width * 0.50f, size.height * 0.70f),
-                )
-            }
+            drawRuntimeAlert(markColor, symbolStroke, alertProgress)
 
             val minusProgress = (minus * reveal).coerceIn(0f, 1f)
-            if (minusProgress > 0f) {
-                drawLine(
-                    color = markColor.copy(alpha = markColor.alpha * minusProgress),
-                    start = Offset(size.width * (0.50f - 0.19f * minusProgress), size.height * 0.50f),
-                    end = Offset(size.width * (0.50f + 0.19f * minusProgress), size.height * 0.50f),
-                    strokeWidth = symbolStroke,
-                    cap = StrokeCap.Round,
-                )
-            }
+            drawRuntimeMinus(markColor, symbolStroke, minusProgress)
+
         }
     }
 }
 
-private const val StatusColorAnimMillis = 220
+private fun DrawScope.drawRuntimeCheck(
+    markColor: Color,
+    symbolStroke: Float,
+    checkProgress: Float,
+) {
+    if (checkProgress > 0f) {
+        val path = Path().apply {
+            moveTo(size.width * 0.29f, size.height * 0.52f)
+            lineTo(size.width * 0.44f, size.height * 0.66f)
+            lineTo(size.width * 0.72f, size.height * 0.35f)
+        }
+        val measure = PathMeasure().apply { setPath(path, false) }
+        val visible = Path()
+        if (measure.getSegment(0f, measure.length * checkProgress, visible, true)) {
+            drawPath(
+                path = visible,
+                color = markColor.copy(alpha = markColor.alpha * checkProgress),
+                style = Stroke(
+                    width = symbolStroke,
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round,
+                ),
+            )
+        }
+    }
+}
+
+private fun DrawScope.drawRuntimeAlert(
+    markColor: Color,
+    symbolStroke: Float,
+    alertProgress: Float,
+) {
+    if (alertProgress > 0f) {
+        val tint = markColor.copy(alpha = markColor.alpha * alertProgress)
+        drawLine(
+            color = tint,
+            start = Offset(size.width * 0.50f, size.height * 0.29f),
+            end = Offset(size.width * 0.50f, size.height * (0.29f + 0.27f * alertProgress)),
+            strokeWidth = symbolStroke,
+            cap = StrokeCap.Round,
+        )
+        drawCircle(
+            color = tint,
+            radius = symbolStroke * 0.58f * alertProgress,
+            center = Offset(size.width * 0.50f, size.height * 0.70f),
+        )
+    }
+}
+
+private fun DrawScope.drawRuntimeMinus(
+    markColor: Color,
+    symbolStroke: Float,
+    minusProgress: Float,
+) {
+    if (minusProgress > 0f) {
+        drawLine(
+            color = markColor.copy(alpha = markColor.alpha * minusProgress),
+            start = Offset(size.width * (0.50f - 0.19f * minusProgress), size.height * 0.50f),
+            end = Offset(size.width * (0.50f + 0.19f * minusProgress), size.height * 0.50f),
+            strokeWidth = symbolStroke,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
 // MIUIX's indeterminate arc starts with a 30-degree sweep.
 private const val MinSpinnerSweep = 30f / 360f
-private val RuntimeStatusMarkSize = 96.dp
 private val HomePreviewStageHeight = 180.dp
 private val HomePreviewIconSize = 112.dp
 private val HomePreviewSurfaceHeight = 176.dp

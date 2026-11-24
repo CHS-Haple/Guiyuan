@@ -6,17 +6,11 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
-import java.lang.reflect.InvocationTargetException
+import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 
 internal object SysUiAirplaneSource {
-    private fun rethrowFatal(error: Throwable) {
-        val cause = (error as? InvocationTargetException)?.targetException ?: error
-        if (cause is VirtualMachineError || cause is ThreadDeath) throw cause
-    }
-
-    private inline fun <T> readOrNull(block: () -> T): T? =
-        SysUiPresentationRuntime.optionalNativeRead(block)
 
     private var resolver: ContentResolver? = null
     private var observer: ContentObserver? = null
@@ -32,6 +26,7 @@ internal object SysUiAirplaneSource {
     private var lastDelivery: Delivery? = null
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     fun attach(
         context: Context,
         onAirplaneMode: (Boolean) -> Unit,
@@ -104,10 +99,11 @@ internal object SysUiAirplaneSource {
     }
 
     @Synchronized
+    @Suppress("TooGenericExceptionCaught")
     private fun publish(source: String, force: Boolean = false) {
         val currentResolver = resolver ?: return
         val enabled =
-            readOrNull {
+            optionalNativeRead {
                 Settings.Global.getInt(
                     currentResolver,
                     Settings.Global.AIRPLANE_MODE_ON,
@@ -138,6 +134,7 @@ internal object SysUiAirplaneSource {
         }
     }
 
+    // Roll back the delivery receipt for any callback failure, then rethrow.
     @Synchronized
     internal fun deliverState(
         enabled: Boolean,
@@ -149,11 +146,12 @@ internal object SysUiAirplaneSource {
         val previous = lastDelivery
         val next = Delivery(enabled)
         lastDelivery = next
+        var completed = false
         try {
             deliver(enabled)
-        } catch (error: Throwable) {
-            if (lastDelivery === next) lastDelivery = previous
-            throw error
+            completed = true
+        } finally {
+            if (!completed && lastDelivery === next) lastDelivery = previous
         }
         return true
     }
