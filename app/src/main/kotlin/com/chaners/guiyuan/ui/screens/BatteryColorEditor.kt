@@ -49,7 +49,9 @@ internal fun BatteryRenameSchemeDialog(
                 GlassTextField(
                     value = name,
                     onValueChange = { name = limitCustomSchemeName(it) },
+                    modifier = Modifier.fillMaxWidth(),
                     label = stringResource(R.string.battery_custom_scheme_name),
+                    useLabelAsPlaceholder = true,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
