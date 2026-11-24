@@ -237,7 +237,9 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
         contentPadding = PaddingValues(horizontal = BottomSheetDefaults.insideMargin.width),
         pageSpacing = 12.dp,
         verticalAlignment = Alignment.Top,
-        key = { context.pages[it].key },
+        // A scheme insertion changes pageCount; an old key lookup may still be measured
+        // against its previous list. Let Pager use its index identity instead.
+        // Per-scheme scroll states are already owned by page.key.
     ) { index ->
         BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
     }
