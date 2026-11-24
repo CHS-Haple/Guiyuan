@@ -248,17 +248,27 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
         ) { index ->
             BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
         }
-        context.pages.getOrNull(pager.currentPage)?.let { page ->
-            context.scrollStates[page.key]?.let { activeScroll ->
-                key(page.key) {
-                    VerticalScrollBar(
-                        adapter = rememberScrollBarAdapter(activeScroll),
-                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                        trackPadding = contentPadding,
-                    )
-                }
-            }
-        }
+        BatterySchemeDeckScrollBar(context, contentPadding)
+    }
+}
+
+// The pager owns one indicator for its current page; the page itself owns
+// the ScrollState. Keep lookup outside the composable drawing scope so a
+// missing or changing page does not introduce nested fallback paths.
+@OptIn(ExperimentalScrollBarApi::class)
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.BatterySchemeDeckScrollBar(
+    context: SchemeDeckContext,
+    contentPadding: PaddingValues,
+) {
+    val page = context.pages.getOrNull(context.pager.currentPage) ?: return
+    val activeScroll = context.scrollStates[page.key] ?: return
+    key(page.key) {
+        VerticalScrollBar(
+            adapter = rememberScrollBarAdapter(activeScroll),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            trackPadding = contentPadding,
+        )
     }
 }
 
