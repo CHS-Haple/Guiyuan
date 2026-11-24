@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed
 
 import android.view.View
+import com.chaners.guiyuan.settings.FeatureCfg
 
 internal data class TransitionSourceWitness(
     val renderView: View,
@@ -125,39 +126,34 @@ internal object ScenePolicy {
     }
 
     fun shouldArmHomeAodTargetPrearm(
-        featureEnabled: Boolean,
-        aodEnabled: Boolean,
+        settings: FeatureCfg,
         steadySourceScene: SourceScene,
         lastStableFamilyScene: StableKeyguardAodScene,
         homePresentationOwned: Boolean,
         nativeToLockScreenTarget: Boolean?,
     ): Boolean =
-        featureEnabled &&
-            aodEnabled &&
+        settings.enabled &&
+            settings.aod &&
             steadySourceScene == SourceScene.HOME &&
             lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
             homePresentationOwned &&
             nativeToLockScreenTarget == false
 
     fun shouldUseKeyguardBoundaryVisualHandoff(
-        featureEnabled: Boolean,
-        keyguardEnabled: Boolean,
-        aodEnabled: Boolean,
+        settings: FeatureCfg,
         lastStableFamilyScene: StableKeyguardAodScene,
         nativeToLockScreenTarget: Boolean?,
         homeNativeAodFallbackActive: Boolean = false,
     ): Boolean =
-        featureEnabled &&
+        settings.enabled &&
             !homeNativeAodFallbackActive &&
-            keyguardEnabled &&
-            !aodEnabled &&
+            settings.keyguard &&
+            !settings.aod &&
             lastStableFamilyScene == StableKeyguardAodScene.AOD &&
             nativeToLockScreenTarget == true
 
     fun shouldPrecommitKeyguardBoundaryLayout(
-        featureEnabled: Boolean,
-        keyguardEnabled: Boolean,
-        aodEnabled: Boolean,
+        settings: FeatureCfg,
         lastStableFamilyScene: StableKeyguardAodScene,
         nativeToLockScreenTarget: Boolean?,
         statusIconsPresentationAlpha: Float?,
@@ -165,9 +161,7 @@ internal object ScenePolicy {
         homeNativeAodFallbackActive: Boolean = false,
     ): Boolean =
         shouldUseKeyguardBoundaryVisualHandoff(
-            featureEnabled = featureEnabled,
-            keyguardEnabled = keyguardEnabled,
-            aodEnabled = aodEnabled,
+            settings = settings,
             lastStableFamilyScene = lastStableFamilyScene,
             nativeToLockScreenTarget = nativeToLockScreenTarget,
             homeNativeAodFallbackActive = homeNativeAodFallbackActive,
@@ -181,38 +175,32 @@ internal object ScenePolicy {
 
     fun shouldConsumeHomeNativeAodFallbackOnAodState(
         candidateActive: Boolean,
-        featureEnabled: Boolean,
-        keyguardEnabled: Boolean,
-        aodEnabled: Boolean,
+        settings: FeatureCfg,
         toAod: Boolean,
         isAodAnimate: Boolean,
     ): Boolean =
         candidateActive &&
-            featureEnabled &&
-            keyguardEnabled &&
-            !aodEnabled &&
+            settings.enabled &&
+            settings.keyguard &&
+            !settings.aod &&
             toAod &&
             isAodAnimate
 
     fun shouldReleaseTransientHomeKeyguardForDisabledAod(
-        featureEnabled: Boolean,
-        keyguardEnabled: Boolean,
-        aodEnabled: Boolean,
+        settings: FeatureCfg,
         homeNativeAodFallbackCandidate: Boolean,
         homePresentationOwnedAtFullAodStart: Boolean,
         nativeToLockScreenTarget: Boolean?,
     ): Boolean =
-        featureEnabled &&
-            keyguardEnabled &&
-            !aodEnabled &&
+        settings.enabled &&
+            settings.keyguard &&
+            !settings.aod &&
             homeNativeAodFallbackCandidate &&
             homePresentationOwnedAtFullAodStart &&
             nativeToLockScreenTarget == false
 
     fun shouldHoldKeyguardForAodBattery(
-        featureEnabled: Boolean,
-        keyguardEnabled: Boolean,
-        aodEnabled: Boolean,
+        settings: FeatureCfg,
         sourceScene: SourceScene,
         nativeToLockScreenTarget: Boolean?,
         batteryInAodMode: Boolean,
@@ -220,9 +208,9 @@ internal object ScenePolicy {
         keyguardClaimed: Boolean,
         animatedBatteryMode: Boolean,
     ): Boolean =
-        featureEnabled &&
-            keyguardEnabled &&
-            !aodEnabled &&
+        settings.enabled &&
+            settings.keyguard &&
+            !settings.aod &&
             sourceScene == SourceScene.KEYGUARD &&
             nativeToLockScreenTarget == false &&
             !batteryInAodMode &&

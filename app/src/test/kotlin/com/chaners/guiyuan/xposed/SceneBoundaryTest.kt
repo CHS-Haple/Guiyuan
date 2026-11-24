@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.FeatureCfg
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -126,9 +127,7 @@ class SceneBoundaryTest {
     fun incomingKeyguardBoundaryRequiresEnabledKeyguardAndNoFallback() {
         assertTrue(
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -136,9 +135,7 @@ class SceneBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -151,9 +148,7 @@ class SceneBoundaryTest {
     fun incomingKeyguardBoundaryRejectsOtherScenesAndTargets() {
         assertFalse(
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = false,
-                aodEnabled = true,
+                settings = FeatureCfg(enabled = true, keyguard = false, aod = true),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -161,9 +156,7 @@ class SceneBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = true,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = true),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -171,9 +164,7 @@ class SceneBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.KEYGUARD,
                 nativeToLockScreenTarget = true,
@@ -181,9 +172,7 @@ class SceneBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = false,
@@ -253,9 +242,7 @@ class SceneBoundaryTest {
     fun keyguardBoundaryLayoutPrecommitRequiresHiddenNativeStatusIcons() {
         assertTrue(
             ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -264,9 +251,7 @@ class SceneBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -276,9 +261,7 @@ class SceneBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -287,9 +270,7 @@ class SceneBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = true,
@@ -345,9 +326,7 @@ class SceneHomeAodFallbackTest {
         assertTrue(
             ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = true,
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 toAod = true,
                 isAodAnimate = true,
             ),
@@ -355,9 +334,7 @@ class SceneHomeAodFallbackTest {
         assertFalse(
             ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = true,
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 toAod = false,
                 isAodAnimate = true,
             ),
@@ -365,9 +342,7 @@ class SceneHomeAodFallbackTest {
         assertFalse(
             ScenePolicy.shouldConsumeHomeNativeAodFallbackOnAodState(
                 candidateActive = false,
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 toAod = true,
                 isAodAnimate = true,
             ),
@@ -378,9 +353,7 @@ class SceneHomeAodFallbackTest {
     fun disabledAodDirectTargetReleasesOnlyArmedHomeFallback() {
         assertTrue(
             ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 homeNativeAodFallbackCandidate = true,
                 homePresentationOwnedAtFullAodStart = true,
                 nativeToLockScreenTarget = false,
@@ -388,9 +361,7 @@ class SceneHomeAodFallbackTest {
         )
         assertFalse(
             ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 homeNativeAodFallbackCandidate = true,
                 homePresentationOwnedAtFullAodStart = true,
                 nativeToLockScreenTarget = true,
@@ -398,9 +369,7 @@ class SceneHomeAodFallbackTest {
         )
         assertFalse(
             ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 homeNativeAodFallbackCandidate = false,
                 homePresentationOwnedAtFullAodStart = true,
                 nativeToLockScreenTarget = false,
@@ -408,9 +377,7 @@ class SceneHomeAodFallbackTest {
         )
         assertFalse(
             ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 homeNativeAodFallbackCandidate = true,
                 homePresentationOwnedAtFullAodStart = true,
                 nativeToLockScreenTarget = null,
@@ -418,9 +385,7 @@ class SceneHomeAodFallbackTest {
         )
         assertFalse(
             ScenePolicy.shouldReleaseTransientHomeKeyguardForDisabledAod(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 homeNativeAodFallbackCandidate = true,
                 homePresentationOwnedAtFullAodStart = false,
                 nativeToLockScreenTarget = false,

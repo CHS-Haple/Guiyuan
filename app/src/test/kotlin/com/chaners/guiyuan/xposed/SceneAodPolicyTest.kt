@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed
 
+import com.chaners.guiyuan.settings.FeatureCfg
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -178,8 +179,7 @@ class SceneAodPolicyTest {
     fun nativeAodTargetCanPrearmHomeBeforeAnimationFlagCatchesUp() {
         assertTrue(
             ScenePolicy.shouldArmHomeAodTargetPrearm(
-                featureEnabled = true,
-                aodEnabled = true,
+                settings = FeatureCfg(enabled = true, aod = true),
                 steadySourceScene = SourceScene.HOME,
                 lastStableFamilyScene =
                     ScenePolicy.StableKeyguardAodScene.UNKNOWN,
@@ -274,9 +274,7 @@ class SceneAodBoundaryTest {
             target: Boolean? = true,
             aodEnabled: Boolean = false,
         ) = ScenePolicy.shouldPrecommitKeyguardBoundaryLayout(
-            featureEnabled = true,
-            keyguardEnabled = true,
-            aodEnabled = aodEnabled,
+            settings = FeatureCfg(enabled = true, keyguard = true, aod = aodEnabled),
             lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.AOD,
             nativeToLockScreenTarget = target,
             statusIconsPresentationAlpha = alpha,
@@ -301,9 +299,7 @@ class SceneAodBoundaryTest {
             animated: Boolean = true,
             aodEnabled: Boolean = false,
         ) = ScenePolicy.shouldHoldKeyguardForAodBattery(
-            featureEnabled = true,
-            keyguardEnabled = true,
-            aodEnabled = aodEnabled,
+            settings = FeatureCfg(enabled = true, keyguard = true, aod = aodEnabled),
             sourceScene = SourceScene.KEYGUARD,
             nativeToLockScreenTarget = target,
             batteryInAodMode = batteryAod,
@@ -321,9 +317,7 @@ class SceneAodBoundaryTest {
         assertFalse(hold(aodEnabled = true))
         assertFalse(
             ScenePolicy.shouldHoldKeyguardForAodBattery(
-                featureEnabled = false,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = false, keyguard = true, aod = false),
                 sourceScene = SourceScene.KEYGUARD,
                 nativeToLockScreenTarget = false,
                 batteryInAodMode = false,
@@ -334,9 +328,7 @@ class SceneAodBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldHoldKeyguardForAodBattery(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 sourceScene = SourceScene.KEYGUARD,
                 nativeToLockScreenTarget = false,
                 batteryInAodMode = false,
@@ -347,9 +339,7 @@ class SceneAodBoundaryTest {
         )
         assertFalse(
             ScenePolicy.shouldHoldKeyguardForAodBattery(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 sourceScene = SourceScene.HOME,
                 nativeToLockScreenTarget = false,
                 batteryInAodMode = false,
@@ -382,9 +372,7 @@ class SceneAodBoundaryTest {
     fun keyguardBoundaryHandoffStopsWhenNativeTargetChanges() {
         val eligible = { target: Boolean? ->
             ScenePolicy.shouldUseKeyguardBoundaryVisualHandoff(
-                featureEnabled = true,
-                keyguardEnabled = true,
-                aodEnabled = false,
+                settings = FeatureCfg(enabled = true, keyguard = true, aod = false),
                 lastStableFamilyScene = ScenePolicy.StableKeyguardAodScene.AOD,
                 nativeToLockScreenTarget = target,
             )
