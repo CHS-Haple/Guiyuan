@@ -23,16 +23,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-// Match the pinned MIUIX 07d48590 source handoff only for the duplicate page title.
-// The preview card and dock retain native Expansion rendering without an extra fade.
-internal fun sandboxExpansionTitleAlpha(relativeDepth: Float): Float {
-    val sourceRevealEnd = 0.24f
-    val t = ((1f + relativeDepth - sourceRevealEnd) / sourceRevealEnd).coerceIn(0f, 1f)
-    return t * t * (3f - 2f * t)
-}
 
 internal data class SandboxTopBarFrame(
     val backdrop: LayerBackdrop?,
@@ -53,7 +44,6 @@ internal fun PreviewSandboxTopBar(
     actions: SandboxTopBarActions,
     onHeightChanged: (Int) -> Unit,
 ) {
-    val navScope = LocalNavTransitionScope.current
     val backAction: @Composable () -> Unit = {
         SandboxTopBackAction(actions.onBack)
     }
@@ -65,7 +55,6 @@ internal fun PreviewSandboxTopBar(
             progressiveBlur = LocalTopBarProgressiveBlur.current,
             isContentScrolled = frame.listState.canScrollBackward,
             title = stringResource(R.string.home_preview_sandbox_title),
-            titleAlpha = { sandboxExpansionTitleAlpha(navScope.relativeDepth) },
             backdrop = frame.backdrop,
             scrollBehavior = frame.scrollBehavior,
             bandOverhang = GlassTopAppBarDefaults.BandOverhang + frame.dockHeight,
