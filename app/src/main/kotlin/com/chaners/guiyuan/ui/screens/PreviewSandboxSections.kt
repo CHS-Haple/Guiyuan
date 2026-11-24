@@ -1,11 +1,12 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -26,88 +27,85 @@ import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-internal fun LazyListScope.previewSandboxRows(
+@Composable
+internal fun previewSandboxRows(
     display: PreviewSandboxDisplay,
     choices: PreviewSandboxOptions,
     renderModel: RenderModel,
     visual: VisualCfg,
     actions: PreviewSandboxActions,
+    onPreviewHeight: (Int) -> Unit,
 ) {
     val state = display.state
     val parasiteActive = display.parasiteActive
     val onParasiteChange = actions.ui.onParasiteChange
-                item(key = "fullPreview") {
-                    SmallTitle(stringResource(R.string.home_preview_section_preview))
-                    Card(
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                        insideMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_preview_live_title),
-                            style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
-                            color = MiuixTheme.colorScheme.onSurfaceContainer,
-                        )
-                        SandboxFullPreview(state, renderModel, visual)
-                    }
-                }
-                item {
-                    Card(
-                        modifier = Modifier
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp),
-                    ) {
-                        SwitchPreference(
-                            checked = parasiteActive,
-                            onCheckedChange = { enabled ->
-                                onParasiteChange(enabled, state)
-                            },
-                            title = stringResource(R.string.home_preview_parasite_title),
-                            summary = stringResource(R.string.home_preview_parasite_summary),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
-                            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
-                        )
-                    }
-                }
+    Column(Modifier.fillMaxWidth().onSizeChanged { onPreviewHeight(it.height) }) {
+        SmallTitle(stringResource(R.string.home_preview_section_preview))
+        Card(
+            modifier =
+                Modifier
+                    .padding(horizontal = 12.dp)
+                    .padding(bottom = 12.dp),
+            insideMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.home_preview_live_title),
+                style = MiuixTheme.textStyles.headline1.copy(fontWeight = FontWeight.Medium),
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+            )
+            SandboxFullPreview(state, renderModel, visual)
+        }
+    }
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+    ) {
+        SwitchPreference(
+            checked = parasiteActive,
+            onCheckedChange = { enabled ->
+                onParasiteChange(enabled, state)
+            },
+            title = stringResource(R.string.home_preview_parasite_title),
+            summary = stringResource(R.string.home_preview_parasite_summary),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bacteriophage) },
+            insideMargin = PaddingValues(horizontal = 16.dp, vertical = 18.dp),
+        )
+    }
     previewSandboxNetworkRows(state, choices, visual, actions)
     previewSandboxBatteryRows(state, choices, actions)
 }
 
-private fun LazyListScope.previewSandboxNetworkRows(
+@Composable
+private fun previewSandboxNetworkRows(
     state: PreviewSandboxUiState,
     choices: PreviewSandboxOptions,
     visual: VisualCfg,
     actions: PreviewSandboxActions,
 ) {
     val onNetworkModeChange = actions.network.onNetworkModeChange
-                item {
-                    SmallTitle(stringResource(R.string.home_preview_section_network))
-                    UiTabRow(
-                        tabs = choices.network.networkMode,
-                        selectedTabIndex = previewNetworkTabs.indexOf(state.networkMode),
-                        onTabSelected = { index ->
-                            previewNetworkTabs.getOrNull(index)?.let { mode ->
-                                onNetworkModeChange(mode)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 12.dp),
-                        inCard = false,
-                    )
-                }
-                item {
-                    Card(
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                    ) {
-                        SandboxNetworkContents(state, visual, choices, actions)
-                    }
-                }
+    SmallTitle(stringResource(R.string.home_preview_section_network))
+    UiTabRow(
+        tabs = choices.network.networkMode,
+        selectedTabIndex = previewNetworkTabs.indexOf(state.networkMode),
+        onTabSelected = { index ->
+            previewNetworkTabs.getOrNull(index)?.let { mode ->
+                onNetworkModeChange(mode)
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, top = 8.dp, end = 12.dp, bottom = 12.dp),
+        inCard = false,
+    )
+    Card(
+        modifier =
+            Modifier
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 12.dp),
+    ) {
+        SandboxNetworkContents(state, visual, choices, actions)
+    }
 }
 
 @Composable
@@ -315,7 +313,8 @@ private fun SandboxActivityControls(
 }
 
 
-private fun LazyListScope.previewSandboxBatteryRows(
+@Composable
+private fun previewSandboxBatteryRows(
     state: PreviewSandboxUiState,
     choices: PreviewSandboxOptions,
     actions: PreviewSandboxActions,
@@ -323,46 +322,44 @@ private fun LazyListScope.previewSandboxBatteryRows(
     val onBatteryPercentChange = actions.battery.onBatteryPercentChange
     val onBatteryModeChange = actions.battery.onBatteryModeChange
     val onChargingStateChange = actions.battery.onChargingStateChange
-                item {
-                    SmallTitle(stringResource(R.string.home_preview_section_battery))
-                    Card(
-                        modifier =
-                            Modifier
-                                .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
-                        insideMargin = PaddingValues(vertical = 8.dp),
-                    ) {
-                        SliderPreference(
-                            value = state.batteryPercent.toFloat(),
-                            onValueChange = { value ->
-                                onBatteryPercentChange(value.roundToInt().coerceIn(0, 100))
-                            },
-                            title = stringResource(R.string.home_preview_battery_level_title),
-                            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar) },
-                            valueText =
-                                stringResource(
-                                    R.string.home_preview_battery_percent,
-                                    state.batteryPercent,
-                                ),
-                            insideMargin = SandboxPreferenceInsideMargin,
-                            valueRange = 0f..100f,
-                        )
-                        SandboxSegmentedField(
-                            field = SandboxField.BatteryMode,
-                            options = choices.battery.modes,
-                            selectedIndex = state.batteryMode.ordinal,
-                            onSelected = { index ->
-                                onBatteryModeChange(PreviewBatteryMode.entries[index])
-                            },
-                        )
-                        SandboxSegmentedField(
-                            field = SandboxField.ChargingState,
-                            options = choices.battery.charging,
-                            selectedIndex = state.chargingState.ordinal,
-                            onSelected = { index ->
-                                onChargingStateChange(PreviewChargingState.entries[index])
-                            },
-                        )
-                    }
-                }
+    SmallTitle(stringResource(R.string.home_preview_section_battery))
+    Card(
+        modifier =
+            Modifier
+                .padding(horizontal = 12.dp)
+                .padding(bottom = 12.dp),
+        insideMargin = PaddingValues(vertical = 8.dp),
+    ) {
+        SliderPreference(
+            value = state.batteryPercent.toFloat(),
+            onValueChange = { value ->
+                onBatteryPercentChange(value.roundToInt().coerceIn(0, 100))
+            },
+            title = stringResource(R.string.home_preview_battery_level_title),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_battery_5_bar) },
+            valueText =
+                stringResource(
+                    R.string.home_preview_battery_percent,
+                    state.batteryPercent,
+                ),
+            insideMargin = SandboxPreferenceInsideMargin,
+            valueRange = 0f..100f,
+        )
+        SandboxSegmentedField(
+            field = SandboxField.BatteryMode,
+            options = choices.battery.modes,
+            selectedIndex = state.batteryMode.ordinal,
+            onSelected = { index ->
+                onBatteryModeChange(PreviewBatteryMode.entries[index])
+            },
+        )
+        SandboxSegmentedField(
+            field = SandboxField.ChargingState,
+            options = choices.battery.charging,
+            selectedIndex = state.chargingState.ordinal,
+            onSelected = { index ->
+                onChargingStateChange(PreviewChargingState.entries[index])
+            },
+        )
+    }
 }

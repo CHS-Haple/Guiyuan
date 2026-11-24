@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.ScrollState
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
@@ -75,12 +77,13 @@ internal fun SettingsPage(
     foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
     overlay: @Composable () -> Unit = {},
     showLazyScrollbar: Boolean = false,
-    scrollContent: (@Composable ColumnScope.() -> Unit)? = null,
+    columnState: ScrollState? = null,
+    scrollContent: (@Composable ColumnScope.(PaddingValues) -> Unit)? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit = {},
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val resolvedListState = if (scrollContent == null) listState ?: rememberLazyListState() else null
-    val scrollState = if (scrollContent != null) rememberScrollState() else null
+    val scrollState = if (scrollContent != null) columnState ?: rememberScrollState() else null
     val topBarBackdrop = rememberTopBarBackdrop()
     val railProgress = LocalGlassRailProgress.current
     val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
@@ -164,16 +167,8 @@ internal fun SettingsPage(
                         .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .verticalScroll(scrollState, enabled = userScrollEnabled, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
                         .padding(contentPadding),
-                    content = scrollContent,
+                    content = { scrollContent(contentPadding) },
                 )
-                if (userScrollEnabled) {
-                    VerticalScrollBar(
-                        adapter = rememberScrollBarAdapter(scrollState),
-                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                        trackPadding = contentPadding,
-                        topAppBarScrollBehavior = scrollBehavior,
-                    )
-                }
             } else if (pullToRefresh != null) {
                 val pullState = rememberPullToRefreshState()
                 PullToRefresh(
@@ -190,15 +185,16 @@ internal fun SettingsPage(
             } else {
                 SettingsList()
             }
-            if (showLazyScrollbar && userScrollEnabled && resolvedListState != null) {
+            foreground(contentPadding)
+            val indicatorState: ScrollableState? = scrollState ?: resolvedListState?.takeIf { showLazyScrollbar }
+            if (userScrollEnabled && indicatorState != null) {
                 VerticalScrollBar(
-                    adapter = rememberScrollBarAdapter(resolvedListState),
+                    adapter = rememberScrollBarAdapter(indicatorState),
                     modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                     trackPadding = contentPadding,
                     topAppBarScrollBehavior = scrollBehavior,
                 )
             }
-            foreground(contentPadding)
         }
 
         overlay()
