@@ -1031,28 +1031,30 @@ class GyModule : XposedModule() {
             SysUiCcSource.install(
                 module = this,
                 classLoader = classLoader,
-                onUpdate = { update ->
-                    if (ccSourceInstalled) onCcUpdate(update)
-                },
-                onAfterNativeExpansion = { progress ->
-                    if (ccSourceInstalled) {
-                        // The native body now owns the frame's final alpha,
-                        // translation and visibility before Home is revealed.
-                        if (progress <= 0f && ccNativeZeroAwaitingCommit) {
-                            ccNativeZeroAwaitingCommit = false
-                            reconcileCcHomeAuthority("native-fraction-after-proceed")
-                        }
-                        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
-                            SysUiPresentationRuntime.emitPassiveDiagnostic {
-                                onCcNativeGeometry(progress)
+                callbacks = SysUiCcSource.Callbacks(
+                    onUpdate = { update ->
+                        if (ccSourceInstalled) onCcUpdate(update)
+                    },
+                    onAfterNativeExpansion = { progress ->
+                        if (ccSourceInstalled) {
+                            // The native body now owns the frame's final alpha,
+                            // translation and visibility before Home is revealed.
+                            if (progress <= 0f && ccNativeZeroAwaitingCommit) {
+                                ccNativeZeroAwaitingCommit = false
+                                reconcileCcHomeAuthority("native-fraction-after-proceed")
+                            }
+                            if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled) {
+                                SysUiPresentationRuntime.emitPassiveDiagnostic {
+                                    onCcNativeGeometry(progress)
+                                }
                             }
                         }
-                    }
-                },
-                onFakePresentationAttached = { host ->
-                    if (ccSourceInstalled) onCcFakeAttached(host)
-                },
-                onRuntimeFailure = ::onCcRuntimeFailure,
+                    },
+                    onFakePresentationAttached = { host ->
+                        if (ccSourceInstalled) onCcFakeAttached(host)
+                    },
+                    onRuntimeFailure = ::onCcRuntimeFailure,
+                ),
                 onEvent = { event ->
                     if (ccSourceInstalled) logRuntimeEvent(event)
                 },

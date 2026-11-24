@@ -96,8 +96,6 @@ class SysUiCcSourceTest {
     fun diagnosticPolicyKeepsLifecycleAndSemanticEdges() {
         assertTrue(
             SysUiCcSource.DiagnosticPolicy.shouldReport(
-                expandedChanged = false,
-                trackingChanged = false,
                 visibleChanged = true,
                 sourceSceneChanged = false,
                 batteryIslandChanged = false,
@@ -105,11 +103,23 @@ class SysUiCcSourceTest {
         )
         assertTrue(
             SysUiCcSource.DiagnosticPolicy.shouldReport(
-                expandedChanged = false,
-                trackingChanged = false,
                 visibleChanged = false,
                 sourceSceneChanged = false,
                 batteryIslandChanged = true,
+            ),
+        )
+        assertTrue(
+            SysUiCcSource.DiagnosticPolicy.shouldReport(
+                visibleChanged = false,
+                sourceSceneChanged = true,
+                batteryIslandChanged = false,
+            ),
+        )
+        assertFalse(
+            SysUiCcSource.DiagnosticPolicy.shouldReport(
+                visibleChanged = false,
+                sourceSceneChanged = false,
+                batteryIslandChanged = false,
             ),
         )
     }
