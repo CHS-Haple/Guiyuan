@@ -214,7 +214,7 @@ internal fun GuidePolicyDocumentSheet(
         insideMargin = DpSize(0.dp, 0.dp),
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
-    ) {
-        document?.let { AgreementSheetBody(it) }
+    ) { innerPadding ->
+        document?.let { AgreementSheetBody(it, innerPadding) }
     }
 }

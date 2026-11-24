@@ -84,6 +84,7 @@ internal data class ColorEditorState(
 internal fun BatteryCustomModeEditor(
     custom: BatteryCustomColorScheme,
     slot: BatteryColorSlot,
+    contentPadding: PaddingValues,
     onSourceChange: (BatteryColorSchemeSource) -> Unit,
     onColorChange: (Int) -> Unit,
 ) {
@@ -95,6 +96,7 @@ internal fun BatteryCustomModeEditor(
             .fillMaxWidth()
             .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
             .verticalScroll(scrollState)
+            .padding(contentPadding)
             .padding(bottom = 24.dp),
     ) {
         BatteryColorSourceSelector(custom, slot, state, onSourceChange)

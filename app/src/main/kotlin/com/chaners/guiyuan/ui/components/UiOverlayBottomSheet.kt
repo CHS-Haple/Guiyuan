@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.components
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,7 +22,9 @@ internal fun UiOverlayBottomSheet(
     defaultWindowInsetsPadding: Boolean = true,
     onDismissRequest: () -> Unit,
     onDismissFinished: (() -> Unit)? = null,
-    content: @Composable () -> Unit,
+    headerBottomContent: @Composable () -> Unit = {},
+    scrollOffset: (() -> Float)? = null,
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     GlassBottomSheet(
         show = show,
@@ -36,6 +39,8 @@ internal fun UiOverlayBottomSheet(
         backdrop = LocalGlassBackdrop.current,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
+        headerBottomContent = headerBottomContent,
+        scrollOffset = scrollOffset,
         content = content,
     )
 }
