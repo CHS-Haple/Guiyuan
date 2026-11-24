@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -167,9 +166,8 @@ private fun BatterySchemeCapacityStatus(count: Int, enabled: Boolean) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = count.toString(),
-                    style = MiuixTheme.textStyles.title4,
+                    style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.alignByBaseline(),
                 )
                 Text(
