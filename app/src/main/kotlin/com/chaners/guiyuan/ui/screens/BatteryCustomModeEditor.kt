@@ -26,6 +26,7 @@ import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.opaqueArgb
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -161,7 +162,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorSourceSel
             stringResource(R.string.battery_color_custom_unset)
         else -> stringResource(R.string.battery_color_follow_inversion)
     }
-    BatterySheetCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         UiDropdownPreference(
             items = sourceLabels,
             selectedIndex = selectedSourceIndex,
@@ -199,7 +200,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
         text = stringResource(R.string.battery_color_common),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
     )
-    BatterySheetCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         rows.forEachIndexed { index, colors ->
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = if (index == 0) 12.dp else 0.dp),

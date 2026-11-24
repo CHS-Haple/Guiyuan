@@ -18,22 +18,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.customSchemeKey
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.TooltipBox
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -242,25 +237,15 @@ private fun BatteryColorDetailBackAction(
     sheetBackdrop: LayerBackdrop?,
 ) {
     TooltipBox(text = stringResource(R.string.back)) {
-        if (LocalUiStyle.current == UiStyle.OS4) {
-            GlassIconButton(
-                onClick = { state.showDetail = false },
-                backdrop = sheetBackdrop,
-            ) {
-                Icon(
-                    imageVector = Os4GlassBack,
-                    contentDescription = stringResource(R.string.back),
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-        } else {
-            IconButton(onClick = { state.showDetail = false }) {
-                Icon(
-                    imageVector = MiuixIcons.Back,
-                    contentDescription = stringResource(R.string.back),
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+        GlassIconButton(
+            onClick = { state.showDetail = false },
+            backdrop = sheetBackdrop,
+        ) {
+            Icon(
+                imageVector = Os4GlassBack,
+                contentDescription = stringResource(R.string.back),
+                modifier = Modifier.size(28.dp),
+            )
         }
     }
 

@@ -22,7 +22,7 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.limitCustomSchemeName
 import com.chaners.guiyuan.ui.components.UiDialogButton
-import com.chaners.guiyuan.ui.components.UiDialogTextField
+import top.yukonga.miuix.kmp.glass.GlassTextField
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
@@ -46,7 +46,7 @@ internal fun BatteryRenameSchemeDialog(
     ) {
         if (scheme != null) {
             Column {
-                UiDialogTextField(
+                GlassTextField(
                     value = name,
                     onValueChange = { name = limitCustomSchemeName(it) },
                     label = stringResource(R.string.battery_custom_scheme_name),

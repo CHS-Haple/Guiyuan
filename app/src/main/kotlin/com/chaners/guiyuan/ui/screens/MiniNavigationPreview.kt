@@ -27,7 +27,7 @@ import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
-import com.chaners.guiyuan.ui.components.floatingNavMaterial
+import com.chaners.guiyuan.ui.components.floatingNavBlur
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
@@ -102,7 +102,7 @@ internal fun MiniNavigationPreview(
         when {
             standardNav -> MiniStandardNavigationPreview(appearance.navContent, os4Glass)
             liquidBackdrop != null -> MiniLiquidNavigationPreview(appearance.navContent, appearance.liquidMode, dark, liquidBackdrop)
-            else -> MiniFloatingNavigationPreview(appearance.navContent, appearance.navStyle, dark, miuixBackdrop)
+            else -> MiniFloatingNavigationPreview(appearance.navContent, miuixBackdrop)
         }
     }
 }
@@ -225,16 +225,12 @@ private fun MiniLiquidNavigationPreview(
 @Composable
 private fun MiniFloatingNavigationPreview(
     content: NavContent,
-    style: NavStyle,
-    dark: Boolean,
     miuixBackdrop: LayerBackdrop?,
 ) {
     val floatingModifier =
         if (miuixBackdrop != null) {
-            Modifier.floatingNavMaterial(
+            Modifier.floatingNavBlur(
                 backdrop = miuixBackdrop,
-                dark = dark,
-                style = style,
             )
         } else {
             Modifier

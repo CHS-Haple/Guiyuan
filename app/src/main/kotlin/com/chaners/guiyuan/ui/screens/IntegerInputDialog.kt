@@ -20,7 +20,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import com.chaners.guiyuan.ui.components.UiDialogTextField
+import top.yukonga.miuix.kmp.glass.GlassTextField
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -55,7 +55,7 @@ internal fun IntegerInputDialog(
         onDismissFinished = { editedInput = null },
     ) {
         Column {
-            UiDialogTextField(
+            GlassTextField(
                 value = input,
                 onValueChange = { text ->
                     if (text.length <= range.last.toString().length && text.all(Char::isDigit)) {

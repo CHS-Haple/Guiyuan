@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
@@ -38,7 +39,7 @@ internal fun androidx.compose.foundation.layout.ColumnScope.BatteryColorHsvPanel
         text = stringResource(R.string.battery_color_full_adjustment),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
     )
-    BatterySheetCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier.fillMaxWidth().padding(
                 start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp,
@@ -148,7 +149,7 @@ internal fun androidx.compose.foundation.layout.ColumnScope.BatteryColorPreciseF
         text = stringResource(R.string.battery_color_precise_input),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
     )
-    BatterySheetCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         BatteryHexField(state, onColorChange)
         BatteryRgbFields(state, onColorChange)
     }

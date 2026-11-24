@@ -36,7 +36,7 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.system.ScopeRestart
-import com.chaners.guiyuan.ui.components.floatingNavMaterial
+import com.chaners.guiyuan.ui.components.floatingNavBlur
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
@@ -198,10 +198,8 @@ internal fun MainHub(
 
     val navigationBarModifier =
         if (navBackdrop != null && !os4Glass) {
-            Modifier.floatingNavMaterial(
+            Modifier.floatingNavBlur(
                 backdrop = navBackdrop,
-                dark = dark,
-                style = appearance.navStyle,
             )
         } else {
             Modifier

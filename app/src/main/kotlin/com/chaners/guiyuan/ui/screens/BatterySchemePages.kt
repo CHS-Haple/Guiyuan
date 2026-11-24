@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -35,11 +36,9 @@ import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
 import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
@@ -294,7 +293,7 @@ private fun BatterySchemePageContent(
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                 .verticalScroll(scrollState),
     ) {
-        BatterySheetCard(
+        GlassCard(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
         ) {
