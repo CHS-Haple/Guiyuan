@@ -1861,35 +1861,28 @@ class GyModule : XposedModule() {
             SysUiPresentationRuntime.attach(
                 module = this,
                 classLoader = classLoader,
-                onTintState = ::onTintStateUpdate,
-                onTintRuntimeFailure = { error ->
-                    onPresentationCallbackFailure("tint", error)
-                },
-                onSceneState = ::onSceneStateUpdate,
-                onSceneRuntimeFailure = { error ->
-                    onPresentationCallbackFailure("scene", error)
-                },
-                onKeyguardAodState = ::onKeyguardAodStateUpdate,
-                onKeyguardRuntimeFailure = { source, error ->
-                    onKeyguardSourceRuntimeFailure("keyguard-" + source, error)
-                },
-                onKeyguardFullAodTransitionStarted = ::onFullAodStarted,
-                onKeyguardFullAodTransitionCommitted = ::onFullAodCommitted,
-                onKeyguardFullAodRuntimeFailure = { source, error ->
-                    onPresentationCallbackFailure(source, error)
-                },
-                onKeyguardStatusIconTransition = ::onKeyguardIconTransition,
-                onMobileTypeChanged = { drawable ->
-                    refreshMobilePresentation(
-                        trace = beginRenderTrace("mobileType"),
-                        pendingMobileTypeDrawable = drawable,
-                    )
-                },
-                onTintEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
+                sinks = SysUiPresentationRuntime.Sinks(
+                    onTintState = ::onTintStateUpdate,
+                    onSceneState = ::onSceneStateUpdate,
+                    onMobileTypeChanged = { drawable ->
+                        refreshMobilePresentation(
+                            trace = beginRenderTrace("mobileType"),
+                            pendingMobileTypeDrawable = drawable,
+                        )
+                    },
+                    onRuntimeFailure = ::onPresentationCallbackFailure,
+                    keyguard = SysUiPresentationRuntime.KeyguardSinks(
+                        onAodState = ::onKeyguardAodStateUpdate,
+                        onRuntimeFailure = { source, error ->
+                            onKeyguardSourceRuntimeFailure("keyguard-" + source, error)
+                        },
+                        onFullAodStarted = ::onFullAodStarted,
+                        onFullAodCommitted = ::onFullAodCommitted,
+                        onIconTransition = ::onKeyguardIconTransition,
+                    ),
+                ),
+                onEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
                 isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                onSceneEvent = if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
-                onKeyguardAodEvent =
-                    if (BuildConfig.RUNTIME_DIAGNOSTICS) ::logRuntimeEvent else null,
             )
         }.onSuccess { result ->
             logDiagnostic(
