@@ -5,12 +5,10 @@ import android.view.View
 import com.chaners.guiyuan.settings.FontWeightAxis
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
-import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
-import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -77,97 +75,9 @@ internal object SysUiBatterySource {
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
 
-        val iconClass =
-            Class.forName(BATTERY_ICON_VIEW_CLASS_NAME, false, classLoader)
-        val meterClass =
-            Class.forName(BATTERY_METER_VIEW_CLASS_NAME, false, classLoader)
-        val levelField = iconClass.batteryRequiredField("mLevel")
-        val chargingField = iconClass.batteryRequiredField("mCharging")
-        val meterIconField = meterClass.batteryRequiredField("mBatteryIconView")
-        val progressStatusMethod =
-            iconClass.getDeclaredMethod("getProgressStatus")
-                .apply { isAccessible = true }
-        val chargingColorField = iconClass.batteryRequiredField("mBatteryChargingColor")
-        val powerSaveColorField = iconClass.batteryRequiredField("mBatteryPowerSaveColor")
-        val superPowerSaveColorField =
-            iconClass.batteryOptionalField(
-                "mBatterySuperPowerSaveColor",
-                "mBatterySuperSaveColor",
-            )
-        val performanceColorField =
-            iconClass.batteryRequiredField("mBatteryPerformanceModeColor")
-        val lowColorField = iconClass.batteryRequiredField("mBatteryLowColor")
-        val miuiOptimizationField =
-            iconClass.batteryRequiredField("mMiuiOptimizationEnabled")
-        val chargingIconMethod =
-            meterClass.getDeclaredMethod("getHollowChargingIconId")
-                .apply { isAccessible = true }
-
-        fun readChargingIconId(iconView: View): Int? {
-            var parent = iconView.parent
-            while (parent is View) {
-                if (meterClass.isInstance(parent)) {
-                    return optionalNativeRead { chargingIconMethod.invoke(parent) as? Int }
-                        ?.takeIf { it != 0 }
-                }
-                parent = parent.parent
-            }
-            return null
-        }
-
-        fun readState(iconView: View): StatusStateStore.BatteryState? {
-            val level =
-                optionalNativeRead { levelField.getInt(iconView) }
-                    ?.coerceIn(0, 100)
-                    ?: return null
-            val charging =
-                optionalNativeRead { chargingField.getBoolean(iconView) }
-                    ?: return null
-            val nativeStatusName =
-                optionalNativeRead {
-                    (progressStatusMethod.invoke(iconView) as? Enum<*>)?.name
-                }
-            val semanticState =
-                BatterySemanticState.fromNativeProgressStatus(
-                    nativeStatusName,
-                )
-            val miuiOptimizationEnabled =
-                optionalNativeRead { miuiOptimizationField.getBoolean(iconView) }
-                    ?: false
-            val systemSemanticColor =
-                if (miuiOptimizationEnabled) {
-                    semanticState?.let { state ->
-                        semanticColor(
-                            icon = iconView,
-                            state = state,
-                            chargingColorField = chargingColorField,
-                            powerSaveColorField = powerSaveColorField,
-                            superPowerSaveColorField = superPowerSaveColorField,
-                            performanceColorField = performanceColorField,
-                            lowColorField = lowColorField,
-                        )
-                    }
-                } else {
-                    null
-                }
-
-            return StatusStateStore.BatteryState(
-                percent = level,
-                charging = charging,
-                semanticState = semanticState,
-                systemSemanticColor = systemSemanticColor,
-                lowSystemColor =
-                    if (miuiOptimizationEnabled) {
-                        optionalNativeRead { lowColorField.getInt(iconView) }
-                    } else null,
-                chargingIconResId =
-                    if (charging) {
-                        readChargingIconId(iconView) ?: lastChargingIconResId
-                    } else {
-                        null
-                    },
-            )
-        }
+        val reader = SysUiBatteryEvidence.Reader(classLoader) { lastChargingIconResId }
+        val iconClass = reader.iconClass
+        val meterClass = reader.meterClass
 
         val warned = AtomicBoolean(false)
         fun fallback(source: String, error: Throwable) {
@@ -189,7 +99,7 @@ internal object SysUiBatterySource {
             sourceMethod: String,
             levelCallbackCharging: Boolean? = null,
         ) {
-            val state = readState(iconView) ?: return
+            val state = reader.readState(iconView) ?: return
             if (levelCallbackCharging != null && levelCallbackCharging != state.charging) {
                 report {
                     "batteryLevelParameterMismatch source=" + sourceMethod +
@@ -234,9 +144,7 @@ internal object SysUiBatterySource {
             sourceMethod: String,
         ) {
             val iconId =
-                optionalNativeRead { chargingIconMethod.invoke(meterView) as? Int }
-                    ?.takeIf { it != 0 }
-                    ?: return
+                reader.readMeterChargingIconId(meterView) ?: return
 
             val changed =
                 synchronized(this) {
@@ -277,14 +185,7 @@ internal object SysUiBatterySource {
                         val result = chain.proceed()
                         val targetView =
                             if (hooksReady) optionalNativeRead { chain.thisObject as? View } else null
-                        val iconView =
-                            when {
-                                targetView == null -> null
-                                iconClass.isInstance(targetView) -> targetView
-                                meterClass.isInstance(targetView) ->
-                                    optionalNativeRead { meterIconField.get(targetView) as? View }
-                                else -> null
-                            }
+                        val iconView = reader.iconView(targetView)
                         if (iconView != null) {
                             try {
                                 publish(
@@ -361,7 +262,7 @@ internal object SysUiBatterySource {
             handles += hook(powerSaveMethod, POWER_SAVE_HOOK_ID)
             handles += hook(performanceMethod, PERFORMANCE_HOOK_ID)
             handles += hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID)
-            nativeStateReader = ::readState
+            nativeStateReader = reader::readState
             hooksReady = true
             return handles
         } catch (error: Throwable) {
@@ -440,29 +341,6 @@ internal object SysUiBatterySource {
         } else if (state.chargingIconResId != null) {
             lastChargingIconResId = state.chargingIconResId
         }
-    }
-
-    private fun semanticColor(
-        icon: Any,
-        state: BatterySemanticState,
-        chargingColorField: Field,
-        powerSaveColorField: Field,
-        superPowerSaveColorField: Field?,
-        performanceColorField: Field,
-        lowColorField: Field,
-    ): Int? {
-        val field =
-            when (state) {
-                BatterySemanticState.NORMAL -> return null
-                BatterySemanticState.CHARGING -> chargingColorField
-                BatterySemanticState.POWER_SAVE -> powerSaveColorField
-                BatterySemanticState.SUPER_POWER_SAVE ->
-                    superPowerSaveColorField ?: powerSaveColorField
-                BatterySemanticState.PERFORMANCE -> performanceColorField
-                BatterySemanticState.LOW -> lowColorField
-            }
-        return optionalNativeRead { field.getInt(icon) }
-            ?.takeIf { color -> color ushr 24 != 0 }
     }
 
     fun matches(handle: HookHandle): Boolean =
