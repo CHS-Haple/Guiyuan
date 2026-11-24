@@ -17,6 +17,7 @@ import android.widget.TextView
 import com.chaners.guiyuan.xposed.battery.BatteryColorPolicy
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
 import com.chaners.guiyuan.xposed.network.CenterIndicator
+import com.chaners.guiyuan.xposed.network.NativeIslandEvidence
 import com.chaners.guiyuan.xposed.network.NativeStatusObserver
 import com.chaners.guiyuan.xposed.network.SignalStrength
 import java.lang.ref.WeakReference
@@ -651,7 +652,7 @@ internal object CcTransitionOwner {
                         val mask = clip?.let {
                             "${it.left}/${it.top}/${it.right}/${it.bottom}"
                         } ?: "-"
-                        val state = NativeStatusObserver.readIslandVisibilityState(group, child)
+                        val state = NativeIslandEvidence.read(group, child)
                         "$index:$slot:" + viewPos(child) +
                             ":visibility=${child.visibility}:shown=${child.isShown}:clip=$mask" +
                             ":native=${state?.visibleState}/${state?.inIslandState}/${state?.hiddenBySpace}"
@@ -778,7 +779,7 @@ internal object CcTransitionOwner {
             view.parent === group && view.isAttachedToWindow &&
                 view.isShown && view.width > 0 && view.height > 0 &&
                 view.clipBounds?.let { it.isEmpty } != true &&
-                NativeStatusObserver.readIslandVisibilityState(group, view)
+                NativeIslandEvidence.read(group, view)
                     ?.hiddenBySpace != true
 
         private fun resolveNativePeerAnchor(root: View): NativePeerAnchor? {
