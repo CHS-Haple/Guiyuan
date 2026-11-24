@@ -37,19 +37,24 @@ internal object HomeRenderSession {
         }
     }
 
+    // Callbacks remain bound to the attaching generation; no new runtime writer.
+    internal class Sinks(
+        val onEvent: (String) -> Unit,
+        val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
+        val isDetailedDiagnosticsEnabled: () -> Boolean = { true },
+        val onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
+        val onHomeFrameDrawn: (() -> Unit)? = null,
+        val onBatteryDrawn: ((RenderModel, Long) -> Unit)? = null,
+    )
+
     @Synchronized
     fun attach(
         host: Any,
-        onEvent: (String) -> Unit,
-        onLatencySample: ((RuntimeRenderLatencySample) -> Unit)? = null,
-        isDetailedDiagnosticsEnabled: () -> Boolean = { true },
+        sinks: Sinks,
         initialNativeHandoffActive: Boolean = false,
         initialControlCenterAllowsHome: Boolean = true,
         initialTintState: TintState? = null,
         allowLiveTintSeed: Boolean = true,
-        onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
-        onHomeFrameDrawn: (() -> Unit)? = null,
-        onBatteryDrawn: ((RenderModel, Long) -> Unit)? = null,
     ): String? {
         if (retirement.pending != null) return "home-render-release-incomplete"
         val hostView = host as? ViewGroup
@@ -85,18 +90,13 @@ internal object HomeRenderSession {
             statusIcons = statusIcons,
             batteryView = batteryView,
             batteryCarrier = batteryCarrier,
-            onEvent = onEvent,
-            onLatencySample = onLatencySample,
-            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+            sinks = sinks,
             initialNativeHandoffActive = initialNativeHandoffActive,
             initialControlCenterAllowsHome = initialControlCenterAllowsHome,
             initialTintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
             initialFeatureEnabled =
                 FeaturePrefsOwner.current().enabled,
-            onPresentationReadinessChanged = onPresentationReadinessChanged,
-            onHomeFrameDrawn = onHomeFrameDrawn,
-            onBatteryDrawn = onBatteryDrawn,
         )
         current = session
         session.start()
@@ -256,17 +256,12 @@ internal object HomeRenderSession {
         statusIcons: ViewGroup,
         batteryView: ViewGroup,
         batteryCarrier: View,
-        private val onEvent: (String) -> Unit,
-        private val onLatencySample: ((RuntimeRenderLatencySample) -> Unit)?,
-        private val isDetailedDiagnosticsEnabled: () -> Boolean,
+        private val sinks: Sinks,
         initialNativeHandoffActive: Boolean,
         initialControlCenterAllowsHome: Boolean,
         private val initialTintState: TintState?,
         private val allowLiveTintSeed: Boolean,
         initialFeatureEnabled: Boolean,
-        private val onPresentationReadinessChanged: ((Boolean, String) -> Unit)?,
-        private val onHomeFrameDrawn: (() -> Unit)?,
-        private val onBatteryDrawn: ((RenderModel, Long) -> Unit)?,
     ) : View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
         private val batteryContainer = WeakReference(batteryContainer)
@@ -290,7 +285,7 @@ internal object HomeRenderSession {
                         lastDrawnBatterySemantic = drawn.batterySemanticState
                         val drawElapsedMs = SystemClock.elapsedRealtime()
                         SysUiPresentationRuntime.emitPassiveDiagnostic {
-                            onBatteryDrawn?.invoke(drawn, drawElapsedMs)
+                            sinks.onBatteryDrawn?.invoke(drawn, drawElapsedMs)
                         }
                     }
                 },
@@ -308,13 +303,13 @@ internal object HomeRenderSession {
                         this@Session.host.get()?.isShown == true
                     ) {
                         homeFrameDrawnAfterPanel = true
-                        onHomeFrameDrawn?.invoke()
+                        sinks.onHomeFrameDrawn?.invoke()
                     }
                 },
                 onStateRendered = { latencyMs, committedOnMainThread, sample ->
-                    if (sample != null && onLatencySample != null) {
+                    if (sample != null && sinks.onLatencySample != null) {
                         SysUiPresentationRuntime.emitPassiveDiagnostic {
-                            onLatencySample.invoke(sample)
+                            sinks.onLatencySample.invoke(sample)
                         }
                     } else {
                         emitEvent {
@@ -815,12 +810,12 @@ internal object HomeRenderSession {
                     " controlCenterHomeEligible=" + controlCenterAllowsHome +
                     " featureEnabled=" + featureEnabled
             }
-            onPresentationReadinessChanged?.invoke(ownerReady, source)
+            sinks.onPresentationReadinessChanged?.invoke(ownerReady, source)
         }
 
         private inline fun emitEvent(message: () -> String) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+                if (sinks.isDetailedDiagnosticsEnabled()) sinks.onEvent(message())
             }
         }
 
