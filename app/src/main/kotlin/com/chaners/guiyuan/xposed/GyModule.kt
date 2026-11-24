@@ -1565,9 +1565,11 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.restoreAfterHotReload(
                 host = host,
-                onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                callbacks = CcRenderSession.Callbacks(
+                    onEvent = ::logRuntimeEvent,
+                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                ),
                 transferredCompactReady = transferredCompactReady,
             )
         if (failure != null) {
@@ -1614,9 +1616,11 @@ class GyModule : XposedModule() {
             val result =
                 CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
-                    onEvent = ::logRuntimeEvent,
-                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                    callbacks = CcRenderSession.Callbacks(
+                        onEvent = ::logRuntimeEvent,
+                        isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                        onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                    ),
                 )
         ) {
             is CcRenderSession.PrearmResult.Scheduled -> {
@@ -1653,9 +1657,11 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.attach(
                 host = host,
-                onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                callbacks = CcRenderSession.Callbacks(
+                    onEvent = ::logRuntimeEvent,
+                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                ),
             )
         if (failure != null) {
             logDiagnostic(
@@ -4317,9 +4323,43 @@ class GyModule : XposedModule() {
             try {
                 HomeRenderSession.attach(
                     host = host,
-                    onEvent = ::logRuntimeEvent,
-                    onLatencySample = ::onRenderLatencySample,
-                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                    callbacks = HomeRenderSession.Callbacks(
+                        onEvent = ::logRuntimeEvent,
+                        onLatencySample = ::onRenderLatencySample,
+                        isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                        onPresentationReadinessChanged = { ready, readinessSource ->
+                            rendererReadyOnAttach = ready
+                            onHomeReadyChanged(host, ready, source, readinessSource)
+                        },
+                        onHomeFrameDrawn = {
+                            if (detailedDiagnosticsEnabled) {
+                                logDiagnostic(
+                                    level = Log.INFO,
+                                    event = "presentation.homeFrameDrawn",
+                                    component = "homePresentation",
+                                    state = "ready",
+                                    "nativePanelVisible" to controlCenterSceneVisible,
+                                    "nativeFraction" to ccExpansion,
+                                    "homeVisibility" to HomeRenderSession.visibilityWitness(),
+                                    "ccFakeVisual" to CcRenderSession.visualState(),
+                                    "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                                )
+                            }
+                            reconcileCcHomeAuthority("home-frame-drawn")
+                        },
+                        onBatteryDrawn = { model, elapsedMs ->
+                            if (detailedDiagnosticsEnabled) {
+                                logDiagnostic(
+                                    level = Log.INFO,
+                                    event = "battery.onDraw",
+                                    component = "homeRenderer",
+                                    state = if (model.charging) "charging" else "not-charging",
+                                    "semantic" to model.batterySemanticState.name,
+                                    "drawElapsedRealtimeMs" to elapsedMs,
+                                )
+                            }
+                        },
+                    ),
                     initialNativeHandoffActive = true,
                     // A new Home renderer may attach while Control Center
                     // still owns the scene (notably during rotation). Copy
@@ -4328,38 +4368,6 @@ class GyModule : XposedModule() {
                     initialControlCenterAllowsHome = !ccHomeYieldedToPanel,
                     initialTintState = rendererInitialTintState,
                     allowLiveTintSeed = allowLiveTintSeed,
-                    onPresentationReadinessChanged = { ready, readinessSource ->
-                        rendererReadyOnAttach = ready
-                        onHomeReadyChanged(host, ready, source, readinessSource)
-                    },
-                    onHomeFrameDrawn = {
-                        if (detailedDiagnosticsEnabled) {
-                            logDiagnostic(
-                                level = Log.INFO,
-                                event = "presentation.homeFrameDrawn",
-                                component = "homePresentation",
-                                state = "ready",
-                                "nativePanelVisible" to controlCenterSceneVisible,
-                                "nativeFraction" to ccExpansion,
-                                "homeVisibility" to HomeRenderSession.visibilityWitness(),
-                                "ccFakeVisual" to CcRenderSession.visualState(),
-                                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
-                            )
-                        }
-                        reconcileCcHomeAuthority("home-frame-drawn")
-                    },
-                    onBatteryDrawn = { model, elapsedMs ->
-                        if (detailedDiagnosticsEnabled) {
-                            logDiagnostic(
-                                level = Log.INFO,
-                                event = "battery.onDraw",
-                                component = "homeRenderer",
-                                state = if (model.charging) "charging" else "not-charging",
-                                "semantic" to model.batterySemanticState.name,
-                                "drawElapsedRealtimeMs" to elapsedMs,
-                            )
-                        }
-                    },
                 )
             } catch (error: Throwable) {
                 // Roll back before propagating the attachment error, without
