@@ -524,10 +524,10 @@ internal object SysUiPresentationOwner {
             return Result.Failure("status-icon-group-type-mismatch")
         }
         val batteryContainer =
-            hostView.directChild(BATTERY_CONTAINER) as? ViewGroup
+            hostView.directNativeChild(BATTERY_CONTAINER) as? ViewGroup
                 ?: return Result.Failure("battery-container-missing")
         val battery =
-            batteryContainer.directChild(BATTERY_VIEW)
+            batteryContainer.directNativeChild(BATTERY_VIEW)
                 ?: return Result.Failure("battery-view-missing")
         val batteryCarrier =
             SysUiCarrierMetrics.resolveView(battery)
@@ -2921,15 +2921,6 @@ internal object SysUiPresentationOwner {
         SESSION,
     }
 
-    private fun ViewGroup.directChild(className: String): View? {
-        for (index in 0 until childCount) {
-            val child = getChildAt(index)
-            if (child.javaClass.name == className) {
-                return child
-            }
-        }
-        return null
-    }
 
     internal sealed interface Result {
         data class Active(

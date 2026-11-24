@@ -103,10 +103,10 @@ internal object CcRenderSession {
                     retryAfterLayout = true,
                 )
         val statusIcons =
-            statusBarArea.directChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
+            statusBarArea.directNativeChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
                 ?: return AttachFailure("status-icons-missing", retryAfterLayout = true)
         val battery =
-            statusBarArea.directChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
+            statusBarArea.directNativeChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
                 ?: return AttachFailure("battery-view-missing", retryAfterLayout = true)
         val carrier =
             SysUiCarrierMetrics.resolveView(battery)
@@ -1108,13 +1108,6 @@ internal object CcRenderSession {
         }
     }
 
-    private fun ViewGroup.directChild(className: String): View? {
-        for (index in 0 until childCount) {
-            val child = getChildAt(index)
-            if (child.javaClass.name == className) return child
-        }
-        return null
-    }
 
     private fun ViewGroup.uniqueDescendant(className: String): ViewGroup? {
         var found: ViewGroup? = null

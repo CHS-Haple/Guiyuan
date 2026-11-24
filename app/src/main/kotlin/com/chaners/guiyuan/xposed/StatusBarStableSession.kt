@@ -31,9 +31,9 @@ internal object StatusBarStableSession {
         val hostView = host as? ViewGroup
             ?: return "host-not-view-group"
 
-        val batteryContainer = hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
+        val batteryContainer = hostView.directNativeChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
             ?: return "battery-container-missing"
-        val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
+        val batteryView = batteryContainer.directNativeChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
             ?: return "battery-view-missing"
 
         val existing = current
@@ -62,15 +62,6 @@ internal object StatusBarStableSession {
         if (current === session) current = null
     }
 
-    private fun ViewGroup.directChild(className: String): ViewGroup? {
-        for (index in 0 until childCount) {
-            val child = getChildAt(index)
-            if (child.javaClass.name == className) {
-                return child as? ViewGroup
-            }
-        }
-        return null
-    }
 
     private class Session(
         host: ViewGroup,
@@ -186,7 +177,7 @@ internal object StatusBarStableSession {
         }
 
         private fun reportSlotMetrics(container: ViewGroup, view: ViewGroup) {
-            val statusIcons = container.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
+            val statusIcons = container.directNativeChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
             val layoutParams = view.layoutParams
             val margins = layoutParams as? ViewGroup.MarginLayoutParams
             val adjacentGap = statusIcons?.let { icons -> view.left - icons.right } ?: -1

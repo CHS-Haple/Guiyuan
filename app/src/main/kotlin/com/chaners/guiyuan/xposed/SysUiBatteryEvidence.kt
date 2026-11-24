@@ -130,11 +130,7 @@ internal object SysUiBatteryEvidence {
     }
 
     fun readNumberFontContract(host: View): Pair<Typeface, String>? {
-        val root = host as? ViewGroup ?: return null
-        val container = root.directChild(SysUiBatterySource.BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
-            ?: return null
-        val battery = container.directChild(SysUiBatterySource.BATTERY_METER_VIEW_CLASS_NAME)
-            ?: return null
+        val battery = nativeBatteryMeter(host) ?: return null
         val loader = battery.javaClass.classLoader ?: return null
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
@@ -162,18 +158,11 @@ internal object SysUiBatteryEvidence {
 
     fun nativeBatteryMeter(host: Any): View? {
         val root = host as? ViewGroup ?: return null
-        val container = root.directChild(SysUiBatterySource.BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
+        val container = root.directNativeChild(SysUiBatterySource.BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
             ?: return null
-        return container.directChild(SysUiBatterySource.BATTERY_METER_VIEW_CLASS_NAME)
+        return container.directNativeChild(SysUiBatterySource.BATTERY_METER_VIEW_CLASS_NAME)
     }
 
-    private fun ViewGroup.directChild(className: String): View? {
-        for (i in 0 until childCount) {
-            val child = getChildAt(i)
-            if (child.javaClass.name == className) return child
-        }
-        return null
-    }
 }
 
 internal fun Class<*>.batteryRequiredField(name: String): Field =
