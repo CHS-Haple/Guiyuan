@@ -40,12 +40,17 @@ internal object CcRenderSession {
         val retryAfterLayout: Boolean = false,
     )
 
+    // Retain the same callback routes from prearm through the resulting session.
+    internal class Sinks(
+        val onEvent: (String) -> Unit,
+        val isDetailedDiagnosticsEnabled: () -> Boolean,
+        val onProjectionReadinessChanged: (Boolean) -> Unit,
+    )
+
     @Synchronized
     fun prearmAfterNextNativeLayout(
         host: ViewGroup,
-        onEvent: (String) -> Unit,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        onProjectionReadinessChanged: (Boolean) -> Unit,
+        sinks: Sinks,
     ): PrearmResult {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return PrearmResult.Failure(CC_MAIN_THREAD_REQUIRED)
@@ -69,9 +74,7 @@ internal object CcRenderSession {
         val pending =
             PendingPrearm(
                 host = host,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = onProjectionReadinessChanged,
+                sinks = sinks,
             )
         pendingPrearm = pending
         return if (pending.start()) {
@@ -85,9 +88,7 @@ internal object CcRenderSession {
     @Synchronized
     fun attach(
         host: ViewGroup,
-        onEvent: (String) -> Unit,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        onProjectionReadinessChanged: (Boolean) -> Unit,
+        sinks: Sinks,
     ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return AttachFailure(CC_MAIN_THREAD_REQUIRED)
@@ -143,9 +144,7 @@ internal object CcRenderSession {
                 statusIcons = statusIcons,
                 battery = battery,
                 carrier = carrier,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = onProjectionReadinessChanged,
+                sinks = sinks,
                 initialSceneEligible = sceneEligible,
                 initialSourceScene = sourceScene,
                 initialPanelVisualOwner = panelVisualOwner,
@@ -227,9 +226,7 @@ internal object CcRenderSession {
     @Synchronized
     fun restoreAfterHotReload(
         host: ViewGroup,
-        onEvent: (String) -> Unit,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        onProjectionReadinessChanged: (Boolean) -> Unit,
+        sinks: Sinks,
         transferredCompactReady: Boolean = false,
     ): AttachFailure? {
         if (Looper.myLooper() !== Looper.getMainLooper()) {
@@ -251,9 +248,7 @@ internal object CcRenderSession {
         val result =
             attach(
                 host = host,
-                onEvent = onEvent,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                onProjectionReadinessChanged = onProjectionReadinessChanged,
+                sinks = sinks,
             )
         if (result != null) return result
 
@@ -261,8 +256,8 @@ internal object CcRenderSession {
             transferredCompactReady &&
                 SysUiPresentationOwner.adoptCcLayoutAfterHotReload() is SysUiPresentationOwner.Result.Active
         SysUiPresentationRuntime.emitPassiveDiagnostic {
-            if (isDetailedDiagnosticsEnabled()) {
-                onEvent(
+            if (sinks.isDetailedDiagnosticsEnabled()) {
+                sinks.onEvent(
                     if (adoptedCompact) {
                         "controlCenterProjection hotReloadRestore state=adopted-compact " +
                             "source=transferred-laid-out-fake-root " +
@@ -377,9 +372,7 @@ internal object CcRenderSession {
             try {
                 attach(
                     host = host,
-                    onEvent = pending.onEvent,
-                    isDetailedDiagnosticsEnabled = pending.isDetailedDiagnosticsEnabled,
-                    onProjectionReadinessChanged = pending.onProjectionReadinessChanged,
+                    sinks = pending.sinks,
                 )
             } catch (error: Throwable) {
                 abortPrearm(pending, error)
@@ -445,9 +438,7 @@ internal object CcRenderSession {
 
     private class PendingPrearm(
         host: ViewGroup,
-        val onEvent: (String) -> Unit,
-        val isDetailedDiagnosticsEnabled: () -> Boolean,
-        val onProjectionReadinessChanged: (Boolean) -> Unit,
+        val sinks: Sinks,
     ) : View.OnLayoutChangeListener,
         View.OnAttachStateChangeListener {
         private val host = WeakReference(host)
@@ -500,7 +491,7 @@ internal object CcRenderSession {
 
         fun emit(message: String) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) onEvent(message)
+                if (sinks.isDetailedDiagnosticsEnabled()) sinks.onEvent(message)
             }
         }
 
@@ -571,9 +562,7 @@ internal object CcRenderSession {
         statusIcons: ViewGroup,
         battery: ViewGroup,
         carrier: View,
-        private val onEvent: (String) -> Unit,
-        private val isDetailedDiagnosticsEnabled: () -> Boolean,
-        private val onProjectionReadinessChanged: (Boolean) -> Unit,
+        private val sinks: Sinks,
         initialSceneEligible: Boolean,
         initialSourceScene: SourceScene,
         initialPanelVisualOwner: Boolean,
@@ -711,7 +700,7 @@ internal object CcRenderSession {
                 { statusBarArea.get()?.removeOnLayoutChangeListener(statusAreaLayoutListener) },
                 { carrier.get()?.removeOnLayoutChangeListener(nativeLayoutListener) },
                 { hostView?.overlay?.remove(renderView) },
-                { if (notify) onProjectionReadinessChanged(false) },
+                { if (notify) sinks.onProjectionReadinessChanged(false) },
             )
             emitEvent { "controlCenterProjection cleanup source=" + source }
         }
@@ -768,8 +757,8 @@ internal object CcRenderSession {
                         batteryContainer = statusArea,
                         battery = batteryView,
                         batteryCarrier = carrierView,
-                        onEvent = onEvent,
-                        isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                        onEvent = sinks.onEvent,
+                        isDetailedDiagnosticsEnabled = sinks.isDetailedDiagnosticsEnabled,
                         onFailNative = { reason ->
                             setNativePresentationReady(
                                 ready = false,
@@ -1071,7 +1060,7 @@ internal object CcRenderSession {
                     " layoutReady=" + layoutReady +
                     " nativePresentationReady=" + nativePresentationReady
             }
-            onProjectionReadinessChanged(ready)
+            sinks.onProjectionReadinessChanged(ready)
         }
 
         override fun onViewAttachedToWindow(view: View) {
@@ -1095,7 +1084,7 @@ internal object CcRenderSession {
 
         private inline fun emitEvent(message: () -> String) {
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                if (isDetailedDiagnosticsEnabled()) onEvent(message())
+                if (sinks.isDetailedDiagnosticsEnabled()) sinks.onEvent(message())
             }
         }
     }
