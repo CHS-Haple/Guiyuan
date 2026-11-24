@@ -1558,6 +1558,13 @@ class GyModule : XposedModule() {
         refreshCcSourceEligibility(authority)
     }
 
+    private fun ccRenderCallbacks() =
+        CcRenderSession.Callbacks(
+            onEvent = ::logRuntimeEvent,
+            isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+            onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+        )
+
     private fun restoreCcFakeAfterReload(
         host: ViewGroup,
         transferredCompactReady: Boolean,
@@ -1565,11 +1572,7 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.restoreAfterHotReload(
                 host = host,
-                callbacks = CcRenderSession.Callbacks(
-                    onEvent = ::logRuntimeEvent,
-                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
-                ),
+                callbacks = ccRenderCallbacks(),
                 transferredCompactReady = transferredCompactReady,
             )
         if (failure != null) {
@@ -1616,11 +1619,7 @@ class GyModule : XposedModule() {
             val result =
                 CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
-                    callbacks = CcRenderSession.Callbacks(
-                        onEvent = ::logRuntimeEvent,
-                        isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                        onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
-                    ),
+                    callbacks = ccRenderCallbacks(),
                 )
         ) {
             is CcRenderSession.PrearmResult.Scheduled -> {
@@ -1657,11 +1656,7 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.attach(
                 host = host,
-                callbacks = CcRenderSession.Callbacks(
-                    onEvent = ::logRuntimeEvent,
-                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
-                ),
+                callbacks = ccRenderCallbacks(),
             )
         if (failure != null) {
             logDiagnostic(
