@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
@@ -83,7 +84,7 @@ class GlassPopupPlacement internal constructor(
 )
 
 /**
- * Aligns the popup to the anchor's end edge and clamps it to the window's safe margins.
+ * Aligns the popup horizontally to the anchor and clamps it to the window's safe margins.
  * Opens upward when there is insufficient space below and more space above.
  * All bounds, sizes and margins use window coordinates and pixel units.
  */
@@ -93,14 +94,15 @@ internal fun placeGlassPopup(
     margin: Float,
     window: Rect,
     direction: LayoutDirection,
+    horizontalAlignment: Alignment.Horizontal = Alignment.End,
 ): GlassPopupPlacement {
-    val endAlignedLeft = if (direction == LayoutDirection.Ltr) {
-        anchor.right - size.width
-    } else {
-        anchor.left
+    val alignedLeft = when (horizontalAlignment) {
+        Alignment.Start -> if (direction == LayoutDirection.Ltr) anchor.left else anchor.right - size.width
+        Alignment.CenterHorizontally -> (anchor.left + anchor.right - size.width) * 0.5f
+        else -> if (direction == LayoutDirection.Ltr) anchor.right - size.width else anchor.left
     }
     val minLeft = window.left + margin
-    val left = endAlignedLeft
+    val left = alignedLeft
         .coerceIn(minLeft, (window.right - size.width - margin).coerceAtLeast(minLeft))
     val minTop = minOf(window.top + margin, anchor.top).coerceAtLeast(window.top)
     val below = window.bottom - margin - anchor.top

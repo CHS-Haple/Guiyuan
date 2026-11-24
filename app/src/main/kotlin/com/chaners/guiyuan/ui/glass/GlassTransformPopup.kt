@@ -25,6 +25,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -72,6 +73,7 @@ private fun guiyuanPopupMaskSpring(expanding: Boolean): SpringSpec<Float> = folm
  * @param stacked Whether a secondary menu is open. Scales down this panel and applies [maskColor].
  * @param maskColor Overlay color while [stacked].
  * @param sizing Panel size limits and window margin.
+ * @param horizontalAlignment Horizontal alignment of the expanded panel relative to [anchor].
  * @param visuals Expanded panel appearance, blended from a [GlassIconButton] anchor's surface.
  * @param anchorAlpha Background opacity for anchors without a shared button surface.
  * @param cornerRadius Expanded panel corner radius.
@@ -91,6 +93,7 @@ fun BoxScope.GlassTransformPopup(
     simplified: Boolean = false,
     stacked: Boolean = false,
     sizing: GlassPopupSizing = GlassPopupSizing(),
+    horizontalAlignment: Alignment.Horizontal = Alignment.End,
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
     anchorAlpha: Float = 1f,
     maskColor: Color = GlassPopupDefaults.maskColor(),
@@ -229,6 +232,7 @@ fun BoxScope.GlassTransformPopup(
                 sizing.safeMargin.toPx(),
                 windowBounds,
                 layoutDirection,
+                horizontalAlignment,
             )
             travel.endCenterX = settled.rect.center.x
             travel.endCenterY = settled.rect.center.y

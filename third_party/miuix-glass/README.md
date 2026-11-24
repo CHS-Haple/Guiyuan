@@ -202,21 +202,27 @@ entrypoint.
   and keeps query/focus ownership and a localized accessibility label. The
   adapted transformed menu carries its glass anchor shadow receipt and reads
   shadow alpha during drawing. It calculates settled placement once, with
-  unchanged window-safe end alignment. The host already mounts on demand and
+  window-safe horizontal alignment. The host already mounts on demand and
   retires after both menu exits; the upstream lazy initial mount does not
   justify a second visibility owner.
-- **Optional, defer until a caller needs it:** upstream Popup supports Start,
-  Center and End horizontal alignment; Guiyuan's current toolbar/scheme
-  menus use End, so no unused parameter or setting is added to local adapters.
-  Public library callers can use the new option directly.
-- **Optional, defer route expansion:** #486 supplies route-bound source
-  geometry, shape morph and predictive Back with a missing-source fallback.
-  The current app's page routes have ordinary slide navigation, and onboarding
-  deliberately uses a different step transition. Expansion would need
-  verified same-window anchors, opaque destination containers and stable
-  source identity (including search and restored entries); it is not a
-  replacement for bottom tab/rail selection or transformed popup ownership.
-  Revisit for a real card-to-detail use case, not a global animation toggle.
+- **Adopt scoped horizontal alignment (OS4):** the diagnostics filter is in
+  the leading navigation slot, so use Start; trailing More and scheme
+  management stay End. Carry upstream's alignment through the adapted primary
+  menu into its one settled placement, preserving safe-area clamping and RTL.
+  Secondary menus retain their native row geometry. OS3 keeps its existing
+  native menu; published dropdown preferences retain their value anchor.
+  Center is supported by the same upstream-aligned policy, with no current
+  caller or additional setting.
+- **Adopt scoped route Expansion (both UI styles):** only Home's preview
+  sandbox Card binds AppRoute.PreviewSandbox via public navTransitionSource,
+  the actual CardDefaults corner and surfaceContainer colour, and stable
+  sourceKey. The destination uses the upstream per-entry Expansion preset;
+  the Scaffold's normal opaque surface and NavDisplayEffects supply the
+  container. Upstream owns capture, shape, predictive Back and missing-source
+  fallback. No custom navigation clock, source registry, or change to the
+  preview lease/theme lifetime. All other routes and onboarding retain their
+  existing transitions. Device-test same-window capture, missing/restored
+  source, swipe/Back cancellation, theme switching and lease cleanup.
   Align ordinary navigation with the example's multi-window-only corner
   disabling; retain onboarding's existing no-corner policy.
 - Icon updates (XiaomiListen/CheckSelection and private backing names) are

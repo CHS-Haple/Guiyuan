@@ -164,7 +164,10 @@ internal fun GyApp(
                     onBack = ::navigateBack,
                 )
             }
-            entry<AppRoute.PreviewSandbox>(swipeDismiss = swipeBackDirection) {
+            entry<AppRoute.PreviewSandbox>(
+                transition = NavTransitions.Expansion,
+                swipeDismiss = swipeBackDirection,
+            ) {
                 var sandboxDark by remember { mutableStateOf<Boolean?>(null) }
                 val previewDark = sandboxDark ?: dark
                 DisposableEffect(previewDark) {

@@ -194,7 +194,13 @@ internal fun LogFilterMenu(
         }
     }
 
-    DiagToolbarMenu(title = title, entries = entries, collapseOnSelection = false, content = icon)
+    DiagToolbarMenu(
+        title = title,
+        entries = entries,
+        collapseOnSelection = false,
+        horizontalAlignment = Alignment.Start,
+        content = icon,
+    )
 }
 
 @Composable
@@ -202,6 +208,7 @@ private fun DiagToolbarMenu(
     title: String,
     entries: List<DropdownEntry>,
     collapseOnSelection: Boolean = true,
+    horizontalAlignment: Alignment.Horizontal = Alignment.End,
     content: @Composable () -> Unit,
 ) {
     TooltipBox(text = title) {
@@ -209,6 +216,7 @@ private fun DiagToolbarMenu(
             Os4CascadingMenu(
                 entries = entries,
                 collapseOnSelection = collapseOnSelection,
+                horizontalAlignment = horizontalAlignment,
                 content = content,
             )
         } else {

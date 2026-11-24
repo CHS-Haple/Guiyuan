@@ -100,7 +100,11 @@ reference, not this public repository.
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
   navigation runtime through the matched dependency graph. OS4 search uses
   the public `SearchClearButton`; transformed menus share one settled placement
-  and follow upstream's shadowless glass-anchor material transition. Full-screen
+  and follow upstream's shadowless glass-anchor material transition. The OS4
+  diagnostics filter uses Start alignment; other menus keep their existing
+  anchors. Only Home's preview sandbox Card uses route-bound Expansion (both
+  UI styles); the existing route-owned lease and theme lifecycle are unchanged.
+  Full-screen
   navigation retains system corners, except in multi-window mode. See the
   [integration boundary](../../third_party/miuix-glass/README.md) for optional
   feature decisions. Source/Maven CI and focused device acceptance are required.

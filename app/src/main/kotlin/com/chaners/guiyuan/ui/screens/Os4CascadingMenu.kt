@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -29,6 +30,7 @@ import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.PopupLayout
 internal fun Os4CascadingMenu(
     entries: List<DropdownEntry>,
     collapseOnSelection: Boolean = true,
+    horizontalAlignment: Alignment.Horizontal = Alignment.End,
     content: @Composable () -> Unit,
 ) {
     val backdrop = LocalGlassBackdrop.current
@@ -77,6 +79,7 @@ internal fun Os4CascadingMenu(
                     entries = entries,
                     backdrop = backdrop,
                     collapseOnSelection = collapseOnSelection,
+                    horizontalAlignment = horizontalAlignment,
                     onDismissFinished = {
                         if (!expanded) mounted.value = false
                     },
