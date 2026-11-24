@@ -69,22 +69,22 @@ internal fun BatterySchemePreviewStrip(
 }
 
 @Composable
-private fun batteryCommonColorName(color: Int?): String =
-    stringResource(
-        when (color) {
-            0xFFFF3B30.toInt() -> R.string.battery_common_color_red
-            0xFFFF9500.toInt() -> R.string.battery_common_color_orange
-            0xFFFFCC00.toInt() -> R.string.battery_common_color_yellow
-            0xFF34C759.toInt() -> R.string.battery_common_color_green
-            0xFF32ADE6.toInt() -> R.string.battery_common_color_light_blue
-            0xFF007AFF.toInt() -> R.string.battery_common_color_blue
-            0xFF5856D6.toInt() -> R.string.battery_common_color_indigo
-            0xFFAF52DE.toInt() -> R.string.battery_common_color_purple
-            0xFFFF2D55.toInt() -> R.string.battery_common_color_pink
-            null -> R.string.battery_color_follow_inversion
-            else -> error("Not a common battery color: $color")
-        },
-    )
+private fun batteryCommonColorName(color: Int?): String {
+    val label = when (color) {
+        0xFFFF3B30.toInt() -> R.string.battery_common_color_red
+        0xFFFF9500.toInt() -> R.string.battery_common_color_orange
+        0xFFFFCC00.toInt() -> R.string.battery_common_color_yellow
+        0xFF34C759.toInt() -> R.string.battery_common_color_green
+        0xFF32ADE6.toInt() -> R.string.battery_common_color_light_blue
+        0xFF007AFF.toInt() -> R.string.battery_common_color_blue
+        0xFF5856D6.toInt() -> R.string.battery_common_color_indigo
+        0xFFAF52DE.toInt() -> R.string.battery_common_color_purple
+        0xFFFF2D55.toInt() -> R.string.battery_common_color_pink
+        null -> R.string.battery_color_follow_inversion
+        else -> return batteryColorHex(color)
+    }
+    return stringResource(label)
+}
 
 @Composable
 internal fun BatteryCommonColorButton(

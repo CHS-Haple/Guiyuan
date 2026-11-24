@@ -179,7 +179,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorSourceSel
                 } else BatteryColorDot(color = shown, size = 24.dp)
             },
             onSelectedIndexChange = { index ->
-                sourceOptions.getOrNull(index)?.let { source ->
+                sourceOptions.getOrNull(index)?.takeIf { it != batteryColorStyleSource(entry.source) }?.let { source ->
                     val nextColor = batteryColorEditorSeed(entry.copy(source = source), slot)
                     if (nextColor == null) state.showForeground()
                     else state.showColor(nextColor)
@@ -199,8 +199,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
     onColorChange: (Int) -> Unit,
 ) {
     val rows = remember { COMMON_BATTERY_COLORS.chunked(5) }
-    val entry = custom.entries.entryFor(slot)
-    val source = entry.source
+    val source = custom.entries.entryFor(slot).source
     BatterySheetSmallTitle(
         text = stringResource(R.string.battery_color_common),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
