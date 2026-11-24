@@ -80,17 +80,19 @@ internal object SysUiPresentationOwner {
     private val homeRetirement = RetirementGate<Session>()
     private val familyRetirement = RetirementGate<Session>()
     private val ccRetirement = RetirementGate<Session>()
-    private var controlCenterEventSink: ((String) -> Unit)? = null
-    private var controlCenterFailNativeSink: ((String) -> Unit)? = null
-    private var controlCenterReadySink: ((Result.Active) -> Unit)? = null
+    private var controlCenterSinks: ActivationSinks? = null
     private var eventSink: ((String) -> Unit)? = null
     private var failNativeSink: ((String) -> Unit)? = null
-    private var keyguardFamilyEventSink: ((String) -> Unit)? = null
-    private var keyguardFamilyFailNativeSink: ((String) -> Unit)? = null
-    private var keyguardFamilyReadySink: ((Result.Active) -> Unit)? = null
+    private var keyguardFamilySinks: ActivationSinks? = null
     private var controlCenterSourceScene = SourceScene.UNKNOWN
     private var steadyPeerMirrorActive = false
     private var steadyPeerMirrorHiddenSlots: Set<String> = emptySet()
+
+    private class ActivationSinks(
+        val event: ((String) -> Unit)?,
+        val failNative: (String) -> Unit,
+        val ready: (Result.Active) -> Unit,
+    )
 
     private fun stopHome(session: Session, source: String, requestLayout: Boolean = true): Int =
         homeRetirement.release(session) { session.stop(source, requestLayout) }
@@ -715,9 +717,7 @@ internal object SysUiPresentationOwner {
                 surface.surfaceName + "-ignored-slots-list-unavailable",
             )
 
-        keyguardFamilyEventSink = guardedDiagnostic(onEvent)
-        keyguardFamilyFailNativeSink = onFailNative
-        keyguardFamilyReadySink = onReady
+        keyguardFamilySinks = ActivationSinks(guardedDiagnostic(onEvent), onFailNative, onReady)
 
         val existing = keyguardFamilyCurrent
         val session = if (
@@ -751,7 +751,7 @@ internal object SysUiPresentationOwner {
                 surfaceName = surface.surfaceName,
                 eventPrefix = surface.eventPrefix,
                 retainReservationOnWidthLoss = false,
-                onEvent = { event -> keyguardFamilyEventSink?.invoke(event) },
+                onEvent = { event -> keyguardFamilySinks?.event?.invoke(event) },
                 onFailure = ::onKeyguardFamilySessionFailure,
             ).also { created ->
                 keyguardFamilyCurrent = created
@@ -798,15 +798,13 @@ internal object SysUiPresentationOwner {
         keyguardFamilySurface = null
         return try {
             val restored = stopFamily(session, source)
-            keyguardFamilyEventSink?.invoke(
+            keyguardFamilySinks?.event?.invoke(
                 surface.eventPrefix + " inactive source=" + source +
                     LOG_RESTORED_VIEWS + restored,
             )
             Result.Inactive(restored)
         } finally {
-            keyguardFamilyEventSink = null
-            keyguardFamilyFailNativeSink = null
-            keyguardFamilyReadySink = null
+            keyguardFamilySinks = null
         }
     }
 
@@ -872,9 +870,7 @@ internal object SysUiPresentationOwner {
                 retryAfterLayout = true,
             )
 
-        controlCenterEventSink = guardedDiagnostic(onEvent)
-        controlCenterFailNativeSink = onFailNative
-        controlCenterReadySink = onReady
+        controlCenterSinks = ActivationSinks(guardedDiagnostic(onEvent), onFailNative, onReady)
 
         val existing = controlCenterCurrent
         val sameHost =
@@ -907,7 +903,7 @@ internal object SysUiPresentationOwner {
                 surfaceName = "control-center-fake",
                 eventPrefix = "controlCenterPresentation",
                 retainReservationOnWidthLoss = true,
-                onEvent = { event -> controlCenterEventSink?.invoke(event) },
+                onEvent = { event -> controlCenterSinks?.event?.invoke(event) },
                 onFailure = ::onCcSessionFailure,
                 isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
             ).also { created ->
@@ -968,15 +964,13 @@ internal object SysUiPresentationOwner {
         controlCenterCurrent = null
         return try {
             val restored = stopCc(session, source)
-            controlCenterEventSink?.invoke(
+            controlCenterSinks?.event?.invoke(
                 "controlCenterPresentation inactive source=" + source +
                     LOG_RESTORED_VIEWS + restored,
             )
             Result.Inactive(restored)
         } finally {
-            controlCenterEventSink = null
-            controlCenterFailNativeSink = null
-            controlCenterReadySink = null
+            controlCenterSinks = null
         }
     }
 
@@ -1312,16 +1306,14 @@ internal object SysUiPresentationOwner {
             releaseAll(
                 { stopFamily(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
                 {
-                    keyguardFamilyEventSink?.invoke(
+                    keyguardFamilySinks?.event?.invoke(
                         surface.eventPrefix + " failNative reason=" + reason,
                     )
                 },
-                { keyguardFamilyFailNativeSink?.invoke(reason) },
+                { keyguardFamilySinks?.failNative?.invoke(reason) },
             )
         } finally {
-            keyguardFamilyEventSink = null
-            keyguardFamilyFailNativeSink = null
-            keyguardFamilyReadySink = null
+            keyguardFamilySinks = null
         }
     }
 
@@ -1344,7 +1336,7 @@ internal object SysUiPresentationOwner {
                 maskedViews = maskedViews,
                 reused = reused,
             )
-        keyguardFamilyEventSink?.invoke(
+        keyguardFamilySinks?.event?.invoke(
             surface.eventPrefix +
                 " active carrier=MiuiStatusBatteryContainer.overlay " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
@@ -1359,7 +1351,7 @@ internal object SysUiPresentationOwner {
                     "compact-layout-ready"
                 },
         )
-        keyguardFamilyReadySink?.invoke(active)
+        keyguardFamilySinks?.ready?.invoke(active)
     }
 
     @Synchronized
@@ -1377,7 +1369,7 @@ internal object SysUiPresentationOwner {
                 maskedViews = maskedViews,
                 reused = reused,
             )
-        controlCenterEventSink?.invoke(
+        controlCenterSinks?.event?.invoke(
             "controlCenterPresentation active carrier=QS_FAKE.system_icon_area " +
                 LOG_REPRESENTED_SLOTS + representedSlots.joinToString(",") +
                 LOG_MASKED_VIEWS + maskedViews +
@@ -1386,7 +1378,7 @@ internal object SysUiPresentationOwner {
                 LOG_BATTERY_CARRIER_CLIP_AUTHORITY +
                 "cutover=compact-layout-ready nativeLayoutReservationOwner=single",
         )
-        controlCenterReadySink?.invoke(active)
+        controlCenterSinks?.ready?.invoke(active)
     }
 
     @Synchronized
@@ -1396,13 +1388,11 @@ internal object SysUiPresentationOwner {
         try {
             releaseAll(
                 { stopCc(session, FAIL_NATIVE_SOURCE_PREFIX + reason) },
-                { controlCenterEventSink?.invoke("controlCenterPresentation failNative reason=" + reason) },
-                { controlCenterFailNativeSink?.invoke(reason) },
+                { controlCenterSinks?.event?.invoke("controlCenterPresentation failNative reason=" + reason) },
+                { controlCenterSinks?.failNative?.invoke(reason) },
             )
         } finally {
-            controlCenterEventSink = null
-            controlCenterFailNativeSink = null
-            controlCenterReadySink = null
+            controlCenterSinks = null
         }
     }
 
@@ -1421,14 +1411,10 @@ internal object SysUiPresentationOwner {
     }
 
     private fun clearPresentationCallbacksAndPeerState() {
-        controlCenterEventSink = null
-        controlCenterFailNativeSink = null
-        controlCenterReadySink = null
+        controlCenterSinks = null
         eventSink = null
         failNativeSink = null
-        keyguardFamilyEventSink = null
-        keyguardFamilyFailNativeSink = null
-        keyguardFamilyReadySink = null
+        keyguardFamilySinks = null
         controlCenterSourceScene = SourceScene.UNKNOWN
         steadyPeerMirrorActive = false
         steadyPeerMirrorHiddenSlots = emptySet()
