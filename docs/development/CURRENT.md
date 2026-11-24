@@ -50,7 +50,8 @@ execution ownership is in [architecture](../architecture/README.md).
 - **Integrated SystemUI work [#1817](https://github.com/CHS-Haple/Guiyuan/pull/1817):**
   retain Home and CC projections in their separate native lifecycles.
   Exact ROM403 source confirms native peer-row underflow, signal exceptions
-  and `paddingEnd` ownership. The work-branch retains only the compact steady QS_FAKE end reservation;
+  and `paddingEnd` ownership. The work-branch retains only the compact steady
+  QS_FAKE end reservation;
   the unfolding component envelope now controls visual reveal only and no
   longer writes extra native peer padding. The parallel all-candidate width
   cap and canvas clipping remain removed. Native FAKE host
@@ -61,7 +62,8 @@ execution ownership is in [architecture](../architecture/README.md).
   Canary passed the reported landscape-to-portrait first upward-close
   disappearance on the maintainer's device. This does not certify every
   crowded peer, charging/island, slow-close or alternative ROM scenario.
-  See the merged PR for exact-source acceptance and validation; dev's post-merge CI passed.
+  See the merged PR for exact-source acceptance and validation; dev's
+  post-merge CI passed.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
