@@ -195,6 +195,9 @@ entrypoint.
 - **Adopt, both UI styles:** MIUIX owns Slider tap-to-seek, ColorPicker
   bounds, Squircle's drawing and zero-radius fast paths, TopAppBarState
   observation and navigation runtime fixes. No app-local reimplementation.
+  The About title follows example commit `84ce2a0a`: threshold 0.45 and
+  200 ms tween instead of the old continuous scroll ramp. Keep the existing
+  title-only alpha boundary in SettingsPage and all hero/background motion.
   Native OverlayBottomSheet uses SheetMotion.Default, GlassBottomSheet uses
   SheetMotion.Glass internally (#496); do not add a redundant motion setting
   or a second scrim/drag clock.

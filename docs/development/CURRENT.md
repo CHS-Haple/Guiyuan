@@ -104,8 +104,9 @@ reference, not this public repository.
   diagnostics filter uses Start alignment; other menus keep their existing
   anchors. Only Home's preview sandbox Card uses route-bound Expansion (both
   UI styles); the existing route-owned lease and theme lifecycle are unchanged.
-  Full-screen
-  navigation retains system corners, except in multi-window mode. See the
+  About title reveal follows the new upstream threshold/tween, not the old
+  scroll ramp. Full-screen navigation retains system corners, except in
+  multi-window mode. See the
   [integration boundary](../../third_party/miuix-glass/README.md) for optional
   feature decisions. Source/Maven CI and focused device acceptance are required.
 

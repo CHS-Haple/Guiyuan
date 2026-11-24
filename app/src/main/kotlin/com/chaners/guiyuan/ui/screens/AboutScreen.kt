@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,6 +37,12 @@ internal fun AboutScreen(
     val xposedStatus by app.xposedStatus.collectAsState()
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
     val scroll = rememberAboutScrollState()
+    // Match the upstream About page title reveal; hero motion remains scroll-driven.
+    val titleAlpha by animateFloatAsState(
+        targetValue = if (scroll.progress >= 0.45f) 1f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "aboutTitleAlpha",
+    )
     val backdrop = rememberLayerBackdrop()
     val blur = remember { isRuntimeShaderSupported() }
     val logoBlend = rememberBrandLogoBlend()
@@ -48,7 +55,7 @@ internal fun AboutScreen(
         onBack = onBack,
         listState = scroll.list,
         compactTopBar = LocalUiStyle.current == UiStyle.OS4,
-        titleAlpha = ((scroll.progress - 0.35f) / 0.65f).coerceIn(0f, 1f),
+        titleAlpha = titleAlpha,
         background = {
             GyBgEffect(
                 playing = lifecycleState.isAtLeast(Lifecycle.State.RESUMED) &&
