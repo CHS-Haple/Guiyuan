@@ -42,6 +42,7 @@ internal data class SandboxDockDisplay(
     val renderModel: RenderModel,
     val visual: VisualCfg,
     val backdrop: LayerBackdrop?,
+    val contentAlpha: () -> Float,
 )
 
 internal data class SandboxDockActions(
@@ -82,7 +83,7 @@ internal fun SandboxFloatingDock(
             if (state == EnterExitState.Visible) 1f else 0f
         }
         val opacityModifier = Modifier.graphicsLayer {
-            alpha = opacity
+            alpha = opacity * display.contentAlpha()
             compositingStrategy = CompositingStrategy.ModulateAlpha
         }
         SandboxFloatingDockRow(display, actions, dockPadding, opacityModifier)

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +33,7 @@ internal fun LazyListScope.previewSandboxRows(
     renderModel: RenderModel,
     visual: VisualCfg,
     actions: PreviewSandboxActions,
+    contentAlpha: () -> Float,
 ) {
     val state = display.state
     val parasiteActive = display.parasiteActive
@@ -42,7 +44,8 @@ internal fun LazyListScope.previewSandboxRows(
                         modifier =
                             Modifier
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
+                                .padding(bottom = 12.dp)
+                                .graphicsLayer { alpha = contentAlpha() },
                         insideMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
                     ) {
                         Text(

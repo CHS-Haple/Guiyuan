@@ -71,12 +71,17 @@ import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 
 @Composable
 internal fun PreviewSandboxScreen(
     display: PreviewSandboxDisplay,
     actions: PreviewSandboxActions,
 ) {
+    val navScope = LocalNavTransitionScope.current
+    val contentAlpha: () -> Float = remember(navScope) {
+        { sandboxExpansionContentAlpha(navScope.relativeDepth) }
+    }
     val state = display.state
     val dark = display.dark
     val onToggleTheme = actions.ui.onToggleTheme
@@ -144,7 +149,7 @@ internal fun PreviewSandboxScreen(
     val dockHeight = with(density) { dockHeightPx.toDp() }
     val dock: @Composable () -> Unit = {
         SandboxFloatingDock(
-            display = SandboxDockDisplay(showDock, renderModel, visual, topBarBackdrop),
+            display = SandboxDockDisplay(showDock, renderModel, visual, topBarBackdrop, contentAlpha),
             actions = SandboxDockActions(
                 onScrollToTop = scrollToTop,
                 onHeightChanged = { dockHeightPx = it },
@@ -157,7 +162,7 @@ internal fun PreviewSandboxScreen(
             topBar = {
                 PreviewSandboxTopBar(
                     frame = SandboxTopBarFrame(
-                        topBarBackdrop, scrollBehavior, listState, dockHeight,
+                        topBarBackdrop, scrollBehavior, listState, dockHeight, contentAlpha,
                     ),
                     actions = SandboxTopBarActions(
                         dark = dark,
@@ -198,7 +203,7 @@ internal fun PreviewSandboxScreen(
                         extraBottom = 12.dp,
                     ),
             ) {
-                previewSandboxRows(display, choices, renderModel, visual, actions)
+                previewSandboxRows(display, choices, renderModel, visual, actions, contentAlpha)
             }
          }
     }

@@ -30,6 +30,7 @@ internal data class SandboxTopBarFrame(
     val scrollBehavior: ScrollBehavior,
     val listState: LazyListState,
     val dockHeight: Dp,
+    val contentAlpha: () -> Float,
 )
 
 internal data class SandboxTopBarActions(
@@ -55,6 +56,7 @@ internal fun PreviewSandboxTopBar(
             progressiveBlur = LocalTopBarProgressiveBlur.current,
             isContentScrolled = frame.listState.canScrollBackward,
             title = stringResource(R.string.home_preview_sandbox_title),
+            titleAlpha = frame.contentAlpha,
             backdrop = frame.backdrop,
             scrollBehavior = frame.scrollBehavior,
             bandOverhang = GlassTopAppBarDefaults.BandOverhang + frame.dockHeight,
