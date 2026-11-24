@@ -9,6 +9,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -90,13 +91,7 @@ private suspend fun AwaitPointerEventScope.trackSegmentedGesture(
         val change = event.changes.firstOrNull { it.id == down.id } ?: break
         if (change.isConsumed) break
         if (!change.pressed) {
-            if (change.changedToUp() && axis != SegmentedDragAxis.Vertical) {
-                val next = slots.indexAt(change.position.x)
-                if (next >= 0 && (axis == SegmentedDragAxis.Pending || next != lastSelected)) {
-                    select.value(next)
-                }
-                change.consume()
-            }
+            finishSegmentedSelection(change, axis, lastSelected, slots, select)
             break
         }
         if (axis == SegmentedDragAxis.Pending) {
@@ -116,6 +111,21 @@ private suspend fun AwaitPointerEventScope.trackSegmentedGesture(
         }
         // Vertical motion never consumes; the parent owns verticalScroll.
     }
+}
+
+private fun finishSegmentedSelection(
+    change: PointerInputChange,
+    axis: SegmentedDragAxis,
+    lastSelected: Int,
+    slots: SegmentedSlotGeometry,
+    select: State<(Int) -> Unit>,
+) {
+    if (!change.changedToUp() || axis == SegmentedDragAxis.Vertical) return
+    val next = slots.indexAt(change.position.x)
+    if (next >= 0 && (axis == SegmentedDragAxis.Pending || next != lastSelected)) {
+        select.value(next)
+    }
+    change.consume()
 }
 
 internal enum class SegmentedDragAxis { Pending, Horizontal, Vertical }
