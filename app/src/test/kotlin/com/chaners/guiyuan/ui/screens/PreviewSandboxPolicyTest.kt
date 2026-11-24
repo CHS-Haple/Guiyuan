@@ -8,13 +8,13 @@ import org.junit.Test
 
 class PreviewSandboxPolicyTest {
     @Test
-    fun expansionContentHandsOffBeforeSourceRevealAndRestoresOnCancel() {
-        assertEquals(1f, sandboxExpansionContentAlpha(0f), 0.0001f)
-        assertEquals(1f, sandboxExpansionContentAlpha(-0.52f), 0.0001f)
-        assertEquals(0.5f, sandboxExpansionContentAlpha(-0.64f), 0.0001f)
-        assertEquals(0f, sandboxExpansionContentAlpha(-0.76f), 0.0001f)
-        assertEquals(0f, sandboxExpansionContentAlpha(-1f), 0.0001f)
-        val progress = (0..100).map { sandboxExpansionContentAlpha(it / 100f - 1f) }
+    fun expansionTitleHandsOffBeforeSourceRevealAndRestoresOnCancel() {
+        assertEquals(1f, sandboxExpansionTitleAlpha(0f), 0.0001f)
+        assertEquals(1f, sandboxExpansionTitleAlpha(-0.52f), 0.0001f)
+        assertEquals(0.5f, sandboxExpansionTitleAlpha(-0.64f), 0.0001f)
+        assertEquals(0f, sandboxExpansionTitleAlpha(-0.76f), 0.0001f)
+        assertEquals(0f, sandboxExpansionTitleAlpha(-1f), 0.0001f)
+        val progress = (0..100).map { sandboxExpansionTitleAlpha(it / 100f - 1f) }
         assertTrue(progress.zipWithNext().all { (a, b) -> a <= b })
     }
 

@@ -23,15 +23,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-// MIUIX 07d48590 NavExpandRenderer begins revealing the source below progress 0.24.
-// Retire the duplicated sandbox visuals before that handoff; read the same reversible
-// navigation depth, without another animation or changing the container's geometry.
-internal fun sandboxExpansionContentAlpha(relativeDepth: Float): Float {
-    val sourceRevealEnd = 0.24f
-    val t = ((1f + relativeDepth - sourceRevealEnd) / sourceRevealEnd).coerceIn(0f, 1f)
-    return t * t * (3f - 2f * t)
-}
-
 // Both Home and Sandbox must invalidate native-resource previews on configuration changes.
 @Composable
 internal fun rememberPreviewRenderModel(
