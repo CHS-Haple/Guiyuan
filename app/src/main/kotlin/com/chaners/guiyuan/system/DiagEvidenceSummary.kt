@@ -13,7 +13,40 @@ internal object DiagEvidenceSummary {
     )
     private val lifecycleTokens = listOf("session", "reload", "scene", "keyguard", "aod")
 
+    private data class Summary(
+        val session: String?,
+        val structured: Int,
+        val warnings: Int,
+        val errors: Int,
+        val hookRelated: Int,
+        val lifecycleRelated: Int,
+        val geometryFieldEntries: Int,
+        val notable: List<LogEntry>,
+    )
+
     fun reportLines(snapshot: DiagSnapshot): List<String> {
+        val summary = summarize(snapshot)
+        return buildList {
+            add("source=existing-session-events-only")
+            add("collectedNewNativeData=false")
+            add("sessionId=" + (summary.session ?: "not-observed"))
+            add("structuredEntries=" + summary.structured)
+            add("warningEntries=" + summary.warnings)
+            add("errorEntries=" + summary.errors)
+            add("hookRelatedEntries=" + summary.hookRelated)
+            add("lifecycleRelatedEntries=" + summary.lifecycleRelated)
+            add("geometryFieldEntries=" + summary.geometryFieldEntries)
+            add("nativeViewTree=not-collected")
+            add("notableEntries=" + summary.notable.size)
+            summary.notable.forEachIndexed { index, entry ->
+                add(notableLine(index, entry))
+            }
+        }
+    }
+
+    // The diagnostic aggregation reads only the captured snapshot. Report
+    // formatting remains independent of event classification and truncation.
+    private fun summarize(snapshot: DiagSnapshot): Summary {
         val session = snapshot.runtimeEvents.sessionId
         var structured = 0
         var warnings = 0
@@ -50,22 +83,16 @@ internal object DiagEvidenceSummary {
             }
         }
 
-        return buildList {
-            add("source=existing-session-events-only")
-            add("collectedNewNativeData=false")
-            add("sessionId=" + (session ?: "not-observed"))
-            add("structuredEntries=" + structured)
-            add("warningEntries=" + warnings)
-            add("errorEntries=" + errors)
-            add("hookRelatedEntries=" + hookRelated)
-            add("lifecycleRelatedEntries=" + lifecycleRelated)
-            add("geometryFieldEntries=" + geometryFieldEntries)
-            add("nativeViewTree=not-collected")
-            add("notableEntries=" + notable.size)
-            notable.forEachIndexed { index, entry ->
-                add(notableLine(index, entry))
-            }
-        }
+        return Summary(
+            session = session,
+            structured = structured,
+            warnings = warnings,
+            errors = errors,
+            hookRelated = hookRelated,
+            lifecycleRelated = lifecycleRelated,
+            geometryFieldEntries = geometryFieldEntries,
+            notable = notable.toList(),
+        )
     }
 
     private fun notableLine(index: Int, entry: LogEntry): String {
