@@ -51,8 +51,8 @@ configurable companion app.
 
 **HyperOS 4 support does not mean every HyperOS 4 device or SystemUI build has
 been tested.** Unsupported or ambiguous hosts should retain native presentation.
-The in-app “OS3” option is a **visual style**, not an assertion of HyperOS 3
-runtime compatibility.
+The companion app follows a single current MIUIX interface; HyperOS 3 runtime
+support is not provided.
 
 ### Installation
 
@@ -107,8 +107,7 @@ for security concerns.
 | Root | 配套应用的常规设置不强制 Root；部分诊断与系统进程维护需要 Root |
 
 **系统支持范围不等于全机型兼容承诺。** HyperOS 4 不同机型、ROM 与 SystemUI
-内部结构可能存在差异；未经验证的宿主或场景会尽量保持系统原生行为。应用中的“OS3”选项仅代表可选的**界面视觉风格**，不表示支持运行在 HyperOS 3
-上。
+内部结构可能存在差异；未经验证的宿主或场景会尽量保持系统原生行为。配套应用统一采用当前 MIUIX 界面规范，不支持在 HyperOS 3 上运行。
 
 ### 安装与使用
 

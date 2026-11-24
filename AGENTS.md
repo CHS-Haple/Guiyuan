@@ -26,8 +26,8 @@ assistant-specific dialogue and tool instructions.
 - **Before MIUIX-facing UI edits**, briefly report the inspected upstream
   revision and whether an API is released, experimental or absent; its layout,
   state, motion, interaction and lifecycle contracts; Guiyuan's mismatch; the
-  chosen adaptation and its verification boundary. Compare OS3 and OS4 styles
-  separately when applicable.
+  chosen adaptation and its verification boundary. Check relevant native and
+  Glass surfaces, navigation choices and capability fallbacks separately.
 - Before non-trivial commits, inspect full base→HEAD diff and relevant adjacent
   callers. Give a proportional report with code locations, actual verification
   evidence, unsupported items, risks and gating conditions. Mark unrun tests as

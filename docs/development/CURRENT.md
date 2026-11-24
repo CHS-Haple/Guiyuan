@@ -13,8 +13,8 @@ execution ownership is in [architecture](../architecture/README.md).
   HyperOS `4.0.3.0.XOBCNXM.D02`, SystemUI `17.03.260226.r`. The supplied
   target APK's static contracts were inspected and pinned in
   `compat/targets/hyperos-17.03.260226.r.json`; this is **not** comprehensive
-  device, OTA/Framework, Hot Reload or unusual-host acceptance. The “OS3”
-  selector changes **UI style** only, not runtime support for HyperOS 3.
+  device, OTA/Framework, Hot Reload or unusual-host acceptance. The companion
+  app has one current MIUIX interface; HyperOS 3 runtime is unsupported.
 - **Stable release:** [v1.1.0][stable-release]
   was published on 2026-11-09 with a signed B1822 Release APK. The release tag,
   installed APK and current `main` or `dev` head are separate identities;
@@ -104,8 +104,8 @@ reference, not this public repository.
   the public `SearchClearButton`; transformed menus share one settled placement
   and follow upstream's shadowless glass-anchor material transition. The OS4
   diagnostics filter uses Start alignment; other menus keep their existing
-  anchors. Only Home's preview sandbox Card uses route-bound Expansion (both
-  UI styles); the existing route-owned lease and theme lifecycle are unchanged.
+  anchors. Only Home's preview sandbox Card uses route-bound Expansion;
+  the existing route-owned lease and theme lifecycle are unchanged.
   About title reveal follows the new upstream threshold/tween, not the old
   scroll ramp. Full-screen navigation retains system corners, except in
   multi-window mode. See the
@@ -128,28 +128,28 @@ reference, not this public repository.
   its upstream shading, width and additive-blend conditions; Guiyuan retains
   the adapted backdrop/refraction and its own popup, button and Back lifecycle
   boundaries.
-- OS4 Glass navigation commits the selected destination before asynchronous
-  Pager motion; the component previews press/drag and commits pointer selection
-  on release. Navigation icons remain fixed as in the pinned MIUIX example,
-  including OS3/OS4 style and preview. OS3 UI style uses its corresponding
-  MIUIX fallback. The signed B1831 Canary was accepted on-device for the
-  focused navigation, selection-motion and preview/style regression scope.
-- OS4 progressive top-bar material and menu/popup ownership follow the pinned
-  implementation while retaining Guiyuan's native title slots and popup Back
-  lifecycle. The saved progressive-blur switch is applied to OS4 app bars,
-  including onboarding; OS3 keeps its own native title style. Eligible OS4
-  scrollable lists feed MIUIX's explicit elastic offset into the bar without a
-  second overscroll engine; refresh/Sheet and OS3 paths retain their respective
-  owners. Battery Colors preserves its scheme/editor and nested-card hierarchy;
-  OS4 uses upstream `GlassCard` defaults inside `GlassBottomSheet`, while OS3
-  keeps native `Card` colors and controls. The OS4 custom-scheme More
-  control inside GlassCard uses upstream `basic.IconButton` without the
-  floating glass shadow; separate floating Glass back controls retain their
-  source-matched `Regular` shadow. Guiyuan's local navigation first-layout
-  fallback and deferred-shadow brush cache follow MIUIX `28d45984`.
-- This focused acceptance does not establish exhaustive RTL, extreme font scale,
-  GPU resume, keyboard/cutout geometry, predictive Back, OS3 dark-mode
-  overscroll seam or every Framework/ROM combination.
+- The single MIUIX interface retains Glass navigation's selection-before-Pager
+  contract, release-committed pointer selection, fixed icons and noninteractive
+  preview. Standard/Blur floating navigation, native Rail and native capability
+  fallback remain available; they are not a second OS-style implementation.
+  All floating navigation choices share the label preference. Upgrade preserves
+  the active legacy style's label choice and retires the old style and separate
+  Liquid label keys; Liquid finish, theme and other preferences remain separate
+  only where they represent actual features.
+- Progressive top-bar material and menu/popup ownership follow the pinned
+  implementation, retaining native title slots and popup Back lifecycle.
+  The progressive-blur switch applies to app bars, including onboarding.
+  Eligible scrollable lists feed MIUIX's explicit elastic offset into the bar
+  without a second overscroll engine; refresh/Sheet retain their owners.
+  Battery Colors uses upstream `GlassCard` defaults inside `GlassBottomSheet`
+  and preserves the scheme/editor hierarchy. Its custom-scheme More control
+  uses upstream `basic.IconButton` without the floating glass shadow.
+  Separate Glass back controls retain the source-matched `Regular` shadow.
+- Single-interface migration requires focused device acceptance; prior B1940
+  and B1941 acceptance does not certify it. Test upgrades, all navigation
+  choices, light/dark, narrow/wide, search, modal and sandbox lifecycle.
+  Exhaustive RTL, extreme font scale, GPU resume, keyboard/cutout geometry,
+  predictive Back and every Framework/ROM combination remain unverified.
 
 ## Remaining evidence and quality boundaries
 

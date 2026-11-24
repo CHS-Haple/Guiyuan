@@ -40,8 +40,8 @@ The pinned MIUIX snapshot Maven artifacts expose `DialogSurfaceScope`,
 compiled against published Maven without composite-source substitution in
 [PR #1521](https://github.com/CHS-Haple/Guiyuan/pull/1521). The obsolete
 source forks and `gy.os4.dialogSurfaces` property are retired. The one
-`app/src/main/kotlin` implementation keeps Glass Dialog/Sheet in OS4 UI
-style and MIUIX-native Overlay hosts in OS3 UI style. Exact-source checkout
+`app/src/main/kotlin` implementation uses published Glass Dialog/Sheet;
+MIUIX owns their native Overlay hosts and fallback material. Exact-source checkout
 and independent published-Maven compilation remain separate verification
 paths, not separate compiled source trees.
 
@@ -78,10 +78,9 @@ copy shared shaders into the app or add a second Material model.
   extension and exact native icon/material semantics. Do not replace a
   caller-owned touch or animation boundary with a similar-looking upstream
   sample. Glass icon canvas and displayed navigation icon size differ.
-- Battery Colors preserves its outer/inner card hierarchy. In OS4 glass
-  sheets it uses the upstream `GlassCard` translucent fill and 20 dp corner
-  without custom alpha; OS3 retains the native `Card` colors. Retain regular
-  glass button and popup shadow behavior.
+- Battery Colors preserves its outer/inner card hierarchy in Glass sheets,
+  using upstream `GlassCard` translucent fill and 20 dp corner without custom
+  alpha. Retain regular glass button and popup shadow behavior.
 - Prefer native MIUIX progress, material, shape and motion; do not introduce
   ad-hoc geometry, z-order, shader, seam or delayed-animation workarounds.
   Reproduce an actual deviation before changing native ownership.
@@ -97,7 +96,7 @@ The preview sandbox's segmented Glass tabs use the published upstream `GlassSegm
 Navigation destinations and `GlassNavigationBarDefaults` now also use the upstream public types; local navigation/rail still owns only Guiyuan-specific gestures, geometry and hit-area extension.
 The identical `GlassNavigationRailDefaults` object is likewise taken from upstream; app-specific rail state remains local because it uses a private morph clock and supports a trailing action absent from the public upstream Rail API.
 The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.
-Integer and scheme-rename dialogs use published `GlassTextField` in OS4, retaining native `TextField` for OS3. Card-embedded numeric/hex fields keep their existing non-Glass presentation.
+Integer and scheme-rename dialogs use published `GlassTextField` directly. Card-embedded numeric/hex fields keep their existing non-Glass presentation.
 Local Glass rendering keeps Guiyuan's action-bar underlay but now caches
 the colour-blend RenderEffects and edge/rim/mask brushes using the upstream
 material/blur APIs; it lets the backdrop node reuse effects when only the
@@ -124,8 +123,9 @@ and lifecycle implementations. Do not modify upstream source in CI.
 
 For later upstream alignment, preserve adapted backdrop/refraction and
 popup, Back/scrim and navigation ownership. Validate both source-matched and
-published-Maven builds; for rendering changes review OS3/OS4 UI styles,
-light/dark rims, alpha transitions, title clipping and dismissal on device.
+published-Maven builds; for rendering changes review relevant navigation choices,
+capability fallbacks, light/dark rims, alpha transitions, title clipping and
+dismissal on device.
 CI alone is not device acceptance.
 
 Dated integration evidence is in
@@ -141,7 +141,7 @@ plus the configured gradient overhang, matching upstream's correction.
 Adapted internal popup, navigation and rail layouts use upstream-aligned
 Compose fast rounding/clamping utilities. The new blur shader, kernel,
 noise-layer and padding fixes are consumed from published `miuix-blur`,
-not copied into the app. The OS3 UI style retains its native MIUIX path.
+not copied into the app.
 
 The 28d45984 alignment also makes the app-local Glass cascading menu skip
 secondary backdrop recording and popup composition when no submenu is active,
@@ -150,10 +150,9 @@ fallback caches its fixed gradient shader like upstream; its own title and
 unclipped action slots remain Guiyuan-owned. These source adaptations and
 published Android artifact compilation require separate Guiyuan CI verification.
 
-Battery Colors now selects upstream `GlassCard` for its OS4 glass-sheet
-content groups, preserving the outer/inner card hierarchy, slot-row actions,
-and the add-card click feedback. OS3 UI style retains its original MIUIX
-`Card` colors and interactions. The 20 dp GlassCard corner and translucent
+Battery Colors uses upstream `GlassCard` for its glass-sheet content groups,
+preserving the outer/inner card hierarchy, slot-row actions, and add-card
+click feedback. The 20 dp GlassCard corner and translucent
 fill are upstream defaults, not local custom material settings; this scoped
 UI change still requires light/dark and editor-sheet device acceptance.
 
@@ -163,7 +162,7 @@ The OS4 custom-scheme **More** action inside the outer GlassCard now uses
 published MIUIX `basic.IconButton` instead of a floating glass button.
 The native 40 dp transparent circle retains app-owned popup anchors and
 their Back lifecycle without a second rim/shadow. The card hierarchy,
-blue Apply action and OS3 UI-style fallback are unchanged.
+blue Apply action and actual native capability fallback are unchanged.
 
 The upstream `c83aacd8..28d45984` change set was reviewed against the
 22 live app-local Glass Kotlin adapters. The updated indication, menu
@@ -214,8 +213,8 @@ entrypoint.
   the leading navigation slot, so use Start; trailing More and scheme
   management stay End. Carry upstream's alignment through the adapted primary
   menu into its one settled placement, preserving safe-area clamping and RTL.
-  Secondary menus retain their native row geometry. OS3 keeps its existing
-  native menu; published dropdown preferences retain their value anchor.
+  Secondary menus retain their native row geometry. Shader-unavailable hosts
+  retain the native menu; published dropdown preferences retain their value anchor.
   Center is supported by the same upstream-aligned policy, with no current
   caller or additional setting.
 - **Adopt scoped route Expansion (both UI styles):** only Home's preview

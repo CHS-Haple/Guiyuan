@@ -293,21 +293,21 @@ Before UI changes, inspect applicable MIUIX upstream code, examples and
 PRs/issues. Record whether an upstream solution exists, its source, rules,
 applicable scenarios, current differences and intended approach before
 implementation. Adapt the full affected UI chain (layout, states, interactions,
-motion/glass, navigation, lifecycle and relevant OS3/OS4 behavior), not just
+motion/glass, navigation, lifecycle and native capability fallbacks), not just
 controls. Recheck after editing, resolve deterministic issues and record
 evidence.
 
-For every MIUIX UI change, record an OS3 / OS4 / both / neither **UI-style**
-impact decision, including shared components and style switching. These style
-names do not broaden 1.0.0's HyperOS 4-only runtime support. For each affected
-style, verify the **corresponding** upstream revision and relevant layout,
-material, state, motion, interaction and lifecycle rules before editing, then
-compare the final implementation against them. Do not apply one style's rules to
-another. Cite the source and outcome in the PR; missing or unpublished guidance
-is an explicit evidence gap, not an invented upstream standard. Keep
-verification proportional to the affected call paths.
+Guiyuan follows one current MIUIX interface, not parallel OS-version style
+implementations. For each UI change, identify the affected surfaces, including
+native components, Glass material, navigation choices and actual capability
+fallbacks. Verify the corresponding pinned upstream revision and its layout,
+material, state, motion, interaction and lifecycle contracts before editing,
+then compare the final implementation against them. Cite the source and outcome
+in the PR; missing or unpublished guidance is an explicit evidence gap, not an
+invented upstream standard. Keep verification proportional to the affected
+call paths.
 
-For OS4-related changes, also classify the upstream surface as the accepted
+Also classify the upstream surface as the accepted
 pinned implementation or a new/materially revised PR or component. Explore
 promising improvements, but assess practical benefit, maturity, transitive
 dependencies/ABI, compatibility, performance, UI regression, rollback and
@@ -315,7 +315,7 @@ maintenance cost before adopting new upstream code. Record an adopt / isolated
 experiment / defer decision. An upstream update never automatically advances the
 accepted revision; experimental work stays in ordinary feat/fix branches until
 focused source-matched CI and any necessary device validation pass. This adds a
-risk gate, not a separate OS4 development or release pipeline.
+risk gate, not a separate UI development or release pipeline.
 
 ### UI iconography
 
@@ -331,8 +331,8 @@ with ad-hoc scaling, translation, alpha or stroke overrides.
 owns the shared 24 dp optical box and 22 dp main icon. A subordinate detail
 uses the existing 12 dp badge, contour cutout and 1 dp gap. Preserve the
 shared alignment/tint and verify adjacent icons in light and dark themes.
-The source implementation is authoritative; recheck pinned MIUIX and both
-OS3/OS4 UI styles for visual or behavior changes.
+The source implementation is authoritative; recheck pinned MIUIX and the
+relevant navigation/material choices and capability fallbacks.
 
 ### Version and build identity
 
@@ -412,7 +412,7 @@ defaults to General diagnostics. No ordinary Release assembly on `dev` or
 routine Debug/Canary on `main`. Trusted work-branch signing accepts only
 reviewed exact-SHA source-built artifacts; candidate code never runs with
 signing credentials. Never substitute the published MIUIX fallback for the
-accepted source-built OS4 graph.
+accepted source-built MIUIX graph.
 
 ### Stable promotion
 
