@@ -60,6 +60,9 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import com.chaners.guiyuan.ui.navigation.AppRoute
+import top.yukonga.miuix.kmp.nav.transition.navTransitionSource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
@@ -234,7 +237,12 @@ private fun HomePreviewSandboxCard(
     )
 
     Card(
-        modifier = modifier,
+        modifier = modifier.navTransitionSource(
+            route = AppRoute.PreviewSandbox,
+            cornerRadius = CardDefaults.CornerRadius,
+            containerColor = MiuixTheme.colorScheme.surfaceContainer,
+            sourceKey = "home-preview-sandbox",
+        ),
         insideMargin = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
         pressFeedbackType = PressFeedbackType.Tilt,
         showIndication = true,

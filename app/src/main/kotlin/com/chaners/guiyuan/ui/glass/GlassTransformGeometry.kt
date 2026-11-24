@@ -32,16 +32,12 @@ internal fun transformPanelAlpha(
 internal fun transformFrame(
     anchor: Rect,
     end: Size,
-    window: Rect,
-    margin: Float,
-    gap: Float,
+    placement: GlassPopupPlacement,
     sizeFraction: Float,
     positionFraction: Float,
     startRadius: Dp,
     endRadius: Dp,
-    layoutDirection: androidx.compose.ui.unit.LayoutDirection,
 ): GlassPopupFrame {
-    val placement = placeGlassPopup(anchor.translate(0f, gap), end, margin, window, layoutDirection)
     val width = anchor.width + (end.width - anchor.width) * sizeFraction
     val height = anchor.height + (end.height - anchor.height) * sizeFraction
     val centerX = anchor.center.x + (placement.rect.center.x - anchor.center.x) * positionFraction

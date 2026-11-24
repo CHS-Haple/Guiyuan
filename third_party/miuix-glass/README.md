@@ -7,19 +7,18 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The active source and Maven graph use the successfully published MIUIX
-  snapshot `0.9.5-28d45984-SNAPSHOT` at full revision
-  `28d459841e1ff7d873097991c3f923c94a98adf7`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45061606326)
-  and [tests](https://github.com/compose-miuix-ui/miuix/actions/runs/45061606276)
-  passed for the exact source revision. This remains a pre-release snapshot,
-  **not** a stable v0.9.5 release. Relative to `c83aacd8`, the graph adds
-  Glass dialog motion, GlassCard, Switch dragging, and drawing/caching fixes.
-  Device acceptance of the new snapshot, especially OS4 glass dialogs, blur,
-  menu dismissal, navigation, and OS3-style controls, is still required.
-  Keep source checkout and published Maven graph on the same exact revision.
-  Guiyuan-specific Back, long-press, touch-extension and title clip boundaries
-  remain locally owned.
+- The source and Maven graph use MIUIX snapshot
+  `0.9.5-07d48590-SNAPSHOT` at full revision
+  `07d4859021d7aed1a1f78afaee12c5c8a6917466`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45226040998)
+  succeeded; the exact-source [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45226041186)
+  passed Android assembly, desktop and web jobs, but the Apple job was cancelled.
+  This is a pre-release snapshot, not stable v0.9.5. Keep source and Maven
+  revisions identical; Guiyuan source/Maven builds and focused device validation
+  remain required. Signed B1940 passed focused maintainer acceptance
+  ([#1834](https://github.com/CHS-Haple/Guiyuan/pull/1834#issuecomment-7118485814)).
+  Guiyuan-specific Back, long-press, touch-extension and title
+  clip boundaries remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
@@ -192,3 +191,65 @@ locally maintained vector paths. No alternate vendor resource pack was
 found in the live app source set. Non-public rail, popup and native-title
 behavior remains adapted because it has no behavior-equivalent published
 entrypoint.
+
+## 07d48590 alignment and optional API decisions
+
+- **Adopt, both UI styles:** MIUIX owns Slider tap-to-seek, ColorPicker
+  bounds, Squircle's drawing and zero-radius fast paths, TopAppBarState
+  observation and navigation runtime fixes. No app-local reimplementation.
+  The About title follows example commit `84ce2a0a`: threshold 0.45 and
+  200 ms tween instead of the old continuous scroll ramp. Keep the existing
+  title-only alpha boundary in SettingsPage and all hero/background motion.
+  Native OverlayBottomSheet uses SheetMotion.Default, GlassBottomSheet uses
+  SheetMotion.Glass internally (#496); do not add a redundant motion setting
+  or a second scrim/drag clock.
+- **Adopt, OS4:** the controlled search field uses public SearchClearButton
+  and keeps query/focus ownership and a localized accessibility label. The
+  adapted transformed menu carries its glass anchor shadow receipt and reads
+  shadow alpha during drawing. It calculates settled placement once, with
+  window-safe horizontal alignment. The host already mounts on demand and
+  retires after both menu exits; the upstream lazy initial mount does not
+  justify a second visibility owner.
+- **Adopt scoped horizontal alignment (OS4):** the diagnostics filter is in
+  the leading navigation slot, so use Start; trailing More and scheme
+  management stay End. Carry upstream's alignment through the adapted primary
+  menu into its one settled placement, preserving safe-area clamping and RTL.
+  Secondary menus retain their native row geometry. OS3 keeps its existing
+  native menu; published dropdown preferences retain their value anchor.
+  Center is supported by the same upstream-aligned policy, with no current
+  caller or additional setting.
+- **Adopt scoped route Expansion (both UI styles):** only Home's preview
+  sandbox Card binds AppRoute.PreviewSandbox via public navTransitionSource,
+  the actual CardDefaults corner and surfaceContainer colour, and stable
+  sourceKey. The destination uses the upstream per-entry Expansion preset;
+  the Scaffold's normal opaque surface and NavDisplayEffects supply the
+  container. Upstream owns capture, shape, predictive Back and missing-source
+  fallback. No custom navigation clock, source registry, or change to the
+  preview lease/theme lifetime. All other routes and onboarding retain their
+  existing transitions. Device-test same-window capture, missing/restored
+  source, swipe/Back cancellation, theme switching and lease cleanup.
+  Align ordinary navigation with the example's multi-window-only corner
+  disabling; retain onboarding's existing no-corner policy.
+- Icon updates (XiaomiListen/CheckSelection and private backing names) are
+  consumed through upstream dependencies; the app's regular glass icon
+  accessors use unrelated names. Example desktop packaging, example icon
+  lists and baseline-profile changes are not app source migrations.
+  Experimental effect PR #321 and resume PR #461 are not in the pinned
+  published revision and are not copied into the app.
+
+
+### Final local-boundary review
+
+The remaining 29 app-local Glass Kotlin files include implementation fragments
+that match this upstream revision apart from package/import adaptation (popup
+Back progress, popup column, shader, drag target and secondary popup). Their
+internal entrypoints are not callable through the published dependency. Do not
+replace them with reflection or a second implementation. Top-app-bar public
+defaults are already delegated; its private band brush and unclipped slots
+remain coupled to the local measured layout. The controlled search cannot be
+replaced wholesale by the upstream overlay, which owns and clears its own
+query state. FloatingToolbar/FloatingActionButton do not replace the shared
+navigation action slot with reload enabled/held state, touch-exclusion and
+liquid press linkage. No additional relevant, behavior-equivalent published
+replacement was identified in this review. Revisit these boundaries when the
+upstream API or the actual caller requirements change.

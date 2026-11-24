@@ -206,8 +206,8 @@ private fun GlassButtonSurface(
     val opacity = surfaceAlpha.coerceIn(0f, 1f)
     val effectiveBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
     val anchorSurface = if (popupAnchor != null) {
-        remember(effectiveBackdrop, style, material, underlayMaterial, stroke, fill) {
-            GlassAnchorSurface(effectiveBackdrop, style, material, underlayMaterial, stroke, fill)
+        remember(effectiveBackdrop, style, material, underlayMaterial, stroke, fill, shadow) {
+            GlassAnchorSurface(effectiveBackdrop, style, material, underlayMaterial, stroke, fill, shadow)
         }
     } else {
         null

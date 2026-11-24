@@ -47,7 +47,7 @@ execution ownership is in [architecture](../architecture/README.md).
   receipts. Failed independent release must keep ownership/ineligibility
   visible rather than declaring a successful rollback or reusing the session.
   Do not modify native FINAL geometry to hide drawing differences.
-- **Open SystemUI work [#1817](https://github.com/CHS-Haple/Guiyuan/pull/1817):**
+- **Integrated SystemUI work [#1817](https://github.com/CHS-Haple/Guiyuan/pull/1817):**
   retain Home and CC projections in their separate native lifecycles.
   Exact ROM403 source confirms native peer-row underflow, signal exceptions
   and `paddingEnd` ownership. The work-branch retains only the compact steady QS_FAKE end reservation;
@@ -61,7 +61,7 @@ execution ownership is in [architecture](../architecture/README.md).
   Canary passed the reported landscape-to-portrait first upward-close
   disappearance on the maintainer's device. This does not certify every
   crowded peer, charging/island, slow-close or alternative ROM scenario.
-  See the PR for exact-source acceptance and remaining integration checks.
+  See the merged PR for exact-source acceptance and validation; dev's post-merge CI passed.
 - **Network and dual SIM:** native connectivity, subscription identity, radio
   state, tint and resource visibility are authoritative. The accepted
   [dual-SIM work #1205](https://github.com/CHS-Haple/Guiyuan/pull/1205)
@@ -95,6 +95,25 @@ detailed binary investigations remain in the maintainer-controlled private
 reference, not this public repository.
 
 ## Current UI integration boundaries
+
+- MIUIX `07d48590` updates both native and Glass sheet motion,
+  Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
+  navigation runtime through the matched dependency graph. OS4 search uses
+  the public `SearchClearButton`; transformed menus share one settled placement
+  and follow upstream's shadowless glass-anchor material transition. The OS4
+  diagnostics filter uses Start alignment; other menus keep their existing
+  anchors. Only Home's preview sandbox Card uses route-bound Expansion (both
+  UI styles); the existing route-owned lease and theme lifecycle are unchanged.
+  About title reveal follows the new upstream threshold/tween, not the old
+  scroll ramp. Full-screen navigation retains system corners, except in
+  multi-window mode. See the
+  [integration boundary](../../third_party/miuix-glass/README.md) for optional
+  feature decisions. The maintainer accepted signed B1940 from exact source
+  `323773127dc532765aacfaa5f38928ca0e1db787` after source/Maven CI and signing
+  passed ([#1834](https://github.com/CHS-Haple/Guiyuan/pull/1834#issuecomment-7118485814)).
+  This is a focused device acceptance, not exhaustive certification. Integrate
+  source without a second distribution Build; the delivered B1940 identity
+  remains attached to its original signed work-branch artifact.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
   uses app-local Glass adapters. Do not adopt upstream changes or
