@@ -53,24 +53,35 @@ import top.yukonga.miuix.kmp.nav.core.rememberNavSystemCornerRadius
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+// Activity-owned lease and window theme callbacks; route code owns only preview selection.
+internal data class AppSandbox(
+    val sandboxActive: Boolean,
+    val onPreviewThemeChange: (Boolean?) -> Unit,
+    val onSandboxToggle: (Boolean, PreviewSandboxUiState) -> Unit,
+    val onSandboxUpdate: (PreviewSandboxUiState) -> Unit,
+    val onSandboxStop: () -> Unit,
+)
+
+internal data class AppSettingsActions(
+    val onHotReload: () -> Unit,
+    val themeActions: AppearanceThemeActions,
+    val visualActions: AppearanceVisualActions,
+    val onSwipeBackChange: (Boolean) -> Unit,
+    val onLangChange: (AppLang) -> Unit,
+    val onIconHiddenChange: (Boolean) -> Unit,
+)
+
 @Composable
 internal fun GyApp(
     appearance: Appearance,
     dark: Boolean,
-    onPreviewThemeChange: (Boolean?) -> Unit,
-    sandboxActive: Boolean,
-    onSandboxToggle: (Boolean, PreviewSandboxUiState) -> Unit,
-    onSandboxUpdate: (PreviewSandboxUiState) -> Unit,
-    onSandboxStop: () -> Unit,
     lang: AppLang,
     iconHidden: Boolean,
-    onHotReload: () -> Unit,
-    themeActions: AppearanceThemeActions,
-    visualActions: AppearanceVisualActions,
-    onSwipeBackChange: (Boolean) -> Unit,
-    onLangChange: (AppLang) -> Unit,
-    onIconHiddenChange: (Boolean) -> Unit,
+    sandbox: AppSandbox,
+    actions: AppSettingsActions,
 ) {
+    val (sandboxActive, onPreviewThemeChange, onSandboxToggle, onSandboxUpdate, onSandboxStop) = sandbox
+    val (onHotReload, themeActions, visualActions, onSwipeBackChange, onLangChange, onIconHiddenChange) = actions
     GyTheme(
         themeMode = appearance.theme,
         dynamicColorEnabled = appearance.dynamicColor,
