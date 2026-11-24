@@ -13,6 +13,7 @@ NATIVE_STATUS_INVENTORY_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" 
 NETWORK_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "network" / "SysUiNetworkSource.kt"
 SCENE_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiSceneSource.kt"
 BATTERY_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiBatterySource.kt"
+BATTERY_EVIDENCE_PATH = BATTERY_SOURCE_PATH.with_name("SysUiBatteryEvidence.kt")
 KEYGUARD_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "SysUiKeyguardAodSource.kt"
 FULL_AOD_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "FullAodTransitionSource.kt"
 KEYGUARD_ICON_SOURCE_PATH = ROOT / "app" / "src" / "main" / "kotlin" / "com" / "chaners" / "guiyuan" / "xposed" / "KeyguardIconTransitionSource.kt"
@@ -200,6 +201,7 @@ if scene_field not in set(verified_fields.get(scene_class, [])):
 
 
 battery_source_text = BATTERY_SOURCE_PATH.read_text(encoding="utf-8")
+battery_evidence_text = BATTERY_EVIDENCE_PATH.read_text(encoding="utf-8")
 battery_source_class = source_string_constant(
     battery_source_text,
     "BATTERY_ICON_VIEW_CLASS_NAME",
@@ -260,9 +262,11 @@ progress_signature = (
 )
 if progress_signature not in set(verified_methods.get(battery_semantic_class, [])):
     fail("battery semantic progress method is not listed in the pinned SystemUI profile")
+if not re.search(r'SysUiBatteryEvidence\.Reader\(classLoader\)', battery_source_text):
+    fail("battery source no longer uses the pinned evidence reader")
 if not re.search(
     r'getDeclaredMethod\(\s*"getProgressStatus"\s*\)',
-    battery_source_text,
+    battery_evidence_text,
 ):
     fail("battery semantic source no longer reflects getProgressStatus")
 
@@ -271,7 +275,7 @@ verified_battery_fields = set(verified_fields.get(battery_semantic_class, []))
 if not battery_semantic_fields or not battery_semantic_fields.issubset(verified_battery_fields):
     fail("battery semantic fields are not all verified in the SystemUI APK")
 source_required_fields = set(
-    re.findall(r'\b(?:requiredField|batteryRequiredField)\("([^"]+)"\)', battery_source_text)
+    re.findall(r'\b(?:requiredField|batteryRequiredField)\("([^"]+)"\)', battery_evidence_text)
 )
 if not battery_semantic_fields.issubset(source_required_fields):
     fail(
