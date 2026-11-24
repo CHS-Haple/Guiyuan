@@ -7,7 +7,7 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The candidate source and Maven graph use MIUIX snapshot
+- The source and Maven graph use MIUIX snapshot
   `0.9.5-07d48590-SNAPSHOT` at full revision
   `07d4859021d7aed1a1f78afaee12c5c8a6917466`.
   [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45226040998)
@@ -15,7 +15,9 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   passed Android assembly, desktop and web jobs, but the Apple job was cancelled.
   This is a pre-release snapshot, not stable v0.9.5. Keep source and Maven
   revisions identical; Guiyuan source/Maven builds and focused device validation
-  remain required. Guiyuan-specific Back, long-press, touch-extension and title
+  remain required. Signed B1940 passed focused maintainer acceptance
+  ([#1834](https://github.com/CHS-Haple/Guiyuan/pull/1834#issuecomment-7118485814)).
+  Guiyuan-specific Back, long-press, touch-extension and title
   clip boundaries remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
@@ -234,3 +236,20 @@ entrypoint.
   lists and baseline-profile changes are not app source migrations.
   Experimental effect PR #321 and resume PR #461 are not in the pinned
   published revision and are not copied into the app.
+
+
+### Final local-boundary review
+
+The remaining 29 app-local Glass Kotlin files include implementation fragments
+that match this upstream revision apart from package/import adaptation (popup
+Back progress, popup column, shader, drag target and secondary popup). Their
+internal entrypoints are not callable through the published dependency. Do not
+replace them with reflection or a second implementation. Top-app-bar public
+defaults are already delegated; its private band brush and unclipped slots
+remain coupled to the local measured layout. The controlled search cannot be
+replaced wholesale by the upstream overlay, which owns and clears its own
+query state. FloatingToolbar/FloatingActionButton do not replace the shared
+navigation action slot with reload enabled/held state, touch-exclusion and
+liquid press linkage. No additional relevant, behavior-equivalent published
+replacement was identified in this review. Revisit these boundaries when the
+upstream API or the actual caller requirements change.

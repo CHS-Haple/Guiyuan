@@ -96,7 +96,7 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
-- MIUIX candidate `07d48590` updates both native and Glass sheet motion,
+- MIUIX `07d48590` updates both native and Glass sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
   navigation runtime through the matched dependency graph. OS4 search uses
   the public `SearchClearButton`; transformed menus share one settled placement
@@ -108,7 +108,12 @@ reference, not this public repository.
   scroll ramp. Full-screen navigation retains system corners, except in
   multi-window mode. See the
   [integration boundary](../../third_party/miuix-glass/README.md) for optional
-  feature decisions. Source/Maven CI and focused device acceptance are required.
+  feature decisions. The maintainer accepted signed B1940 from exact source
+  `323773127dc532765aacfaa5f38928ca0e1db787` after source/Maven CI and signing
+  passed ([#1834](https://github.com/CHS-Haple/Guiyuan/pull/1834#issuecomment-7118485814)).
+  This is a focused device acceptance, not exhaustive certification. Integrate
+  source without a second distribution Build; the delivered B1940 identity
+  remains attached to its original signed work-branch artifact.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
   uses app-local Glass adapters. Do not adopt upstream changes or
