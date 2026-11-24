@@ -61,6 +61,7 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.components.signalValueText
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.layout.pageScrollBarTrackPadding
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -201,7 +202,7 @@ internal fun PreviewSandboxScreen(
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(scrollState),
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
+                trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
                 topAppBarScrollBehavior = scrollBehavior,
             )
          }

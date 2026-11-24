@@ -61,6 +61,7 @@ import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.layout.pageScrollBarTrackPadding
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -147,7 +148,7 @@ private fun HomeScreenScrollingContent(
         VerticalScrollBar(
             adapter = rememberScrollBarAdapter(frame.scrollState),
             modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-            trackPadding = contentPadding,
+            trackPadding = pageScrollBarTrackPadding(contentPadding, frame.scrollBehavior),
             topAppBarScrollBehavior = frame.scrollBehavior,
         )
     }
