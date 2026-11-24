@@ -63,15 +63,20 @@ internal object SysUiBatterySource {
             if (face != null && axis != null) VerifiedFont(host, face, axis) else null
     }
 
+    // All delivery and diagnostic callbacks belong to one installing generation.
+    internal class Sinks(
+        val onBatteryState: (StatusStateStore.BatteryState) -> Unit,
+        val onChargingIconResource: (Int) -> Unit,
+        val onRuntimeFailure: (String, Throwable) -> Unit,
+        val onEvent: ((String) -> Unit)?,
+        val isDetailedDiagnosticsEnabled: () -> Boolean,
+    )
+
     @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onBatteryState: (StatusStateStore.BatteryState) -> Unit,
-        onChargingIconResource: (Int) -> Unit,
-        onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        sinks: Sinks,
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "battery-hooks-already-installed" }
 
@@ -83,14 +88,14 @@ internal object SysUiBatterySource {
         fun fallback(source: String, error: Throwable) {
             rethrowFatal(error)
             SysUiPresentationRuntime.emitPassiveDiagnostic {
-                onRuntimeFailure(source, error)
+                sinks.onRuntimeFailure(source, error)
             }
         }
 
         fun report(message: () -> String) {
-            val sink = onEvent ?: return
+            val sink = sinks.onEvent ?: return
             SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Battery]") {
-                if (isDetailedDiagnosticsEnabled()) sink(message())
+                if (sinks.isDetailedDiagnosticsEnabled()) sink(message())
             }
         }
 
@@ -118,7 +123,7 @@ internal object SysUiBatterySource {
                     }
                 } ?: return
             try {
-                onBatteryState(state)
+                sinks.onBatteryState(state)
             } catch (error: Throwable) {
                 fallback("state", error)
                 synchronized(this) {
@@ -154,7 +159,7 @@ internal object SysUiBatterySource {
                 }
             // Repeated samples still reconcile the state store after Hot Reload.
             try {
-                onChargingIconResource(iconId)
+                sinks.onChargingIconResource(iconId)
             } catch (error: Throwable) {
                 fallback("charging-glyph", error)
                 return
