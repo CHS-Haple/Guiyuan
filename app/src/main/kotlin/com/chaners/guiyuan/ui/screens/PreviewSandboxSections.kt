@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,18 +27,12 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun previewSandboxRows(
-    display: PreviewSandboxDisplay,
-    choices: PreviewSandboxOptions,
+internal fun PreviewSandboxPrimarySection(
+    state: PreviewSandboxUiState,
     renderModel: RenderModel,
     visual: VisualCfg,
-    actions: PreviewSandboxActions,
-    onPreviewHeight: (Int) -> Unit,
 ) {
-    val state = display.state
-    val parasiteActive = display.parasiteActive
-    val onParasiteChange = actions.ui.onParasiteChange
-    Column(Modifier.fillMaxWidth().onSizeChanged { onPreviewHeight(it.height) }) {
+    Column(Modifier.fillMaxWidth()) {
         SmallTitle(stringResource(R.string.home_preview_section_preview))
         Card(
             modifier =
@@ -56,6 +49,18 @@ internal fun previewSandboxRows(
             SandboxFullPreview(state, renderModel, visual)
         }
     }
+}
+
+@Composable
+internal fun previewSandboxRows(
+    display: PreviewSandboxDisplay,
+    choices: PreviewSandboxOptions,
+    visual: VisualCfg,
+    actions: PreviewSandboxActions,
+) {
+    val state = display.state
+    val parasiteActive = display.parasiteActive
+    val onParasiteChange = actions.ui.onParasiteChange
     Card(
         modifier = Modifier
             .padding(horizontal = 12.dp)

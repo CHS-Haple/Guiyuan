@@ -197,7 +197,10 @@ internal fun PreviewSandboxScreen(
                         .verticalScroll(scrollState, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
                         .padding(contentPadding),
             ) {
-                previewSandboxRows(display, choices, renderModel, visual, actions) { previewHeightPx = it }
+                Box(Modifier.fillMaxWidth().onSizeChanged { previewHeightPx = it.height }) {
+                    PreviewSandboxPrimarySection(state, renderModel, visual)
+                }
+                previewSandboxRows(display, choices, visual, actions)
             }
             VerticalScrollBar(
                 adapter = rememberScrollBarAdapter(scrollState),
