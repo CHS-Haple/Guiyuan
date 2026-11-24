@@ -171,17 +171,14 @@ internal object KeyguardRenderSession {
         current?.transitionSourceWitness()
 
     @Synchronized
-    fun detach() {
-        val session = current ?: retirement.pending ?: return
-        if (!session.isScene(Scene.KEYGUARD)) return
-        current = null
-        retire(session)
-    }
+    fun detach() = detachFamily(Scene.KEYGUARD)
 
     @Synchronized
-    fun detachAod() {
+    fun detachAod() = detachFamily(Scene.AOD)
+
+    private fun detachFamily(scene: Scene) {
         val session = current ?: retirement.pending ?: return
-        if (!session.isScene(Scene.AOD)) return
+        if (!session.isScene(scene)) return
         current = null
         retire(session)
     }
@@ -367,8 +364,8 @@ internal object KeyguardRenderSession {
             this.featureEnabled = featureEnabled
             this.sceneEligible = sceneEligible
             this.onPresentationReadinessChanged = onPresentationReadinessChanged
-            if (changedScene) stopFollowingIconAlpha()
             if (changedScene) {
+                stopFollowingIconAlpha()
                 readyLogged = false
                 rejectedTintLogged = false
             }
