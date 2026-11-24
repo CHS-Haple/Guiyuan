@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import top.yukonga.miuix.kmp.basic.CardColors
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
@@ -14,7 +13,6 @@ import top.yukonga.miuix.kmp.utils.PressFeedbackType
 internal fun BatterySheetCard(
     modifier: Modifier = Modifier,
     insideMargin: PaddingValues = CardDefaults.InsideMargin,
-    nativeColors: CardColors = CardDefaults.defaultColors(),
     pressFeedbackType: PressFeedbackType = PressFeedbackType.None,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,

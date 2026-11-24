@@ -4,8 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +30,6 @@ import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
 import com.chaners.guiyuan.xposed.RenderModel
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
@@ -42,7 +39,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal data class SandboxDockDisplay(
     val visible: Boolean,
-    val os4: Boolean,
     val renderModel: RenderModel,
     val visual: VisualCfg,
     val backdrop: LayerBackdrop?,
@@ -58,48 +54,37 @@ internal fun SandboxFloatingDock(
     display: SandboxDockDisplay,
     actions: SandboxDockActions,
 ) {
-    val os4 = display.os4
     // Preserve native MIUIX 52dp title center and 4dp lower clearance.
-    val dockPadding = if (os4) {
-        val inset = (TopAppBarDefaults.CollapsedHeight - TopAppBarDefaults.SmallTopAppBarCenterHeight) / 2
-        PaddingValues(top = inset, bottom = inset + TopAppBarDefaults.LargeTitleBottomPadding)
-    } else {
-        PaddingValues(vertical = 6.dp)
-    }
+    val inset = (TopAppBarDefaults.CollapsedHeight - TopAppBarDefaults.SmallTopAppBarCenterHeight) / 2
+    val dockPadding = PaddingValues(top = inset, bottom = inset + TopAppBarDefaults.LargeTitleBottomPadding)
     AnimatedVisibility(
         visible = display.visible,
         modifier = Modifier.onSizeChanged { actions.onHeightChanged(it.height) },
-        enter = if (os4) {
-            expandVertically(
-                animationSpec = GlassMotion.barExpand(),
-                expandFrom = Alignment.Top,
-                clip = false,
-            )
-        } else fadeIn() + expandVertically(expandFrom = Alignment.Top),
-        exit = if (os4) {
-            shrinkVertically(
-                animationSpec = GlassMotion.barCollapse(),
-                shrinkTowards = Alignment.Top,
-                clip = false,
-            )
-        } else fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+        enter = expandVertically(
+            animationSpec = GlassMotion.barExpand(),
+            expandFrom = Alignment.Top,
+            clip = false,
+        ),
+        exit = shrinkVertically(
+            animationSpec = GlassMotion.barCollapse(),
+            shrinkTowards = Alignment.Top,
+            clip = false,
+        ),
     ) {
         // Keep the native shadow outside the animated row rather than offscreen-alpha clipping.
-        val opacityModifier = if (os4) {
-            val opacity by transition.animateFloat(
-                transitionSpec = {
-                    if (targetState == EnterExitState.Visible) GlassMotion.fadeIn()
-                    else GlassMotion.fadeOut()
-                },
-                label = "dockOpacity",
-            ) { state ->
-                if (state == EnterExitState.Visible) 1f else 0f
-            }
-            Modifier.graphicsLayer {
-                alpha = opacity
-                compositingStrategy = CompositingStrategy.ModulateAlpha
-            }
-        } else Modifier
+        val opacity by transition.animateFloat(
+            transitionSpec = {
+                if (targetState == EnterExitState.Visible) GlassMotion.fadeIn()
+                else GlassMotion.fadeOut()
+            },
+            label = "dockOpacity",
+        ) { state ->
+            if (state == EnterExitState.Visible) 1f else 0f
+        }
+        val opacityModifier = Modifier.graphicsLayer {
+            alpha = opacity
+            compositingStrategy = CompositingStrategy.ModulateAlpha
+        }
         SandboxFloatingDockRow(display, actions, dockPadding, opacityModifier)
     }
 }
@@ -146,24 +131,15 @@ private fun RowScope.SandboxDockScrollTop(
 ) {
     Box(
         modifier = Modifier.weight(1f).padding(
-            end = if (display.os4) GlassTopAppBarDefaults.HorizontalPadding else TopAppBarDefaults.ActionIconPadding,
+            end = GlassTopAppBarDefaults.HorizontalPadding,
         ),
         contentAlignment = Alignment.CenterEnd,
     ) {
         val backTop = stringResource(R.string.diagnostics_scroll_top)
         TooltipBox(text = backTop) {
-            if (display.os4) {
-                GlassIconButton(
-                    onClick = onScrollToTop,
-                    backdrop = display.backdrop,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),
-                        contentDescription = backTop,
-                    )
-                }
-            } else IconButton(
+            GlassIconButton(
                 onClick = onScrollToTop,
+                backdrop = display.backdrop,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_material_symbol_vertical_align_top),

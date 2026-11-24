@@ -47,15 +47,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.FeatureRepo
-import com.chaners.guiyuan.ui.components.MiuixBlurredTopBar
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.components.signalValueText
@@ -146,8 +143,7 @@ internal fun PreviewSandboxScreen(
             }
         }
     }
-    val os4 = LocalUiStyle.current == UiStyle.OS4
-    val glassOverscroll = os4 && canScroll
+    val glassOverscroll = canScroll
     val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
         { offset -> scrollBehavior.state.overscrollOffset = offset }
     }
@@ -157,7 +153,7 @@ internal fun PreviewSandboxScreen(
     val dockHeight = with(density) { dockHeightPx.toDp() }
     val dock: @Composable () -> Unit = {
         SandboxFloatingDock(
-            display = SandboxDockDisplay(showDock, os4, renderModel, visual, topBarBackdrop),
+            display = SandboxDockDisplay(showDock, renderModel, visual, topBarBackdrop),
             actions = SandboxDockActions(
                 onScrollToTop = scrollToTop,
                 onHeightChanged = { dockHeightPx = it },
@@ -170,7 +166,7 @@ internal fun PreviewSandboxScreen(
             topBar = {
                 PreviewSandboxTopBar(
                     frame = SandboxTopBarFrame(
-                        os4, topBarBackdrop, scrollBehavior, listState, dockHeight,
+                        topBarBackdrop, scrollBehavior, listState, dockHeight,
                     ),
                     actions = SandboxTopBarActions(
                         dark = dark,

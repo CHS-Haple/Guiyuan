@@ -24,8 +24,6 @@ internal enum class ThemeMode {
     Dark,
 }
 
-internal enum class UiStyle { OS3, OS4 }
-
 internal enum class NavStyle {
     Standard,
     Blur,
@@ -57,10 +55,7 @@ internal data class Appearance(
     val liquidMode: LiquidMode = LiquidMode.Balanced,
     val swipeBack: Boolean = true,
     val uiScalePercent: Int = 100,
-) {
-    // Transitional until the remaining UI callers lose their style branches.
-    val uiStyle: UiStyle get() = UiStyle.OS4
-}
+)
 
 internal data class ThemeChoice(
     val mode: ThemeMode,

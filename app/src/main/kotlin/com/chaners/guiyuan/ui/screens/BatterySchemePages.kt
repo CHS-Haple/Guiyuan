@@ -296,11 +296,6 @@ private fun BatterySchemePageContent(
     ) {
         BatterySheetCard(
             modifier = Modifier.fillMaxWidth(),
-            nativeColors =
-                CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.surface,
-                    contentColor = MiuixTheme.colorScheme.onSurface,
-                ),
             insideMargin = PaddingValues(16.dp),
         ) {
             BatterySchemeHeader(
