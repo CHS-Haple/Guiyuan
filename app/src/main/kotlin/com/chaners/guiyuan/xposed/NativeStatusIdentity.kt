@@ -58,10 +58,10 @@ internal object NativeStatusIdentity {
         }
     }
 
-    internal fun ancestorChain(view: View): List<String> =
+    internal fun ancestorChain(view: View, maxDepth: Int = Int.MAX_VALUE): List<String> =
         buildList {
             var current: View? = view
-            while (current != null) {
+            while (current != null && size < maxDepth) {
                 add(
                     buildString {
                         append(current.javaClass.simpleName)
