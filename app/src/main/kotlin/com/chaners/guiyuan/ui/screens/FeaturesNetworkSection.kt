@@ -42,7 +42,8 @@ internal data class NetworkWeightDialog(
     val onOpen: () -> Unit,
 )
 
-internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSection(
+@Composable
+internal fun ColumnScope.featureNetworkSection(
     search: PageSearch,
     state: NetworkFeatureState,
     visualRepo: VisualRepo,
@@ -51,7 +52,7 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
     val visual = state.visual
     val enabled = state.enabled
     val weight = state.weight
-    Section(R.string.section_network) {
+    PreferenceSection(R.string.section_network) {
         networkSizesAndWeights(search, visual, visualRepo, enabled)
         if (search.matches(R.string.mobile_type_weight)) {
             NativeWeightSlider(

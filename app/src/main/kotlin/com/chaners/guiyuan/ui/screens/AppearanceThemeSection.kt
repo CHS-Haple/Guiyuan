@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
@@ -12,11 +11,12 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
-internal fun LazyListScope.appearanceThemeSection(
+@Composable
+internal fun ColumnScope.appearanceThemeSection(
     appearance: Appearance,
     actions: AppearanceThemeActions,
 ) {
-    Section(R.string.section_theme) {
+    PreferenceSection(R.string.section_theme) {
         appearanceThemeMode(appearance, actions)
         appearanceDynamicColor(appearance, actions)
     }

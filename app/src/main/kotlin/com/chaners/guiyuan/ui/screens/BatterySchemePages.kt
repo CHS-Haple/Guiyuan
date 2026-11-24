@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.Box
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -212,6 +216,7 @@ private fun SchemeDotNavigationEffect(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
     context: SchemeDeckContext,
@@ -224,11 +229,11 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
         state = pager,
         snapAnimationSpec = PagerNavigationSpringSpec,
     )
+    Box(Modifier.fillMaxWidth().weight(1f)) {
     HorizontalPager(
         state = pager,
         modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
+            .fillMaxSize()
             .clipToBounds()
             .pagerGestureOverride(pagerState = pager, flingBehavior = flingBehavior),
         userScrollEnabled = false,
@@ -242,6 +247,18 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
         // Per-scheme scroll states are already owned by page.key.
     ) { index ->
         BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
+    }
+    context.pages.getOrNull(pager.currentPage)?.let { page ->
+        context.scrollStates[page.key]?.let { activeScroll ->
+            key(page.key) {
+                VerticalScrollBar(
+                    adapter = rememberScrollBarAdapter(activeScroll),
+                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                    trackPadding = contentPadding,
+                )
+            }
+        }
+    }
     }
 }
 

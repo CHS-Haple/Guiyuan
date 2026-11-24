@@ -1,7 +1,8 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.ColumnScope
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
@@ -10,14 +11,15 @@ import com.chaners.guiyuan.settings.VisualRepo
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
-internal fun LazyListScope.featureDisplaySection(
+@Composable
+internal fun ColumnScope.featureDisplaySection(
     search: PageSearch,
     featureCfg: FeatureCfg,
     featureRepo: FeatureRepo,
     visual: VisualCfg,
     visualRepo: VisualRepo,
 ) {
-    Section(R.string.section_display_transition) {
+    PreferenceSection(R.string.section_display_transition) {
         if (search.matches(R.string.keyguard_combined_status_title)) {
             SwitchPreference(
                 title = stringResource(R.string.keyguard_combined_status_title),
@@ -61,14 +63,15 @@ internal fun LazyListScope.featureDisplaySection(
     }
 }
 
-internal fun LazyListScope.featureManagementSection(
+@Composable
+internal fun ColumnScope.featureManagementSection(
     search: PageSearch,
     ioBusy: Boolean,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onReset: () -> Unit,
 ) {
-    Section(R.string.section_management) {
+    PreferenceSection(R.string.section_management) {
         if (search.matches(R.string.config_backup_title)) {
             BasicComponent(
                 title = stringResource(R.string.config_backup_title),
