@@ -94,8 +94,6 @@ class AppearanceCompatibilityTest {
         assertTrue(settings.topBarProgressiveBlur)
         assertEquals(NavStyle.Glass, settings.navStyle)
         assertEquals(NavContent.IconAndText, settings.navContent)
-        assertEquals(NavContent.IconAndText, settings.liquidContent)
-        assertEquals(NavContent.IconAndText, settings.activeNavContent)
         assertEquals(LiquidMode.Balanced, settings.liquidMode)
     }
 
@@ -151,20 +149,31 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
-    fun existingNavigationLabelPreferencesRemainSeparateAcrossMigration() {
+    fun migrationUsesActiveStyleLabelChoiceAndRetiresSeparateKey() {
         val regularKey = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val liquidKey = stringPreferencesKey("floating_navigation_liquid_content")
-        val prefs = mutablePreferencesOf(
-            regularKey to NavContent.IconOnly.name,
-            liquidKey to NavContent.IconAndText.name,
-        )
-
-        migrateAppearance(prefs)
-
-        assertEquals(NavContent.IconOnly.name, prefs[regularKey])
-        assertEquals(NavContent.IconAndText.name, prefs[liquidKey])
-        assertEquals(NavContent.IconOnly, decodeNavContent(prefs[regularKey]))
-        assertEquals(NavContent.IconAndText, decodeNavContent(prefs[liquidKey], NavContent.IconAndText))
+        val navStyle = stringPreferencesKey("floating_navigation_style")
+        val liquidMode = stringPreferencesKey("floating_navigation_liquid_mode")
+        for (style in NavStyle.entries) {
+            for (regular in NavContent.entries) {
+                val liquid = NavContent.entries.first { it != regular }
+                val prefs = mutablePreferencesOf(
+                    navStyle to style.name,
+                    regularKey to regular.name,
+                    liquidKey to liquid.name,
+                    liquidMode to LiquidMode.Clear.stored,
+                )
+                migrateAppearance(prefs)
+                val expected = if (style == NavStyle.Liquid) liquid else regular
+                assertEquals(expected.name, prefs[regularKey])
+                assertEquals(null, prefs[liquidKey])
+                assertEquals(style.name, prefs[navStyle])
+                assertEquals(LiquidMode.Clear.stored, prefs[liquidMode])
+                val migrated = prefs.asMap().toMap()
+                migrateAppearance(prefs)
+                assertEquals(migrated, prefs.asMap())
+            }
+        }
     }
 
     @Test
@@ -205,7 +214,7 @@ class AppearanceCompatibilityTest {
     }
 
     @Test
-    fun migrationKeepsMissingSharedLiquidContentKeyAbsent() {
+    fun migrationPreservesImplicitLiquidLabelDefault() {
         val content = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val nav = stringPreferencesKey("floating_navigation_style")
         val prefs = mutablePreferencesOf(
@@ -213,7 +222,7 @@ class AppearanceCompatibilityTest {
             nav to NavStyle.Liquid.name,
         )
         migrateAppearance(prefs)
-        assertEquals(null, prefs[content])
+        assertEquals(NavContent.IconAndText.name, prefs[content])
         assertEquals(NavStyle.Liquid.name, prefs[nav])
     }
 
@@ -316,30 +325,13 @@ class AppearanceNavigationTest {
     }
 
     @Test
-    fun liquidAndOtherStylesKeepSeparateContent() {
-        val liquid = Appearance(
-            navStyle = NavStyle.Liquid,
-            navContent = NavContent.IconOnly,
-            liquidContent = NavContent.IconAndText,
-        )
-        assertEquals(NavContent.IconAndText, liquid.activeNavContent)
-        assertEquals(NavContent.IconAndText, Appearance(navStyle = NavStyle.Liquid).activeNavContent)
-        assertEquals(NavContent.IconOnly, liquid.copy(navStyle = NavStyle.Glass).activeNavContent)
-
-        val changed = liquid.copy(
-            liquidContent = NavContent.IconOnly,
-            navContent = NavContent.IconAndText,
-        )
-        assertEquals(NavContent.IconOnly, changed.activeNavContent)
-        assertEquals(NavContent.IconAndText, changed.copy(navStyle = NavStyle.Blur).activeNavContent)
-        assertEquals(NavContent.IconAndText, changed.copy(navStyle = NavStyle.Standard).activeNavContent)
-    }
-
-    @Test
-    fun liquidContentDefaultsToIconsAndText() {
-        assertEquals(NavContent.IconAndText, decodeNavContent(null, NavContent.IconAndText))
-        assertEquals(NavContent.IconOnly, decodeNavContent("IconOnly", NavContent.IconAndText))
-        assertEquals(NavContent.IconAndText, decodeNavContent(TEST_UNKNOWN_INPUT, NavContent.IconAndText))
+    fun allNavigationStylesShareTheSameContentChoice() {
+        for (content in NavContent.entries) {
+            val appearance = Appearance(navContent = content)
+            NavStyle.entries.forEach { style ->
+                assertEquals(content, appearance.copy(navStyle = style).navContent)
+            }
+        }
     }
 
     @Test

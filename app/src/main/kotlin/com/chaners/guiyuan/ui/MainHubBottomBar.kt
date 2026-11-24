@@ -59,7 +59,7 @@ internal fun HubGlassBottomBar(
     actionControls: NavigationActionControls,
 ) {
     val selectedPage = pageSelection.selectedPage
-    val includeLabels = appearance.activeNavContent == NavContent.IconAndText
+    val includeLabels = appearance.navContent == NavContent.IconAndText
     val glassItems = remember(items, includeLabels) {
         items.map { item ->
             GlassNavigationItem(
@@ -107,7 +107,7 @@ internal fun HubNativeBottomBar(
     os4Glass: Boolean,
 ) {
     NavigationBar(
-        mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
+        mode = if (os4Glass && appearance.navContent == NavContent.IconOnly) {
             NavigationBarDisplayMode.IconOnly
         } else {
             NavigationBarDisplayMode.IconAndText
@@ -187,7 +187,7 @@ internal fun HubLiquidBottomBar(
             ) {
                 items.forEachIndexed { index, item ->
                     LiquidNavEntry(
-                        contentMode = appearance.activeNavContent,
+                        contentMode = appearance.navContent,
                         selected = pageSelection.selectedPage == index,
                         onClick = { pageSelection.select(index) },
                         icon = item.icon,
@@ -281,7 +281,7 @@ internal fun HubFloatingBottomBar(
             items.forEachIndexed { index, item ->
                 val selected = pageSelection.selectedPage == index
                 NavContentItem(
-                    content = appearance.activeNavContent,
+                    content = appearance.navContent,
                     selected = selected,
                     onClick = { pageSelection.select(index) },
                     icon = item.icon,

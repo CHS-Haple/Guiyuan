@@ -90,7 +90,7 @@ internal fun MiniNavigationPreview(
     val standardNav = !appearance.navEnabled || (os4Glass && miuixBackdrop == null)
 
     if (os4Glass && miuixBackdrop != null) {
-        MiniGlassNavigationPreview(appearance.activeNavContent, miuixBackdrop)
+        MiniGlassNavigationPreview(appearance.navContent, miuixBackdrop)
         return
     }
 
@@ -101,9 +101,9 @@ internal fun MiniNavigationPreview(
         bottomPadding = if (standardNav) 0.dp else liquidBottomSpace,
     ) {
         when {
-            standardNav -> MiniStandardNavigationPreview(appearance.activeNavContent, os4Glass)
-            liquidBackdrop != null -> MiniLiquidNavigationPreview(appearance.activeNavContent, appearance.liquidMode, dark, liquidBackdrop)
-            else -> MiniFloatingNavigationPreview(appearance.activeNavContent, appearance.uiStyle, appearance.navStyle, dark, miuixBackdrop)
+            standardNav -> MiniStandardNavigationPreview(appearance.navContent, os4Glass)
+            liquidBackdrop != null -> MiniLiquidNavigationPreview(appearance.navContent, appearance.liquidMode, dark, liquidBackdrop)
+            else -> MiniFloatingNavigationPreview(appearance.navContent, appearance.uiStyle, appearance.navStyle, dark, miuixBackdrop)
         }
     }
 }

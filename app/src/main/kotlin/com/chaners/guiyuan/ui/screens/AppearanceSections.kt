@@ -149,10 +149,10 @@ private fun ColumnScope.appearanceNavigationOptions(
         title = stringResource(R.string.floating_navigation_content),
         summary = stringResource(R.string.floating_navigation_content_summary),
         startAction = { SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_text_fields) },
-        checked = appearance.activeNavContent == NavContent.IconAndText,
+        checked = appearance.navContent == NavContent.IconAndText,
         onCheckedChange = { showLabels ->
             val content = if (showLabels) NavContent.IconAndText else NavContent.IconOnly
-            if (content != appearance.activeNavContent) actions.onNavContentChange(content)
+            if (content != appearance.navContent) actions.onNavContentChange(content)
         },
     )
     SwitchPreference(

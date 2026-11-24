@@ -54,16 +54,12 @@ internal data class Appearance(
     val navTouchExtension: Boolean = true,
     val navStyle: NavStyle = NavStyle.Glass,
     val navContent: NavContent = NavContent.IconAndText,
-    val liquidContent: NavContent = NavContent.IconAndText,
     val liquidMode: LiquidMode = LiquidMode.Balanced,
     val swipeBack: Boolean = true,
     val uiScalePercent: Int = 100,
 ) {
     // Transitional until the remaining UI callers lose their style branches.
     val uiStyle: UiStyle get() = UiStyle.OS4
-
-    val activeNavContent: NavContent
-        get() = if (navStyle == NavStyle.Liquid) liquidContent else navContent
 }
 
 internal data class ThemeChoice(
@@ -130,17 +126,24 @@ private val Context.appearanceStore: DataStore<Preferences> by preferencesDataSt
 private val uiStyleKey = stringPreferencesKey("ui_style")
 private val topBarProgressiveBlurKey = booleanPreferencesKey("top_bar_progressive_blur")
 private val navContentKey = stringPreferencesKey("floating_navigation_content")
+private val legacyLiquidContentKey = stringPreferencesKey("floating_navigation_liquid_content")
+private val navStyleKey = stringPreferencesKey("floating_navigation_style")
 private val os4UpgradeKey = booleanPreferencesKey("ui_style_os4_upgrade_done")
 
 internal fun migrateAppearance(prefs: MutablePreferences) {
-    val freshInstall = prefs.asMap().isEmpty()
+    // Preserve the visible navigation choice, not the inactive style's remembered value.
+    val content = when {
+        prefs.asMap().isEmpty() -> NavContent.IconAndText
+        prefs[navStyleKey] == NavStyle.Liquid.name -> decodeNavContent(
+            prefs[legacyLiquidContentKey] ?: prefs[navContentKey],
+            NavContent.IconAndText,
+        )
+        else -> decodeNavContent(prefs[navContentKey])
+    }
+    prefs[navContentKey] = content.name
+    prefs.remove(legacyLiquidContentKey)
     prefs.remove(uiStyleKey)
     prefs.remove(os4UpgradeKey)
-    // Preserve the legacy icon-only default if retiring the style keys empties an existing store.
-    // Other existing preferences (including the shared legacy Liquid label key) remain untouched.
-    if (prefs.asMap().isEmpty()) {
-        prefs[navContentKey] = if (freshInstall) NavContent.IconAndText.name else NavContent.IconOnly.name
-    }
 }
 
 internal class AppearanceRepo(context: Context) {
@@ -179,12 +182,6 @@ internal class AppearanceRepo(context: Context) {
                 navTouchExtension = prefs[navTouchExtensionKey] ?: true,
                 navStyle = style,
                 navContent = decodeNavContent(prefs[navContentKey]),
-                liquidContent =
-                    decodeNavContent(
-                        prefs[liquidContentKey]
-                            ?: if (style == NavStyle.Liquid) prefs[navContentKey] else null,
-                        NavContent.IconAndText,
-                    ),
                 liquidMode = decodeLiquidMode(prefs[liquidModeKey]),
                 swipeBack = prefs[swipeBackKey] ?: true,
                 uiScalePercent = uiScalePercent(prefs[uiScaleKey]),
@@ -241,15 +238,6 @@ internal class AppearanceRepo(context: Context) {
 
     suspend fun setNavStyle(style: NavStyle) {
         store.edit { prefs ->
-            // The old key also held Liquid's choice; save it before switching away.
-            if (prefs[liquidContentKey] == null) {
-                if (prefs[navStyleKey] == NavStyle.Liquid.name) {
-                    prefs[liquidContentKey] =
-                        prefs[navContentKey] ?: NavContent.IconAndText.name
-                } else if (style == NavStyle.Liquid) {
-                    prefs[liquidContentKey] = NavContent.IconAndText.name
-                }
-            }
             prefs[navStyleKey] = style.name
             prefs.remove(legacyNavBlurKey)
             prefs.remove(legacyGlassKey)
@@ -258,12 +246,7 @@ internal class AppearanceRepo(context: Context) {
     }
 
     suspend fun setNavContent(content: NavContent) {
-        store.edit { prefs ->
-            val key =
-                if (prefs[navStyleKey] == NavStyle.Liquid.name) liquidContentKey
-                else navContentKey
-            prefs[key] = content.name
-        }
+        store.edit { prefs -> prefs[navContentKey] = content.name }
     }
 
     suspend fun setLiquidMode(mode: LiquidMode) {
@@ -293,8 +276,6 @@ internal class AppearanceRepo(context: Context) {
         val legacyGlassKey = booleanPreferencesKey("glass_bottom_bar_enabled")
         val navEnabledKey = booleanPreferencesKey("floating_navigation_bar_enabled")
         val navTouchExtensionKey = booleanPreferencesKey("floating_navigation_touch_extension")
-        val navStyleKey = stringPreferencesKey("floating_navigation_style")
-        val liquidContentKey = stringPreferencesKey("floating_navigation_liquid_content")
         val liquidModeKey = stringPreferencesKey("floating_navigation_liquid_mode")
         val legacyNavBlurKey = booleanPreferencesKey("floating_navigation_blur_enabled")
         val swipeBackKey = booleanPreferencesKey("swipe_back_enabled")
