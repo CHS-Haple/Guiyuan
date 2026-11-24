@@ -247,12 +247,12 @@ fun GlassTopAppBar(
         }
     }
     val transition = updateTransition(contentScrolled, label = "glassTopBarFloat")
-    // Follow native collapse while a title can expand; fixed titles use the upstream short mask fade.
+    // SmallTopAppBar pins the height range to zero; fixed titles use the upstream overlap fade.
     val maskProgress = transition.animateFloat(
         transitionSpec = { tween(durationMillis = 100, easing = LinearEasing) },
         label = "glassTopBarMask",
     ) { if (it) 1f else 0f }
-    val useCollapseProgress = expandable && scrollBehavior != null
+    val useCollapseProgress = !compact && expandable && scrollBehavior != null
     val bandProgress: () -> Float = remember(useCollapseProgress, scrollBehavior, maskProgress) {
         if (useCollapseProgress) {
             { scrollBehavior?.state?.collapsedFraction?.coerceIn(0f, 1f) ?: 0f }
@@ -298,7 +298,7 @@ fun GlassTopAppBar(
     val navigationHeight = if (navigationSize.height > 0) with(density) { navigationSize.height.toDp() } else buttonSize
     val actionWidth = if (actionSize.width > 0) with(density) { actionSize.width.toDp() } else buttonSize
     val actionHeight = if (actionSize.height > 0) with(density) { actionSize.height.toDp() } else buttonSize
-    // The accepted OS4 native title clips only title layers, but compact mode
+    // The native title clips only title layers, but compact mode
     // still delegates to SmallTopAppBar, which clips protruding glass controls.
     val useUnclippedSlots = compact || !NativeTitleLocalClip
     val overlayNavigation = unclippedNavigationIcon && useUnclippedSlots

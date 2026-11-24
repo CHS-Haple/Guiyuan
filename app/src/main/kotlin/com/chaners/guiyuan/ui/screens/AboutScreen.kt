@@ -52,7 +52,7 @@ internal fun AboutScreen(
         title = stringResource(R.string.about_title),
         onBack = onBack,
         listState = scroll.list,
-        compactTopBar = true,
+        keepCompactTitle = true,
         titleAlpha = titleAlpha,
         background = {
             GyBgEffect(
