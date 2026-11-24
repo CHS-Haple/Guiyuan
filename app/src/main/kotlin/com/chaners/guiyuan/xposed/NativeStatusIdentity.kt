@@ -92,3 +92,13 @@ internal object NativeStatusIdentity {
             else -> visibility.toString()
         }
 }
+
+// Exact native class identity, direct children only. Keep first-match semantics
+// and leave the caller responsible for the required View subtype.
+internal fun ViewGroup.directNativeChild(className: String): View? {
+    for (index in 0 until childCount) {
+        val child = getChildAt(index)
+        if (child.javaClass.name == className) return child
+    }
+    return null
+}

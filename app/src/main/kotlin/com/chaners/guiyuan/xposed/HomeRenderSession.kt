@@ -54,11 +54,11 @@ internal object HomeRenderSession {
         if (retirement.pending != null) return "home-render-release-incomplete"
         val hostView = host as? ViewGroup
             ?: return "host-not-view-group"
-        val batteryContainer = hostView.directChild(BATTERY_CONTAINER_CLASS_NAME)
+        val batteryContainer = hostView.directNativeChild(BATTERY_CONTAINER_CLASS_NAME) as? ViewGroup
             ?: return "battery-container-missing"
-        val statusIcons = batteryContainer.directChild(STATUS_ICON_CONTAINER_CLASS_NAME)
+        val statusIcons = batteryContainer.directNativeChild(STATUS_ICON_CONTAINER_CLASS_NAME) as? ViewGroup
             ?: return "status-icons-missing"
-        val batteryView = batteryContainer.directChild(BATTERY_VIEW_CLASS_NAME)
+        val batteryView = batteryContainer.directNativeChild(BATTERY_VIEW_CLASS_NAME) as? ViewGroup
             ?: return "battery-view-missing"
         val batteryCarrier =
             SysUiCarrierMetrics.resolveView(batteryView)
@@ -249,15 +249,6 @@ internal object HomeRenderSession {
         )
     }
 
-    private fun ViewGroup.directChild(className: String): ViewGroup? {
-        for (index in 0 until childCount) {
-            val child = getChildAt(index)
-            if (child.javaClass.name == className) {
-                return child as? ViewGroup
-            }
-        }
-        return null
-    }
 
     private class Session(
         host: ViewGroup,
