@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.ThemeMode
@@ -144,6 +145,8 @@ private fun ColumnScope.appearancePaletteStyle(
         items = paletteNames,
         selectedIndex = appearance.paletteStyle.ordinal,
         title = stringResource(R.string.theme_palette_style),
+        // Prefer displaying all ten styles; upstream still clamps to the safe viewport.
+        maxHeight = 560.dp,
         summary = stringResource(R.string.theme_palette_style_summary),
         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style) },
         onSelectedIndexChange = { index ->
