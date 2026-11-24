@@ -1565,9 +1565,11 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.restoreAfterHotReload(
                 host = host,
-                onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                sinks = CcRenderSession.Sinks(
+                    onEvent = ::logRuntimeEvent,
+                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                ),
                 transferredCompactReady = transferredCompactReady,
             )
         if (failure != null) {
@@ -1614,9 +1616,11 @@ class GyModule : XposedModule() {
             val result =
                 CcRenderSession.prearmAfterNextNativeLayout(
                     host = host,
-                    onEvent = ::logRuntimeEvent,
-                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                    sinks = CcRenderSession.Sinks(
+                        onEvent = ::logRuntimeEvent,
+                        isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                        onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                    ),
                 )
         ) {
             is CcRenderSession.PrearmResult.Scheduled -> {
@@ -1653,9 +1657,11 @@ class GyModule : XposedModule() {
         val failure =
             CcRenderSession.attach(
                 host = host,
-                onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
-                onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                sinks = CcRenderSession.Sinks(
+                    onEvent = ::logRuntimeEvent,
+                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                    onProjectionReadinessChanged = ::onCcProjectionReadyChanged,
+                ),
             )
         if (failure != null) {
             logDiagnostic(
