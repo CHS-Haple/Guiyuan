@@ -3,7 +3,7 @@
     <string name="app_name">归元</string>
     <string name="app_description">面向 Xiaomi HyperOS 的 LSPosed 模块，将电量、移动网络与 Wi-Fi 信息整合为一个紧凑的状态栏图标。</string>
     <string name="home_title">归元</string>
-    <string name="hot_reload">热重载归元</string>
+    <string name="hot_reload">手动热重载</string>
     <string name="nav_home">首页</string>
     <string name="nav_features">功能</string>
     <string name="nav_settings">设置</string>
