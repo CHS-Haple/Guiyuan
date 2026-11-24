@@ -3,9 +3,22 @@ package com.chaners.guiyuan.ui.screens
 import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSchemeEntry
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
+import com.chaners.guiyuan.settings.BatteryColorSchemeSource
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.opaqueArgb
+
+// Foreground following is a custom color choice, not a separate preset style.
+internal val BATTERY_COLOR_STYLE_OPTIONS =
+    listOf(
+        BatteryColorSchemeSource.HYPEROS,
+        BatteryColorSchemeSource.IOS,
+        BatteryColorSchemeSource.LOW_SATURATION,
+        BatteryColorSchemeSource.CUSTOM,
+    )
+
+internal fun batteryColorStyleSource(source: BatteryColorSchemeSource): BatteryColorSchemeSource =
+    if (source == BatteryColorSchemeSource.FOLLOW_SYSTEM) BatteryColorSchemeSource.CUSTOM else source
 
 internal fun schemePageForKey(
     library: BatteryColorSchemeLibrary,
@@ -19,7 +32,6 @@ internal fun batteryColorEditorSeed(
     slot: BatteryColorSlot,
 ): Int? =
     batterySchemeEntryColor(entry, slot)
-        ?: entry.customColor
 
 internal fun batteryColorHex(color: Int): String =
     "#%06X".format(color and 0x00FFFFFF)

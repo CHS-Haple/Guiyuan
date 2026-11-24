@@ -35,9 +35,8 @@ import androidx.compose.ui.unit.offset
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.ScopeRestart
-import com.chaners.guiyuan.ui.components.floatingNavMaterial
+import com.chaners.guiyuan.ui.components.floatingNavBlur
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
@@ -102,8 +101,7 @@ internal fun MainHub(
             blocked = restartInProgress || hotReloadInProgress || scopeRequestInProgress || scopeBusy,
         )
     }
-    val os4 = appearance.uiStyle == UiStyle.OS4
-    val os4Glass = os4 && appearance.navEnabled && appearance.navStyle == NavStyle.Glass
+    val glassNavigation = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
@@ -115,7 +113,7 @@ internal fun MainHub(
     val surfaceColor = MiuixTheme.colorScheme.surface
     // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
-        if (miuixMaterialActive || (os4 && isRuntimeShaderSupported())) {
+        if (isRuntimeShaderSupported()) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
@@ -139,8 +137,8 @@ internal fun MainHub(
         GlassNavigationRailDefaults.Margin * 2 + railStartInset
     val liquidBackdrop =
         if (liquidMaterialActive) rememberLiquidNavBackdrop(surfaceColor) else null
-    val railBackdrop = if (os4Glass) navBackdrop else if (os4) liquidBackdrop else null
-    // The UI style owns geometry. Liquid changes only the material of that style's rail.
+    val railBackdrop = if (glassNavigation) navBackdrop else liquidBackdrop
+    // The Glass rail owns geometry; Liquid changes only its material.
     val useGlassRail = railBackdrop != null && canPlaceGlassRail(
         LocalWindowInfo.current.containerDpSize, railStartInset, railEndInset, railVerticalInsets,
     )
@@ -151,8 +149,8 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
-    val actionInRail = hasOs4RailActionSlot(appearance, useGlassRail)
-    val actionInBottomNav = hasOs4NavigationActionSlot(
+    val actionInRail = hasRailActionSlot(appearance, useGlassRail)
+    val actionInBottomNav = hasNavigationActionSlot(
         appearance = appearance,
         glassBackdropAvailable = navBackdrop != null,
         liquidBackdropAvailable = liquidBackdrop != null,
@@ -199,11 +197,9 @@ internal fun MainHub(
     )
 
     val navigationBarModifier =
-        if (navBackdrop != null && !os4Glass) {
-            Modifier.floatingNavMaterial(
+        if (navBackdrop != null && !glassNavigation) {
+            Modifier.floatingNavBlur(
                 backdrop = navBackdrop,
-                dark = dark,
-                style = appearance.navStyle,
             )
         } else {
             Modifier
@@ -215,13 +211,12 @@ internal fun MainHub(
         bottomBar = {
             when {
                 useGlassRail || useNativeRail -> Unit
-                os4Glass && navBackdrop != null -> HubGlassBottomBar(
+                glassNavigation && navBackdrop != null -> HubGlassBottomBar(
                     appearance, dark, items, pageSelection, navBackdrop, navigationAction, actionControls,
                 )
-                // OS4 without a usable shader must fall back to native MIUIX,
-                // not resurrect a previously saved OS3 floating-bar style.
-                (os4Glass && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(
-                    appearance, items, pageSelection, os4Glass,
+                // Glass without a usable shader falls back to native MIUIX.
+                (glassNavigation && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(
+                    appearance, items, pageSelection, glassNavigation,
                 )
 
                 liquidBackdrop != null -> HubLiquidBottomBar(
@@ -239,7 +234,7 @@ internal fun MainHub(
         // or disappears during rotation and split-screen resizing.
         Row(Modifier.fillMaxSize()) {
             if (useNativeRail) {
-                // OS3 wide Liquid follows the native rail, not a second lens/press layer.
+                // Native rail remains available for ordinary navigation and missing Glass material.
                 HubNativeRail(
                     state = nativeRailState,
                     items = items,
@@ -397,7 +392,7 @@ internal fun MainHub(
         }
 
         // Popups are hosted outside this page's backdrop recording.
-        CompositionLocalProvider(LocalGlassBackdrop provides if (os4) miuixBackdrop else null) {
+        CompositionLocalProvider(LocalGlassBackdrop provides miuixBackdrop) {
         RestartScopeDialog(state = restartDialog, app = app, restartInProgress = restartInProgress)
 
         UiOverlayDialog(

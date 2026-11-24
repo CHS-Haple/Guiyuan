@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.NavTouchStripGeometry
 import com.chaners.guiyuan.ui.components.NavTouchTrailingAction
@@ -59,7 +58,7 @@ internal fun HubGlassBottomBar(
     actionControls: NavigationActionControls,
 ) {
     val selectedPage = pageSelection.selectedPage
-    val includeLabels = appearance.activeNavContent == NavContent.IconAndText
+    val includeLabels = appearance.navContent == NavContent.IconAndText
     val glassItems = remember(items, includeLabels) {
         items.map { item ->
             GlassNavigationItem(
@@ -104,10 +103,10 @@ internal fun HubNativeBottomBar(
     appearance: Appearance,
     items: List<MainNavItem>,
     pageSelection: HubPagerSelection,
-    os4Glass: Boolean,
+    glassNavigation: Boolean,
 ) {
     NavigationBar(
-        mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
+        mode = if (glassNavigation && appearance.navContent == NavContent.IconOnly) {
             NavigationBarDisplayMode.IconOnly
         } else {
             NavigationBarDisplayMode.IconAndText
@@ -136,7 +135,6 @@ internal fun HubLiquidBottomBar(
     actionControls: NavigationActionControls,
     liquidBottomPadding: Dp,
 ) {
-    val os4 = appearance.uiStyle == UiStyle.OS4
     val liquidPressLink = remember { LiquidNavPressLink() }
     Column(
         modifier =
@@ -181,13 +179,11 @@ internal fun HubLiquidBottomBar(
                 tabsCount = items.size,
                 dark = dark,
                 mode = appearance.liquidMode,
-                pressLink = if (os4) liquidPressLink else null,
-                // OS4's shared layout owns the outer margin; OS3 keeps its original.
-                modifier = if (os4) Modifier else Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
+                pressLink = liquidPressLink,
             ) {
                 items.forEachIndexed { index, item ->
                     LiquidNavEntry(
-                        contentMode = appearance.activeNavContent,
+                        contentMode = appearance.navContent,
                         selected = pageSelection.selectedPage == index,
                         onClick = { pageSelection.select(index) },
                         icon = item.icon,
@@ -196,27 +192,23 @@ internal fun HubLiquidBottomBar(
                 }
             }
         }
-        if (os4) {
-            GlassNavigationBarLayout(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LiquidNavSpec.sidePadding),
-                trailingAction = navigationAction?.let { action ->
-                    {
-                        NavigationTrailingAction(
-                            action = action,
-                            surface = NavigationActionSurface(
-                                liquidBackdrop, appearance.liquidMode, dark, LiquidNavSpec.height,
-                            ),
-                            controls = actionControls,
-                            pressLink = liquidPressLink,
-                        )
-                    }
-                },
-            ) { liquidBar() }
-        } else {
-            liquidBar()
-        }
+        GlassNavigationBarLayout(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = LiquidNavSpec.sidePadding),
+            trailingAction = navigationAction?.let { action ->
+                {
+                    NavigationTrailingAction(
+                        action = action,
+                        surface = NavigationActionSurface(
+                            liquidBackdrop, appearance.liquidMode, dark, LiquidNavSpec.height,
+                        ),
+                        controls = actionControls,
+                        pressLink = liquidPressLink,
+                    )
+                }
+            },
+        ) { liquidBar() }
     }
 }
 
@@ -228,13 +220,13 @@ internal fun HubFloatingBottomBar(
     navigationBarModifier: Modifier,
     navBackdrop: Backdrop?,
 ) {
-    val barBounds = remember(appearance.navStyle, appearance.uiStyle) {
+    val barBounds = remember(appearance.navStyle) {
         mutableStateOf<Rect?>(null)
     }
-    val hostBounds = remember(appearance.navStyle, appearance.uiStyle) {
+    val hostBounds = remember(appearance.navStyle) {
         mutableStateOf<Rect?>(null)
     }
-    val itemBounds = remember(appearance.navStyle, appearance.uiStyle, items.size) {
+    val itemBounds = remember(appearance.navStyle, items.size) {
         mutableStateListOf<Rect?>().apply {
             repeat(items.size) { add(null) }
         }
@@ -281,7 +273,7 @@ internal fun HubFloatingBottomBar(
             items.forEachIndexed { index, item ->
                 val selected = pageSelection.selectedPage == index
                 NavContentItem(
-                    content = appearance.activeNavContent,
+                    content = appearance.navContent,
                     selected = selected,
                     onClick = { pageSelection.select(index) },
                     icon = item.icon,

@@ -3,7 +3,7 @@
     <string name="app_name">归元</string>
     <string name="app_description">面向 Xiaomi HyperOS 的 LSPosed 模块，将电量、移动网络与 Wi-Fi 信息整合为一个紧凑的状态栏图标。</string>
     <string name="home_title">归元</string>
-    <string name="hot_reload">热重载归元</string>
+    <string name="hot_reload">热重载</string>
     <string name="nav_home">首页</string>
     <string name="nav_features">功能</string>
     <string name="nav_settings">设置</string>
@@ -166,7 +166,6 @@
     <string name="floating_navigation_style_summary">选择悬浮底部导航栏的材质效果</string>
     <string name="floating_navigation_style_standard">标准</string>
     <string name="floating_navigation_style_blur">模糊</string>
-    <string name="floating_navigation_style_glass">玻璃</string>
     <string name="floating_navigation_style_soft_glass">柔光玻璃</string>
     <string name="floating_navigation_style_liquid">液态玻璃</string>
     <string name="floating_navigation_liquid_mode">液态玻璃质感</string>
@@ -217,11 +216,9 @@
     <string name="static_scope_entry_summary">查看已声明宿主及本机版本</string>
     <string name="static_scope_primary_group">主要作用域</string>
     <string name="static_scope_optional_group">可选作用域</string>
-    <string name="static_scope_sysui_usage">用于状态栏、锁屏、息屏显示及控制中心等主要功能。</string>
-    <string name="static_scope_sysui_advice">使用这些功能时需要授权此作用域。</string>
-    <string name="static_scope_settings_usage">用于在系统设置中显示归元入口。</string>
-    <string name="static_scope_settings_advice">仅使用此入口时需要授权，不影响主要功能。</string>
-    <string name="static_scope_description">显示已声明宿主及本机可读取版本。\n授权状态以框架服务记录为准。</string>
+    <string name="static_scope_sysui_usage">状态栏、锁屏、息屏显示及控制中心等主要功能需要授权此作用域。</string>
+    <string name="static_scope_settings_usage">授权后可在系统设置中显示归元入口，未授权不影响主要功能。</string>
+    <string name="static_scope_description">显示已声明宿主及本机可读取版本，授权状态以框架服务记录为准。</string>
     <string name="static_scope_sysui">系统界面</string>
     <string name="static_scope_installed_version">已安装版本 %1$s</string>
     <string name="static_scope_version_unavailable">版本不可用</string>
@@ -445,7 +442,7 @@
     <string name="battery_color_preset_hyperos_summary">使用 HyperOS 电量语义色</string>
     <string name="battery_color_preset_ios_summary">使用 iOS 系统色</string>
     <string name="battery_mode_colors">模式颜色</string>
-    <string name="battery_color_source">颜色来源</string>
+    <string name="battery_color_source">配色样式</string>
     <string name="battery_color_source_preset">方案颜色</string>
     <string name="battery_color_source_preset_summary">使用 %1$s 方案颜色</string>
     <string name="battery_color_source_preset_short">%1$s 方案</string>
@@ -477,7 +474,6 @@
     <string name="battery_common_color_indigo">靛蓝</string>
     <string name="battery_common_color_purple">紫色</string>
     <string name="battery_common_color_pink">粉色</string>
-    <string name="battery_common_color_gray">灰色</string>
     <string name="battery_color_full_adjustment">全色调节</string>
     <string name="battery_color_hue">色相</string>
     <string name="battery_color_saturation">饱和度</string>
@@ -486,16 +482,14 @@
     <string name="battery_color_hex">HEX</string>
     <string name="battery_color_follow_inversion">跟随系统前景色</string>
     <string name="battery_color_no_fixed_color">无固定颜色</string>
-    <string name="battery_color_no_fixed_color_summary">先选择固定颜色来源或设置自定义颜色，再调节这些参数</string>
+    <string name="battery_color_no_fixed_color_summary">先选择固定颜色或使用取色器，再调节这些参数</string>
     <string name="battery_color_settings">颜色设置</string>
     <string name="battery_color_edit_auto_custom">修改任意参数后自动切换为“自定义”</string>
     <string name="battery_color_restore_from_scheme">将此模式恢复为 %1$s 方案颜色</string>
     <string name="battery_custom_mode_title">%1$s · %2$s</string>
     <string name="battery_mode_editor_title">%1$s颜色</string>
-    <string name="battery_scheme_new_summary">创建一套自己的电量颜色</string>
-    <string name="battery_scheme_full_summary">最多保存 %1$d 套自定义配色</string>
-    <string name="battery_scheme_capacity">自定义方案容量</string>
-    <string name="battery_scheme_remaining">还可以创建 %1$d 套自定义配色</string>
+    <string name="battery_scheme_initial_palette">基于 HyperOS 默认配色创建</string>
+    <string name="battery_scheme_capacity">自定义样式</string>
     <string name="battery_scheme_full_hint">删除不需要的配色后可继续创建</string>
     <string name="battery_custom_scheme_new">新建自定义样式</string>
     <string name="battery_custom_scheme_add_page_title">新建样式</string>
@@ -544,12 +538,8 @@
     <string name="feature_search">搜索功能项</string>
     <string name="feature_search_clear">清除搜索内容</string>
     <string name="feature_search_empty">没有找到相关功能项</string>
-    <string name="ui_style_title">MIUIX界面规范</string>
-    <string name="ui_style_summary">切换应用的界面与交互风格</string>
     <string name="top_bar_progressive_blur">顶栏渐进模糊</string>
     <string name="top_bar_progressive_blur_summary">滚动页面时渐进模糊顶栏背景</string>
-    <string name="ui_style_os3">OS3</string>
-    <string name="ui_style_os4">OS4（实验性）</string>
 
     <!-- First-run guide and offline privacy policy -->
     <string name="guide_progress">%1$d / %2$d</string>

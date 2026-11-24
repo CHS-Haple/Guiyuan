@@ -9,8 +9,8 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 private const val ABOUT_VALUE_SEPARATOR = "｜"
@@ -23,7 +23,7 @@ internal fun AboutLinksCard(
     onOpenLicense: () -> Unit,
     onOpenThirdParty: () -> Unit,
 ) {
-    Card(
+    GlassCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
@@ -86,7 +86,7 @@ internal fun AboutEnvironmentCard(
     onOpenScopes: () -> Unit,
 ) {
     SmallTitle(stringResource(R.string.section_device_system))
-    Card(
+    GlassCard(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),

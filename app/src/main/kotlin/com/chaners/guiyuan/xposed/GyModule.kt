@@ -693,6 +693,20 @@ class GyModule : XposedModule() {
             SysUiCcSource.restoreHomeEligibility(
                 restored.controlCenterHomeEligible,
             )
+            // Rebuild the closed CC origin from the live native Home battery
+            // before attaching the transferred FAKE. Otherwise sceneEligible
+            // remains false until onVisibleChanged and its first frame is native.
+            if (restored.controlCenterHomeEligible == true) {
+                val nativeScene = SysUiBatteryEvidence.nativeBatteryMeter(capture.host)
+                    ?.let(SysUiSceneSource::currentSteadySourceScene)
+                if (nativeScene == SourceScene.HOME) {
+                    steadyStatusSourceScene = nativeScene
+                    updateCcSourceEligibility(
+                        sourceScene = nativeScene,
+                        authority = "hot-reload-native-steady-source",
+                    )
+                }
+            }
             val controlCenterFakeRestore =
                 restored.controlCenterFakeHost?.let { fakeHost ->
                     restoreCcFakeAfterReload(

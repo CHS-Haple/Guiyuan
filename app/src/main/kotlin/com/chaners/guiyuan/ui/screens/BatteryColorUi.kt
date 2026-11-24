@@ -12,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -66,33 +69,37 @@ internal fun BatterySchemePreviewStrip(
 }
 
 @Composable
-private fun batteryCommonColorName(color: Int): String =
-    stringResource(
-        when (color) {
-            0xFFFF3B30.toInt() -> R.string.battery_common_color_red
-            0xFFFF9500.toInt() -> R.string.battery_common_color_orange
-            0xFFFFCC00.toInt() -> R.string.battery_common_color_yellow
-            0xFF34C759.toInt() -> R.string.battery_common_color_green
-            0xFF32ADE6.toInt() -> R.string.battery_common_color_light_blue
-            0xFF007AFF.toInt() -> R.string.battery_common_color_blue
-            0xFF5856D6.toInt() -> R.string.battery_common_color_indigo
-            0xFFAF52DE.toInt() -> R.string.battery_common_color_purple
-            0xFFFF2D55.toInt() -> R.string.battery_common_color_pink
-            else -> R.string.battery_common_color_gray
-        },
-    )
+private fun batteryCommonColorName(color: Int?): String {
+    val label = when (color) {
+        0xFFFF3B30.toInt() -> R.string.battery_common_color_red
+        0xFFFF9500.toInt() -> R.string.battery_common_color_orange
+        0xFFFFCC00.toInt() -> R.string.battery_common_color_yellow
+        0xFF34C759.toInt() -> R.string.battery_common_color_green
+        0xFF32ADE6.toInt() -> R.string.battery_common_color_light_blue
+        0xFF007AFF.toInt() -> R.string.battery_common_color_blue
+        0xFF5856D6.toInt() -> R.string.battery_common_color_indigo
+        0xFFAF52DE.toInt() -> R.string.battery_common_color_purple
+        0xFFFF2D55.toInt() -> R.string.battery_common_color_pink
+        null -> R.string.battery_color_follow_inversion
+        else -> return batteryColorHex(color)
+    }
+    return stringResource(label)
+}
 
 @Composable
 internal fun BatteryCommonColorButton(
-    color: Int,
+    color: Int?,
     selected: Boolean,
-    visuallyInactive: Boolean,
     onClick: () -> Unit,
 ) {
-    TooltipBox(text = batteryCommonColorName(color)) {
+    val label = batteryCommonColorName(color)
+    TooltipBox(text = label) {
         Surface(
             onClick = onClick,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).semantics {
+                contentDescription = label
+                this.selected = selected
+            },
             shape = CircleShape,
             color = Color.Transparent,
         ) {
@@ -109,11 +116,8 @@ internal fun BatteryCommonColorButton(
                         shadowElevation = 2.dp,
                     ) {}
                 }
-                BatteryColorDot(
-                    color = color,
-                    size = 28.dp,
-                    visuallyInactive = visuallyInactive,
-                )
+                if (color == null) BatteryColorMosaic(size = 28.dp)
+                else BatteryColorDot(color = color, size = 28.dp)
             }
         }
     }

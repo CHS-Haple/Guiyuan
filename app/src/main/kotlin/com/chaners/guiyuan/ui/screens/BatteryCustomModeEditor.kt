@@ -26,6 +26,7 @@ import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
 import com.chaners.guiyuan.settings.opaqueArgb
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -64,6 +65,14 @@ internal data class ColorEditorState(
         channels.blue.value = value.third.toString()
     }
 
+    fun showForeground() {
+        wheel.editing.value = null
+        channels.hex.value = ""
+        channels.red.value = ""
+        channels.green.value = ""
+        channels.blue.value = ""
+    }
+
     fun applyColor(color: Int, hue: Float? = null, onColorChange: (Int) -> Unit) {
         showColor(color, hue)
         // The repository stays the sole writer; choosing a color selects CUSTOM.
@@ -89,7 +98,7 @@ internal fun BatteryCustomModeEditor(
             .padding(bottom = 24.dp),
     ) {
         BatteryColorSourceSelector(custom, slot, state, onSourceChange)
-        BatteryColorCommonGrid(custom, slot, state, onColorChange)
+        BatteryColorCommonGrid(custom, slot, state, onSourceChange, onColorChange)
         BatteryColorHsvPanel(state, onColorChange)
         BatteryColorPreciseFields(state, onColorChange)
     }
@@ -146,22 +155,16 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorSourceSel
     val entry = custom.entries.entryFor(slot)
     val resolved = batterySchemeEntryColor(entry, slot)
     val seed = batteryColorEditorSeed(entry, slot)
-    val sourceOptions = BatteryColorSchemeSource.entries
-    val sourceLabels = listOf(
-        batterySourceLabel(BatteryColorSchemeSource.HYPEROS),
-        batterySourceLabel(BatteryColorSchemeSource.IOS),
-        batterySourceLabel(BatteryColorSchemeSource.LOW_SATURATION),
-        batterySourceLabel(BatteryColorSchemeSource.FOLLOW_SYSTEM),
-        batterySourceLabel(BatteryColorSchemeSource.CUSTOM),
-    )
-    val selectedSourceIndex = sourceOptions.indexOf(entry.source).coerceAtLeast(0)
+    val sourceOptions = BATTERY_COLOR_STYLE_OPTIONS
+    val sourceLabels = sourceOptions.map { batterySourceLabel(it) }
+    val selectedSourceIndex = sourceOptions.indexOf(batteryColorStyleSource(entry.source))
     val currentValueText = when {
         resolved != null -> batteryColorHex(resolved)
         entry.source == BatteryColorSchemeSource.CUSTOM ->
             stringResource(R.string.battery_color_custom_unset)
         else -> stringResource(R.string.battery_color_follow_inversion)
     }
-    BatterySheetCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         UiDropdownPreference(
             items = sourceLabels,
             selectedIndex = selectedSourceIndex,
@@ -171,13 +174,14 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorSourceSel
                 val shown = if (entry.source == BatteryColorSchemeSource.CUSTOM ||
                     state.wheel.editing.value != seed
                 ) state.wheel.editing.value ?: resolved else resolved
-                if (shown == null) BatteryColorMosaic(size = 24.dp)
-                else BatteryColorDot(color = shown, size = 24.dp)
+                if (entry.source == BatteryColorSchemeSource.FOLLOW_SYSTEM || shown == null) {
+                    BatteryColorMosaic(size = 24.dp)
+                } else BatteryColorDot(color = shown, size = 24.dp)
             },
             onSelectedIndexChange = { index ->
-                sourceOptions.getOrNull(index)?.let { source ->
+                sourceOptions.getOrNull(index)?.takeIf { it != batteryColorStyleSource(entry.source) }?.let { source ->
                     val nextColor = batteryColorEditorSeed(entry.copy(source = source), slot)
-                    if (nextColor == null) state.wheel.editing.value = null
+                    if (nextColor == null) state.showForeground()
                     else state.showColor(nextColor)
                     onSourceChange(source)
                 }
@@ -191,6 +195,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
     custom: BatteryCustomColorScheme,
     slot: BatteryColorSlot,
     state: ColorEditorState,
+    onSourceChange: (BatteryColorSchemeSource) -> Unit,
     onColorChange: (Int) -> Unit,
 ) {
     val rows = remember { COMMON_BATTERY_COLORS.chunked(5) }
@@ -199,7 +204,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
         text = stringResource(R.string.battery_color_common),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
     )
-    BatterySheetCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         rows.forEachIndexed { index, colors ->
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = if (index == 0) 12.dp else 0.dp),
@@ -209,9 +214,19 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
                 colors.forEach { color ->
                     BatteryCommonColorButton(
                         color = color,
-                        selected = source == BatteryColorSchemeSource.CUSTOM && state.wheel.editing.value == color,
-                        visuallyInactive = false,
-                        onClick = { state.applyColor(color, onColorChange = onColorChange) },
+                        selected = if (color == null) {
+                            source == BatteryColorSchemeSource.FOLLOW_SYSTEM
+                        } else {
+                            source == BatteryColorSchemeSource.CUSTOM && state.wheel.editing.value == color
+                        },
+                        onClick = {
+                            if (color == null) {
+                                state.showForeground()
+                                onSourceChange(BatteryColorSchemeSource.FOLLOW_SYSTEM)
+                            } else {
+                                state.applyColor(color, onColorChange = onColorChange)
+                            }
+                        },
                     )
                 }
             }

@@ -28,8 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
@@ -50,8 +48,6 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Share
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavRole
 
@@ -239,7 +235,7 @@ internal fun DiagnosticsScreen(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
         keepCompactTitle = captureStatus.showRootGuide,
-        titlePadding = if (LocalUiStyle.current == UiStyle.OS4) TopAppBarDefaults.TitlePadding else 0.dp,
+        titlePadding = TopAppBarDefaults.TitlePadding,
         glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
@@ -280,9 +276,9 @@ internal fun DiagnosticsScreen(
                 enabled = reportEnabled,
             ) {
                 Icon(
-                    imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassShare else MiuixIcons.Share,
+                    imageVector = Os4GlassShare,
                     contentDescription = exportTitle,
-                    modifier = Modifier.size(if (LocalUiStyle.current == UiStyle.OS4) 28.dp else 24.dp),
+                    modifier = Modifier.size(28.dp),
                 )
             }
             DiagMenu(

@@ -16,13 +16,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.HsvHueSlider
 import top.yukonga.miuix.kmp.basic.HsvSaturationSlider
 import top.yukonga.miuix.kmp.basic.HsvValueSlider
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TextFieldDefaults
+import top.yukonga.miuix.kmp.glass.GlassTextField
 import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.color.space.Hsv
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -38,7 +38,7 @@ internal fun androidx.compose.foundation.layout.ColumnScope.BatteryColorHsvPanel
         text = stringResource(R.string.battery_color_full_adjustment),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
     )
-    BatterySheetCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier.fillMaxWidth().padding(
                 start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp,
@@ -148,7 +148,7 @@ internal fun androidx.compose.foundation.layout.ColumnScope.BatteryColorPreciseF
         text = stringResource(R.string.battery_color_precise_input),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
     )
-    BatterySheetCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
+    GlassCard(modifier = Modifier.fillMaxWidth(), insideMargin = PaddingValues(16.dp)) {
         BatteryHexField(state, onColorChange)
         BatteryRgbFields(state, onColorChange)
     }
@@ -156,7 +156,7 @@ internal fun androidx.compose.foundation.layout.ColumnScope.BatteryColorPreciseF
 
 @Composable
 private fun BatteryHexField(state: ColorEditorState, onColorChange: (Int) -> Unit) {
-    TextField(
+    GlassTextField(
         value = state.channels.hex.value,
         onValueChange = { raw ->
             val normalized = raw.removePrefix("#")
@@ -170,7 +170,6 @@ private fun BatteryHexField(state: ColorEditorState, onColorChange: (Int) -> Uni
         modifier = Modifier.fillMaxWidth(),
         label = stringResource(R.string.battery_color_hex),
         singleLine = true,
-        colors = TextFieldDefaults.textFieldColors(),
         textStyle = MiuixTheme.textStyles.main,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
     )
@@ -209,7 +208,7 @@ private fun RowScope.BatteryRgbChannelField(
     label: String,
     onValueChange: (String) -> Unit,
 ) {
-    TextField(
+    GlassTextField(
         value = value,
         onValueChange = { raw ->
             if (raw.length <= 3 && raw.all(Char::isDigit)) onValueChange(raw)
@@ -217,7 +216,6 @@ private fun RowScope.BatteryRgbChannelField(
         modifier = Modifier.weight(1f),
         label = label,
         singleLine = true,
-        colors = TextFieldDefaults.textFieldColors(),
         textStyle = MiuixTheme.textStyles.main,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
     )

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +22,7 @@ import com.chaners.guiyuan.settings.BatteryCustomColorScheme
 import com.chaners.guiyuan.settings.BatteryColorSlot
 import com.chaners.guiyuan.settings.batteryBuiltInColor
 import com.chaners.guiyuan.settings.batterySchemeEntryColor
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -34,35 +34,39 @@ internal fun BatterySchemeSettingsCard(
     custom: BatteryCustomColorScheme?,
     canCreateCustom: Boolean,
     onSlotClick: (BatteryColorSlot) -> Unit,
-    onSettingsCardMeasured: (Int) -> Unit,
 ) {
-    BatterySheetCard(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .onSizeChanged { size ->
-                    onSettingsCardMeasured(size.height)
-                },
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        BatteryColorSlot.entries.forEach { slot ->
-            val entry = custom?.entries?.entryFor(slot)
-            val color =
-                when {
-                    builtIn != null -> batteryBuiltInColor(builtIn, slot)
-                    entry != null -> batterySchemeEntryColor(entry, slot)
-                    else -> null
-                }
-            val followsSystem =
-                color == null ||
-                    (builtIn == null && entry?.source == BatteryColorSchemeSource.FOLLOW_SYSTEM)
-            BatteryModeSettingItem(
-                slot = slot,
-                color = color,
-                followsSystem = followsSystem,
-                enabled = custom != null || canCreateCustom,
-                onClick = { onSlotClick(slot) },
-            )
-        }
+        BatterySchemeSettingRows(builtIn, custom, canCreateCustom, onSlotClick)
+    }
+}
+
+@Composable
+internal fun BatterySchemeSettingRows(
+    builtIn: BatteryBuiltInColorScheme?,
+    custom: BatteryCustomColorScheme?,
+    canCreateCustom: Boolean,
+    onSlotClick: (BatteryColorSlot) -> Unit,
+) {
+    BatteryColorSlot.entries.forEach { slot ->
+        val entry = custom?.entries?.entryFor(slot)
+        val color =
+            when {
+                builtIn != null -> batteryBuiltInColor(builtIn, slot)
+                entry != null -> batterySchemeEntryColor(entry, slot)
+                else -> null
+            }
+        val followsSystem =
+            color == null ||
+                (builtIn == null && entry?.source == BatteryColorSchemeSource.FOLLOW_SYSTEM)
+        BatteryModeSettingItem(
+            slot = slot,
+            color = color,
+            followsSystem = followsSystem,
+            enabled = custom != null || canCreateCustom,
+            onClick = { onSlotClick(slot) },
+        )
     }
 }
 
@@ -118,7 +122,7 @@ internal fun BatterySchemeActionArea(
 ) {
     Spacer(Modifier.height(BATTERY_SCHEME_VERTICAL_GAP))
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 26.dp),
         contentAlignment = Alignment.Center,
     ) {
         content()

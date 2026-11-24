@@ -56,7 +56,8 @@ dependencyResolutionManagement {
 rootProject.name = "Guiyuan"
 include(":app")
 
-// Opt-in source-matched OS4 graph. The default app still uses published MIUIX packages.
+// Opt-in source-matched MIUIX graph; keep the existing gy.os4.* build-tool inputs.
+// The default app still uses published MIUIX packages.
 providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.let { source ->
     val miuix = file(source)
     // Native Glass is source-substituted at the same pinned revision; Guiyuan extensions

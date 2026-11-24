@@ -13,7 +13,6 @@ import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.ThemeMode
-import com.chaners.guiyuan.settings.UiStyle
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
@@ -25,7 +24,6 @@ internal data class AppearanceThemeActions(
 )
 
 internal data class AppearanceStyleActions(
-    val onUiStyleChange: (UiStyle) -> Unit,
     val onTopBarProgressiveBlurChange: (Boolean) -> Unit,
     val onUiScaleChange: (Int) -> Unit,
 )

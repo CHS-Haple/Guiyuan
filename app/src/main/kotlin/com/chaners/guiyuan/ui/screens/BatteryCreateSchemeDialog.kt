@@ -23,7 +23,7 @@ import com.chaners.guiyuan.settings.limitCustomSchemeName
 import com.chaners.guiyuan.ui.components.UiDialogButton
 import com.chaners.guiyuan.ui.components.dialogActionGap
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
-import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.glass.GlassTextField
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 
 @Composable
@@ -47,10 +47,12 @@ internal fun BatteryCreateSchemeDialog(
         onDismissFinished = onDismissFinished,
     ) {
         Column {
-            TextField(
+            GlassTextField(
                 value = name,
                 onValueChange = { name = limitCustomSchemeName(it) },
+                modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.battery_custom_scheme_name),
+                useLabelAsPlaceholder = true,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = {

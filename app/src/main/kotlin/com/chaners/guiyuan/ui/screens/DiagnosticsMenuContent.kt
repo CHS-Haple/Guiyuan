@@ -23,8 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.icons.Os4GlassFilter
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
 import com.chaners.guiyuan.settings.DiagLevel
@@ -35,12 +33,8 @@ import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Filter
-import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -187,9 +181,9 @@ internal fun LogFilterMenu(
             },
         ) {
             Icon(
-                imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassFilter else MiuixIcons.Filter,
+                imageVector = Os4GlassFilter,
                 contentDescription = title,
-                modifier = Modifier.size(if (LocalUiStyle.current == UiStyle.OS4) 28.dp else 24.dp),
+                modifier = Modifier.size(28.dp),
             )
         }
     }
@@ -212,7 +206,7 @@ private fun DiagToolbarMenu(
     content: @Composable () -> Unit,
 ) {
     TooltipBox(text = title) {
-        if (LocalUiStyle.current == UiStyle.OS4 && isRuntimeShaderSupported()) {
+        if (isRuntimeShaderSupported()) {
             Os4CascadingMenu(
                 entries = entries,
                 collapseOnSelection = collapseOnSelection,
@@ -330,9 +324,9 @@ internal fun DiagMenu(
 
     val icon: @Composable () -> Unit = {
         Icon(
-            imageVector = if (LocalUiStyle.current == UiStyle.OS4) Os4GlassMore else MiuixIcons.More,
+            imageVector = Os4GlassMore,
             contentDescription = title,
-            modifier = Modifier.size(if (LocalUiStyle.current == UiStyle.OS4) 28.dp else 24.dp),
+            modifier = Modifier.size(28.dp),
         )
     }
     DiagToolbarMenu(title = title, entries = entries, content = icon)

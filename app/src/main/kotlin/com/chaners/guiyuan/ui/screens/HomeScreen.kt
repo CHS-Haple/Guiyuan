@@ -49,8 +49,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.UiStyle
-import com.chaners.guiyuan.ui.LocalUiStyle
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
@@ -112,7 +110,7 @@ private fun HomeScreenScrollingContent(
     padding: PaddingValues,
 ) {
     val canScroll = frame.listState.canScrollBackward || frame.listState.canScrollForward
-    val glassOverscroll = LocalUiStyle.current == UiStyle.OS4 && canScroll
+    val glassOverscroll = canScroll
     val onOverscrollChanged: (Float) -> Unit = remember(frame.scrollBehavior) {
         { offset -> frame.scrollBehavior.state.overscrollOffset = offset }
     }

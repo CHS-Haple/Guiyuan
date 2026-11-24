@@ -4,7 +4,6 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.LayoutDirection
 import com.chaners.guiyuan.settings.Appearance
-import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.settings.NavStyle
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertFalse
@@ -36,45 +35,41 @@ class NativeRailWindowEligibilityTest {
     }
 
     @Test
-    fun os3GlassAndBlurWorkWithoutChangingNavStylePreference() {
-        for (style in listOf(NavStyle.Glass, NavStyle.Blur)) {
+    fun standardAndBlurKeepNativeRailWhenWindowFits() {
+        for (style in listOf(NavStyle.Standard, NavStyle.Blur)) {
             assertTrue(useNativeRailFor(
-                Appearance(uiStyle = UiStyle.OS3, navStyle = style), true,
+                Appearance(navStyle = style), true,
                 DpSize(750.dp, 420.dp), PaddingValues(), LayoutDirection.Ltr,
             ))
         }
     }
 
     @Test
-    fun os4GlassKeepsExistingGlassRailWhenMaterialAvailable() {
+    fun glassKeepsExistingGlassRailWhenMaterialAvailable() {
         assertFalse(useNativeRailFor(
-            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Glass),
+            Appearance(navStyle = NavStyle.Glass),
             true, DpSize(750.dp, 420.dp), PaddingValues(), LayoutDirection.Ltr,
         ))
         assertTrue(useNativeRailFor(
-            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Glass),
+            Appearance(navStyle = NavStyle.Glass),
             false, DpSize(750.dp, 420.dp), PaddingValues(), LayoutDirection.Ltr,
         ))
     }
 
     @Test
-    fun liquidUsesTheOriginalUiStyleRailAndDisabledNavRemainsHidden() {
+    fun liquidUsesGlassRailAndDisabledNavRemainsHidden() {
         val window = DpSize(750.dp, 420.dp)
-        assertTrue(useNativeRailFor(
-            Appearance(uiStyle = UiStyle.OS3, navStyle = NavStyle.Liquid),
-            true, window, PaddingValues(), LayoutDirection.Ltr,
-        ))
         assertFalse(useNativeRailFor(
-            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Liquid),
+            Appearance(navStyle = NavStyle.Liquid),
             true, window, PaddingValues(), LayoutDirection.Ltr,
         ))
-        // No shader: preserve the native OS4 fallback instead of showing an empty rail.
+        // No shader: preserve the native fallback instead of showing an empty rail.
         assertTrue(useNativeRailFor(
-            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Liquid),
+            Appearance(navStyle = NavStyle.Liquid),
             false, window, PaddingValues(), LayoutDirection.Ltr,
         ))
         assertFalse(useNativeRailFor(
-            Appearance(uiStyle = UiStyle.OS4, navStyle = NavStyle.Standard, navEnabled = false),
+            Appearance(navStyle = NavStyle.Standard, navEnabled = false),
             false, window, PaddingValues(), LayoutDirection.Ltr,
         ))
     }
