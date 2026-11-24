@@ -4,7 +4,7 @@
     <string name="app_description">An LSPosed module for Xiaomi HyperOS that combines battery, mobile network, and Wi-Fi information into a compact status bar indicator.</string>
 
     <string name="home_title">Guiyuan</string>
-    <string name="hot_reload">Manual hot reload</string>
+    <string name="hot_reload">Hot reload</string>
     <string name="nav_home">Home</string>
     <string name="nav_features">Features</string>
     <string name="nav_settings">Settings</string>
