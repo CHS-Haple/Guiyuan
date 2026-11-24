@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.settings
 
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -57,6 +58,15 @@ class ConfigBackupValidationTest {
         assertThrows(Exception::class.java) {
             ConfigBackupFormat.decode(json.replaceFirst("{", "{\"command\":\"reboot\","))
         }
+    }
+
+    @Test fun malformedJsonContainerPairingAndDepthRemainRejected() {
+        for (invalid in listOf("{]", "[}", "{", "[".repeat(17) + "]".repeat(17))) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupGuards.checkJsonStructure(invalid, Json)
+            }
+        }
+        ConfigBackupGuards.checkJsonStructure("{\\"items\\":[{\\"name\\":\\"ok\\"}]}", Json)
     }
 
     @Test fun invalidUtf8AndNoncanonicalSchemeKeysAreRejected() {
