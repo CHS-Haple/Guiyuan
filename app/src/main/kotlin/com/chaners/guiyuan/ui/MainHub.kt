@@ -1,29 +1,23 @@
 package com.chaners.guiyuan.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,63 +27,34 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppLang
-import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.settings.UiStyle
 import com.chaners.guiyuan.system.ScopeRestart
-import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavMaterial
-import com.chaners.guiyuan.ui.components.navTouchExtension
-import com.chaners.guiyuan.ui.components.NavTouchStripGeometry
-import com.chaners.guiyuan.ui.components.NavTouchTrailingAction
-import com.chaners.guiyuan.ui.components.measuredNavTouchExtension
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavEntry
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
-import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
-import com.chaners.guiyuan.ui.screens.PageSearch
 import com.chaners.guiyuan.ui.screens.rememberPageSearch
-import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
-import com.chaners.guiyuan.ui.glass.GlassNavigationBar
-import com.chaners.guiyuan.ui.glass.GlassNavigationBarLayout
-import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassNavigationRail
 import com.chaners.guiyuan.ui.glass.GlassRailDestinations
 import com.chaners.guiyuan.ui.glass.RailLiquidPaint
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBar
-import top.yukonga.miuix.kmp.basic.NavigationBarItem
-import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
@@ -256,225 +221,23 @@ internal fun MainHub(
         bottomBar = {
             when {
                 useGlassRail || useNativeRail -> Unit
-                os4Glass && navBackdrop != null -> {
-                    val selectedPage = pageSelection.selectedPage
-                    val includeLabels = appearance.activeNavContent == NavContent.IconAndText
-                    val glassItems = remember(items, includeLabels) {
-                        items.map { item ->
-                            GlassNavigationItem(
-                                icon = item.icon,
-                                label = item.label.takeIf { includeLabels },
-                                contentDescription = item.label,
-                            )
-                        }
-                    }
-                    GlassNavigationBar(
-                        items = glassItems,
-                        selectedIndex = selectedPage,
-                        onSelect = ::selectPage,
-                        backdrop = navBackdrop,
-                        touchExtension = appearance.navTouchExtension,
-                        // Exclude the measured 54dp action and 12dp native MIUIX gap.
-                        trailingActionTouchExclusion = if (navigationAction != null) {
-                            GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
-                        } else 0.dp,
-                        trailingActionTouchSize = if (navigationAction != null) {
-                            GlassNavigationBarDefaults.Height
-                        } else 0.dp,
-                        onTrailingActionTouch = navigationAction?.let { action -> actionControls.callbackFor(action) },
-                        trailingAction = navigationAction?.let { action ->
-                            {
-                                NavigationTrailingAction(
-                                    action = action,
-                                    surface = NavigationActionSurface(
-                                        navBackdrop, null, dark, GlassNavigationBarDefaults.Height,
-                                    ),
-                                    controls = actionControls,
-                                )
-                            }
-                        },
-                        modifier = Modifier
-                            .padding(start = 24.dp, end = 24.dp, top = 20.dp),
-                    )
-                }
+                os4Glass && navBackdrop != null -> HubGlassBottomBar(
+                    appearance, dark, items, pageSelection, navBackdrop, navigationAction, actionControls,
+                )
                 // OS4 without a usable shader must fall back to native MIUIX,
                 // not resurrect a previously saved OS3 floating-bar style.
-                (os4Glass && navBackdrop == null) || !appearance.navEnabled -> {
-                    NavigationBar(
-                        mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
-                            NavigationBarDisplayMode.IconOnly
-                        } else {
-                            NavigationBarDisplayMode.IconAndText
-                        },
-                    ) {
-                        items.forEachIndexed { index, item ->
-                            val selected = pageSelection.selectedPage == index
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = { selectPage(index) },
-                                icon = item.icon,
-                                label = item.label,
-                            )
-                        }
-                    }
-                }
+                (os4Glass && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(
+                    appearance, items, pageSelection, os4Glass,
+                )
 
-                liquidBackdrop != null -> {
-                    val liquidPressLink = remember { LiquidNavPressLink() }
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .windowInsetsPadding(
-                                    WindowInsets.displayCutout.union(WindowInsets.navigationBars)
-                                        .only(WindowInsetsSides.Horizontal),
-                                )
-                                .then(
-                                    if (appearance.navTouchExtension) {
-                                        Modifier.navTouchExtension(
-                                            geometry = NavTouchStripGeometry(
-                                                bottomPadding = liquidBottomPadding,
-                                                horizontalPadding = LiquidNavSpec.sidePadding,
-                                                contentPadding = 4.dp,
-                                                itemCount = items.size,
-                                                rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
-                                            ),
-                                            onSelect = ::selectPage,
-                                            trailing = NavTouchTrailingAction(
-                                                width = if (navigationAction != null) {
-                                                    LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
-                                                } else 0.dp,
-                                                size = if (navigationAction != null) {
-                                                    LiquidNavSpec.height
-                                                } else 0.dp,
-                                                onTap = navigationAction?.let { action -> actionControls.callbackFor(action) },
-                                            ),
-                                        )
-                                    } else {
-                                        Modifier
-                                    },
-                                )
-                                .padding(bottom = liquidBottomPadding),
-                    ) {
-                        val liquidBar: @Composable () -> Unit = {
-                            LiquidNavBar(
-                                selectedIndex = { pageSelection.selectedPage },
-                                onSelected = ::selectPage,
-                                backdrop = liquidBackdrop,
-                                tabsCount = items.size,
-                                dark = dark,
-                                mode = appearance.liquidMode,
-                                pressLink = if (os4) liquidPressLink else null,
-                                // OS4's shared layout owns the outer margin; OS3 keeps its original.
-                                modifier = if (os4) Modifier else Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
-                            ) {
-                                items.forEachIndexed { index, item ->
-                                    LiquidNavEntry(
-                                        contentMode = appearance.activeNavContent,
-                                        selected = pageSelection.selectedPage == index,
-                                        onClick = { selectPage(index) },
-                                        icon = item.icon,
-                                        label = item.label,
-                                    )
-                                }
-                            }
-                        }
-                        if (os4) {
-                            GlassNavigationBarLayout(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = LiquidNavSpec.sidePadding),
-                                trailingAction = navigationAction?.let { action ->
-                                    {
-                                        NavigationTrailingAction(
-                                            action = action,
-                                            surface = NavigationActionSurface(
-                                                liquidBackdrop, appearance.liquidMode, dark, LiquidNavSpec.height,
-                                            ),
-                                            controls = actionControls,
-                                            pressLink = liquidPressLink,
-                                        )
-                                    }
-                                },
-                            ) { liquidBar() }
-                        } else {
-                            liquidBar()
-                        }
-                    }
-                }
+                liquidBackdrop != null -> HubLiquidBottomBar(
+                    appearance, dark, items, pageSelection, liquidBackdrop, navigationAction, actionControls,
+                    liquidBottomPadding,
+                )
 
-                else -> {
-                    val barBounds = remember(appearance.navStyle, appearance.uiStyle) {
-                        mutableStateOf<Rect?>(null)
-                    }
-                    val hostBounds = remember(appearance.navStyle, appearance.uiStyle) {
-                        mutableStateOf<Rect?>(null)
-                    }
-                    val itemBounds = remember(appearance.navStyle, appearance.uiStyle, items.size) {
-                        mutableStateListOf<Rect?>().apply {
-                            repeat(items.size) { add(null) }
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(
-                                if (appearance.navTouchExtension) {
-                                    Modifier
-                                        .onGloballyPositioned { coordinates ->
-                                            val bounds = coordinates.boundsInRoot()
-                                            if (hostBounds.value != bounds) hostBounds.value = bounds
-                                        }
-                                        .measuredNavTouchExtension(
-                                            hostBounds = hostBounds.value,
-                                            barBounds = barBounds.value,
-                                            itemBounds = itemBounds.toList(),
-                                            onSelect = ::selectPage,
-                                        )
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                    ) {
-                        FloatingNavigationBar(
-                            modifier = navigationBarModifier.then(
-                                if (appearance.navTouchExtension) {
-                                    Modifier.onGloballyPositioned { coordinates ->
-                                        val bounds = coordinates.boundsInRoot()
-                                        if (barBounds.value != bounds) barBounds.value = bounds
-                                    }
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                            color =
-                                if (navBackdrop != null) {
-                                    Color.Transparent
-                                } else {
-                                    MiuixTheme.colorScheme.surfaceContainer
-                                },
-                        ) {
-                            items.forEachIndexed { index, item ->
-                                val selected = pageSelection.selectedPage == index
-                                NavContentItem(
-                                    content = appearance.activeNavContent,
-                                    selected = selected,
-                                    onClick = { selectPage(index) },
-                                    icon = item.icon,
-                                    label = item.label,
-                                    modifier = if (appearance.navTouchExtension) {
-                                        Modifier.onGloballyPositioned { coordinates ->
-                                            val bounds = coordinates.boundsInRoot()
-                                            if (itemBounds[index] != bounds) itemBounds[index] = bounds
-                                        }
-                                    } else {
-                                        Modifier
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
+                else -> HubFloatingBottomBar(
+                    appearance, items, pageSelection, navigationBarModifier, navBackdrop,
+                )
             }
         },
     ) { innerPadding ->
