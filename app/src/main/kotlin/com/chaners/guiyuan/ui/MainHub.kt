@@ -9,15 +9,11 @@ import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.displayCutout
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,7 +28,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -197,11 +192,10 @@ internal fun MainHub(
         )
     }
 
-    fun selectPage(index: Int) = pageSelection.select(index)
 
     TopLevelBackHandler(
         selectedPage = pageSelection.selectedPage,
-        onBackToHome = { selectPage(0) },
+        onBackToHome = { pageSelection.select(0) },
     )
 
     val navigationBarModifier =
@@ -250,7 +244,7 @@ internal fun MainHub(
                     state = nativeRailState,
                     items = items,
                     selectedIndex = pageSelection.selectedPage,
-                    onSelect = ::selectPage,
+                    onSelect = pageSelection::select,
                 )
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -358,7 +352,7 @@ internal fun MainHub(
                 destinations = GlassRailDestinations(
                     items = railItems,
                     selectedIndex = pageSelection.selectedPage,
-                    onSelect = ::selectPage,
+                    onSelect = pageSelection::select,
                 ),
                 backdrop = railBackdrop,
                 state = railState,
