@@ -450,6 +450,19 @@ internal object SysUiPresentationOwner {
         batteryHideField = hideField
         privacyStateField = nativePrivacyField
 
+        return registerPresentationHooks(
+            module, onMeasure, onLayout, batterySetIsHide, getIslandShowing, nativePrivacyMethod,
+        )
+    }
+
+    private fun registerPresentationHooks(
+        module: XposedModule,
+        onMeasure: java.lang.reflect.Method,
+        onLayout: java.lang.reflect.Method,
+        batterySetIsHide: java.lang.reflect.Method,
+        getIslandShowing: java.lang.reflect.Method,
+        nativePrivacyMethod: java.lang.reflect.Method,
+    ): String? {
         val installed = ArrayList<HookHandle>(HOOK_COUNT)
         fun register(
             method: java.lang.reflect.Method,
