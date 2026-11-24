@@ -5,8 +5,10 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -43,8 +45,13 @@ internal fun ScrollAwareGlassSegmentedTabRow(
     val direction = LocalLayoutDirection.current
     val select = rememberUpdatedState(onSelect)
     val selected = rememberUpdatedState(selectedIndex)
-    val trackPadding = with(density) { GlassSegmentedTabRowDefaults.TrackPadding.toPx() }
-    val gap = with(density) { GlassSegmentedTabRowDefaults.TabGap.toPx() }
+    val layout = SegmentedSlotGeometry(
+        width = 0f,
+        count = tabs.size,
+        trackPadding = with(density) { GlassSegmentedTabRowDefaults.TrackPadding.toPx() },
+        gap = with(density) { GlassSegmentedTabRowDefaults.TabGap.toPx() },
+        rtl = direction == LayoutDirection.Rtl,
+    )
 
     Box(modifier) {
         GlassSegmentedTabRow(
@@ -54,55 +61,60 @@ internal fun ScrollAwareGlassSegmentedTabRow(
             backdrop = backdrop,
             modifier = Modifier.fillMaxWidth(),
         )
-        // This overlay must be the top hit target. If mounted behind the
-        // upstream row, its direction guard cannot protect vertical scrolling.
-        Box(
-            Modifier.matchParentSize().pointerInput(tabs.size, direction, trackPadding, gap) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var axis = SegmentedDragAxis.Pending
-                    var lastSelected = selected.value
-                    val slots = SegmentedSlotGeometry(
-                        width = size.width.toFloat(),
-                        count = tabs.size,
-                        trackPadding = trackPadding,
-                        gap = gap,
-                        rtl = direction == LayoutDirection.Rtl,
-                    )
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                        if (change.isConsumed) break
-                        if (!change.pressed) {
-                            if (change.changedToUp() && axis != SegmentedDragAxis.Vertical) {
-                                val next = slots.indexAt(change.position.x)
-                                if (next >= 0 && (axis == SegmentedDragAxis.Pending || next != lastSelected)) {
-                                    select.value(next)
-                                }
-                                change.consume()
-                            }
-                            break
-                        }
-                        if (axis == SegmentedDragAxis.Pending) {
-                            axis = segmentedDragAxis(
-                                change.position.x - down.position.x,
-                                change.position.y - down.position.y,
-                                viewConfiguration.touchSlop,
-                            )
-                        }
-                        if (axis == SegmentedDragAxis.Horizontal) {
-                            val next = slots.indexAt(change.position.x)
-                            if (next >= 0 && next != lastSelected) {
-                                select.value(next)
-                                lastSelected = next
-                            }
-                            change.consume()
-                        }
-                        // Vertical: never consume; parent verticalScroll remains owner.
-                    }
+        // The overlay is the top hit target, leaving the published native
+        // material and selection rendering untouched.
+        Box(Modifier.matchParentSize().segmentedGestureGuard(layout, selected, select)) {}
+    }
+}
+
+private fun Modifier.segmentedGestureGuard(
+    layout: SegmentedSlotGeometry,
+    selected: State<Int>,
+    select: State<(Int) -> Unit>,
+): Modifier = pointerInput(layout) {
+    awaitEachGesture {
+        trackSegmentedGesture(layout.copy(width = size.width.toFloat()), selected, select)
+    }
+}
+
+private suspend fun AwaitPointerEventScope.trackSegmentedGesture(
+    slots: SegmentedSlotGeometry,
+    selected: State<Int>,
+    select: State<(Int) -> Unit>,
+) {
+    val down = awaitFirstDown(requireUnconsumed = false)
+    var axis = SegmentedDragAxis.Pending
+    var lastSelected = selected.value
+    while (true) {
+        val event = awaitPointerEvent()
+        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+        if (change.isConsumed) break
+        if (!change.pressed) {
+            if (change.changedToUp() && axis != SegmentedDragAxis.Vertical) {
+                val next = slots.indexAt(change.position.x)
+                if (next >= 0 && (axis == SegmentedDragAxis.Pending || next != lastSelected)) {
+                    select.value(next)
                 }
-            },
-        ) {}
+                change.consume()
+            }
+            break
+        }
+        if (axis == SegmentedDragAxis.Pending) {
+            axis = segmentedDragAxis(
+                change.position.x - down.position.x,
+                change.position.y - down.position.y,
+                viewConfiguration.touchSlop,
+            )
+        }
+        if (axis == SegmentedDragAxis.Horizontal) {
+            val next = slots.indexAt(change.position.x)
+            if (next >= 0 && next != lastSelected) {
+                select.value(next)
+                lastSelected = next
+            }
+            change.consume()
+        }
+        // Vertical motion never consumes; the parent owns verticalScroll.
     }
 }
 
