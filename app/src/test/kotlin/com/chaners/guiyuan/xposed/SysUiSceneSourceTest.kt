@@ -25,6 +25,17 @@ class SysUiSceneSourceTest {
     }
 
     @Test
+    fun nativeSceneRequiresMatchingHostAndStateForReloadAndHook() {
+        assertEquals(SourceScene.HOME, SysUiSceneSource.steadySourceScene(SourceScene.HOME, SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR))
+        assertEquals(SourceScene.UNKNOWN, SysUiSceneSource.steadySourceScene(SourceScene.HOME, SysUiSceneSource.Surface.KEYGUARD))
+        assertEquals(SourceScene.UNKNOWN, SysUiSceneSource.steadySourceScene(SourceScene.HOME, SysUiSceneSource.Surface.SHADE_LOCKED))
+        assertEquals(SourceScene.UNKNOWN, SysUiSceneSource.steadySourceScene(SourceScene.HOME, null))
+        assertEquals(SourceScene.UNKNOWN, SysUiSceneSource.steadySourceScene(SourceScene.UNKNOWN, SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR))
+        assertEquals(SourceScene.UNKNOWN, SysUiSceneSource.steadySourceScene(SourceScene.KEYGUARD, SysUiSceneSource.Surface.UNLOCKED_STATUS_BAR))
+        assertEquals(SourceScene.KEYGUARD, SysUiSceneSource.steadySourceScene(SourceScene.KEYGUARD, SysUiSceneSource.Surface.KEYGUARD))
+    }
+
+    @Test
     fun steadyHostClassificationUsesVerifiedNativeHost() {
         assertEquals(
             SourceScene.HOME,

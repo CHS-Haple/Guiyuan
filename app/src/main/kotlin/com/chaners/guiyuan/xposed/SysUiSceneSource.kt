@@ -93,11 +93,22 @@ internal object SysUiSceneSource {
 
     fun matches(handle: HookHandle): Boolean = handle.id == HOOK_ID
 
-    fun steadySourceScene(update: SceneUpdate): SourceScene {
-        val structural = steadySourceScene(update.sourceView)
-        return when (structural) {
+    fun steadySourceScene(update: SceneUpdate): SourceScene =
+        steadySourceScene(steadySourceScene(update.sourceView), update.surface)
+
+    // A new generation must re-read native state even if updateState never fires.
+    // Do not turn the read into a delivered hook callback or infer scene from ancestry alone.
+    fun currentSteadySourceScene(sourceView: View): SourceScene =
+        if (sourceView.isAttachedToWindow) {
+            steadySourceScene(steadySourceScene(sourceView), currentSurface(sourceView))
+        } else {
+            SourceScene.UNKNOWN
+        }
+
+    internal fun steadySourceScene(structural: SourceScene, surface: Surface?): SourceScene =
+        when (structural) {
             SourceScene.HOME ->
-                if (update.surface == Surface.UNLOCKED_STATUS_BAR) {
+                if (surface == Surface.UNLOCKED_STATUS_BAR) {
                     SourceScene.HOME
                 } else {
                     SourceScene.UNKNOWN
@@ -105,8 +116,8 @@ internal object SysUiSceneSource {
 
             SourceScene.KEYGUARD ->
                 if (
-                    update.surface == Surface.KEYGUARD ||
-                    update.surface == Surface.SHADE_LOCKED
+                    surface == Surface.KEYGUARD ||
+                    surface == Surface.SHADE_LOCKED
                 ) {
                     SourceScene.KEYGUARD
                 } else {
@@ -115,7 +126,6 @@ internal object SysUiSceneSource {
 
             SourceScene.UNKNOWN -> SourceScene.UNKNOWN
         }
-    }
 
     fun steadySourceScene(sourceView: View): SourceScene {
         var current: View? = sourceView
