@@ -51,45 +51,12 @@ internal object DiagFiles {
     ): ShareFile? = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         var inserted: Uri? = null
-
         runCatching {
-            runCatching {
-                prune(context)
-            }.onFailure { error ->
-                if (BuildConfig.DEBUG) {
-                    val message =
-                        "cleanup transport=mediaStore result=failed " +
-                            "error=${error.javaClass.simpleName}"
-                    Log.w(LOG_TAG, message)
-                }
-            }
-
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName())
-                put(MediaStore.MediaColumns.MIME_TYPE, MIME_TYPE)
-                put(MediaStore.MediaColumns.RELATIVE_PATH, SHARE_PATH)
-                put(MediaStore.MediaColumns.IS_PENDING, 1)
-            }
-
-            val uri = resolver.insert(COLLECTION, values)
-                ?: error("Unable to create managed diagnostic report")
+            pruneBeforeExport(context)
+            val uri = insertPendingReport(resolver)
             inserted = uri
-
-            val output = resolver.openOutputStream(uri, "w")
-                ?: error("Unable to open managed diagnostic report")
-            output.bufferedWriter(Charsets.UTF_8).use { writer ->
-                writer.write(report)
-            }
-
-            val publish = ContentValues().apply {
-                put(MediaStore.MediaColumns.IS_PENDING, 0)
-            }
-            if (resolver.update(uri, publish, null, null) <= 0) {
-                error("Unable to publish managed diagnostic report")
-            }
-
+            writeAndPublishReport(resolver, uri, report)
             if (BuildConfig.DEBUG) logPreparedReport(resolver, uri)
-
             ShareFile(uri = uri)
         }.onFailure { error ->
             inserted?.let { uri ->
@@ -102,6 +69,43 @@ internal object DiagFiles {
                 Log.e(LOG_TAG, message)
             }
         }.getOrNull()
+    }
+
+    // Pruning is best-effort; it must never block a new user-requested export.
+    private fun pruneBeforeExport(context: Context) {
+        runCatching { prune(context) }.onFailure { error ->
+            if (BuildConfig.DEBUG) {
+                val message =
+                    "cleanup transport=mediaStore result=failed " +
+                        "error=${error.javaClass.simpleName}"
+                Log.w(LOG_TAG, message)
+            }
+        }
+    }
+
+    private fun insertPendingReport(resolver: ContentResolver): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName())
+            put(MediaStore.MediaColumns.MIME_TYPE, MIME_TYPE)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, SHARE_PATH)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        return resolver.insert(COLLECTION, values)
+            ?: error("Unable to create managed diagnostic report")
+    }
+
+    private fun writeAndPublishReport(resolver: ContentResolver, uri: Uri, report: String) {
+        val output = resolver.openOutputStream(uri, "w")
+            ?: error("Unable to open managed diagnostic report")
+        output.bufferedWriter(Charsets.UTF_8).use { writer ->
+            writer.write(report)
+        }
+        val publish = ContentValues().apply {
+            put(MediaStore.MediaColumns.IS_PENDING, 0)
+        }
+        if (resolver.update(uri, publish, null, null) <= 0) {
+            error("Unable to publish managed diagnostic report")
+        }
     }
 
     private fun logPreparedReport(resolver: ContentResolver, uri: Uri) {
