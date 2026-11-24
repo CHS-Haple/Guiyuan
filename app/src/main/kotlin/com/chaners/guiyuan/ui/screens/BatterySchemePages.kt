@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import top.yukonga.miuix.kmp.basic.verticalScrollBar
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -318,7 +316,6 @@ private data class BatterySchemePageActions(
     val onSlotClick: (BatteryColorSlot) -> Unit,
 )
 
-@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 private fun BatterySchemePageContent(
     state: BatterySchemePageState,
@@ -341,7 +338,6 @@ private fun BatterySchemePageContent(
             Modifier
                 .fillMaxWidth()
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                .verticalScrollBar(scrollState, trackPadding = contentPadding)
                 .verticalScroll(scrollState)
                 .padding(contentPadding),
     ) {

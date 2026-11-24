@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -62,9 +61,6 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.SmallTitle
@@ -76,7 +72,6 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun PreviewSandboxScreen(
     display: PreviewSandboxDisplay,
@@ -186,10 +181,6 @@ internal fun PreviewSandboxScreen(
                 }
             },
     ) { paddingValues ->
-        val contentPadding = pageContentPadding(
-            innerPadding = paddingValues,
-            extraBottom = 12.dp,
-        )
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
@@ -201,16 +192,14 @@ internal fun PreviewSandboxScreen(
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = contentPadding,
+                contentPadding =
+                    pageContentPadding(
+                        innerPadding = paddingValues,
+                        extraBottom = 12.dp,
+                    ),
             ) {
                 previewSandboxRows(display, choices, renderModel, visual, actions)
             }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(listState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
-                topAppBarScrollBehavior = scrollBehavior,
-            )
          }
     }
     }

@@ -30,8 +30,6 @@ import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.color.api.toHsv
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import top.yukonga.miuix.kmp.basic.verticalScrollBar
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
 internal data class ColorWheelState(
     val editing: MutableState<Int?>,
@@ -82,7 +80,6 @@ internal data class ColorEditorState(
     }
 }
 
-@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun BatteryCustomModeEditor(
     custom: BatteryCustomColorScheme,
@@ -98,7 +95,6 @@ internal fun BatteryCustomModeEditor(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-            .verticalScrollBar(scrollState, trackPadding = contentPadding)
             .verticalScroll(scrollState)
             .padding(contentPadding)
             .padding(bottom = 24.dp),

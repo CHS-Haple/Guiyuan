@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -70,11 +71,23 @@ internal fun TermsOfUseScreen(onBack: () -> Unit) {
     AgreementScreen(AgreementDocument.Terms, onBack)
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 private fun AgreementScreen(document: AgreementDocument, onBack: () -> Unit) {
+    val scrollState = rememberLazyListState()
     SettingsPage(
         title = stringResource(document.titleRes()),
         onBack = onBack,
+        listState = scrollState,
+        foreground = { padding ->
+            VerticalScrollBar(
+                adapter = rememberScrollBarAdapter(scrollState),
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(
+                    top = padding.calculateTopPadding(),
+                    bottom = padding.calculateBottomPadding(),
+                ),
+            )
+        },
     ) {
         item { AgreementArticle(document) }
     }
