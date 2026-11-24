@@ -1775,52 +1775,66 @@ internal object SysUiPresentationOwner {
         ): Int {
             this.deferVisualMaskUntilLayout = deferVisualMaskUntilLayout
             this.layoutReadyCallback = onLayoutReady
-            if (started) {
-                if (
-                    nativeLayoutOwnershipDeferred &&
-                    !deferNativeLayoutOwnershipUntilCommit
-                ) {
-                    val group =
-                        statusIcons.get()
-                            ?: run {
-                                onFailNative(REASON_STATUS_ICON_GROUP_RELEASED)
-                                return 0
-                            }
-                    nativeLayoutOwnershipDeferred = false
-                    compactLayoutReady = false
-                    if (!applyPersistentIgnoredSlots(group)) return 0
-                    if (!syncEndReservation()) return 0
-                    onEvent(
-                        eventPrefix +
-                            " deferredLayoutRetarget state=resumed" +
-                            " nativeLayoutOwnership=active" +
-                            LOG_NEXT_NATIVE_STATUS_ICON_LAYOUT,
-                    )
-                }
-                if (
-                    deferNativeLayoutOwnershipUntilCommit &&
-                    ownedPersistentIgnoredSlots == null &&
-                    appliedPadding == null
-                ) {
-                    nativeLayoutOwnershipDeferred = true
-                    compactLayoutReady = false
-                    return refreshClipMasks()
-                }
-                if (!syncEndReservation()) return 0
-                if (isLayoutCutoverReady()) {
-                    layoutReadyCallback = null
-                    return refreshClipMasks()
-                }
-                statusIcons.get()?.let(::awaitCcNativeLayout)
-                return if (
-                    deferVisualMaskUntilLayout && preMaskBeforeLayout
-                ) {
-                    refreshClipMasks()
-                } else {
-                    0
-                }
+            return if (started) {
+                restartPresentation(preMaskBeforeLayout, deferNativeLayoutOwnershipUntilCommit)
+            } else {
+                startPresentation(preMaskBeforeLayout, deferNativeLayoutOwnershipUntilCommit)
             }
+        }
 
+        private fun restartPresentation(
+            preMaskBeforeLayout: Boolean,
+            deferNativeLayoutOwnershipUntilCommit: Boolean,
+        ): Int {
+            if (
+                nativeLayoutOwnershipDeferred &&
+                !deferNativeLayoutOwnershipUntilCommit
+            ) {
+                val group =
+                    statusIcons.get()
+                        ?: run {
+                            onFailNative(REASON_STATUS_ICON_GROUP_RELEASED)
+                            return 0
+                        }
+                nativeLayoutOwnershipDeferred = false
+                compactLayoutReady = false
+                if (!applyPersistentIgnoredSlots(group)) return 0
+                if (!syncEndReservation()) return 0
+                onEvent(
+                    eventPrefix +
+                        " deferredLayoutRetarget state=resumed" +
+                        " nativeLayoutOwnership=active" +
+                        LOG_NEXT_NATIVE_STATUS_ICON_LAYOUT,
+                )
+            }
+            if (
+                deferNativeLayoutOwnershipUntilCommit &&
+                ownedPersistentIgnoredSlots == null &&
+                appliedPadding == null
+            ) {
+                nativeLayoutOwnershipDeferred = true
+                compactLayoutReady = false
+                return refreshClipMasks()
+            }
+            if (!syncEndReservation()) return 0
+            if (isLayoutCutoverReady()) {
+                layoutReadyCallback = null
+                return refreshClipMasks()
+            }
+            statusIcons.get()?.let(::awaitCcNativeLayout)
+            return if (
+                deferVisualMaskUntilLayout && preMaskBeforeLayout
+            ) {
+                refreshClipMasks()
+            } else {
+                0
+            }
+        }
+
+        private fun startPresentation(
+            preMaskBeforeLayout: Boolean,
+            deferNativeLayoutOwnershipUntilCommit: Boolean,
+        ): Int {
             lifecycle = Lifecycle.RUNNING
             host.get()?.addOnAttachStateChangeListener(this)
             val group =
