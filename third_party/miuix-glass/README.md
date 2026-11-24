@@ -11,7 +11,7 @@ source checkout in `.github/actions/miuix-source/action.yml`.
   `0.9.5-03d15786-SNAPSHOT` at full revision
   `03d15786e685f4921fd5638ac56a0802cd27bb5c`.
   [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45378660250)
-  must succeed before accepting the dependency; the exact-source
+  succeeded; the exact-source
   [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45378660224)
   passed all four jobs. This is a pre-release snapshot, not stable v0.9.5.
   Keep source and Maven revisions identical; Guiyuan source/Maven builds
