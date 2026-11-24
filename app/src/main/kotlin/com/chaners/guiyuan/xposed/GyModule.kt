@@ -4317,9 +4317,6 @@ class GyModule : XposedModule() {
             try {
                 HomeRenderSession.attach(
                     host = host,
-                    onEvent = ::logRuntimeEvent,
-                    onLatencySample = ::onRenderLatencySample,
-                    isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
                     initialNativeHandoffActive = true,
                     // A new Home renderer may attach while Control Center
                     // still owns the scene (notably during rotation). Copy
@@ -4328,38 +4325,43 @@ class GyModule : XposedModule() {
                     initialControlCenterAllowsHome = !ccHomeYieldedToPanel,
                     initialTintState = rendererInitialTintState,
                     allowLiveTintSeed = allowLiveTintSeed,
-                    onPresentationReadinessChanged = { ready, readinessSource ->
-                        rendererReadyOnAttach = ready
-                        onHomeReadyChanged(host, ready, source, readinessSource)
-                    },
-                    onHomeFrameDrawn = {
-                        if (detailedDiagnosticsEnabled) {
-                            logDiagnostic(
-                                level = Log.INFO,
-                                event = "presentation.homeFrameDrawn",
-                                component = "homePresentation",
-                                state = "ready",
-                                "nativePanelVisible" to controlCenterSceneVisible,
-                                "nativeFraction" to ccExpansion,
-                                "homeVisibility" to HomeRenderSession.visibilityWitness(),
-                                "ccFakeVisual" to CcRenderSession.visualState(),
-                                "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
-                            )
-                        }
-                        reconcileCcHomeAuthority("home-frame-drawn")
-                    },
-                    onBatteryDrawn = { model, elapsedMs ->
-                        if (detailedDiagnosticsEnabled) {
-                            logDiagnostic(
-                                level = Log.INFO,
-                                event = "battery.onDraw",
-                                component = "homeRenderer",
-                                state = if (model.charging) "charging" else "not-charging",
-                                "semantic" to model.batterySemanticState.name,
-                                "drawElapsedRealtimeMs" to elapsedMs,
-                            )
-                        }
-                    },
+                    sinks = HomeRenderSession.Sinks(
+                        onEvent = ::logRuntimeEvent,
+                        onLatencySample = ::onRenderLatencySample,
+                        isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                        onPresentationReadinessChanged = { ready, readinessSource ->
+                            rendererReadyOnAttach = ready
+                            onHomeReadyChanged(host, ready, source, readinessSource)
+                        },
+                        onHomeFrameDrawn = {
+                            if (detailedDiagnosticsEnabled) {
+                                logDiagnostic(
+                                    level = Log.INFO,
+                                    event = "presentation.homeFrameDrawn",
+                                    component = "homePresentation",
+                                    state = "ready",
+                                    "nativePanelVisible" to controlCenterSceneVisible,
+                                    "nativeFraction" to ccExpansion,
+                                    "homeVisibility" to HomeRenderSession.visibilityWitness(),
+                                    "ccFakeVisual" to CcRenderSession.visualState(),
+                                    "ccNativeVisual" to SysUiCcSource.nativeVisualState(),
+                                )
+                            }
+                            reconcileCcHomeAuthority("home-frame-drawn")
+                        },
+                        onBatteryDrawn = { model, elapsedMs ->
+                            if (detailedDiagnosticsEnabled) {
+                                logDiagnostic(
+                                    level = Log.INFO,
+                                    event = "battery.onDraw",
+                                    component = "homeRenderer",
+                                    state = if (model.charging) "charging" else "not-charging",
+                                    "semantic" to model.batterySemanticState.name,
+                                    "drawElapsedRealtimeMs" to elapsedMs,
+                                )
+                            }
+                        },
+                    ),
                 )
             } catch (error: Throwable) {
                 // Roll back before propagating the attachment error, without
