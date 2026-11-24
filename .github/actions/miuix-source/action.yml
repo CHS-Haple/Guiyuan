@@ -1,5 +1,5 @@
 name: Pinned MIUIX source
-description: Checkout and verify the pinned MIUIX graph shared by OS3 and OS4 variants.
+description: Checkout and verify the single pinned MIUIX source graph.
 runs:
   using: composite
   steps:

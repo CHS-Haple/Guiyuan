@@ -7,16 +7,17 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The source and Maven graph use MIUIX snapshot
-  `0.9.5-07d48590-SNAPSHOT` at full revision
-  `07d4859021d7aed1a1f78afaee12c5c8a6917466`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45226040998)
-  succeeded; the exact-source [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45226041186)
-  passed Android assembly, desktop and web jobs, but the Apple job was cancelled.
-  This is a pre-release snapshot, not stable v0.9.5. Keep source and Maven
-  revisions identical; Guiyuan source/Maven builds and focused device validation
-  remain required. Signed B1940 passed focused maintainer acceptance
-  ([#1834](https://github.com/CHS-Haple/Guiyuan/pull/1834#issuecomment-7118485814)).
+- The source and Maven graph target MIUIX snapshot
+  `0.9.5-03d15786-SNAPSHOT` at full revision
+  `03d15786e685f4921fd5638ac56a0802cd27bb5c`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45378660250)
+  must succeed before accepting the dependency; the exact-source
+  [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45378660224)
+  passed all four jobs. This is a pre-release snapshot, not stable v0.9.5.
+  Keep source and Maven revisions identical; Guiyuan source/Maven builds
+  and focused device validation remain required. The prior `07d48590`
+  baseline passed focused maintainer acceptance in signed B1952
+  ([#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866)).
   Guiyuan-specific Back, long-press, touch-extension and title
   clip boundaries remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
@@ -191,7 +192,7 @@ found in the live app source set. Non-public rail, popup and native-title
 behavior remains adapted because it has no behavior-equivalent published
 entrypoint.
 
-## 07d48590 alignment and optional API decisions
+## Upstream alignment and optional API decisions
 
 - **Adopt:** MIUIX owns Slider tap-to-seek, ColorPicker
   bounds, Squircle's drawing and zero-radius fast paths, TopAppBarState
@@ -236,6 +237,18 @@ entrypoint.
   Experimental effect PR #321 and resume PR #461 are not in the pinned
   published revision and are not copied into the app.
 
+- **Adopt 03d15786 overlay lifecycle:** native Dialog, Sheet, and dropdown
+  touch release and exit motion come from the matched dependency graph.
+  The app-local transformed popup uses upstream's visible bounds/center
+  threshold instead of waiting for the spring tail. Its page-owned anchor
+  receives the closing position and velocity for the remaining rebound.
+  The root-hosted popup transfers that rebound only when leaving the active
+  effect; retiring the inactive host must not restart it. The controlled
+  search row follows upstream's 1/255 visible-progress gate. Keep the
+  existing submenu, Back, query, material and capability-fallback owners.
+  No extra timer, input lock or animation is introduced. The nullable
+  dropdown completion callback does not remove any caller-owned retirement
+  obligation. The separate resume and effect proposals remain deferred.
 
 ### Final local-boundary review
 

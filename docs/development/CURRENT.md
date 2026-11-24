@@ -98,7 +98,7 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
-- MIUIX `07d48590` updates both native and Glass sheet motion,
+- MIUIX `03d15786` retains the earlier native and Glass sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
   navigation runtime through the matched dependency graph. Search uses
   the public `SearchClearButton`; transformed menus share one settled placement
@@ -116,6 +116,12 @@ reference, not this public repository.
   This is a focused device acceptance, not exhaustive certification. Integrate
   source without a second distribution Build; the delivered B1940 identity
   remains attached to its original signed work-branch artifact.
+- The subsequent overlay update releases touch blocking at the visible exit
+  boundary and transfers any closing rebound to the persistent anchor. The
+  controlled search uses the matching visible-progress mount gate. Native
+  Dialog/Sheet motion and dropdown lifecycle come from the pinned graph;
+  local host retirement, submenu and Back ownership stay unchanged. The
+  new revision requires focused device acceptance; B1952 is the prior baseline.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
   uses app-local Glass adapters. Do not adopt upstream changes or
@@ -145,9 +151,10 @@ reference, not this public repository.
   and preserves the scheme/editor hierarchy. Its custom-scheme More control
   uses upstream `basic.IconButton` without the floating glass shadow.
   Separate Glass back controls retain the source-matched `Regular` shadow.
-- Single-interface migration requires focused device acceptance; prior B1940
-  and B1941 acceptance does not certify it. Test upgrades, all navigation
-  choices, light/dark, narrow/wide, search, modal and sandbox lifecycle.
+- Single-interface migration and battery color controls received focused
+  B1952 device acceptance in [#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866);
+  the integrated source tree matched that candidate and dev CI passed. This
+  does not certify the newer overlay motion revision.
   Exhaustive RTL, extreme font scale, GPU resume, keyboard/cutout geometry,
   predictive Back and every Framework/ROM combination remain unverified.
 
