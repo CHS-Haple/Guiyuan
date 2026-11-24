@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
 import android.view.View
 import android.widget.TextView
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
@@ -76,19 +75,6 @@ internal object SysUiTintSource {
 
         batteryPercentViewField = percentField
         val warned = AtomicBoolean(false)
-        fun diagnose(block: () -> Unit) {
-            try {
-                block()
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                if (warned.compareAndSet(false, true)) {
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        Log.w("Guiyuan[Tint]", "Diagnostic failed", error)
-                    }
-                }
-            }
-        }
-
         // Both native tint callbacks have one post-native state delivery owner;
         // only updateLightDarkTint carries first-event diagnostic arguments.
         fun tintHooker(source: String, reportNativeArguments: Boolean): Hooker =
@@ -108,7 +94,7 @@ internal object SysUiTintSource {
                             onTintState = onTintState,
                             onRuntimeFailure = onRuntimeFailure,
                         )
-                    diagnose {
+                    SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Tint]") {
                         if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                             SysUiTintDiagnosticProbe.probeBatteryIconAuthority(
                                 sourceView = sourceView,

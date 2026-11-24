@@ -1,7 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
-import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import com.chaners.guiyuan.xposed.SysUiKeyguardAodSource.AodUpdate
 import java.lang.reflect.Field
@@ -10,7 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 // Stateless native-field evidence and passive diagnostics; no Hook handles or state ownership.
 internal object SysUiKeyguardAodEvidence {
     // Optional AOD diagnostics are separate from native transition ownership.
-    @Suppress("TooGenericExceptionCaught")
     fun diagnosticCallback(
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
@@ -18,7 +15,7 @@ internal object SysUiKeyguardAodEvidence {
     ): ((AodUpdate) -> Unit)? =
         onEvent?.let { sink ->
             { update ->
-                try {
+                SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Aod]") {
                     if (isDetailedDiagnosticsEnabled()) {
                         sink(
                             "keyguardAod source=" + update.source +
@@ -27,13 +24,6 @@ internal object SysUiKeyguardAodEvidence {
                                 " animToAod=" + (update.animToAod ?: "unavailable") +
                                 " blocked=" + update.blocksProjection,
                         )
-                    }
-                } catch (error: Throwable) {
-                    rethrowFatal(error)
-                    if (warned.compareAndSet(false, true)) {
-                        SysUiPresentationRuntime.emitPassiveDiagnostic {
-                            Log.w("Guiyuan[Aod]", "Diagnostic failed", error)
-                        }
                     }
                 }
             }

@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
 import android.graphics.Typeface
 import android.view.View
 import com.chaners.guiyuan.settings.FontWeightAxis
@@ -180,15 +179,8 @@ internal object SysUiBatterySource {
 
         fun report(message: () -> String) {
             val sink = onEvent ?: return
-            try {
+            SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Battery]") {
                 if (isDetailedDiagnosticsEnabled()) sink(message())
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                if (warned.compareAndSet(false, true)) {
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        Log.w("Guiyuan[Battery]", "Diagnostic failed", error)
-                    }
-                }
             }
         }
 

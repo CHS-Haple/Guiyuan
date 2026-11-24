@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
 import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
@@ -53,20 +52,13 @@ internal object KeyguardIconTransitionSource {
                                 onRuntimeFailure(error)
                             }
                         }
-                        try {
+                        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Keyguard]") {
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                 val rawArg0 = chain.getArg(0) as? Boolean
                                 onEvent(
                                     "keyguardStatusIconTransition source=animateIconContainer" +
                                         " arg0=" + (rawArg0 ?: "unavailable"),
                                 )
-                            }
-                        } catch (error: Throwable) {
-                            SysUiPresentationRuntime.throwIfFatal(error)
-                            if (warned.compareAndSet(false, true)) {
-                                SysUiPresentationRuntime.emitPassiveDiagnostic {
-                                    Log.w("Guiyuan[Keyguard]", "Diagnostic failed", error)
-                                }
                             }
                         }
                         result

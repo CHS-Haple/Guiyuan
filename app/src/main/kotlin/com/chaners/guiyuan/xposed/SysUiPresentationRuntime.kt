@@ -22,6 +22,23 @@ internal object SysUiPresentationRuntime {
         }
     }
 
+    // Each installation owns its warning receipt, not a second diagnostic state machine.
+    @Suppress("TooGenericExceptionCaught")
+    internal inline fun emitPassiveDiagnostic(
+        warned: AtomicBoolean,
+        tag: String,
+        block: () -> Unit,
+    ) {
+        try {
+            block()
+        } catch (error: Throwable) {
+            throwIfFatal(error)
+            if (warned.compareAndSet(false, true)) {
+                emitPassiveDiagnostic { Log.w(tag, "Diagnostic failed", error) }
+            }
+        }
+    }
+
     // Optional platform reads may be missing, but VM-fatal errors are not absence.
     @Suppress("TooGenericExceptionCaught")
     internal inline fun <T> optionalNativeRead(block: () -> T): T? =

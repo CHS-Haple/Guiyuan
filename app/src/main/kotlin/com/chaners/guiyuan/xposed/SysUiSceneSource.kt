@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.xposed
 
-import android.util.Log
 import android.view.View
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import io.github.libxposed.api.XposedInterface.HookHandle
@@ -49,6 +48,21 @@ internal object SysUiSceneSource {
             ).apply { isAccessible = true }
 
         val warned = AtomicBoolean(false)
+        val onDiagnostic: ((SceneUpdate) -> Unit)? = onEvent?.let { sink ->
+            { update ->
+                SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Scene]") {
+                    if (isDetailedDiagnosticsEnabled()) {
+                        sink(
+                            "sceneState source=updateState" +
+                                " raw=" + update.rawState +
+                                " batteryState=" + update.surface.name +
+                                " authority=battery-status-state-readonly" +
+                                " homeVisibilityAuthority=host+panel-coordinator",
+                        )
+                    }
+                }
+            }
+        }
         val handle =
             module
                 .hook(updateStateMethod)
@@ -63,12 +77,9 @@ internal object SysUiSceneSource {
                                 publish(
                                     sourceView = sourceView,
                                     rawState = rawState,
-                                    source = "updateState",
                                     onSceneState = onSceneState,
                                     onRuntimeFailure = onRuntimeFailure,
-                                    onEvent = onEvent,
-                                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                                    warned = warned,
+                                    onDiagnostic = onDiagnostic,
                                 )
                             }
                         }
@@ -155,12 +166,9 @@ internal object SysUiSceneSource {
     private fun publish(
         sourceView: View,
         rawState: Int,
-        source: String,
         onSceneState: (SceneUpdate) -> Unit,
         onRuntimeFailure: (Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        warned: AtomicBoolean,
+        onDiagnostic: ((SceneUpdate) -> Unit)?,
     ) {
         val delivery =
             synchronized(this) {
@@ -196,26 +204,7 @@ internal object SysUiSceneSource {
             }
             return
         }
-        if (onEvent != null) {
-            try {
-                if (isDetailedDiagnosticsEnabled()) {
-                    onEvent(
-                        "sceneState source=" + source +
-                            " raw=" + rawState +
-                            " batteryState=" + update.surface.name +
-                            " authority=battery-status-state-readonly" +
-                            " homeVisibilityAuthority=host+panel-coordinator",
-                    )
-                }
-            } catch (error: Throwable) {
-                SysUiPresentationRuntime.throwIfFatal(error)
-                if (warned.compareAndSet(false, true)) {
-                    SysUiPresentationRuntime.emitPassiveDiagnostic {
-                        Log.w("Guiyuan[Scene]", "Diagnostic failed", error)
-                    }
-                }
-            }
-        }
+        onDiagnostic?.invoke(update)
     }
 
     internal enum class Surface {
