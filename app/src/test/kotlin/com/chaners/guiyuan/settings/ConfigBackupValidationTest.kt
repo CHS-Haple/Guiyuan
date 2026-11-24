@@ -66,7 +66,7 @@ class ConfigBackupValidationTest {
                 ConfigBackupGuards.checkJsonStructure(invalid, Json)
             }
         }
-        ConfigBackupGuards.checkJsonStructure("{\\"items\\":[{\\"name\\":\\"ok\\"}]}", Json)
+        ConfigBackupGuards.checkJsonStructure("""{"items":[{"name":"ok"}]}""", Json)
     }
 
     @Test fun invalidUtf8AndNoncanonicalSchemeKeysAreRejected() {
