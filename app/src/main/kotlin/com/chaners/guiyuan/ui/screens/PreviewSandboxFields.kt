@@ -183,20 +183,21 @@ internal fun sandboxTabDragAxis(dx: Float, dy: Float, touchSlop: Float): Sandbox
 
 // Match the native segmented row's equal slots and RTL origin; the gap belongs
 // to the preceding tab, exactly as in MIUIX's indexAt logic.
-internal fun sandboxTabIndexAt(
-    x: Float,
-    width: Float,
-    count: Int,
-    trackPadding: Float,
-    gap: Float,
-    rtl: Boolean,
-): Int {
-    if (count == 0) return -1
-    val trackWidth = (width - trackPadding * 2).coerceAtLeast(0f)
-    val slot = ((trackWidth - gap * (count - 1)) / count).coerceAtLeast(0f)
-    if (slot <= 0f) return -1
-    val logicalX = if (rtl) width - x else x
-    return ((logicalX - trackPadding) / (slot + gap)).toInt().coerceIn(0, count - 1)
+internal data class SandboxTabSlotGeometry(
+    val width: Float,
+    val count: Int,
+    val trackPadding: Float,
+    val gap: Float,
+    val rtl: Boolean,
+) {
+    fun indexAt(x: Float): Int {
+        if (count <= 0) return -1
+        val trackWidth = (width - trackPadding * 2).coerceAtLeast(0f)
+        val slot = ((trackWidth - gap * (count - 1)) / count).coerceAtLeast(0f)
+        if (slot <= 0f) return -1
+        val logicalX = if (rtl) width - x else x
+        return ((logicalX - trackPadding) / (slot + gap)).toInt().coerceIn(0, count - 1)
+    }
 }
 
 @Composable
@@ -217,8 +218,7 @@ private fun SandboxTabPointerSurface(
                 val down = awaitFirstDown(requireUnconsumed = false)
                 var axis = SandboxTabDragAxis.Pending
                 var lastSelected = currentSelected.value
-                fun selectedAt(x: Float) = sandboxTabIndexAt(
-                    x = x,
+                val slots = SandboxTabSlotGeometry(
                     width = size.width.toFloat(),
                     count = tabs.size,
                     trackPadding = trackPadding,
@@ -231,7 +231,7 @@ private fun SandboxTabPointerSurface(
                     if (change.isConsumed) break
                     if (!change.pressed) {
                         if (change.changedToUp() && axis != SandboxTabDragAxis.Vertical) {
-                            val index = selectedAt(change.position.x)
+                            val index = slots.indexAt(change.position.x)
                             if (index >= 0 && (axis == SandboxTabDragAxis.Pending || index != lastSelected)) {
                                 currentOnSelect.value(index)
                             }
@@ -247,7 +247,7 @@ private fun SandboxTabPointerSurface(
                         )
                     }
                     if (axis == SandboxTabDragAxis.Horizontal) {
-                        val index = selectedAt(change.position.x)
+                        val index = slots.indexAt(change.position.x)
                         if (index >= 0 && index != lastSelected) {
                             currentOnSelect.value(index)
                             lastSelected = index

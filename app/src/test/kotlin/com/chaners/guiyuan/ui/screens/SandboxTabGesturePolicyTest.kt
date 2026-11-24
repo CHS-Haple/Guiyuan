@@ -21,11 +21,13 @@ class SandboxTabGesturePolicyTest {
 
     @Test
     fun equalWidthSlotsMapToVisualIndexInBothDirections() {
-        assertEquals(0, sandboxTabIndexAt(25f, 312f, 3, 4f, 8f, false))
-        assertEquals(1, sandboxTabIndexAt(160f, 312f, 3, 4f, 8f, false))
-        assertEquals(2, sandboxTabIndexAt(287f, 312f, 3, 4f, 8f, false))
-        assertEquals(2, sandboxTabIndexAt(25f, 312f, 3, 4f, 8f, true))
-        assertEquals(0, sandboxTabIndexAt(287f, 312f, 3, 4f, 8f, true))
-        assertEquals(-1, sandboxTabIndexAt(10f, 20f, 3, 4f, 8f, false))
+        val ltr = SandboxTabSlotGeometry(312f, 3, 4f, 8f, false)
+        val rtl = ltr.copy(rtl = true)
+        assertEquals(0, ltr.indexAt(25f))
+        assertEquals(1, ltr.indexAt(160f))
+        assertEquals(2, ltr.indexAt(287f))
+        assertEquals(2, rtl.indexAt(25f))
+        assertEquals(0, rtl.indexAt(287f))
+        assertEquals(-1, SandboxTabSlotGeometry(20f, 3, 4f, 8f, false).indexAt(10f))
     }
 }
