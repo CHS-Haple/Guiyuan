@@ -113,13 +113,7 @@ internal fun BatterySchemeOverview(
     val navigation = actions.navigation
     val catalog = actions.catalog
     val pages = remember(library.customSchemes) {
-        buildList {
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
-            library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
-            add(BatterySchemePage.Add)
-        }
+        buildSchemeDeckPages(library.customSchemes)
     }
     val pageKeys = remember(pages) { pages.map { it.key } }
     val initial = pages.indexOfFirst { it.key == library.activeSchemeKey }.takeIf { it >= 0 } ?: 0
@@ -155,16 +149,7 @@ internal fun BatterySchemeOverview(
         onDismissRequest = onDismissRequest,
         onDismissFinished = { if (!show) retained = false },
         headerBottomContent = {
-            BatterySchemeIndicatorRail(
-                pages = pages,
-                pagerState = pagerState,
-                targetPage = target.intValue,
-                onPageSelect = { next ->
-                    if (next != pagerState.currentPage || target.intValue >= 0 || pagerState.isScrollInProgress) {
-                        target.intValue = next
-                    }
-                },
-            )
+            BatterySchemeOverviewIndicator(pages, pagerState, target)
         },
         scrollOffset = currentScrollOffset,
     ) { innerPadding ->
@@ -177,6 +162,36 @@ internal fun BatterySchemeOverview(
             }
         }
     }
+}
+
+// Match the previous page order and keys; a new scheme remains immediately
+// before the Add page, so the native Pager's index identity stays unchanged.
+private fun buildSchemeDeckPages(
+    customSchemes: List<BatteryCustomColorScheme>,
+): List<BatterySchemePage> = buildList {
+    add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
+    add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
+    add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
+    customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
+    add(BatterySchemePage.Add)
+}
+
+@Composable
+private fun BatterySchemeOverviewIndicator(
+    pages: List<BatterySchemePage>,
+    pagerState: PagerState,
+    target: androidx.compose.runtime.MutableIntState,
+) {
+    BatterySchemeIndicatorRail(
+        pages = pages,
+        pagerState = pagerState,
+        targetPage = target.intValue,
+        onPageSelect = { next ->
+            if (next != pagerState.currentPage || target.intValue >= 0 || pagerState.isScrollInProgress) {
+                target.intValue = next
+            }
+        },
+    )
 }
 
 @Composable
