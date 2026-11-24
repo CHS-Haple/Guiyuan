@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
@@ -90,44 +91,36 @@ private fun BatteryAddSchemeCardBody(count: Int, enabled: Boolean) {
                     onSlotClick = {},
                 )
             }
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(BATTERY_SCHEME_VERTICAL_GAP),
+                Surface(
+                    modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
+                    shape = CircleShape,
+                    color =
+                        if (enabled) MiuixTheme.colorScheme.primary
+                        else MiuixTheme.colorScheme.disabledPrimaryButton,
+                    shadowElevation = 0.dp,
                 ) {
-                    Surface(
-                        modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
-                        shape = CircleShape,
-                        color =
-                            if (enabled) MiuixTheme.colorScheme.primary
-                            else MiuixTheme.colorScheme.disabledPrimaryButton,
-                        shadowElevation = 0.dp,
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = MiuixIcons.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint =
-                                    if (enabled) MiuixTheme.colorScheme.onPrimary
-                                    else MiuixTheme.colorScheme.disabledOnPrimaryButton,
-                            )
-                        }
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = MiuixIcons.Add,
+                            contentDescription = stringResource(
+                                if (enabled) R.string.battery_custom_scheme_new
+                                else R.string.battery_custom_scheme_limit,
+                            ),
+                            modifier = Modifier.size(32.dp),
+                            tint =
+                                if (enabled) MiuixTheme.colorScheme.onPrimary
+                                else MiuixTheme.colorScheme.disabledOnPrimaryButton,
+                        )
                     }
-                    Text(
-                        text = stringResource(
-                            if (enabled) R.string.battery_scheme_new_summary
-                            else R.string.battery_custom_scheme_limit,
-                        ),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                    )
                 }
+            }
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
+            ) {
                 HorizontalDivider()
                 BatterySchemeCapacityStatus(count, enabled)
             }
@@ -135,11 +128,20 @@ private fun BatteryAddSchemeCardBody(count: Int, enabled: Boolean) {
     ) { measurables, constraints ->
         val loose = constraints.copy(minHeight = 0)
         val reference = measurables[0].measure(loose)
-        val body = measurables[1].measure(loose)
-        val height = maxOf(reference.height, body.height)
+        val footer = measurables[2].measure(loose)
+        val creationConstraints =
+            if (loose.hasBoundedHeight) {
+                loose.copy(maxHeight = (loose.maxHeight - footer.height).coerceAtLeast(0))
+            } else {
+                loose
+            }
+        val creation = measurables[1].measure(creationConstraints)
+        val height = maxOf(reference.height, creation.height + footer.height)
             .coerceIn(constraints.minHeight, constraints.maxHeight)
-        layout(body.width, height) {
-            body.placeRelative(0, (height - body.height) / 2)
+        val footerTop = height - footer.height
+        layout(reference.width, height) {
+            creation.placeRelative(0, (footerTop - creation.height) / 2)
+            footer.placeRelative(0, footerTop)
         }
     }
 }
@@ -160,10 +162,21 @@ private fun BatterySchemeCapacityStatus(count: Int, enabled: Boolean) {
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
-            Text(
-                text = "$count / $BATTERY_COLOR_SCHEME_CUSTOM_MAX",
-                style = MiuixTheme.textStyles.body2,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = count.toString(),
+                    style = MiuixTheme.textStyles.title4,
+                    color = MiuixTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.alignByBaseline(),
+                )
+                Text(
+                    text = "/ $BATTERY_COLOR_SCHEME_CUSTOM_MAX",
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.alignByBaseline(),
+                )
+            }
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
