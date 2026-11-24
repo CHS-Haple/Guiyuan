@@ -19,7 +19,8 @@ import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 internal data class AppearanceThemeActions(
     val onThemeChange: (ThemeMode) -> Unit,
     val onDynamicChange: (Boolean) -> Unit,
-    val onColorSpecChange: (ThemeColorSpec?) -> Unit,
+    val onCustomPaletteChange: (Boolean) -> Unit,
+    val onColorSpecChange: (ThemeColorSpec) -> Unit,
     val onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
 )
 

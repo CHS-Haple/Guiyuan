@@ -19,7 +19,8 @@ class AppearanceTest {
     @Test
     fun legacyAppearanceKeepsTheUnmodifiedSystemPalette() {
         val old = Appearance(dynamicColor = true)
-        assertEquals(null, old.colorSpec)
+        assertFalse(old.customPalette)
+        assertEquals(ThemeColorSpec.Spec2021, old.colorSpec)
         assertEquals(ThemePaletteStyle.TonalSpot, old.paletteStyle)
         assertEquals(null, decodeColorSpec(null))
         assertEquals(null, decodeColorSpec("FutureSpec"))
@@ -28,50 +29,38 @@ class AppearanceTest {
     }
 
     @Test
-    fun paletteChoicesMatchNewMiuixSpecs() {
-        assertEquals(
-            listOf(9, 5),
-            ThemeColorSpec.entries.map { palettesFor(it).size },
-        )
+    fun legacySourceIsInferredOnlyWithoutAnExplicitChoice() {
+        for (stored in listOf(null, "FutureSpec", "Spec2021", "Spec2025", "Spec2026")) {
+            val spec = decodeColorSpec(stored)
+            assertEquals(spec != null, decodeCustomPalette(null, spec))
+            assertTrue(decodeCustomPalette(true, spec))
+            assertFalse(decodeCustomPalette(false, spec))
+        }
+    }
+
+    @Test
+    fun spec2025SupportMatchesPinnedMiuix() {
         assertEquals(
             listOf(
                 ThemePaletteStyle.TonalSpot,
                 ThemePaletteStyle.Neutral,
                 ThemePaletteStyle.Vibrant,
                 ThemePaletteStyle.Expressive,
-                ThemePaletteStyle.Cmf,
             ),
-            palettesFor(ThemeColorSpec.Spec2025),
+            ThemePaletteStyle.entries.filter { it.supportsSpec2025() },
         )
-        assertFalse(ThemePaletteStyle.Cmf in palettesFor(ThemeColorSpec.Spec2021))
-        assertFalse(ThemePaletteStyle.Rainbow in palettesFor(ThemeColorSpec.Spec2025))
+        assertFalse(ThemePaletteStyle.Cmf.supportsSpec2025())
     }
 
     @Test
-    fun legacySpec2026KeepsTheCmfPalette() {
-        val spec = decodeColorSpec("Spec2026")
-        assertEquals(ThemeColorSpec.Spec2025, spec)
-        assertEquals(ThemePaletteStyle.Cmf, compatiblePalette(spec, ThemePaletteStyle.Cmf))
-    }
-
-    @Test
-    fun incompatiblePalettesNormalizeWithoutChangingTheSystemSetting() {
-        assertEquals(
-            ThemePaletteStyle.Cmf,
-            compatiblePalette(ThemeColorSpec.Spec2025, ThemePaletteStyle.Cmf),
-        )
-        assertEquals(
-            ThemePaletteStyle.TonalSpot,
-            compatiblePalette(ThemeColorSpec.Spec2021, ThemePaletteStyle.Cmf),
-        )
-        assertEquals(
-            ThemePaletteStyle.TonalSpot,
-            compatiblePalette(ThemeColorSpec.Spec2025, ThemePaletteStyle.Rainbow),
-        )
-        assertEquals(
-            ThemePaletteStyle.Cmf,
-            compatiblePalette(null, ThemePaletteStyle.Cmf),
-        )
+    fun legacyCmfStyleAndRequestedSpecRoundTripIndependently() {
+        assertEquals(ThemeColorSpec.Spec2025, decodeColorSpec("Spec2026"))
+        for (style in ThemePaletteStyle.entries) {
+            assertEquals(style, decodePalette(style.name))
+        }
+        for (spec in ThemeColorSpec.entries) {
+            assertEquals(spec, decodeColorSpec(spec.name))
+        }
     }
 
 }

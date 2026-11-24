@@ -7,7 +7,7 @@ import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.ThemeMode
-import com.chaners.guiyuan.settings.palettesFor
+import com.chaners.guiyuan.settings.supportsSpec2025
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
@@ -60,11 +60,34 @@ private fun ColumnScope.appearanceDynamicColor(
         onCheckedChange = actions.onDynamicChange,
     )
     AnimatedPreferenceGroup(visible = appearance.dynamicColor) {
-        appearanceColorSpec(appearance, actions)
-        AnimatedPreferenceGroup(visible = appearance.colorSpec != null) {
+        appearancePaletteSource(appearance, actions)
+        AnimatedPreferenceGroup(visible = appearance.customPalette) {
             appearancePaletteStyle(appearance, actions)
+            appearanceColorSpec(appearance, actions)
         }
     }
+}
+
+@Composable
+private fun ColumnScope.appearancePaletteSource(
+    appearance: Appearance,
+    actions: AppearanceThemeActions,
+) {
+    UiDropdownPreference(
+        items = listOf(
+            stringResource(R.string.theme_palette_source_system),
+            stringResource(R.string.theme_palette_source_custom),
+        ),
+        selectedIndex = if (appearance.customPalette) 1 else 0,
+        title = stringResource(R.string.theme_palette_source),
+        summary = stringResource(R.string.theme_palette_source_summary),
+        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_colorize) },
+        onSelectedIndexChange = { index ->
+            if (index in 0..1 && (index == 1) != appearance.customPalette) {
+                actions.onCustomPaletteChange(index == 1)
+            }
+        },
+    )
 }
 
 @Composable
@@ -72,22 +95,24 @@ private fun ColumnScope.appearanceColorSpec(
     appearance: Appearance,
     actions: AppearanceThemeActions,
 ) {
-    val colorSpecOptions = listOf(
-        stringResource(R.string.theme_color_spec_system),
-        "Spec2021",
-        "Spec2025",
-    )
+    val enabled = appearance.paletteStyle.supportsSpec2025()
+    val options = when {
+        appearance.paletteStyle == ThemePaletteStyle.Cmf -> listOf("Spec2026")
+        !enabled -> listOf(ThemeColorSpec.Spec2021.name)
+        else -> ThemeColorSpec.entries.map { it.name }
+    }
     UiDropdownPreference(
-        items = colorSpecOptions,
-        selectedIndex = appearance.colorSpec?.ordinal?.plus(1) ?: 0,
+        items = options,
+        selectedIndex = if (enabled) appearance.colorSpec.ordinal else 0,
         title = stringResource(R.string.theme_color_spec),
         summary = stringResource(R.string.theme_color_spec_summary),
         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_category) },
-        showValue = true,
+        enabled = enabled,
         onSelectedIndexChange = { index ->
-            if (index in colorSpecOptions.indices) {
-                val spec = if (index == 0) null else ThemeColorSpec.entries[index - 1]
-                if (spec != appearance.colorSpec) actions.onColorSpecChange(spec)
+            if (enabled) {
+                ThemeColorSpec.entries.getOrNull(index)?.let { spec ->
+                    if (spec != appearance.colorSpec) actions.onColorSpecChange(spec)
+                }
             }
         },
     )
@@ -98,32 +123,33 @@ private fun ColumnScope.appearancePaletteStyle(
     appearance: Appearance,
     actions: AppearanceThemeActions,
 ) {
-    val paletteStyles = appearance.colorSpec?.let(::palettesFor).orEmpty()
-    val paletteNames = mapOf(
-        ThemePaletteStyle.TonalSpot to stringResource(R.string.theme_palette_tonal_spot),
-        ThemePaletteStyle.Neutral to stringResource(R.string.theme_palette_neutral),
-        ThemePaletteStyle.Vibrant to stringResource(R.string.theme_palette_vibrant),
-        ThemePaletteStyle.Expressive to stringResource(R.string.theme_palette_expressive),
-        ThemePaletteStyle.Rainbow to stringResource(R.string.theme_palette_rainbow),
-        ThemePaletteStyle.FruitSalad to stringResource(R.string.theme_palette_fruit_salad),
-        ThemePaletteStyle.Monochrome to stringResource(R.string.theme_palette_monochrome),
-        ThemePaletteStyle.Fidelity to stringResource(R.string.theme_palette_fidelity),
-        ThemePaletteStyle.Content to stringResource(R.string.theme_palette_content),
-        ThemePaletteStyle.Cmf to stringResource(R.string.theme_palette_cmf),
-    )
-    if (paletteStyles.isNotEmpty()) {
-        UiDropdownPreference(
-            items = paletteStyles.map { paletteNames.getValue(it) },
-            selectedIndex = paletteStyles.indexOf(appearance.paletteStyle).coerceAtLeast(0),
-            title = stringResource(R.string.theme_palette_style),
-            summary = stringResource(R.string.theme_palette_style_summary),
-            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style) },
-            showValue = true,
-            onSelectedIndexChange = { index ->
-                paletteStyles.getOrNull(index)?.let { style ->
-                    if (style != appearance.paletteStyle) actions.onPaletteStyleChange(style)
-                }
+    val paletteStyles = ThemePaletteStyle.entries
+    val paletteNames = paletteStyles.map { style ->
+        stringResource(
+            when (style) {
+                ThemePaletteStyle.TonalSpot -> R.string.theme_palette_tonal_spot
+                ThemePaletteStyle.Neutral -> R.string.theme_palette_neutral
+                ThemePaletteStyle.Vibrant -> R.string.theme_palette_vibrant
+                ThemePaletteStyle.Expressive -> R.string.theme_palette_expressive
+                ThemePaletteStyle.Rainbow -> R.string.theme_palette_rainbow
+                ThemePaletteStyle.FruitSalad -> R.string.theme_palette_fruit_salad
+                ThemePaletteStyle.Monochrome -> R.string.theme_palette_monochrome
+                ThemePaletteStyle.Fidelity -> R.string.theme_palette_fidelity
+                ThemePaletteStyle.Content -> R.string.theme_palette_content
+                ThemePaletteStyle.Cmf -> R.string.theme_palette_cmf
             },
         )
     }
+    UiDropdownPreference(
+        items = paletteNames,
+        selectedIndex = appearance.paletteStyle.ordinal,
+        title = stringResource(R.string.theme_palette_style),
+        summary = stringResource(R.string.theme_palette_style_summary),
+        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style) },
+        onSelectedIndexChange = { index ->
+            paletteStyles.getOrNull(index)?.let { style ->
+                if (style != appearance.paletteStyle) actions.onPaletteStyleChange(style)
+            }
+        },
+    )
 }

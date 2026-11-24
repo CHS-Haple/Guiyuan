@@ -46,7 +46,8 @@ internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
     val topBarProgressiveBlur: Boolean = true,
     val dynamicColor: Boolean = false,
-    val colorSpec: ThemeColorSpec? = null,
+    val customPalette: Boolean = false,
+    val colorSpec: ThemeColorSpec = ThemeColorSpec.Spec2021,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
     val navEnabled: Boolean = true,
     val navTouchExtension: Boolean = true,
@@ -171,8 +172,9 @@ internal class AppearanceRepo(context: Context) {
                 theme = theme.mode,
                 topBarProgressiveBlur = prefs[topBarProgressiveBlurKey] ?: true,
                 dynamicColor = theme.dynamicColor,
-                colorSpec = colorSpec,
-                paletteStyle = compatiblePalette(colorSpec, decodePalette(prefs[paletteStyleKey])),
+                customPalette = decodeCustomPalette(prefs[customPaletteKey], colorSpec),
+                colorSpec = colorSpec ?: ThemeColorSpec.Spec2021,
+                paletteStyle = decodePalette(prefs[paletteStyleKey]),
                 navEnabled = prefs[navEnabledKey] ?: true,
                 navTouchExtension = prefs[navTouchExtensionKey] ?: true,
                 navStyle = style,
@@ -202,23 +204,16 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
-    suspend fun setColorSpec(spec: ThemeColorSpec?) {
-        store.edit { prefs ->
-            if (spec == null) prefs.remove(colorSpecKey) else prefs[colorSpecKey] = spec.name
-            val palette = decodePalette(prefs[paletteStyleKey])
-            if (spec != null && palette !in palettesFor(spec)) {
-                prefs[paletteStyleKey] = ThemePaletteStyle.TonalSpot.name
-            }
-        }
+    suspend fun setCustomPalette(enabled: Boolean) {
+        store.edit { prefs -> prefs[customPaletteKey] = enabled }
+    }
+
+    suspend fun setColorSpec(spec: ThemeColorSpec) {
+        store.edit { prefs -> prefs[colorSpecKey] = spec.name }
     }
 
     suspend fun setPaletteStyle(style: ThemePaletteStyle) {
-        store.edit { prefs ->
-            val spec = decodeColorSpec(prefs[colorSpecKey])
-            if (spec != null && style in palettesFor(spec)) {
-                prefs[paletteStyleKey] = style.name
-            }
-        }
+        store.edit { prefs -> prefs[paletteStyleKey] = style.name }
     }
 
     suspend fun setNavEnabled(enabled: Boolean) {
@@ -265,6 +260,7 @@ internal class AppearanceRepo(context: Context) {
     private companion object {
         val themeKey = stringPreferencesKey("theme_mode")
         val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
+        val customPaletteKey = booleanPreferencesKey("custom_palette_enabled")
         val colorSpecKey = stringPreferencesKey("theme_color_spec")
         val paletteStyleKey = stringPreferencesKey("theme_palette_style")
         val legacyBlurKey = booleanPreferencesKey("blur_enabled")

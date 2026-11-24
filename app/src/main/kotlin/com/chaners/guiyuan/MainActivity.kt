@@ -164,7 +164,10 @@ class MainActivity : ComponentActivity() {
                         onDynamicChange = { enabled ->
                             scope.launch { repo.setDynamicColor(enabled) }
                         },
-                        onColorSpecChange = { spec: ThemeColorSpec? ->
+                        onCustomPaletteChange = { enabled ->
+                            scope.launch { repo.setCustomPalette(enabled) }
+                        },
+                        onColorSpecChange = { spec: ThemeColorSpec ->
                             scope.launch { repo.setColorSpec(spec) }
                         },
                         onPaletteStyleChange = { style: ThemePaletteStyle ->

@@ -85,7 +85,7 @@ internal fun GyApp(
     GyTheme(
         themeMode = appearance.theme,
         dynamicColorEnabled = appearance.dynamicColor,
-        colorSpec = appearance.colorSpec,
+        colorSpec = appearance.colorSpec.takeIf { appearance.customPalette },
         paletteStyle = appearance.paletteStyle,
     ) {
         val hostActivity = LocalContext.current as? android.app.Activity
@@ -188,7 +188,7 @@ internal fun GyApp(
                 GyTheme(
                     themeMode = if (previewDark) ThemeMode.Dark else ThemeMode.Light,
                     dynamicColorEnabled = appearance.dynamicColor,
-                    colorSpec = appearance.colorSpec,
+                    colorSpec = appearance.colorSpec.takeIf { appearance.customPalette },
                     paletteStyle = appearance.paletteStyle,
                 ) {
                     PreviewSandboxScreen(

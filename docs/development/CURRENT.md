@@ -141,6 +141,13 @@ reference, not this public repository.
   its upstream shading, width and additive-blend conditions; Guiyuan retains
   the adapted backdrop/refraction and its own popup, button and Back lifecycle
   boundaries.
+- Dynamic color follows the pinned ThemeController and style-first example:
+  system palette delegates to MIUIX; custom style uses the existing wallpaper
+  seed, exposes every ThemePaletteStyle, and displays the effective fixed
+  Spec2026 for CMF or Spec2021 for styles without 2025 support. The requested
+  specification and palette style remain independent of the source preference;
+  legacy nullable specification settings retain their previous source choice.
+  App and sandbox share this contract; MIUIX owns actual color generation.
 - The single MIUIX interface retains Glass navigation's selection-before-Pager
   contract, release-committed pointer selection, fixed icons and noninteractive
   preview. Standard/Blur floating navigation, native Rail and native capability
