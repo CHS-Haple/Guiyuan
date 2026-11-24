@@ -186,7 +186,8 @@ fun BoxScope.GlassTransformPopup(
         if (active) anchor.cancelCloseRebound()
         onDispose {
             anchor.contentHidden = false
-            if (!currentShow) {
+            // The root host retires as soon as the anchor is restored; do not hand off twice.
+            if (active && !currentShow) {
                 val anchorRect = anchor.containerBounds
                 val scaleXFactor = if (anchorRect.width > 0f && travel.endWidth > anchorRect.width) {
                     (travel.endWidth / anchorRect.width) - 1f
