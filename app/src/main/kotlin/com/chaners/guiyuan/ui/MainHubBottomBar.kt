@@ -6,13 +6,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -22,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
@@ -62,7 +58,6 @@ internal fun HubGlassBottomBar(
     navigationAction: NavigationAction?,
     actionControls: NavigationActionControls,
 ) {
-    fun selectPage(index: Int) = pageSelection.select(index)
     val selectedPage = pageSelection.selectedPage
     val includeLabels = appearance.activeNavContent == NavContent.IconAndText
     val glassItems = remember(items, includeLabels) {
@@ -77,7 +72,7 @@ internal fun HubGlassBottomBar(
     GlassNavigationBar(
         items = glassItems,
         selectedIndex = selectedPage,
-        onSelect = ::selectPage,
+        onSelect = pageSelection::select,
         backdrop = navBackdrop,
         touchExtension = appearance.navTouchExtension,
         // Exclude the measured 54dp action and 12dp native MIUIX gap.
@@ -111,7 +106,6 @@ internal fun HubNativeBottomBar(
     pageSelection: HubPagerSelection,
     os4Glass: Boolean,
 ) {
-    fun selectPage(index: Int) = pageSelection.select(index)
     NavigationBar(
         mode = if (os4Glass && appearance.activeNavContent == NavContent.IconOnly) {
             NavigationBarDisplayMode.IconOnly
@@ -123,7 +117,7 @@ internal fun HubNativeBottomBar(
             val selected = pageSelection.selectedPage == index
             NavigationBarItem(
                 selected = selected,
-                onClick = { selectPage(index) },
+                onClick = { pageSelection.select(index) },
                 icon = item.icon,
                 label = item.label,
             )
@@ -142,7 +136,6 @@ internal fun HubLiquidBottomBar(
     actionControls: NavigationActionControls,
     liquidBottomPadding: Dp,
 ) {
-    fun selectPage(index: Int) = pageSelection.select(index)
     val os4 = appearance.uiStyle == UiStyle.OS4
     val liquidPressLink = remember { LiquidNavPressLink() }
     Column(
@@ -163,7 +156,7 @@ internal fun HubLiquidBottomBar(
                                 itemCount = items.size,
                                 rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
                             ),
-                            onSelect = ::selectPage,
+                            onSelect = pageSelection::select,
                             trailing = NavTouchTrailingAction(
                                 width = if (navigationAction != null) {
                                     LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
@@ -183,7 +176,7 @@ internal fun HubLiquidBottomBar(
         val liquidBar: @Composable () -> Unit = {
             LiquidNavBar(
                 selectedIndex = { pageSelection.selectedPage },
-                onSelected = ::selectPage,
+                onSelected = pageSelection::select,
                 backdrop = liquidBackdrop,
                 tabsCount = items.size,
                 dark = dark,
@@ -196,7 +189,7 @@ internal fun HubLiquidBottomBar(
                     LiquidNavEntry(
                         contentMode = appearance.activeNavContent,
                         selected = pageSelection.selectedPage == index,
-                        onClick = { selectPage(index) },
+                        onClick = { pageSelection.select(index) },
                         icon = item.icon,
                         label = item.label,
                     )
@@ -235,7 +228,6 @@ internal fun HubFloatingBottomBar(
     navigationBarModifier: Modifier,
     navBackdrop: Backdrop?,
 ) {
-    fun selectPage(index: Int) = pageSelection.select(index)
     val barBounds = remember(appearance.navStyle, appearance.uiStyle) {
         mutableStateOf<Rect?>(null)
     }
@@ -261,7 +253,7 @@ internal fun HubFloatingBottomBar(
                             hostBounds = hostBounds.value,
                             barBounds = barBounds.value,
                             itemBounds = itemBounds.toList(),
-                            onSelect = ::selectPage,
+                            onSelect = pageSelection::select,
                         )
                 } else {
                     Modifier
@@ -291,7 +283,7 @@ internal fun HubFloatingBottomBar(
                 NavContentItem(
                     content = appearance.activeNavContent,
                     selected = selected,
-                    onClick = { selectPage(index) },
+                    onClick = { pageSelection.select(index) },
                     icon = item.icon,
                     label = item.label,
                     modifier = if (appearance.navTouchExtension) {
