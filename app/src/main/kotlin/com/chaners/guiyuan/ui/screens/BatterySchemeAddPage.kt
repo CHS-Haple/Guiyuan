@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -23,13 +25,13 @@ import com.chaners.guiyuan.settings.BatteryBuiltInColorScheme
 import top.yukonga.miuix.kmp.basic.FloatingActionButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
@@ -64,30 +66,57 @@ internal fun BatteryAddSchemePage(
             }
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(16.dp),
+                pressFeedbackType = if (enabled) PressFeedbackType.Sink else PressFeedbackType.None,
+                onClick = if (enabled) onClick else null,
+            ) {
+                BatteryAddSchemeCardBody(count, enabled)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatteryAddSchemeCardBody(count: Int, enabled: Boolean) {
+    // Measure the same native rows as the existing scheme cards in this layout pass.
+    // The reference is never placed: no off-screen hit targets or cross-page height cache.
+    Layout(
+        modifier = Modifier.fillMaxWidth(),
+        content = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                BatterySchemeSettingRows(
+                    builtIn = BatteryBuiltInColorScheme.HYPEROS,
+                    custom = null,
+                    canCreateCustom = false,
+                    onSlotClick = {},
+                )
+            }
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(BATTERY_SCHEME_VERTICAL_GAP),
                 ) {
-                    IconButton(
-                        onClick = onClick,
-                        enabled = enabled,
-                        minWidth = FloatingActionButtonDefaults.MinWidth,
-                        minHeight = FloatingActionButtonDefaults.MinHeight,
-                        backgroundColor =
+                    Surface(
+                        modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
+                        shape = CircleShape,
+                        color =
                             if (enabled) MiuixTheme.colorScheme.primary
                             else MiuixTheme.colorScheme.disabledPrimaryButton,
+                        shadowElevation = 0.dp,
                     ) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = stringResource(R.string.battery_custom_scheme_new),
-                            modifier = Modifier.size(32.dp),
-                            tint =
-                                if (enabled) MiuixTheme.colorScheme.onPrimary
-                                else MiuixTheme.colorScheme.disabledOnPrimaryButton,
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = MiuixIcons.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint =
+                                    if (enabled) MiuixTheme.colorScheme.onPrimary
+                                    else MiuixTheme.colorScheme.disabledOnPrimaryButton,
+                            )
+                        }
                     }
                     Text(
                         text = stringResource(
@@ -102,6 +131,15 @@ internal fun BatteryAddSchemePage(
                 HorizontalDivider()
                 BatterySchemeCapacityStatus(count, enabled)
             }
+        },
+    ) { measurables, constraints ->
+        val loose = constraints.copy(minHeight = 0)
+        val reference = measurables[0].measure(loose)
+        val body = measurables[1].measure(loose)
+        val height = maxOf(reference.height, body.height)
+            .coerceIn(constraints.minHeight, constraints.maxHeight)
+        layout(body.width, height) {
+            body.placeRelative(0, (height - body.height) / 2)
         }
     }
 }

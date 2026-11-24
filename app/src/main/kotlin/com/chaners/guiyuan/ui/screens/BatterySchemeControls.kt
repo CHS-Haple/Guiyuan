@@ -38,25 +38,35 @@ internal fun BatterySchemeSettingsCard(
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        BatteryColorSlot.entries.forEach { slot ->
-            val entry = custom?.entries?.entryFor(slot)
-            val color =
-                when {
-                    builtIn != null -> batteryBuiltInColor(builtIn, slot)
-                    entry != null -> batterySchemeEntryColor(entry, slot)
-                    else -> null
-                }
-            val followsSystem =
-                color == null ||
-                    (builtIn == null && entry?.source == BatteryColorSchemeSource.FOLLOW_SYSTEM)
-            BatteryModeSettingItem(
-                slot = slot,
-                color = color,
-                followsSystem = followsSystem,
-                enabled = custom != null || canCreateCustom,
-                onClick = { onSlotClick(slot) },
-            )
-        }
+        BatterySchemeSettingRows(builtIn, custom, canCreateCustom, onSlotClick)
+    }
+}
+
+@Composable
+internal fun BatterySchemeSettingRows(
+    builtIn: BatteryBuiltInColorScheme?,
+    custom: BatteryCustomColorScheme?,
+    canCreateCustom: Boolean,
+    onSlotClick: (BatteryColorSlot) -> Unit,
+) {
+    BatteryColorSlot.entries.forEach { slot ->
+        val entry = custom?.entries?.entryFor(slot)
+        val color =
+            when {
+                builtIn != null -> batteryBuiltInColor(builtIn, slot)
+                entry != null -> batterySchemeEntryColor(entry, slot)
+                else -> null
+            }
+        val followsSystem =
+            color == null ||
+                (builtIn == null && entry?.source == BatteryColorSchemeSource.FOLLOW_SYSTEM)
+        BatteryModeSettingItem(
+            slot = slot,
+            color = color,
+            followsSystem = followsSystem,
+            enabled = custom != null || canCreateCustom,
+            onClick = { onSlotClick(slot) },
+        )
     }
 }
 
@@ -112,7 +122,7 @@ internal fun BatterySchemeActionArea(
 ) {
     Spacer(Modifier.height(BATTERY_SCHEME_VERTICAL_GAP))
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 26.dp),
         contentAlignment = Alignment.Center,
     ) {
         content()
