@@ -448,80 +448,54 @@ internal object SysUiPresentationOwner {
         batteryHideField = hideField
         privacyStateField = nativePrivacyField
 
-        val first =
-            runCatching {
-                module
-                    .hook(onMeasure)
-                    .setId(MEASURE_HOOK_ID)
-                    .intercept(layoutHooker(refreshMasksAfter = false))
-            }.getOrElse { error ->
-                clearInstallState()
-                rethrowFatal(error)
-                return "measure-hook-" + (error.message ?: error.javaClass.simpleName)
-            }
-        val second =
-            runCatching {
-                module
-                    .hook(onLayout)
-                    .setId(LAYOUT_HOOK_ID)
-                    .intercept(layoutHooker(refreshMasksAfter = true))
-            }.getOrElse { error ->
-                val failure = rollbackInstall(
-                    "layout-hook-" + (error.message ?: error.javaClass.simpleName),
-                    listOf(first),
-                )
-                rethrowFatal(error)
-                return failure
-            }
-        val third =
-            runCatching {
-                module
-                    .hook(batterySetIsHide)
-                    .setId(BATTERY_HIDE_HOOK_ID)
-                    .intercept(batteryLayoutStateHooker("battery-hide-post-native"))
-            }.getOrElse { error ->
-                val failure = rollbackInstall(
-                    "battery-hide-hook-" + (error.message ?: error.javaClass.simpleName),
-                    listOf(first, second),
-                )
-                rethrowFatal(error)
-                return failure
-            }
+        val installed = ArrayList<HookHandle>(HOOK_COUNT)
+        fun register(
+            method: java.lang.reflect.Method,
+            id: String,
+            failurePrefix: String,
+            hooker: () -> Hooker,
+        ): String? {
+            val handle =
+                runCatching {
+                    module.hook(method).setId(id).intercept(hooker())
+                }.getOrElse { error ->
+                    if (installed.isEmpty()) {
+                        clearInstallState()
+                        rethrowFatal(error)
+                        return failurePrefix + (error.message ?: error.javaClass.simpleName)
+                    }
+                    val failure = rollbackInstall(
+                        failurePrefix + (error.message ?: error.javaClass.simpleName),
+                        installed,
+                    )
+                    rethrowFatal(error)
+                    return failure
+                }
+            installed.add(handle)
+            return null
+        }
 
-        val fourth =
-            runCatching {
-                module
-                    .hook(getIslandShowing)
-                    .setId(ISLAND_SHOWING_HOOK_ID)
-                    .intercept(islandShowingHooker())
-            }.getOrElse { error ->
-                val failure = rollbackInstall(
-                    "island-showing-hook-" + (error.message ?: error.javaClass.simpleName),
-                    listOf(first, second, third),
-                )
-                rethrowFatal(error)
-                return failure
-            }
+        register(onMeasure, MEASURE_HOOK_ID, "measure-hook-") {
+            layoutHooker(refreshMasksAfter = false)
+        }?.let { return it }
+        register(onLayout, LAYOUT_HOOK_ID, "layout-hook-") {
+            layoutHooker(refreshMasksAfter = true)
+        }?.let { return it }
+        register(batterySetIsHide, BATTERY_HIDE_HOOK_ID, "battery-hide-hook-") {
+            batteryLayoutStateHooker("battery-hide-post-native")
+        }?.let { return it }
+        register(getIslandShowing, ISLAND_SHOWING_HOOK_ID, "island-showing-hook-") {
+            islandShowingHooker()
+        }?.let { return it }
+        register(nativePrivacyMethod, PRIVACY_STATE_HOOK_ID, "privacy-state-hook-") {
+            batteryLayoutStateHooker("privacy-state-post-native")
+        }?.let { return it }
 
-        val fifth =
-            runCatching {
-                module
-                    .hook(nativePrivacyMethod)
-                    .setId(PRIVACY_STATE_HOOK_ID)
-                    .intercept(batteryLayoutStateHooker("privacy-state-post-native"))
-            }.getOrElse { error ->
-                val failure = rollbackInstall(
-                    "privacy-state-hook-" + (error.message ?: error.javaClass.simpleName),
-                    listOf(first, second, third, fourth),
-                )
-                rethrowFatal(error)
-                return failure
-            }
-        measureHook = first
-        layoutHook = second
-        batteryHideHook = third
-        islandShowingHook = fourth
-        privacyStateHook = fifth
+        measureHook = installed[0]
+        layoutHook = installed[1]
+        batteryHideHook = installed[2]
+        islandShowingHook = installed[3]
+        privacyStateHook = installed[4]
         return null
     }
 
