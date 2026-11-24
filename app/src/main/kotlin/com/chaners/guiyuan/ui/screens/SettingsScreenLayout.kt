@@ -74,6 +74,7 @@ internal fun SettingsPage(
     background: @Composable BoxScope.(PaddingValues) -> Unit = {},
     foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
     overlay: @Composable () -> Unit = {},
+    showLazyScrollbar: Boolean = false,
     scrollContent: (@Composable ColumnScope.() -> Unit)? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit = {},
 ) {
@@ -188,6 +189,14 @@ internal fun SettingsPage(
                 }
             } else {
                 SettingsList()
+            }
+            if (showLazyScrollbar && userScrollEnabled && resolvedListState != null) {
+                VerticalScrollBar(
+                    adapter = rememberScrollBarAdapter(resolvedListState),
+                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                    trackPadding = contentPadding,
+                    topAppBarScrollBehavior = scrollBehavior,
+                )
             }
             foreground(contentPadding)
         }

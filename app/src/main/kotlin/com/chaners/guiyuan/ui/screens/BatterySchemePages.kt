@@ -230,35 +230,35 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
         snapAnimationSpec = PagerNavigationSpringSpec,
     )
     Box(Modifier.fillMaxWidth().weight(1f)) {
-    HorizontalPager(
-        state = pager,
-        modifier = Modifier
-            .fillMaxSize()
-            .clipToBounds()
-            .pagerGestureOverride(pagerState = pager, flingBehavior = flingBehavior),
-        userScrollEnabled = false,
-        flingBehavior = flingBehavior,
-        pageNestedScrollConnection = PagerGestureNestedScrollConnection,
-        contentPadding = PaddingValues(horizontal = BottomSheetDefaults.insideMargin.width),
-        pageSpacing = 12.dp,
-        verticalAlignment = Alignment.Top,
-        // A scheme insertion changes pageCount; an old key lookup may still be measured
-        // against its previous list. Let Pager use its index identity instead.
-        // Per-scheme scroll states are already owned by page.key.
-    ) { index ->
-        BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
-    }
-    context.pages.getOrNull(pager.currentPage)?.let { page ->
-        context.scrollStates[page.key]?.let { activeScroll ->
-            key(page.key) {
-                VerticalScrollBar(
-                    adapter = rememberScrollBarAdapter(activeScroll),
-                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                    trackPadding = contentPadding,
-                )
+        HorizontalPager(
+            state = pager,
+            modifier = Modifier
+                .fillMaxSize()
+                .clipToBounds()
+                .pagerGestureOverride(pagerState = pager, flingBehavior = flingBehavior),
+            userScrollEnabled = false,
+            flingBehavior = flingBehavior,
+            pageNestedScrollConnection = PagerGestureNestedScrollConnection,
+            contentPadding = PaddingValues(horizontal = BottomSheetDefaults.insideMargin.width),
+            pageSpacing = 12.dp,
+            verticalAlignment = Alignment.Top,
+            // A scheme insertion changes pageCount; an old key lookup may still be measured
+            // against its previous list. Let Pager use its index identity instead.
+            // Per-scheme scroll states are already owned by page.key.
+        ) { index ->
+            BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
+        }
+        context.pages.getOrNull(pager.currentPage)?.let { page ->
+            context.scrollStates[page.key]?.let { activeScroll ->
+                key(page.key) {
+                    VerticalScrollBar(
+                        adapter = rememberScrollBarAdapter(activeScroll),
+                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                        trackPadding = contentPadding,
+                    )
+                }
             }
         }
-    }
     }
 }
 
