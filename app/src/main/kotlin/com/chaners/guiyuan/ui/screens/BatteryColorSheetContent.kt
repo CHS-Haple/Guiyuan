@@ -80,6 +80,8 @@ internal fun BatteryColorOverviewSheet(
         },
         // Keep the parent inert until the child sheet's native dismiss animation finishes.
         allowDismiss = state.detailRequest == null,
+        // The foreground naming dialog, not this non-editable deck, owns IME avoidance.
+        defaultWindowInsetsPadding = false,
         onDismissRequest = {
             if (state.detailRequest == null) {
                 onDismiss()
@@ -101,14 +103,12 @@ private fun BatteryColorOverviewContent(
     val library = environment.library
     val repository = environment.repository
     val nextCustomId = environment.creation.nextId
-    val nextCustomName = environment.creation.nextName
     val context = LocalContext.current
     BatterySchemeOverview(
         model = BatterySchemeOverviewModel(
             library = library,
             requestedSchemeKey = state.requestedSchemeKey,
             canCreateCustom = nextCustomId != null,
-            nextCustomName = nextCustomName,
         ),
         actions = BatterySchemeOverviewActions(
             onRequestedSchemeHandled = { state.requestedSchemeKey = null },

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,15 +34,9 @@ internal fun BatterySchemeSettingsCard(
     custom: BatteryCustomColorScheme?,
     canCreateCustom: Boolean,
     onSlotClick: (BatteryColorSlot) -> Unit,
-    onSettingsCardMeasured: (Int) -> Unit,
 ) {
     GlassCard(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .onSizeChanged { size ->
-                    onSettingsCardMeasured(size.height)
-                },
+        modifier = Modifier.fillMaxWidth(),
     ) {
         BatteryColorSlot.entries.forEach { slot ->
             val entry = custom?.entries?.entryFor(slot)

@@ -1,12 +1,9 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -20,13 +17,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chaners.guiyuan.R
@@ -44,18 +39,12 @@ import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
-private data class SchemeDeckCreation(
-    val enabled: Boolean,
-    val nextName: String?,
-    val settingsCardHeight: androidx.compose.runtime.MutableIntState,
-)
-
 private data class SchemeDeckContext(
     val library: BatteryColorSchemeLibrary,
     val pages: List<BatterySchemePage>,
     val pager: PagerState,
     val scope: kotlinx.coroutines.CoroutineScope,
-    val creation: SchemeDeckCreation,
+    val canCreateCustom: Boolean,
 )
 
 internal data class SchemeNavigation(
@@ -75,7 +64,6 @@ internal data class BatterySchemeOverviewModel(
     val library: BatteryColorSchemeLibrary,
     val requestedSchemeKey: String?,
     val canCreateCustom: Boolean,
-    val nextCustomName: String?,
 )
 
 internal data class BatterySchemeOverviewActions(
@@ -89,7 +77,7 @@ internal fun BatterySchemeOverview(
     model: BatterySchemeOverviewModel,
     actions: BatterySchemeOverviewActions,
 ) {
-    val (library, requestedSchemeKey, canCreateCustom, nextCustomName) = model
+    val (library, requestedSchemeKey, canCreateCustom) = model
     val onRequestedSchemeHandled = actions.onRequestedSchemeHandled
     val navigation = actions.navigation
     val catalog = actions.catalog
@@ -107,13 +95,12 @@ internal fun BatterySchemeOverview(
     val pagerState = rememberPagerState(initialPage = initial, pageCount = { pages.size })
     val scope = rememberCoroutineScope()
     val target = remember { mutableIntStateOf(-1) }
-    val settingsHeight = remember { mutableIntStateOf(0) }
     SchemeRequestedPageEffect(requestedSchemeKey, pageKeys, pages, pagerState, onRequestedSchemeHandled)
     SchemeDotNavigationEffect(target.intValue, pagerState) {
         if (target.intValue == it) target.intValue = -1
     }
     val context = SchemeDeckContext(
-        library, pages, pagerState, scope, SchemeDeckCreation(canCreateCustom, nextCustomName, settingsHeight),
+        library, pages, pagerState, scope, canCreateCustom,
     )
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -212,11 +199,11 @@ private fun BatterySchemeDeckPage(
                 state = BatterySchemePageState(
                     page = page,
                     isActive = context.library.activeSchemeKey == page.key,
-                    canCreateCustom = context.creation.enabled,
+                    canCreateCustom = context.canCreateCustom,
                     manageMenu = if (page is BatterySchemePage.Custom) {
                         {
                             BatterySchemeManageMenu(
-                                canCopy = context.creation.enabled,
+                                canCopy = context.canCreateCustom,
                                 onRename = { catalog.onRename(page.scheme.id) },
                                 onCopy = { catalog.onCopy(page.scheme) },
                                 onDelete = { catalog.onDelete(page.scheme.id) },
@@ -241,17 +228,12 @@ private fun BatterySchemeDeckPage(
                             BatterySchemePage.Add -> Unit
                         }
                     },
-                    onSettingsCardMeasured = { height ->
-                        if (height > 0) context.creation.settingsCardHeight.intValue = height
-                    },
                 ),
             )
         BatterySchemePage.Add ->
             BatteryAddSchemePage(
                 count = context.library.customSchemes.size,
-                enabled = context.creation.enabled,
-                name = context.creation.nextName ?: stringResource(R.string.battery_custom_scheme_add_page_title),
-                settingsCardHeightPx = context.creation.settingsCardHeight.intValue,
+                enabled = context.canCreateCustom,
                 onClick = catalog.onAdd,
             )
     }
@@ -267,7 +249,6 @@ private data class BatterySchemePageState(
 private data class BatterySchemePageActions(
     val onApply: () -> Unit,
     val onSlotClick: (BatteryColorSlot) -> Unit,
-    val onSettingsCardMeasured: (Int) -> Unit,
 )
 
 @Composable
@@ -276,7 +257,7 @@ private fun BatterySchemePageContent(
     actions: BatterySchemePageActions,
 ) {
     val (page, isActive, canCreateCustom, manageMenu) = state
-    val (onApply, onSlotClick, onSettingsCardMeasured) = actions
+    val (onApply, onSlotClick) = actions
     val builtIn = (page as? BatterySchemePage.BuiltIn)?.scheme
     val custom = (page as? BatterySchemePage.Custom)?.scheme
     val name = when (page) {
@@ -308,7 +289,6 @@ private fun BatterySchemePageContent(
                 custom = custom,
                 canCreateCustom = canCreateCustom,
                 onSlotClick = onSlotClick,
-                onSettingsCardMeasured = onSettingsCardMeasured,
             )
         }
     }
