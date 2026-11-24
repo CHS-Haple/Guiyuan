@@ -54,9 +54,8 @@ class BatteryColorControlsTest {
     }
 
     @Test
-    fun followSystemKeepsRememberedCustomAsEditorSeedWithoutMakingItActive() {
-        assertEquals(
-            0xFF2468AC.toInt(),
+    fun followSystemDoesNotExposeRememberedCustomAsActiveEditorColor() {
+        assertNull(
             batteryColorEditorSeed(
                 BatteryColorSchemeEntry(
                     source = BatteryColorSchemeSource.FOLLOW_SYSTEM,
@@ -64,6 +63,18 @@ class BatteryColorControlsTest {
                 ),
                 BatteryColorSlot.NORMAL,
             ),
+        )
+    }
+
+    @Test
+    fun customStyleCanRestoreRememberedFixedColor() {
+        val entry = BatteryColorSchemeEntry(
+            source = BatteryColorSchemeSource.FOLLOW_SYSTEM,
+            customColor = 0xFF2468AC.toInt(),
+        )
+        assertEquals(
+            0xFF2468AC.toInt(),
+            batteryColorEditorSeed(entry.copy(source = BatteryColorSchemeSource.CUSTOM), BatteryColorSlot.NORMAL),
         )
     }
 

@@ -81,7 +81,8 @@ private fun batteryCommonColorName(color: Int?): String =
             0xFF5856D6.toInt() -> R.string.battery_common_color_indigo
             0xFFAF52DE.toInt() -> R.string.battery_common_color_purple
             0xFFFF2D55.toInt() -> R.string.battery_common_color_pink
-            else -> R.string.battery_color_follow_inversion
+            null -> R.string.battery_color_follow_inversion
+            else -> error("Not a common battery color: $color")
         },
     )
 

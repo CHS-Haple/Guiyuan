@@ -32,7 +32,6 @@ internal fun batteryColorEditorSeed(
     slot: BatteryColorSlot,
 ): Int? =
     batterySchemeEntryColor(entry, slot)
-        ?: entry.customColor
 
 internal fun batteryColorHex(color: Int): String =
     "#%06X".format(color and 0x00FFFFFF)

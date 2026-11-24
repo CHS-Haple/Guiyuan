@@ -65,6 +65,14 @@ internal data class ColorEditorState(
         channels.blue.value = value.third.toString()
     }
 
+    fun showForeground() {
+        wheel.editing.value = null
+        channels.hex.value = ""
+        channels.red.value = ""
+        channels.green.value = ""
+        channels.blue.value = ""
+    }
+
     fun applyColor(color: Int, hue: Float? = null, onColorChange: (Int) -> Unit) {
         showColor(color, hue)
         // The repository stays the sole writer; choosing a color selects CUSTOM.
@@ -173,7 +181,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorSourceSel
             onSelectedIndexChange = { index ->
                 sourceOptions.getOrNull(index)?.let { source ->
                     val nextColor = batteryColorEditorSeed(entry.copy(source = source), slot)
-                    if (nextColor == null) state.wheel.editing.value = null
+                    if (nextColor == null) state.showForeground()
                     else state.showColor(nextColor)
                     onSourceChange(source)
                 }
@@ -191,7 +199,8 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
     onColorChange: (Int) -> Unit,
 ) {
     val rows = remember { COMMON_BATTERY_COLORS.chunked(5) }
-    val source = custom.entries.entryFor(slot).source
+    val entry = custom.entries.entryFor(slot)
+    val source = entry.source
     BatterySheetSmallTitle(
         text = stringResource(R.string.battery_color_common),
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -213,6 +222,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatteryColorCommonGri
                         },
                         onClick = {
                             if (color == null) {
+                                state.showForeground()
                                 onSourceChange(BatteryColorSchemeSource.FOLLOW_SYSTEM)
                             } else {
                                 state.applyColor(color, onColorChange = onColorChange)
