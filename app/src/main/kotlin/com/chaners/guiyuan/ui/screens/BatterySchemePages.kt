@@ -129,6 +129,9 @@ internal fun BatterySchemeOverview(
     val scrollStates = pages.associate { page ->
         page.key to key(page.key) { rememberScrollState() }
     }
+    val currentScrollOffset: () -> Float = remember(pages, pagerState, scrollStates) {
+        { pages.getOrNull(pagerState.currentPage)?.let { scrollStates[it.key]?.value }?.toFloat() ?: 0f }
+    }
     val context = SchemeDeckContext(
         library, pages, pagerState, scope, canCreateCustom, scrollStates,
     )
@@ -159,9 +162,7 @@ internal fun BatterySchemeOverview(
                 },
             )
         },
-        scrollOffset = {
-            pages.getOrNull(pagerState.currentPage)?.let { scrollStates[it.key]?.value }?.toFloat() ?: 0f
-        },
+        scrollOffset = currentScrollOffset,
     ) { innerPadding ->
         CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
             Column(

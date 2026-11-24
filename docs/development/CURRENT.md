@@ -98,7 +98,7 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
-- MIUIX `03d15786` retains the earlier native and Glass sheet motion,
+- MIUIX `a09d4f32` retains the earlier native and Glass sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
   navigation runtime through the matched dependency graph. Search uses
   the public `SearchClearButton`; transformed menus share one settled placement
@@ -121,7 +121,14 @@ reference, not this public repository.
   controlled search uses the matching visible-progress mount gate. Native
   Dialog/Sheet motion and dropdown lifecycle come from the pinned graph;
   local host retirement, submenu and Back ownership stay unchanged. The
-  new revision requires focused device acceptance; B1952 is the prior baseline.
+  overlay and newer Sheet revision require focused device acceptance; B1952
+  is the prior accepted baseline. The new public GlassBottomSheet header
+  consumes actual current-page scroll offset in the battery scheme deck;
+  content padding follows the measured header, with the existing dot rail
+  in the fixed header slot. The detail Back button inherits upstream header
+  context and the agreement/colour editor scroll containers consume the
+  supplied padding. Dynamic glass fills and modal/overscroll fixes follow
+  upstream defaults.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
   uses app-local Glass adapters. Do not adopt upstream changes or

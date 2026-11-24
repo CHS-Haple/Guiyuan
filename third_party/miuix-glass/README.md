@@ -8,11 +8,11 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 ## Source and licensing
 
 - The source and Maven graph target MIUIX snapshot
-  `0.9.5-03d15786-SNAPSHOT` at full revision
-  `03d15786e685f4921fd5638ac56a0802cd27bb5c`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45378660250)
+  `0.9.5-a09d4f32-SNAPSHOT` at full revision
+  `a09d4f3268ece3fc262d0bba433a3941a312bb9a`.
+  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910324)
   succeeded; the exact-source
-  [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45378660224)
+  [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910306)
   passed all four jobs. This is a pre-release snapshot, not stable v0.9.5.
   Keep source and Maven revisions identical; Guiyuan source/Maven builds
   and focused device validation remain required. The prior `07d48590`
@@ -249,6 +249,19 @@ entrypoint.
   No extra timer, input lock or animation is introduced. The nullable
   dropdown completion callback does not remove any caller-owned retirement
   obligation. The separate resume and effect proposals remain deferred.
+
+- **Adopt a09d4f32 Sheet header and material defaults:** consume the new public
+  `GlassBottomSheet` header padding inside each actual scroll container.
+  The battery overview places its existing dot rail in `headerBottomContent`,
+  shares the pager and keyed page scroll states for the native header's
+  `scrollOffset`, and retains the deck until upstream dismissal completes.
+  The detail and agreement sheets keep one scroll container each. Use the
+  public header-inheriting GlassIconButton for detail Back; retain local
+  top-bar context only where its internal motion, touch or hold contracts
+  remain necessary. No second blur engine, custom alpha or new preference.
+  The updated top-bar BandOverhang and GlassCard, GlassTextField and
+  GlassDialogButton defaults come from the dependency. Predictive Back
+  reset and upward overscroll surface fixes are upstream-owned.
 
 ### Final local-boundary review
 
