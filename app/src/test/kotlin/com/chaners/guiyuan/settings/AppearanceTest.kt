@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import org.junit.Test
@@ -123,10 +124,17 @@ class AppearanceCompatibilityTest {
             navStyle to NavStyle.Liquid.name,
             navContent to NavContent.IconOnly.name,
             navEnabled to false,
+            stringPreferencesKey("theme_mode") to ThemeMode.Dark.name,
+            booleanPreferencesKey("dynamic_color_enabled") to true,
+            intPreferencesKey("ui_scale_percent") to 97,
+            booleanPreferencesKey("floating_navigation_touch_extension") to false,
+            booleanPreferencesKey("swipe_back_enabled") to false,
         )
+        val expected = prefs.asMap().toMap() - uiStyle
 
         migrateAppearance(prefs)
 
+        assertEquals(expected, prefs.asMap())
         assertEquals(null, prefs[uiStyle])
         assertEquals(NavStyle.Liquid.name, prefs[navStyle])
         assertEquals(NavContent.IconOnly.name, prefs[navContent])

@@ -100,9 +100,9 @@ reference, not this public repository.
 
 - MIUIX `07d48590` updates both native and Glass sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
-  navigation runtime through the matched dependency graph. OS4 search uses
+  navigation runtime through the matched dependency graph. Search uses
   the public `SearchClearButton`; transformed menus share one settled placement
-  and follow upstream's shadowless glass-anchor material transition. The OS4
+  and follow upstream's shadowless glass-anchor material transition. The
   diagnostics filter uses Start alignment; other menus keep their existing
   anchors. Only Home's preview sandbox Card uses route-bound Expansion;
   the existing route-owned lease and theme lifecycle are unchanged.

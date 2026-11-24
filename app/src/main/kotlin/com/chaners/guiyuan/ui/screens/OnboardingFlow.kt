@@ -46,7 +46,6 @@ import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.ui.navigation.appSwipeDismissDirection
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
@@ -58,9 +57,6 @@ import top.yukonga.miuix.kmp.nav.core.navBackStackOf
 import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
 import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import com.chaners.guiyuan.ui.glass.GlassTopAppBar
-import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.system.RootShell
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.system.XposedStatus
@@ -70,14 +66,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TooltipBox
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and

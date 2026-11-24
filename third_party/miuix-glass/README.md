@@ -158,7 +158,7 @@ UI change still requires light/dark and editor-sheet device acceptance.
 
 ## B1920 source-pinned private API and resource review
 
-The OS4 custom-scheme **More** action inside the outer GlassCard now uses
+The custom-scheme **More** action inside the outer GlassCard now uses
 published MIUIX `basic.IconButton` instead of a floating glass button.
 The native 40 dp transparent circle retains app-owned popup anchors and
 their Back lifecycle without a second rim/shadow. The card hierarchy,
@@ -184,7 +184,7 @@ restart/cancellation fix. The library remains unpublished and must not
 be replaced with a nonexistent Maven dependency. See
 `third_party/miuix-effect/README.md`.
 
-OS4 regular glass icons already resolve through upstream
+Regular Glass icons already resolve through upstream
 `miuix-glass-icons-android` via `MiuixIcons.Glass.Regular`, rather than
 locally maintained vector paths. No alternate vendor resource pack was
 found in the live app source set. Non-public rail, popup and native-title
@@ -193,7 +193,7 @@ entrypoint.
 
 ## 07d48590 alignment and optional API decisions
 
-- **Adopt, both UI styles:** MIUIX owns Slider tap-to-seek, ColorPicker
+- **Adopt:** MIUIX owns Slider tap-to-seek, ColorPicker
   bounds, Squircle's drawing and zero-radius fast paths, TopAppBarState
   observation and navigation runtime fixes. No app-local reimplementation.
   The About title follows example commit `84ce2a0a`: threshold 0.45 and
@@ -202,14 +202,14 @@ entrypoint.
   Native OverlayBottomSheet uses SheetMotion.Default, GlassBottomSheet uses
   SheetMotion.Glass internally (#496); do not add a redundant motion setting
   or a second scrim/drag clock.
-- **Adopt, OS4:** the controlled search field uses public SearchClearButton
+- **Adopt:** the controlled search field uses public SearchClearButton
   and keeps query/focus ownership and a localized accessibility label. The
   adapted transformed menu carries its glass anchor shadow receipt and reads
   shadow alpha during drawing. It calculates settled placement once, with
   window-safe horizontal alignment. The host already mounts on demand and
   retires after both menu exits; the upstream lazy initial mount does not
   justify a second visibility owner.
-- **Adopt scoped horizontal alignment (OS4):** the diagnostics filter is in
+- **Adopt scoped horizontal alignment:** the diagnostics filter is in
   the leading navigation slot, so use Start; trailing More and scheme
   management stay End. Carry upstream's alignment through the adapted primary
   menu into its one settled placement, preserving safe-area clamping and RTL.
@@ -217,7 +217,7 @@ entrypoint.
   retain the native menu; published dropdown preferences retain their value anchor.
   Center is supported by the same upstream-aligned policy, with no current
   caller or additional setting.
-- **Adopt scoped route Expansion (both UI styles):** only Home's preview
+- **Adopt scoped route Expansion:** only Home's preview
   sandbox Card binds AppRoute.PreviewSandbox via public navTransitionSource,
   the actual CardDefaults corner and surfaceContainer colour, and stable
   sourceKey. The destination uses the upstream per-entry Expansion preset;
