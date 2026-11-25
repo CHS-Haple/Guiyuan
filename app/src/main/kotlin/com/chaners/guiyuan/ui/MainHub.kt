@@ -2,6 +2,7 @@ package com.chaners.guiyuan.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
@@ -36,12 +37,18 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.floatingNavBlur
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
+import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.screens.rememberPageSearch
+import com.chaners.guiyuan.ui.glass.GlassNavigationRail
+import com.chaners.guiyuan.ui.glass.GlassRailDestinations
+import com.chaners.guiyuan.ui.glass.RailLiquidPaint
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.rememberGlassNavigationRailState
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
@@ -311,15 +318,59 @@ internal fun MainHub(
         }
         // The rail is not recorded into the backdrop it samples.
         if (useGlassRail) {
-            HubGlassRail(
-                appearance = appearance,
-                dark = dark,
-                items = items,
-                pageSelection = pageSelection,
+            // Wide rails use labeled destinations, independent of compact bottom-bar preference.
+            val railItems = remember(items) {
+                items.map { item ->
+                    GlassNavigationItem(
+                        icon = item.icon,
+                        label = item.label,
+                        contentDescription = item.label,
+                    )
+                }
+            }
+            GlassNavigationRail(
+                destinations = GlassRailDestinations(
+                    items = railItems,
+                    selectedIndex = pageSelection.selectedPage,
+                    onSelect = pageSelection::select,
+                ),
                 backdrop = railBackdrop,
                 state = railState,
-                navigationAction = navigationAction.takeIf { actionInRail },
-                actionControls = actionControls,
+                showToggle = true,
+                trailingAction = if (actionInRail) navigationAction?.let { action ->
+                    {
+                        railBackdrop?.let { backdrop ->
+                            NavigationTrailingAction(
+                                action = action,
+                                surface = NavigationActionSurface(
+                                    backdrop,
+                                    appearance.liquidMode.takeIf {
+                                        appearance.navStyle == NavStyle.Liquid
+                                    },
+                                    dark,
+                                    GlassNavigationRailDefaults.CollapsedHeight,
+                                ),
+                                controls = actionControls,
+                            )
+                        }
+                    }
+                } else null,
+                // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
+                materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
+                    RailLiquidPaint(
+                        panel = { backdrop, shape ->
+                            Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
+                        },
+                        indicator = { selectedBackdrop, pressed ->
+                            Modifier.liquidRailSelectedSurface(
+                                backdrop = selectedBackdrop,
+                                shape = RoundedCornerShape(percent = 50),
+                                pressed = pressed,
+                            )
+                        },
+                    )
+                } else null,
+                modifier = Modifier.fillMaxSize(),
             )
         }
             }

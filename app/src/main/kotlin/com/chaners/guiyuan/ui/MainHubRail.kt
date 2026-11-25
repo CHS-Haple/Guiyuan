@@ -4,10 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
@@ -16,14 +13,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
-import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
-import com.chaners.guiyuan.ui.glass.GlassNavigationRail
-import com.chaners.guiyuan.ui.glass.GlassNavigationRailState
-import com.chaners.guiyuan.ui.glass.GlassRailDestinations
-import com.chaners.guiyuan.ui.glass.RailLiquidPaint
-import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
@@ -96,72 +85,4 @@ internal fun HubNativeRail(
             )
         }
     }
-}
-
-/** App-owned Glass/Liquid rail destination and material binding, matching the bottom-bar boundary. */
-@Composable
-internal fun HubGlassRail(
-    appearance: Appearance,
-    dark: Boolean,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
-    backdrop: Backdrop?,
-    state: GlassNavigationRailState,
-    navigationAction: NavigationAction?,
-    actionControls: NavigationActionControls,
-) {
-    // Wide rails use labeled destinations, independent of compact bottom-bar preference.
-    val railItems = remember(items) {
-        items.map { item ->
-            GlassNavigationItem(
-                icon = item.icon,
-                label = item.label,
-                contentDescription = item.label,
-            )
-        }
-    }
-    GlassNavigationRail(
-        destinations = GlassRailDestinations(
-            items = railItems,
-            selectedIndex = pageSelection.selectedPage,
-            onSelect = pageSelection::select,
-        ),
-        backdrop = backdrop,
-        state = state,
-        showToggle = true,
-        trailingAction = navigationAction?.let { action ->
-            {
-                backdrop?.let { source ->
-                    NavigationTrailingAction(
-                        action = action,
-                        surface = NavigationActionSurface(
-                            source,
-                            appearance.liquidMode.takeIf {
-                                appearance.navStyle == NavStyle.Liquid
-                            },
-                            dark,
-                            GlassNavigationRailDefaults.CollapsedHeight,
-                        ),
-                        controls = actionControls,
-                    )
-                }
-            }
-        },
-        // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
-        materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
-            RailLiquidPaint(
-                panel = { backdrop, shape ->
-                    Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
-                },
-                indicator = { selectedBackdrop, pressed ->
-                    Modifier.liquidRailSelectedSurface(
-                        backdrop = selectedBackdrop,
-                        shape = RoundedCornerShape(percent = 50),
-                        pressed = pressed,
-                    )
-                },
-            )
-        } else null,
-        modifier = Modifier.fillMaxSize(),
-    )
 }
