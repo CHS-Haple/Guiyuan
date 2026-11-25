@@ -38,6 +38,57 @@ internal object SysUiTintSource {
     @Volatile
     private var lastSourceView: WeakReference<View>? = null
 
+    // One callback generation retains exactly the fields, sinks and diagnostic
+    // gate captured at install; runtime receipts remain owned by SysUiTintSource.
+    private class TintHookCallbacks(
+        private val percentField: Field,
+        private val iconField: Field,
+        private val onTintState: (TintUpdate) -> Unit,
+        private val onRuntimeFailure: (Throwable) -> Unit,
+        private val onEvent: ((String) -> Unit)?,
+        private val isDetailedDiagnosticsEnabled: () -> Boolean,
+    ) {
+        private val warned = AtomicBoolean(false)
+        fun hooker(source: String, reportNativeArguments: Boolean): Hooker =
+            Hooker { chain ->
+                val result = chain.proceed()
+                val sourceView =
+                    if (SysUiTintSource.hooksReady) {
+                        optionalNativeRead { chain.thisObject as? View }
+                    } else {
+                        null
+                    }
+                if (sourceView != null) {
+                    val state =
+                        SysUiTintSource.dispatchAppliedState(
+                            sourceView = sourceView,
+                            percentField = percentField,
+                            onTintState = onTintState,
+                            onRuntimeFailure = onRuntimeFailure,
+                        )
+                    SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Tint]") {
+                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+                            SysUiTintDiagnosticProbe.probeBatteryIconAuthority(
+                                sourceView = sourceView,
+                                iconField = iconField,
+                                source = source,
+                                onEvent = onEvent,
+                            )
+                            if (reportNativeArguments && state != null) {
+                                SysUiTintDiagnosticProbe.probeFirstNativeArguments(
+                                    sourceView = sourceView,
+                                    state = state,
+                                    onEvent = onEvent,
+                                    getArg = { chain.getArg(it) },
+                                )
+                            }
+                        }
+                    }
+                }
+                result
+            }
+    }
+
     @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
@@ -73,47 +124,14 @@ internal object SysUiTintSource {
                 .apply { isAccessible = true }
 
         batteryPercentViewField = percentField
-        val warned = AtomicBoolean(false)
-        // Both native tint callbacks have one post-native state delivery owner;
-        // only updateLightDarkTint carries first-event diagnostic arguments.
-        fun tintHooker(source: String, reportNativeArguments: Boolean): Hooker =
-            Hooker { chain ->
-                val result = chain.proceed()
-                val sourceView =
-                    if (hooksReady) {
-                        optionalNativeRead { chain.thisObject as? View }
-                    } else {
-                        null
-                    }
-                if (sourceView != null) {
-                    val state =
-                        dispatchAppliedState(
-                            sourceView = sourceView,
-                            percentField = percentField,
-                            onTintState = onTintState,
-                            onRuntimeFailure = onRuntimeFailure,
-                        )
-                    SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Tint]") {
-                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                            SysUiTintDiagnosticProbe.probeBatteryIconAuthority(
-                                sourceView = sourceView,
-                                iconField = iconField,
-                                source = source,
-                                onEvent = onEvent,
-                            )
-                            if (reportNativeArguments && state != null) {
-                                SysUiTintDiagnosticProbe.probeFirstNativeArguments(
-                                    sourceView = sourceView,
-                                    state = state,
-                                    onEvent = onEvent,
-                                    getArg = { chain.getArg(it) },
-                                )
-                            }
-                        }
-                    }
-                }
-                result
-            }
+        val callbacks = TintHookCallbacks(
+            percentField = percentField,
+            iconField = iconField,
+            onTintState = onTintState,
+            onRuntimeFailure = onRuntimeFailure,
+            onEvent = onEvent,
+            isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+        )
 
         val updateHandle =
             runCatching {
@@ -121,7 +139,7 @@ internal object SysUiTintSource {
                     .hook(updateMethod)
                     .setId(UPDATE_HOOK_ID)
                     .intercept(
-                        tintHooker(UPDATE_TINT_METHOD_NAME, reportNativeArguments = true),
+                        callbacks.hooker(UPDATE_TINT_METHOD_NAME, reportNativeArguments = true),
                     )
             }.getOrElse { error ->
                 clearSourceState()
@@ -133,7 +151,7 @@ internal object SysUiTintSource {
                     .hook(internalMethod)
                     .setId(INTERNAL_HOOK_ID)
                     .intercept(
-                        tintHooker(
+                        callbacks.hooker(
                             ON_DARK_CHANGED_INTERNAL_METHOD_NAME,
                             reportNativeArguments = false,
                         ),
