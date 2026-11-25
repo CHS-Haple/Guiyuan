@@ -205,9 +205,10 @@ internal fun SettingsPage(
 
 internal fun androidx.compose.foundation.lazy.LazyListScope.Section(
     @StringRes titleRes: Int? = null,
+    key: Any? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    item { PreferenceSection(titleRes, content) }
+    item(key = key) { PreferenceSection(titleRes, content) }
 }
 
 @Composable

@@ -51,23 +51,32 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
     val visual = state.visual
     val enabled = state.enabled
     val weight = state.weight
-    Section(R.string.section_network) {
-        networkSizesAndWeights(search, visual, visualRepo, enabled)
-        if (search.matches(R.string.mobile_type_weight)) {
-            NativeWeightSlider(
-                value = visual.mobileTypeWeight,
-                onValueChange = visualRepo::setMobileTypeWeight,
-                weight = weight,
-                dialogOpen = weightDialog.open,
-                onOpenDialog = weightDialog.onOpen,
-            )
+    if (search.filtering) {
+        Section(R.string.section_network, key = "features-network-wifi-airplane") {
+            networkWifiAirplaneControls(search, visual, visualRepo, enabled)
+            networkSimTypeControls(search, visual, visualRepo, enabled)
+            networkMobileWeight(search, visual, visualRepo, weight, weightDialog)
+            networkFollowBatteryColor(search, visual, visualRepo, enabled)
         }
+        return
+    }
+
+    Section(R.string.section_network, key = "features-network-wifi-airplane") {
+        networkWifiAirplaneControls(search, visual, visualRepo, enabled)
+    }
+    Section(key = "features-network-sim-type") {
+        networkSimTypeControls(search, visual, visualRepo, enabled)
+    }
+    Section(key = "features-network-mobile-weight") {
+        networkMobileWeight(search, visual, visualRepo, weight, weightDialog)
+    }
+    Section(key = "features-network-battery-color") {
         networkFollowBatteryColor(search, visual, visualRepo, enabled)
     }
 }
 
 @Composable
-private fun ColumnScope.networkSizesAndWeights(
+private fun ColumnScope.networkWifiAirplaneControls(
     search: PageSearch,
     visual: VisualCfg,
     visualRepo: VisualRepo,
@@ -107,6 +116,15 @@ private fun ColumnScope.networkSizesAndWeights(
             enabled = enabled,
         )
     }
+}
+
+@Composable
+private fun ColumnScope.networkSimTypeControls(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
     if (search.matches(R.string.no_sim_size)) {
         NetworkSizeSlider(
             value = visual.noSimScale,
@@ -123,6 +141,25 @@ private fun ColumnScope.networkSizesAndWeights(
             row = NetworkSizeRow.MOBILE_TYPE,
             defaultValue = mobileTypeScaleDefault(visual.layout),
             enabled = enabled,
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.networkMobileWeight(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    weight: FeatureWeightUi,
+    dialog: NetworkWeightDialog,
+) {
+    if (search.matches(R.string.mobile_type_weight)) {
+        NativeWeightSlider(
+            value = visual.mobileTypeWeight,
+            onValueChange = visualRepo::setMobileTypeWeight,
+            weight = weight,
+            dialogOpen = dialog.open,
+            onOpenDialog = dialog.onOpen,
         )
     }
 }
