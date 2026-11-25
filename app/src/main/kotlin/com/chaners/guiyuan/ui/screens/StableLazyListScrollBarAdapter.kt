@@ -74,13 +74,15 @@ private class StableLazyListScrollBarAdapter(
             observedCount = count
             initialViewportOrdinal = null
         }
-        if (initialViewportOrdinal == null || !list.canScrollBackward) {
+        // Keep the initial viewport span while the same list is scrolled:
+        // reanchoring at the top after restoring a mid-list position changes thumb length.
+        if (initialViewportOrdinal == null) {
             val firstIndex = list.firstVisibleItemIndex
             val firstSize = info.visibleItemsInfo.firstOrNull { it.index == firstIndex }?.size ?: 1
             val top = firstIndex +
                 (list.firstVisibleItemScrollOffset.toDouble() / firstSize.coerceAtLeast(1))
                     .coerceIn(0.0, 1.0)
-            initialViewportOrdinal = if (!list.canScrollBackward) bottom else (bottom - top).coerceAtLeast(0.0)
+            initialViewportOrdinal = (bottom - top).coerceAtLeast(0.0)
         }
         return stableListIndicatorRange(count, initialViewportOrdinal ?: 0.0, bottom)
     }
