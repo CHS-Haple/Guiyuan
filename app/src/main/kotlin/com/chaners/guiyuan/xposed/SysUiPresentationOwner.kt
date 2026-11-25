@@ -555,7 +555,6 @@ internal object SysUiPresentationOwner {
         return Result.Active(representedSlots.size, masked, false)
     }
 
-
     @Synchronized
     fun activateKeyguard(
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
@@ -670,8 +669,7 @@ internal object SysUiPresentationOwner {
         )
     }
 
-    /** Reuse, retirement, and layout readiness stay owned by one family session path. */
-    /** Resolve the one native-family session before beginning its layout handoff. */
+    /** Select or retire the one family owner before its native layout handoff. */
     private fun keyguardFamilySession(
         existing: Session?,
         surface: KeyguardFamilySurface,
@@ -754,7 +752,6 @@ internal object SysUiPresentationOwner {
         }
         return startResult(session, masked, reused = reused)
     }
-
 
     private fun deactivateKeyguardFamily(
         surface: KeyguardFamilySurface,
@@ -918,7 +915,6 @@ internal object SysUiPresentationOwner {
         }
         return startResult(session, masked, reused = sameHost)
     }
-
 
     @Synchronized
     fun adoptCcLayoutAfterHotReload(): Result {
