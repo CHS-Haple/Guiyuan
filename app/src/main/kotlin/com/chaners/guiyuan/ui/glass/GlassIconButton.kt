@@ -137,25 +137,12 @@ fun GlassIconButton(
         sharedProgress = topBarContext?.materialProgress,
         sharedKeepMaterial = topBarContext?.keepMaterial,
         interactionSource = interactionSource,
-        modifier = modifier.then(
-            if (onLongClick == null) {
-                Modifier.clickable(
-                    enabled = enabled,
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = onClick,
-                )
-            } else {
-                Modifier.combinedClickable(
-                    enabled = enabled,
-                    role = Role.Button,
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onLongClickLabel = onLongClickLabel,
-                    onLongClick = onLongClick,
-                    onClick = onClick,
-                )
-            },
+        modifier = modifier.glassButtonClick(
+            onClick = onClick,
+            onLongClick = onLongClick,
+            onLongClickLabel = onLongClickLabel,
+            enabled = enabled,
+            interactionSource = interactionSource,
         ),
         content = content,
     )
@@ -295,3 +282,31 @@ private fun GlassButtonSurface(
         content()
     }
 }
+
+/** Shared input feedback stays on the one actual button root; no new interaction owner. */
+private fun Modifier.glassButtonClick(
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+    onLongClickLabel: String?,
+    enabled: Boolean,
+    interactionSource: MutableInteractionSource,
+): Modifier = then(
+    if (onLongClick == null) {
+        Modifier.clickable(
+            enabled = enabled,
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = onClick,
+        )
+    } else {
+        Modifier.combinedClickable(
+            enabled = enabled,
+            role = Role.Button,
+            interactionSource = interactionSource,
+            indication = null,
+            onLongClickLabel = onLongClickLabel,
+            onLongClick = onLongClick,
+            onClick = onClick,
+        )
+    },
+)

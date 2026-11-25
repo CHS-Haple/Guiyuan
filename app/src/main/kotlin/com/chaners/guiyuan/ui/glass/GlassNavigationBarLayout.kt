@@ -14,6 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
@@ -72,31 +76,40 @@ internal fun GlassNavigationBarLayout(
             }
         },
     ) { measurables, constraints ->
-        val action = measurables.getOrNull(1)?.measure(constraints.copy(minWidth = 0, minHeight = 0))
-        val fraction = actionProgress.value.coerceIn(0f, 1f)
-        val actionWidth = ((action?.width ?: 0) * fraction).toInt()
-        val gap = if (action != null) {
-            (spacing.toPx() * fraction).toInt().coerceIn(0, (constraints.maxWidth - actionWidth).coerceAtLeast(0))
-        } else {
-            0
-        }
-        val bar = measurables[0].measure(
-            constraints.copy(
-                minWidth = (constraints.minWidth - actionWidth - gap).coerceAtLeast(0),
-                maxWidth = if (constraints.hasBoundedWidth) {
-                    (constraints.maxWidth - actionWidth - gap).coerceAtLeast(0)
-                } else {
-                    constraints.maxWidth
-                },
-            ),
-        )
-        val groupWidth = bar.width + gap + actionWidth
-        val width = constraints.constrainWidth(groupWidth)
-        val height = constraints.constrainHeight(maxOf(bar.height, action?.height ?: 0))
-        layout(width, height) {
-            val start = (width - groupWidth) / 2
-            bar.placeRelative(start, (height - bar.height) / 2)
-            action?.placeRelative(start + bar.width + gap + (actionWidth - action.width) / 2, (height - action.height) / 2)
-        }
+        measureGlassNavigationGroup(measurables, constraints, spacing, actionProgress.value.coerceIn(0f, 1f))
+    }
+}
+
+/** The single native measure policy for capsule + trailing action, including RTL placement. */
+private fun MeasureScope.measureGlassNavigationGroup(
+    measurables: List<Measurable>,
+    constraints: Constraints,
+    spacing: Dp,
+    fraction: Float,
+): MeasureResult {
+    val action = measurables.getOrNull(1)?.measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val actionWidth = ((action?.width ?: 0) * fraction).toInt()
+    val gap = if (action != null) {
+        (spacing.toPx() * fraction).toInt().coerceIn(0, (constraints.maxWidth - actionWidth).coerceAtLeast(0))
+    } else {
+        0
+    }
+    val bar = measurables[0].measure(
+        constraints.copy(
+            minWidth = (constraints.minWidth - actionWidth - gap).coerceAtLeast(0),
+            maxWidth = if (constraints.hasBoundedWidth) {
+                (constraints.maxWidth - actionWidth - gap).coerceAtLeast(0)
+            } else {
+                constraints.maxWidth
+            },
+        ),
+    )
+    val groupWidth = bar.width + gap + actionWidth
+    val width = constraints.constrainWidth(groupWidth)
+    val height = constraints.constrainHeight(maxOf(bar.height, action?.height ?: 0))
+    return layout(width, height) {
+        val start = (width - groupWidth) / 2
+        bar.placeRelative(start, (height - bar.height) / 2)
+        action?.placeRelative(start + bar.width + gap + (actionWidth - action.width) / 2, (height - action.height) / 2)
     }
 }
