@@ -17,7 +17,7 @@ internal fun LazyListScope.featureDisplaySection(
     visual: VisualCfg,
     visualRepo: VisualRepo,
 ) {
-    Section(R.string.section_display_transition) {
+    Section(R.string.section_display_transition, key = "features-display-transition") {
         if (search.matches(R.string.keyguard_combined_status_title)) {
             SwitchPreference(
                 title = stringResource(R.string.keyguard_combined_status_title),
@@ -68,7 +68,7 @@ internal fun LazyListScope.featureManagementSection(
     onImport: () -> Unit,
     onReset: () -> Unit,
 ) {
-    Section(R.string.section_management) {
+    Section(R.string.section_management, key = "features-management") {
         if (search.matches(R.string.config_backup_title)) {
             BasicComponent(
                 title = stringResource(R.string.config_backup_title),
