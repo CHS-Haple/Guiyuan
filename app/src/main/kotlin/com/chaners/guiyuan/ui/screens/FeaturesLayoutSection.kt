@@ -263,24 +263,24 @@ private fun ColumnScope.featureDotOffsets(
                 value = visual.activeSignalDotOffsetY,
                 onValueChange = visualRepo::setSignalDotOffsetY,
                 title = stringResource(R.string.mobile_signal_dot_vertical_offset),
-                    summary = stringResource(R.string.outer_signal_dots_only_summary),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            R.drawable.ic_material_symbol_signal_cellular_alt,
-                            enabled,
-                            R.drawable.ic_material_symbol_height_w500,
-                        )
-                    },
-                    valueText = stringResource(
-                        R.string.battery_top_offset_value,
-                        visual.activeSignalDotOffsetY.roundToInt(),
-                    ),
-                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                    steps = 19,
-                    showKeyPoints = true,
-                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(0f),
-                    magnetThreshold = 0.035f,
+                summary = stringResource(R.string.outer_signal_dots_only_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        R.drawable.ic_material_symbol_signal_cellular_alt,
+                        enabled,
+                        R.drawable.ic_material_symbol_height_w500,
+                    )
+                },
+                valueText = stringResource(
+                    R.string.battery_top_offset_value,
+                    visual.activeSignalDotOffsetY.roundToInt(),
+                ),
+                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                steps = 19,
+                showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                keyPoints = listOf(0f),
+                magnetThreshold = 0.035f,
                 enabled = enabled,
             )
         }
