@@ -84,37 +84,37 @@ internal object SysUiBatterySource {
     )
 
     private fun resolveBatteryMethods(iconClass: Class<*>, meterClass: Class<*>): BatteryMethods {
-    val levelMethod =
-        meterClass.getDeclaredMethod(
-            BATTERY_LEVEL_METHOD_NAME,
-            Int::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType,
-        ).apply { isAccessible = true }
-    val chargeMethod =
-        meterClass.getDeclaredMethod(
-            CHARGE_STATE_METHOD_NAME,
-            Boolean::class.javaPrimitiveType,
-            Boolean::class.javaPrimitiveType,
-        ).apply { isAccessible = true }
-    val powerSaveMethod =
-        meterClass.getDeclaredMethod(
-            POWER_SAVE_METHOD_NAME,
-            Boolean::class.javaPrimitiveType,
-        ).apply { isAccessible = true }
-    val performanceMethod =
-        meterClass.getDeclaredMethod(
-            PERFORMANCE_METHOD_NAME,
-            Boolean::class.javaPrimitiveType,
-        ).apply { isAccessible = true }
-    val miuiOptimizationMethod =
-        iconClass.getDeclaredMethod(
-            MIUI_OPTIMIZATION_METHOD_NAME,
-            Boolean::class.javaPrimitiveType,
-        ).apply { isAccessible = true }
-    val updateChargeAndTextMethod =
-        meterClass.getDeclaredMethod(UPDATE_CHARGE_AND_TEXT_METHOD_NAME)
-            .apply { isAccessible = true }
+        val levelMethod =
+            meterClass.getDeclaredMethod(
+                BATTERY_LEVEL_METHOD_NAME,
+                Int::class.javaPrimitiveType,
+                Boolean::class.javaPrimitiveType,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val chargeMethod =
+            meterClass.getDeclaredMethod(
+                CHARGE_STATE_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val powerSaveMethod =
+            meterClass.getDeclaredMethod(
+                POWER_SAVE_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val performanceMethod =
+            meterClass.getDeclaredMethod(
+                PERFORMANCE_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val miuiOptimizationMethod =
+            iconClass.getDeclaredMethod(
+                MIUI_OPTIMIZATION_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val updateChargeAndTextMethod =
+            meterClass.getDeclaredMethod(UPDATE_CHARGE_AND_TEXT_METHOD_NAME)
+                .apply { isAccessible = true }
         return BatteryMethods(
             levelMethod = levelMethod,
             chargeMethod = chargeMethod,
