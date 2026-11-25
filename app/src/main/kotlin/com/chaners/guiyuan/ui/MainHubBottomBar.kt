@@ -46,17 +46,23 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+/** Shared destination and action ownership for all bottom navigation surfaces. */
+internal data class HubBottomNavigation(
+    val appearance: Appearance,
+    val dark: Boolean,
+    val items: List<MainNavItem>,
+    val pageSelection: HubPagerSelection,
+    val navigationAction: NavigationAction?,
+    val actionControls: NavigationActionControls,
+)
+
 // App-owned bottom-bar routing. Each surface keeps its native/MIUIX component and gesture owner.
 @Composable
 internal fun HubGlassBottomBar(
-    appearance: Appearance,
-    dark: Boolean,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     navBackdrop: Backdrop,
-    navigationAction: NavigationAction?,
-    actionControls: NavigationActionControls,
 ) {
+    val (appearance, dark, items, pageSelection, navigationAction, actionControls) = bar
     val selectedPage = pageSelection.selectedPage
     val includeLabels = appearance.navContent == NavContent.IconAndText
     val glassItems = remember(items, includeLabels) {
@@ -100,11 +106,10 @@ internal fun HubGlassBottomBar(
 
 @Composable
 internal fun HubNativeBottomBar(
-    appearance: Appearance,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     glassNavigation: Boolean,
 ) {
+    val (appearance, _, items, pageSelection) = bar
     NavigationBar(
         mode = if (glassNavigation && appearance.navContent == NavContent.IconOnly) {
             NavigationBarDisplayMode.IconOnly
@@ -126,15 +131,11 @@ internal fun HubNativeBottomBar(
 
 @Composable
 internal fun HubLiquidBottomBar(
-    appearance: Appearance,
-    dark: Boolean,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     liquidBackdrop: Backdrop,
-    navigationAction: NavigationAction?,
-    actionControls: NavigationActionControls,
     liquidBottomPadding: Dp,
 ) {
+    val (appearance, dark, items, pageSelection, navigationAction, actionControls) = bar
     val liquidPressLink = remember { LiquidNavPressLink() }
     Column(
         modifier =
@@ -144,31 +145,7 @@ internal fun HubLiquidBottomBar(
                     WindowInsets.displayCutout.union(WindowInsets.navigationBars)
                         .only(WindowInsetsSides.Horizontal),
                 )
-                .then(
-                    if (appearance.navTouchExtension) {
-                        Modifier.navTouchExtension(
-                            geometry = NavTouchStripGeometry(
-                                bottomPadding = liquidBottomPadding,
-                                horizontalPadding = LiquidNavSpec.sidePadding,
-                                contentPadding = 4.dp,
-                                itemCount = items.size,
-                                rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
-                            ),
-                            onSelect = pageSelection::select,
-                            trailing = NavTouchTrailingAction(
-                                width = if (navigationAction != null) {
-                                    LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
-                                } else 0.dp,
-                                size = if (navigationAction != null) {
-                                    LiquidNavSpec.height
-                                } else 0.dp,
-                                onTap = navigationAction?.let { action -> actionControls.callbackFor(action) },
-                            ),
-                        )
-                    } else {
-                        Modifier
-                    },
-                )
+                .then(liquidTouchExtension(bar, liquidBottomPadding))
                 .padding(bottom = liquidBottomPadding),
     ) {
         val liquidBar: @Composable () -> Unit = {
@@ -212,14 +189,36 @@ internal fun HubLiquidBottomBar(
     }
 }
 
+/** The optional extended hit strip stays separate from MIUIX's visual/press owner. */
+@Composable
+private fun liquidTouchExtension(bar: HubBottomNavigation, bottomPadding: Dp): Modifier {
+    if (!bar.appearance.navTouchExtension) return Modifier
+    val action = bar.navigationAction
+    val actionSize = LiquidNavSpec.height
+    return Modifier.navTouchExtension(
+        geometry = NavTouchStripGeometry(
+            bottomPadding = bottomPadding,
+            horizontalPadding = LiquidNavSpec.sidePadding,
+            contentPadding = 4.dp,
+            itemCount = bar.items.size,
+            rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
+        ),
+        onSelect = bar.pageSelection::select,
+        trailing = NavTouchTrailingAction(
+            width = if (action != null) actionSize + GlassNavigationBarDefaults.ActionSpacing else 0.dp,
+            size = if (action != null) actionSize else 0.dp,
+            onTap = action?.let { bar.actionControls.callbackFor(it) },
+        ),
+    )
+}
+
 @Composable
 internal fun HubFloatingBottomBar(
-    appearance: Appearance,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     navigationBarModifier: Modifier,
     navBackdrop: Backdrop?,
 ) {
+    val (appearance, _, items, pageSelection) = bar
     val barBounds = remember(appearance.navStyle) {
         mutableStateOf<Rect?>(null)
     }

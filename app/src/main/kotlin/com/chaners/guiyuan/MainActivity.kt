@@ -112,32 +112,9 @@ class MainActivity : ComponentActivity() {
             onDispose { }
         }
 
-        val systemDensity = LocalDensity.current
-        val uiDensity = remember(systemDensity, appearance.uiScalePercent) {
-            Density(
-                systemDensity.density * appearance.uiScalePercent / 100f,
-                systemDensity.fontScale,
-            )
-        }
-        // Match window DP dimensions to the same density used by the UI.
-        // MIUIX sheets cap their height against WindowInfo.containerDpSize.
-        val nativeWindow = LocalWindowInfo.current
-        val uiWindow = remember(nativeWindow, uiDensity) {
-            object : WindowInfo by nativeWindow {
-                override val containerDpSize: DpSize
-                    get() {
-                        val size = nativeWindow.containerSize
-                        return DpSize(
-                            (size.width / uiDensity.density).dp,
-                            (size.height / uiDensity.density).dp,
-                        )
-                    }
-            }
-        }
-        CompositionLocalProvider(
-            LocalDensity provides uiDensity,
-            LocalWindowInfo provides uiWindow,
-            LocalTopBarProgressiveBlur provides appearance.topBarProgressiveBlur,
+        ScaledAppEnvironment(
+            uiScalePercent = appearance.uiScalePercent,
+            progressiveBlur = appearance.topBarProgressiveBlur,
         ) {
             GyApp(
                 appearance = appearance,
@@ -186,6 +163,43 @@ class MainActivity : ComponentActivity() {
             if (dark) 0 else lightBarsMask,
             lightBarsMask,
         )
+    }
+}
+
+@Composable
+private fun ScaledAppEnvironment(
+    uiScalePercent: Int,
+    progressiveBlur: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val systemDensity = LocalDensity.current
+    val uiDensity = remember(systemDensity, uiScalePercent) {
+        Density(
+            systemDensity.density * uiScalePercent / 100f,
+            systemDensity.fontScale,
+        )
+    }
+    // Match window DP dimensions to the same density used by the UI.
+    // MIUIX sheets cap their height against WindowInfo.containerDpSize.
+    val nativeWindow = LocalWindowInfo.current
+    val uiWindow = remember(nativeWindow, uiDensity) {
+        object : WindowInfo by nativeWindow {
+            override val containerDpSize: DpSize
+                get() {
+                    val size = nativeWindow.containerSize
+                    return DpSize(
+                        (size.width / uiDensity.density).dp,
+                        (size.height / uiDensity.density).dp,
+                    )
+                }
+        }
+    }
+    CompositionLocalProvider(
+        LocalDensity provides uiDensity,
+        LocalWindowInfo provides uiWindow,
+        LocalTopBarProgressiveBlur provides progressiveBlur,
+    ) {
+        content()
     }
 }
 
