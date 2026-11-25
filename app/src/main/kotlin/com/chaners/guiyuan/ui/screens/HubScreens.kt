@@ -95,6 +95,9 @@ internal fun HubPage(
     // Browsing and filtered results must not overwrite each other's scroll position.
     val browsingState = rememberLazyListState()
     val resultsState = rememberLazyListState()
+    // Preserve each indicator's measured viewport baseline across search transitions.
+    val browsingIndicator = rememberStableLazyListScrollBarAdapter(browsingState)
+    val resultsIndicator = rememberStableLazyListScrollBarAdapter(resultsState, search?.query)
     val filtering = search?.filtering == true
     val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
@@ -250,7 +253,7 @@ internal fun HubPage(
                 content = content,
             )
             VerticalScrollBar(
-                adapter = rememberStableLazyListScrollBarAdapter(listState, if (filtering) search?.query else null),
+                adapter = if (filtering) resultsIndicator else browsingIndicator,
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
                 topAppBarScrollBehavior = scrollBehavior,
