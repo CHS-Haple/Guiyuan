@@ -23,9 +23,10 @@ internal object FullAodTransitionSource {
         onTransitionStarted: () -> Unit,
         onTransitionCommitted: () -> Unit,
         onRuntimeFailure: (String, Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): List<HookHandle> {
+        val onEvent = diagnostics.onEvent
+        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         val controllerClass = Class.forName(CONTROLLER_CLASS, false, classLoader)
         val method =
             SysUiPresentationRuntime.requireUniqueHookMethod(

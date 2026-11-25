@@ -211,8 +211,7 @@ internal object SysUiPresentationRuntime {
         val module: XposedModule,
         val classLoader: ClassLoader,
         val sinks: Sinks,
-        val onEvent: ((String) -> Unit)?,
-        val isDetailedDiagnosticsEnabled: () -> Boolean,
+        val diagnostics: HookDiagnostics,
     )
 
     private fun installKeyguardAod(
@@ -227,8 +226,7 @@ internal object SysUiPresentationRuntime {
                 onRuntimeFailure = { error ->
                     request.sinks.keyguard.onRuntimeFailure("aod-state", error)
                 },
-                onEvent = request.onEvent,
-                isDetailedDiagnosticsEnabled = request.isDetailedDiagnosticsEnabled,
+                diagnostics = request.diagnostics,
             ).size
         }.getOrElse { error ->
             reportAodFailure(
@@ -250,8 +248,7 @@ internal object SysUiPresentationRuntime {
                 onTransitionStarted = request.sinks.keyguard.onFullAodStarted,
                 onTransitionCommitted = request.sinks.keyguard.onFullAodCommitted,
                 onRuntimeFailure = request.sinks.onRuntimeFailure,
-                onEvent = request.onEvent,
-                isDetailedDiagnosticsEnabled = request.isDetailedDiagnosticsEnabled,
+                diagnostics = request.diagnostics,
             ).size
         }.getOrElse { error ->
             reportAodFailure(
@@ -274,8 +271,7 @@ internal object SysUiPresentationRuntime {
                 onRuntimeFailure = { error ->
                     request.sinks.keyguard.onRuntimeFailure("icon-transition", error)
                 },
-                onEvent = request.onEvent,
-                isDetailedDiagnosticsEnabled = request.isDetailedDiagnosticsEnabled,
+                diagnostics = request.diagnostics,
             ).size
         }.getOrElse { error ->
             reportAodFailure(
@@ -308,7 +304,7 @@ internal object SysUiPresentationRuntime {
             }
         }
         val request = KeyguardHookInstallRequest(
-            module, classLoader, sinks, onEvent, isDetailedDiagnosticsEnabled,
+            module, classLoader, sinks, HookDiagnostics(onEvent, isDetailedDiagnosticsEnabled),
         )
         val keyguardAodHooks = installKeyguardAod(request, ::reportAodFailure)
         val keyguardFullAodHooks = installFullAodTransition(request, ::reportAodFailure)

@@ -20,9 +20,10 @@ internal object KeyguardIconTransitionSource {
         classLoader: ClassLoader,
         onTransition: () -> Unit,
         onRuntimeFailure: (Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): List<HookHandle> {
+        val onEvent = diagnostics.onEvent
+        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         val viewClass = Class.forName(KEYGUARD_VIEW_CLASS, false, classLoader)
         val method =
             SysUiPresentationRuntime.requireUniqueHookMethod(
