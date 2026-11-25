@@ -121,8 +121,10 @@ reference, not this public repository.
   controlled search uses the matching visible-progress mount gate. Native
   Dialog/Sheet motion and dropdown lifecycle come from the pinned graph;
   local host retirement, submenu and Back ownership stay unchanged. The
-  overlay and newer Sheet revision require focused device acceptance; B1952
-  is the prior accepted baseline. The new public GlassBottomSheet header
+  overlay and Sheet changes received focused B1958 acceptance in
+  [#1867](https://github.com/CHS-Haple/Guiyuan/pull/1867), followed by source
+  promotion in [#1870](https://github.com/CHS-Haple/Guiyuan/pull/1870).
+  The public GlassBottomSheet header
   consumes actual current-page scroll offset in the battery scheme deck;
   content padding follows the measured header, with the existing dot rail
   in the fixed header slot. The detail Back button inherits upstream header
@@ -168,7 +170,22 @@ reference, not this public repository.
 - Single-interface migration and battery color controls received focused
   B1952 device acceptance in [#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866);
   the integrated source tree matched that candidate and dev CI passed. This
-  does not certify the newer overlay motion revision.
+  does not by itself certify later overlay motion changes.
+- Scroll ownership follows the public MIUIX scrollbar APIs: bounded
+  heterogeneous preference pages use measured ScrollState, while genuinely
+  lazy log lists retain their lazy state and estimated indicator size. Shared
+  page track padding removes the changing large-title height offset without
+  changing content padding. Battery scheme decks expose one active-page
+  indicator rather than separate bars in every pager child. The removable
+  `ScrollAwareGlassSegmentedTabRow` adapter arbitrates horizontal versus
+  vertical intent using platform touch slop; upstream still owns tab rendering,
+  material, animation and accessibility. Its retirement condition is documented
+  in the MIUIX Glass source boundary. Focused B1963 device acceptance and
+  source-matched CI/signing are recorded in
+  [#1871](https://github.com/CHS-Haple/Guiyuan/pull/1871) and
+  [#1206](https://github.com/CHS-Haple/Guiyuan/issues/1206#issuecomment-7148377108).
+  Lazy indicator estimation and pager transitions remain bounded risks, not
+  reasons to add unverified smoothing or timing compensation.
   Exhaustive RTL, extreme font scale, GPU resume, keyboard/cutout geometry,
   predictive Back and every Framework/ROM combination remain unverified.
 
