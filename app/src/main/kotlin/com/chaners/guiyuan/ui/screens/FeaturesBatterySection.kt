@@ -46,15 +46,14 @@ internal data class BatteryFeatureDialogs(
     val onOpenWeight: () -> Unit,
 )
 
-@Composable
-internal fun ColumnScope.featureBatterySection(
+internal fun androidx.compose.foundation.lazy.LazyListScope.featureBatterySection(
     search: PageSearch,
     state: BatteryFeatureSnapshot,
     repositories: BatteryFeatureRepositories,
     dialogs: BatteryFeatureDialogs,
     bothSidesChargingSearch: Boolean,
 ) {
-    PreferenceSection(R.string.section_battery) {
+    Section(R.string.section_battery) {
         batteryColorAndThreshold(search, state, repositories, dialogs)
         batteryTopReadout(search, state, repositories, dialogs)
         batteryChargingIcon(search, state, repositories, bothSidesChargingSearch)
