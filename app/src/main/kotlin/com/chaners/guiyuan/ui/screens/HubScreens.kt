@@ -29,8 +29,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberOverscrollEffect
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,14 +91,14 @@ internal fun HubPage(
     search: PageSearch? = null,
     searchInNavigationBar: Boolean = false,
     overlay: @Composable () -> Unit = {},
-    content: @Composable ColumnScope.() -> Unit,
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     // Browsing and filtered results must not overwrite each other's scroll position.
-    val browsingState = rememberScrollState()
-    val resultsState = rememberScrollState()
+    val browsingState = rememberLazyListState()
+    val resultsState = rememberLazyListState()
     val filtering = search?.filtering == true
-    val scrollState = if (filtering) resultsState else browsingState
-    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
+    val listState = if (filtering) resultsState else browsingState
+    val canScroll = listState.canScrollBackward || listState.canScrollForward
     val railProgress = LocalGlassRailProgress.current
     val density = LocalDensity.current
     val browsingScroll = MiuixScrollBehavior()
@@ -112,7 +112,7 @@ internal fun HubPage(
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(filtering, search?.query) {
         if (filtering) {
-            resultsState.scrollTo(0)
+            resultsState.requestScrollToItem(0)
         }
     }
     val searchExpanded = search?.active == true
@@ -129,7 +129,7 @@ internal fun HubPage(
     val barAlpha = rememberGlassSearchBarAlpha(searchExpanded)
     // Search shadow follows its surface material transition; geometry has its own motion.
     val searchMaterial = animateFloatAsState(
-        targetValue = if (scrollState.canScrollBackward || scrollBehavior.state.overscrollOffset < -1f) 1f else 0f,
+        targetValue = if (listState.canScrollBackward || scrollBehavior.state.overscrollOffset < -1f) 1f else 0f,
         animationSpec = GlassMotion.topBarButtonFloat(),
         label = "os4SearchMaterial",
     )
@@ -198,7 +198,7 @@ internal fun HubPage(
                     titleAlpha = { titleReveal.value * railProgress() },
                     largeTitle = title,
                     compact = filtering,
-                    isContentScrolled = scrollState.canScrollBackward,
+                    isContentScrolled = listState.canScrollBackward,
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     actions = searchAction,
@@ -238,19 +238,20 @@ internal fun HubPage(
                 outerBottomPadding = bottomContentPadding,
                 extraBottom = 12.dp,
             )
-            Column(
+            LazyColumn(
+                state = listState,
+                overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .verticalScroll(scrollState, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
-                        .padding(contentPadding),
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = contentPadding,
                 content = content,
             )
             VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(scrollState),
+                adapter = rememberScrollBarAdapter(listState),
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
                 topAppBarScrollBehavior = scrollBehavior,
