@@ -1,16 +1,24 @@
 package com.chaners.guiyuan.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -24,9 +32,12 @@ import com.chaners.guiyuan.ui.screens.SettingsHubActions
 import com.chaners.guiyuan.ui.screens.SettingsHubScreen
 import com.chaners.guiyuan.ui.screens.SettingsHubSnapshot
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
 import top.yukonga.miuix.kmp.utils.PagerNavigationSpringSpec
 import top.yukonga.miuix.kmp.utils.pagerGestureOverride
@@ -39,6 +50,7 @@ import top.yukonga.miuix.kmp.utils.springAnimateToPage
 internal class HubPagerSelection(
     private val pagerState: PagerState,
     private val scope: CoroutineScope,
+    private val snapTransitions: () -> Boolean = { false },
 ) {
     var selectedPage by mutableIntStateOf(pagerState.currentPage)
         private set
@@ -50,10 +62,11 @@ internal class HubPagerSelection(
         navigationJob?.cancel()
         selectedPage = index
 
-        navigationJob = scope.launch {
+        val job = scope.launch(start = CoroutineStart.LAZY) {
             val activeJob = coroutineContext.job
             try {
-                pagerState.springAnimateToPage(index)
+                if (snapTransitions()) pagerState.scrollToPage(index)
+                else pagerState.springAnimateToPage(index)
             } finally {
                 if (navigationJob === activeJob) {
                     navigationJob = null
@@ -61,6 +74,8 @@ internal class HubPagerSelection(
                 }
             }
         }
+        navigationJob = job
+        job.start()
     }
 
     fun syncActualPage() {
@@ -86,7 +101,11 @@ internal fun TopLevelBackHandler(
 }
 
 @Composable
-internal fun TopLevelPager(bindings: TopLevelPagerBindings) {
+internal fun TopLevelPager(
+    bindings: TopLevelPagerBindings,
+    railWidth: Dp = 0.dp,
+    railProgress: () -> Float = { 1f },
+) {
     val pagerState = bindings.scope.pagerState
     val flingBehavior = PagerDefaults.flingBehavior(
         state = pagerState,
@@ -103,11 +122,48 @@ internal fun TopLevelPager(bindings: TopLevelPagerBindings) {
         flingBehavior = flingBehavior,
         pageNestedScrollConnection = PagerGestureNestedScrollConnection,
     ) { page ->
-        TopLevelPagerContent(
-            page = page,
-            bottom = bindings.scope.bottomPadding.calculateBottomPadding(),
-            bindings = bindings,
-        )
+        val hidden = remember(pagerState, page) {
+            derivedStateOf {
+                abs(page - pagerState.currentPage - pagerState.currentPageOffsetFraction) >= 1f
+            }
+        }
+        HubRailPage(railWidth, railProgress, hidden) {
+            TopLevelPagerContent(
+                page = page,
+                bottom = bindings.scope.bottomPadding.calculateBottomPadding(),
+                bindings = bindings,
+            )
+        }
+    }
+}
+
+// As in MIUIX's AppContent/PageUtils example, the pager host stays stable and
+// completely offscreen pages retain their last rail clearance. Keep Guiyuan's
+// existing physical inset contract; only the active page follows the morph.
+@Composable
+private fun HubRailPage(
+    railWidth: Dp,
+    railProgress: () -> Float,
+    hidden: State<Boolean>,
+    content: @Composable () -> Unit,
+) {
+    val pageProgress = remember(railProgress, hidden) {
+        var last: Float? = null
+        return@remember {
+            val held = last
+            if (hidden.value && held != null) held else railProgress().also { last = it }
+        }
+    }
+    val clearance = if (railWidth > 0.dp) {
+        Modifier.layout { measurable, constraints ->
+            val start = (railWidth.toPx() * pageProgress())
+                .roundToInt().coerceIn(0, constraints.maxWidth)
+            val page = measurable.measure(constraints.offset(horizontal = -start))
+            layout(constraints.maxWidth, page.height) { page.placeRelative(start, 0) }
+        }
+    } else Modifier
+    CompositionLocalProvider(LocalGlassRailProgress provides pageProgress) {
+        Box(Modifier.fillMaxSize().then(clearance)) { content() }
     }
 }
 
