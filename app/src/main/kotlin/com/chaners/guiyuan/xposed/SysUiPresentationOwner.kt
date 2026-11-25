@@ -486,13 +486,28 @@ internal object SysUiPresentationOwner {
                 ?: return Result.Failure(REASON_BATTERY_HIDE_FIELD_UNAVAILABLE)
         nativeLayoutPrerequisiteFailure(field, statusIcons, batteryCarrier)?.let { return it }
 
+        return startHomePresentation(
+            native = PresentationNativeViews(hostView, statusIcons, batteryContainer, battery, batteryCarrier),
+            field = field,
+            hideField = hideField,
+            requestNativeStatusIconLayout = requestNativeStatusIconLayout,
+        )
+    }
+
+    /** Only preflighted native participants can enter Home's session ownership path. */
+    private fun startHomePresentation(
+        native: PresentationNativeViews,
+        field: Field,
+        hideField: Field,
+        requestNativeStatusIconLayout: Boolean,
+    ): Result {
         // Only the verified same-host reload prearm requests layout directly on
         // the native status-icon owner. Ordinary activation keeps the existing
         // battery-container lifecycle to avoid unrelated native relayouts.
         val nativeLayoutTarget =
-            if (requestNativeStatusIconLayout) statusIcons else batteryContainer
+            if (requestNativeStatusIconLayout) native.statusIcons else native.batteryContainer
         val existing = current
-        if (existing?.matches(hostView, statusIcons, batteryContainer, battery, batteryCarrier) == true) {
+        if (existing?.matches(native.host, native.statusIcons, native.batteryContainer, native.battery, native.batteryCarrier) == true) {
             if (!existing.syncEndReservation()) {
                 return Result.Failure("home-reuse-sync-failed-native-restored")
             }
@@ -509,7 +524,7 @@ internal object SysUiPresentationOwner {
         existing?.let { stopHome(it, "host-replaced") }
         val session =
             Session(
-                native = PresentationNativeViews(hostView, statusIcons, batteryContainer, battery, batteryCarrier),
+                native = native,
                 contract = PresentationNativeContracts(
                     field, null, null, IgnoreScope.CALL, hideField,
                 ),
@@ -617,9 +632,6 @@ internal object SysUiPresentationOwner {
         deferNativeLayoutOwnershipUntilCommit: Boolean,
         handlers: KeyguardFamilyHandlers,
     ): Result {
-        val onEvent = handlers.onEvent
-        val onFailNative = handlers.onFailNative
-        val onReady = handlers.onReady
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure(REASON_MAIN_THREAD_REQUIRED)
         }
@@ -644,10 +656,30 @@ internal object SysUiPresentationOwner {
             field, resolved.statusIcons, resolved.batteryCarrier, surfaceName = surface.surfaceName,
         )?.let { return it }
 
-        keyguardFamilySinks = ActivationSinks(guardedDiagnostic(onEvent), onFailNative, onReady)
+        keyguardFamilySinks = ActivationSinks(
+            guardedDiagnostic(handlers.onEvent),
+            handlers.onFailNative,
+            handlers.onReady,
+        )
+        return startKeyguardFamilyPresentation(
+            surface = surface,
+            resolved = resolved,
+            preMaskBeforeLayout = preMaskBeforeLayout,
+            deferNativeLayoutOwnershipUntilCommit = deferNativeLayoutOwnershipUntilCommit,
+            contract = PresentationNativeContracts(
+                field, addMethod, setMethod, IgnoreScope.SESSION, hideField,
+            ),
+        )
+    }
 
-        val existing = keyguardFamilyCurrent
-        val session = if (
+    /** Select or retire the one family owner before its native layout handoff. */
+    private fun keyguardFamilySession(
+        existing: Session?,
+        surface: KeyguardFamilySurface,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
+        contract: PresentationNativeContracts,
+    ): Session {
+        return if (
             existing?.matches(
                 host = resolved.host,
                 statusIcons = resolved.statusIcons,
@@ -668,9 +700,7 @@ internal object SysUiPresentationOwner {
                 native = PresentationNativeViews(
                     resolved.host, resolved.statusIcons, resolved.systemIcons, resolved.battery, resolved.batteryCarrier,
                 ),
-                contract = PresentationNativeContracts(
-                    field, addMethod, setMethod, IgnoreScope.SESSION, hideField,
-                ),
+                contract = contract,
                 surface = PresentationSurface(surface.surfaceName, surface.eventPrefix, false),
                 callbacks = PresentationCallbacks(
                     onEvent = { event -> keyguardFamilySinks?.event?.invoke(event) },
@@ -681,6 +711,17 @@ internal object SysUiPresentationOwner {
                 keyguardFamilySurface = surface
             }
         }
+    }
+
+    private fun startKeyguardFamilyPresentation(
+        surface: KeyguardFamilySurface,
+        resolved: SysUiKeyguardHostResolver.ResolvedHost,
+        preMaskBeforeLayout: Boolean,
+        deferNativeLayoutOwnershipUntilCommit: Boolean,
+        contract: PresentationNativeContracts,
+    ): Result {
+        val existing = keyguardFamilyCurrent
+        val session = keyguardFamilySession(existing, surface, resolved, contract)
         val reused = session === existing
         val masked =
             session.start(
@@ -768,7 +809,6 @@ internal object SysUiPresentationOwner {
         handlers: CcPresentationHandlers,
     ): Result {
         val (host, statusIcons, batteryContainer, battery, batteryCarrier) = target
-        val (onEvent, isDetailedDiagnosticsEnabled, onFailNative, onReady) = handlers
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure(REASON_MAIN_THREAD_REQUIRED)
         }
@@ -802,6 +842,23 @@ internal object SysUiPresentationOwner {
             field, statusIcons, batteryCarrier, retryAfterLayout = true,
         )?.let { return it }
 
+        return startCcPresentation(
+            target = target,
+            handlers = handlers,
+            contract = PresentationNativeContracts(
+                field, addMethod, setMethod, IgnoreScope.SESSION, hideField,
+            ),
+        )
+    }
+
+    /** Native readiness and reuse are one CC owner transition after exact preflight. */
+    private fun startCcPresentation(
+        target: CcPresentationTarget,
+        handlers: CcPresentationHandlers,
+        contract: PresentationNativeContracts,
+    ): Result {
+        val (host, statusIcons, batteryContainer, battery, batteryCarrier) = target
+        val (onEvent, isDetailedDiagnosticsEnabled, onFailNative, onReady) = handlers
         controlCenterSinks = ActivationSinks(guardedDiagnostic(onEvent), onFailNative, onReady)
 
         val existing = controlCenterCurrent
@@ -823,9 +880,7 @@ internal object SysUiPresentationOwner {
             existing?.let { stopCc(it, "host-replaced") }
             Session(
                 native = PresentationNativeViews(host, statusIcons, batteryContainer, battery, batteryCarrier),
-                contract = PresentationNativeContracts(
-                    field, addMethod, setMethod, IgnoreScope.SESSION, hideField,
-                ),
+                contract = contract,
                 surface = PresentationSurface("control-center-fake", "controlCenterPresentation", true),
                 callbacks = PresentationCallbacks(
                     onEvent = { event -> controlCenterSinks?.event?.invoke(event) },
