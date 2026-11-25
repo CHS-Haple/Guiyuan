@@ -253,14 +253,16 @@ internal fun BatteryColorModalDialogs(
         scheme = state.renameRequest?.id?.let(library::customById),
         originalName = state.renameRequest?.originalName.orEmpty(),
         show = state.renameRequest?.visible == true,
-        onDismiss = { state.renameRequest = state.renameRequest?.copy(visible = false) },
-        onDismissFinished = {
-            if (state.renameRequest?.visible == false) state.renameRequest = null
-        },
-        onRename = { id, name ->
-            state.renameRequest = state.renameRequest?.copy(visible = false)
-            repository.renameCustom(id, name)
-        },
+        actions = BatteryRenameActions(
+            onDismiss = { state.renameRequest = state.renameRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (state.renameRequest?.visible == false) state.renameRequest = null
+            },
+            onRename = { id, name ->
+                state.renameRequest = state.renameRequest?.copy(visible = false)
+                repository.renameCustom(id, name)
+            },
+        ),
     )
 
     BatteryDeleteSchemeDialog(
