@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.core.animateFloatAsState
@@ -251,7 +250,7 @@ internal fun HubPage(
                 content = content,
             )
             VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(listState),
+                adapter = rememberStableLazyListScrollBarAdapter(listState, if (filtering) search?.query else null),
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                 trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
                 topAppBarScrollBehavior = scrollBehavior,
