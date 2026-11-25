@@ -2,6 +2,7 @@ package com.chaners.guiyuan.xposed.network
 
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import com.chaners.guiyuan.xposed.NativeStatusSlots
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
 import java.lang.reflect.Field
@@ -104,6 +105,21 @@ internal object NativeStatusTintResolver {
             ) {
                 return child
             }
+        }
+        return null
+    }
+
+    /** Read only applied native image tint; no cached View or observer callback is retained. */
+    fun findAppliedTint(view: View): Int? {
+        if (view is ImageView) {
+            view.imageTintList
+                ?.defaultColor
+                ?.takeIf { color -> (color ushr 24) != 0 }
+                ?.let { return it }
+        }
+        val group = view as? ViewGroup ?: return null
+        for (index in 0 until group.childCount) {
+            findAppliedTint(group.getChildAt(index))?.let { return it }
         }
         return null
     }
