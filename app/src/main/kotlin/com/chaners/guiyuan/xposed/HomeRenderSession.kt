@@ -203,11 +203,9 @@ internal object HomeRenderSession {
         layoutReady: Boolean,
         hostAttached: Boolean,
     ): Boolean =
-        featureEnabled &&
-            modelReady &&
-            tintReady &&
-            layoutReady &&
-            hostAttached
+        ProjectionReadinessPolicy.structuralReady(
+            featureEnabled, modelReady, tintReady, layoutReady, hostAttached,
+        )
 
     // A child onLayout can run before SystemUI's parent finishes its traversal.
     // Retire an already verified Home owner only on actual detach, or at the

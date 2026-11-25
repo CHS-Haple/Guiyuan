@@ -546,13 +546,9 @@ internal object CcRenderSession {
         hostAttached: Boolean,
         nativePresentationReady: Boolean,
     ): Boolean =
-        featureEnabled &&
-            sceneEligible &&
-            modelReady &&
-            tintReady &&
-            layoutReady &&
-            hostAttached &&
-            nativePresentationReady
+        ProjectionReadinessPolicy.structuralReady(
+            featureEnabled, modelReady, tintReady, layoutReady, hostAttached,
+        ) && sceneEligible && nativePresentationReady
 
     private class Session(
         native: CcNativeViews,
