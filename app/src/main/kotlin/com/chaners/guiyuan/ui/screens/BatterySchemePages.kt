@@ -152,6 +152,7 @@ internal fun BatterySchemeOverview(
             BatterySchemeOverviewIndicator(pages, pagerState, target)
         },
         scrollOffset = currentScrollOffset,
+        progressiveBlur = true,
     ) { innerPadding ->
         CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
             Column(
