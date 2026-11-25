@@ -79,6 +79,14 @@ class OuterGeometryTest {
                     sin(angle).toFloat() * OuterGeometry.MOBILE_ORBIT_RADIUS,
                     geometry.singleDotY(index, SignalDotArrangement.CURVED, 0f), 0.0001f,
                 )
+                assertEquals(
+                    geometry.singleDotY(index, SignalDotArrangement.CURVED, 0f) - 3f,
+                    geometry.singleDotY(index, SignalDotArrangement.CURVED, 3f), 0.0001f,
+                )
+                assertEquals(
+                    geometry.singleDotY(index, SignalDotArrangement.CURVED, 0f) + 5f,
+                    geometry.singleDotY(index, SignalDotArrangement.CURVED, -5f), 0.0001f,
+                )
                 assertEquals(geometry.horizontalDotX(index),
                     geometry.singleDotX(index, SignalDotArrangement.HORIZONTAL), 0f)
                 assertEquals("horizontal row at every weight", horizontalY,

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 private val visualPreferenceKeys = buildSet {
     add(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY)
     add(SHARED_LAYOUT_VISUAL_SCHEMA_KEY)
+    add(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY)
     add(CONTENT_LAYOUT_KEY)
     add(DUAL_SIGNAL_ENABLED_KEY)
     add(DUAL_PROFILES_INITIALIZED_KEY)

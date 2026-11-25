@@ -156,8 +156,7 @@ private fun ColumnScope.featureDualSignalToggle(
     if (search.matches(R.string.dual_signal_title) ||
         (searching && !visual.dualSignal &&
             (search.any(R.string.dual_row_signal_dot_arrangement_title,
-                R.string.curved_signal_dot_vertical_offset,
-                R.string.horizontal_signal_dot_vertical_offset) || bothSidesSearch))) {
+                R.string.mobile_signal_dot_vertical_offset) || bothSidesSearch))) {
         SwitchPreference(
             title = stringResource(R.string.dual_signal_title),
             startAction = {
@@ -258,16 +257,12 @@ private fun ColumnScope.featureDotOffsets(
     enabled: Boolean,
     activeDotArrangement: SignalDotArrangement,
 ) {
-    listOf(
-        SignalDotArrangement.CURVED to R.string.curved_signal_dot_vertical_offset,
-        SignalDotArrangement.HORIZONTAL to R.string.horizontal_signal_dot_vertical_offset,
-    ).forEach { (style, dotOffsetTitle) ->
-        AnimatedPreferenceGroup(visible = activeDotArrangement == style) {
-            if (search.matches(dotOffsetTitle)) {
-                SliderPreference(
-                    value = visual.activeSignalDotOffsetY,
-                    onValueChange = visualRepo::setSignalDotOffsetY,
-                    title = stringResource(dotOffsetTitle),
+    AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.BOTH_SIDES) {
+        if (search.matches(R.string.mobile_signal_dot_vertical_offset)) {
+            SliderPreference(
+                value = visual.activeSignalDotOffsetY,
+                onValueChange = visualRepo::setSignalDotOffsetY,
+                title = stringResource(R.string.mobile_signal_dot_vertical_offset),
                     summary = stringResource(R.string.outer_signal_dots_only_summary),
                     startAction = {
                         SemanticLeadingIcon(
@@ -286,9 +281,8 @@ private fun ColumnScope.featureDotOffsets(
                     hapticEffect = SliderDefaults.SliderHapticEffect.Step,
                     keyPoints = listOf(0f),
                     magnetThreshold = 0.035f,
-                    enabled = enabled,
-                )
-            }
+                enabled = enabled,
+            )
         }
     }
 }

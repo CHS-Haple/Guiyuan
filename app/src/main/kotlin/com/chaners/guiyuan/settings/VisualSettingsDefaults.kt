@@ -24,6 +24,9 @@ internal const val LEGACY_HORIZONTAL_LOWER_SINGLE_ROW_KEY = "single_row_flat_dot
 internal const val LEGACY_DUAL_DOT_STYLE_KEY = "dual_dot_style"
 internal const val SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY = "shared_content_style_schema"
 // Keep the original persisted names; these offsets now serve both SIM modes.
+internal const val MOBILE_SIGNAL_DOT_OFFSET_Y_KEY = "mobile_signal_dot_offset_y"
+internal const val MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY = "mobile_signal_dot_offset_schema"
+// Retired V1 persisted names remain readable for migration and archive compatibility.
 internal const val CURVED_SIGNAL_DOT_OFFSET_Y_KEY = "dual_default_offset_y"
 internal const val HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY = "dual_duo_offset_y"
 internal const val BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY = "left_right_signal_dot_offset_y"
@@ -100,6 +103,7 @@ internal val PROFILE_VISUAL_BASE_KEYS =
         BOTH_SIDES_ACTIVITY_OFFSET_Y_KEY,
         BOTH_SIDES_CHARGING_OFFSET_Y_KEY,
         MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
+        MOBILE_SIGNAL_DOT_OFFSET_Y_KEY,
         CURVED_SIGNAL_DOT_OFFSET_Y_KEY,
         HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY,
         BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY,

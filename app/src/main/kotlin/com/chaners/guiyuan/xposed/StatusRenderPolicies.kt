@@ -311,7 +311,7 @@ internal object OuterGeometry {
                 // Horizontal row: same x reference and baseline as the paired horizontal layout.
                 sqrt(RING_RADIUS * RING_RADIUS -
                     (horizontalDotSpan / 6f) * (horizontalDotSpan / 6f)) - dualOpticalRise - offsetY
-            } else sin(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS
+            } else sin(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS - offsetY
 
         fun horizontalDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (horizontalDotSpan / (DOT_COUNT - 1))
