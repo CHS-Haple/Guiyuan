@@ -8,6 +8,9 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+// Exact-ROM selector signature exercised both positively and negatively.
+private const val ADD_IGNORED_SLOTS = "addIgnoredSlots"
+
 // Minimal native lookalikes: reflection is tested, not any SystemUI behavior.
 private open class TestSlotsParent {
     private val ignoredSlots = mutableListOf<String>()
@@ -55,8 +58,8 @@ class SysUiPresentationContractsTest {
         val source = TestSlotsHost::class.java
         assertEquals("ignoredSlots", SysUiPresentationContracts.ignoredSlotsField(source)?.name)
         assertEquals(
-            "addIgnoredSlots",
-            SysUiPresentationContracts.ignoredSlotsMethod(source, "addIgnoredSlots")?.name,
+            ADD_IGNORED_SLOTS,
+            SysUiPresentationContracts.ignoredSlotsMethod(source, ADD_IGNORED_SLOTS)?.name,
         )
         assertEquals(
             "setIgnoredSlots",
@@ -86,7 +89,7 @@ class SysUiPresentationContractsTest {
     fun mismatchedNativeContractsFailClosed() {
         val badSlots = WrongSlotsHost::class.java
         assertNull(SysUiPresentationContracts.ignoredSlotsField(badSlots))
-        assertNull(SysUiPresentationContracts.ignoredSlotsMethod(badSlots, "addIgnoredSlots"))
+        assertNull(SysUiPresentationContracts.ignoredSlotsMethod(badSlots, ADD_IGNORED_SLOTS))
         assertNull(SysUiPresentationContracts.measureMethod(badSlots))
         assertNull(SysUiPresentationContracts.layoutMethod(badSlots))
         assertNull(SysUiPresentationContracts.islandShowingMethod(badSlots))
