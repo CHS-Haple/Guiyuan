@@ -1578,22 +1578,25 @@ internal object SysUiNetworkSource {
 
     /** A single native bind owns a reversible cached-subscription receipt. */
     private class MobileBindReceipt(
-        var pending: MobileBinding? = null,
-        var previous: MobileBinding? = null,
-        var bindingChanged: Boolean = false,
-        var bindingLog: String? = null,
-    )
+        val boundRoot: ViewGroup?,
+        val locationViewModel: Any?,
+        val iconViewModel: Any?,
+    ) {
+        var pending: MobileBinding? = null
+        var previous: MobileBinding? = null
+        var bindingChanged = false
+        var bindingLog: String? = null
+    }
 
     /** Record the selected SIM before native bind emits, without owning its ViewModel. */
     private fun prepareMobileBindingBeforeProceed(
-        boundRoot: ViewGroup?,
-        locationViewModel: Any?,
-        iconViewModel: Any?,
+        receipt: MobileBindReceipt,
         subscriptionIdMethod: Method,
         diagnostics: Diagnostics,
-        receipt: MobileBindReceipt,
     ) {
-        val nativeRoot = boundRoot ?: return
+        val nativeRoot = receipt.boundRoot ?: return
+        val locationViewModel = receipt.locationViewModel
+        val iconViewModel = receipt.iconViewModel
         val subscriptionId = optionalNativeRead {
             (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
         } ?: -1
@@ -1665,12 +1668,10 @@ internal object SysUiNetworkSource {
             root?.takeIf {
                 locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
             }
-        val receipt = MobileBindReceipt()
+        val receipt = MobileBindReceipt(boundRoot, locationViewModel, iconViewModel)
         var callbackError: Throwable? = null
         try {
-            prepareMobileBindingBeforeProceed(
-                boundRoot, locationViewModel, iconViewModel, subscriptionIdMethod, diagnostics, receipt,
-            )
+            prepareMobileBindingBeforeProceed(receipt, subscriptionIdMethod, diagnostics)
         } catch (error: Throwable) {
             rethrowFatal(error)
             callbackError = error
@@ -1706,20 +1707,23 @@ internal object SysUiNetworkSource {
 
     /** A per-emission rollback key and optional diagnostic; never retained across callbacks. */
     private class MobileSignalReceipt(
-        var pendingKey: String? = null,
-        var eventLog: String? = null,
-    )
+        val image: ImageView?,
+        val classId: Int,
+        val value: Any?,
+    ) {
+        var pendingKey: String? = null
+        var eventLog: String? = null
+    }
 
     /** Publish the collector semantic state before SystemUI applies its native image. */
     private fun deliverMobileSignalBeforeProceed(
-        image: ImageView?,
-        classId: Int,
-        value: Any?,
+        receipt: MobileSignalReceipt,
         sinks: Sinks,
         diagnostics: Diagnostics,
-        receipt: MobileSignalReceipt,
     ) {
-        val source = image ?: return
+        val source = receipt.image ?: return
+        val classId = receipt.classId
+        val value = receipt.value
         val subscriptionId = findMobileSubscription(source) ?: return
         val valueText = when (value) {
             is Number -> value.toLong().toString()
@@ -1800,10 +1804,10 @@ internal object SysUiNetworkSource {
                 return@Hooker result
             }
 
-        val receipt = MobileSignalReceipt()
+        val receipt = MobileSignalReceipt(image, classId, value)
         var callbackError: Throwable? = null
         try {
-            deliverMobileSignalBeforeProceed(image, classId, value, sinks, diagnostics, receipt)
+            deliverMobileSignalBeforeProceed(receipt, sinks, diagnostics)
         } catch (error: Throwable) {
             rethrowFatal(error)
             callbackError = error
