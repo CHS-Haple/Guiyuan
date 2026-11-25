@@ -196,11 +196,9 @@ private fun ColumnScope.BrandGuideIdentity(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             GuiyuanAnimatedIdentityMark(
                 markSize = 100.dp,
-                wave = MarkWaveSpec(
-                    animation = motion.wave,
-                    phase = motion.phase,
-                    onRelease = { motion.phase = it },
-                ),
+                wave = motion.wave,
+                wavePhase = motion.phase,
+                onWaveRelease = { motion.phase = it },
                 interactive = true,
                 active = resumed,
                 effectModifier = materials.glass.mark,
