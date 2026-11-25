@@ -52,7 +52,7 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
     val enabled = state.enabled
     val weight = state.weight
     if (search.filtering) {
-        Section(R.string.section_network) {
+        Section(R.string.section_network, key = "features-network-wifi-airplane") {
             networkSizesAndWeights(search, visual, visualRepo, enabled)
             networkMobileWeight(search, visual, visualRepo, weight, weightDialog)
             networkFollowBatteryColor(search, visual, visualRepo, enabled)
@@ -60,16 +60,16 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
         return
     }
 
-    Section(R.string.section_network) {
+    Section(R.string.section_network, key = "features-network-wifi-airplane") {
         networkWifiAirplaneControls(search, visual, visualRepo, enabled)
     }
-    Section {
+    Section(key = "features-network-sim-type") {
         networkSimTypeControls(search, visual, visualRepo, enabled)
     }
-    Section {
+    Section(key = "features-network-mobile-weight") {
         networkMobileWeight(search, visual, visualRepo, weight, weightDialog)
     }
-    Section {
+    Section(key = "features-network-battery-color") {
         networkFollowBatteryColor(search, visual, visualRepo, enabled)
     }
 }
