@@ -280,9 +280,11 @@ entrypoint.
   upstream one-pass fixed-fade shader (removing the split draw and
   translation), bounded collapse offset and progressive scrim. Retain
   measured native title/compact slots and existing backdrop ownership.
-  The shared GlassBottomSheet wrapper explicitly opts into progressive
-  blur because the new upstream default is false; its battery deck,
-  editor and agreement consumers already apply the supplied header padding.
+  The shared GlassBottomSheet wrapper uses the new upstream
+  non-overlay default. The battery overview and long-form Terms/Privacy
+  readers explicitly opt into progressive blur and apply header padding
+  to their scroll content and native scrollbar. The battery detail editor
+  uses the normal non-overlay header and its supplied zero header padding.
   No additional local Sheet effect is needed. The new GlassScrollableTabRow
   is an independent scrolling pill row, not a replacement for fixed
   segmented tabs. No current caller warrants migration; the segmented
