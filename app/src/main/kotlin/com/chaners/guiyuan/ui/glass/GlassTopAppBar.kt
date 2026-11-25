@@ -300,9 +300,8 @@ fun GlassTopAppBar(
     val actionHeight = if (actionSize.height > 0) with(density) { actionSize.height.toDp() } else buttonSize
     // The native title clips only title layers, but compact mode
     // still delegates to SmallTopAppBar, which clips protruding glass controls.
-    val useUnclippedSlots = compact || !NativeTitleLocalClip
-    val overlayNavigation = unclippedNavigationIcon && useUnclippedSlots
-    val overlayActions = unclippedActions && useUnclippedSlots
+    val overlayNavigation = unclippedNavigationIcon && compact
+    val overlayActions = unclippedActions && compact
 
     Box(modifier = modifier.onGloballyPositioned { barOrigin = it.positionInRoot() }) {
         if (progressiveBackdrop != null && rawBackdrop != null) {
