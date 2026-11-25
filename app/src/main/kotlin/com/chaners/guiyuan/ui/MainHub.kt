@@ -207,28 +207,22 @@ internal fun MainHub(
             Modifier
         }
     val liquidBottomPadding = liquidNavBottomPadding()
+    val bottomNavigation = HubBottomNavigation(
+        appearance, dark, items, pageSelection, navigationAction, actionControls,
+    )
     Scaffold(
         // This Scaffold owns the bottom bar, so it must also position the snackbar.
         snackbarHost = { SnackbarHost(state = featureSnackbarState) },
         bottomBar = {
             when {
                 useGlassRail || useNativeRail -> Unit
-                glassNavigation && navBackdrop != null -> HubGlassBottomBar(
-                    appearance, dark, items, pageSelection, navBackdrop, navigationAction, actionControls,
-                )
+                glassNavigation && navBackdrop != null -> HubGlassBottomBar(bottomNavigation, navBackdrop)
                 // Glass without a usable shader falls back to native MIUIX.
-                (glassNavigation && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(
-                    appearance, items, pageSelection, glassNavigation,
-                )
+                (glassNavigation && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(bottomNavigation, glassNavigation)
 
-                liquidBackdrop != null -> HubLiquidBottomBar(
-                    appearance, dark, items, pageSelection, liquidBackdrop, navigationAction, actionControls,
-                    liquidBottomPadding,
-                )
+                liquidBackdrop != null -> HubLiquidBottomBar(bottomNavigation, liquidBackdrop, liquidBottomPadding)
 
-                else -> HubFloatingBottomBar(
-                    appearance, items, pageSelection, navigationBarModifier, navBackdrop,
-                )
+                else -> HubFloatingBottomBar(bottomNavigation, navigationBarModifier, navBackdrop)
             }
         },
     ) { innerPadding ->
