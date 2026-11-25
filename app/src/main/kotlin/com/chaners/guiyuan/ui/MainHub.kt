@@ -22,16 +22,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.offset
+import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.NavStyle
@@ -65,7 +65,6 @@ import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.roundToInt
 
 private const val TopLevelPageCount = 3
 
@@ -82,10 +81,8 @@ internal fun MainHub(
     val pagerState = rememberPagerState(pageCount = { TopLevelPageCount })
     val featureSnackbarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val pageSelection = remember(pagerState, scope) { HubPagerSelection(pagerState, scope) }
     // One search owner for both the Features page and its optional OS4 navigation action.
     val featureSearch = rememberPageSearch()
-    LaunchedEffect(pagerState.currentPage) { pageSelection.syncActualPage() }
     val context = LocalContext.current
     val restartDialog = remember { RestartScopeDialogState() }
     val restartState by ScopeRestart.state.collectAsState()
@@ -149,6 +146,12 @@ internal fun MainHub(
         safePadding = railSafePadding,
         direction = LocalLayoutDirection.current,
     )
+    val railState = rememberGlassNavigationRailState()
+    val snapPageTransitions = rememberUpdatedState(useGlassRail && railState.expanded)
+    val pageSelection = remember(pagerState, scope) {
+        HubPagerSelection(pagerState, scope) { snapPageTransitions.value }
+    }
+    LaunchedEffect(pagerState.currentPage) { pageSelection.syncActualPage() }
     val actionInRail = hasRailActionSlot(appearance, useGlassRail)
     val actionInBottomNav = hasNavigationActionSlot(
         appearance = appearance,
@@ -174,7 +177,6 @@ internal fun MainHub(
         featureSearch::open,
     )
     val nativeRailState = rememberNavigationRailState()
-    val railState = rememberGlassNavigationRailState()
     val railProgress = remember(useGlassRail, railState) {
         { if (useGlassRail) railState.progress else 1f }
     }
@@ -262,24 +264,9 @@ internal fun MainHub(
                         },
                     ),
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize().then(
-                    if (useGlassRail) {
-                        Modifier.layout { measurable, constraints ->
-                            val start = (railContentWidth.toPx() * railState.progress)
-                                .roundToInt().coerceIn(0, constraints.maxWidth)
-                            val page = measurable.measure(constraints.offset(horizontal = -start))
-                            layout(constraints.maxWidth, page.height) {
-                                page.placeRelative(start, 0)
-                            }
-                        }
-                    } else {
-                        Modifier
-                    },
-                ),
-            ) {
-            CompositionLocalProvider(LocalGlassRailProgress provides railProgress) {
             TopLevelPager(
+                railWidth = if (useGlassRail) railContentWidth else 0.dp,
+                railProgress = railProgress,
                 bindings = TopLevelPagerBindings(
                     scope = TopLevelPagerScope(
                         pagerState = pagerState,
@@ -328,8 +315,6 @@ internal fun MainHub(
                     ),
                 ),
             )
-            }
-            }
         }
         // The rail is not recorded into the backdrop it samples.
         if (useGlassRail) {

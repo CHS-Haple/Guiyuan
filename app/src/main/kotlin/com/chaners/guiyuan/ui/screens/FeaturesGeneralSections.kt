@@ -17,8 +17,8 @@ internal fun LazyListScope.featureDisplaySection(
     visual: VisualCfg,
     visualRepo: VisualRepo,
 ) {
-    Section(R.string.section_display_transition, key = "features-display-transition") {
-        if (search.matches(R.string.keyguard_combined_status_title)) {
+    GroupedPreferenceSection(R.string.section_display_transition, "features-display-transition", buildList {
+        if (search.matches(R.string.keyguard_combined_status_title)) add(PreferenceCardItem("keyguard_combined_status_title") {
             SwitchPreference(
                 title = stringResource(R.string.keyguard_combined_status_title),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_lock, featureCfg.enabled) },
@@ -27,8 +27,8 @@ internal fun LazyListScope.featureDisplaySection(
                 enabled = featureCfg.enabled,
                 onCheckedChange = featureRepo::setKeyguard,
             )
-        }
-        if (search.matches(R.string.aod_combined_status_title)) {
+        })
+        if (search.matches(R.string.aod_combined_status_title)) add(PreferenceCardItem("aod_combined_status_title") {
             SwitchPreference(
                 title = stringResource(R.string.aod_combined_status_title),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_bedtime, featureCfg.enabled) },
@@ -37,8 +37,8 @@ internal fun LazyListScope.featureDisplaySection(
                 enabled = featureCfg.enabled,
                 onCheckedChange = featureRepo::setAod,
             )
-        }
-        if (search.matches(R.string.control_center_tint_transition)) {
+        })
+        if (search.matches(R.string.control_center_tint_transition)) add(PreferenceCardItem("control_center_tint_transition") {
             SwitchPreference(
                 title = stringResource(R.string.control_center_tint_transition),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_contrast, featureCfg.enabled) },
@@ -47,8 +47,8 @@ internal fun LazyListScope.featureDisplaySection(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setCcTintTransition,
             )
-        }
-        if (search.matches(R.string.battery_fill_follow_retract)) {
+        })
+        if (search.matches(R.string.battery_fill_follow_retract)) add(PreferenceCardItem("battery_fill_follow_retract") {
             SwitchPreference(
                 title = stringResource(R.string.battery_fill_follow_retract),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_donut_large, featureCfg.enabled) },
@@ -57,8 +57,8 @@ internal fun LazyListScope.featureDisplaySection(
                 enabled = featureCfg.enabled,
                 onCheckedChange = visualRepo::setFillFollowsRetract,
             )
-        }
-    }
+        })
+    })
 }
 
 internal fun LazyListScope.featureManagementSection(
@@ -68,8 +68,8 @@ internal fun LazyListScope.featureManagementSection(
     onImport: () -> Unit,
     onReset: () -> Unit,
 ) {
-    Section(R.string.section_management, key = "features-management") {
-        if (search.matches(R.string.config_backup_title)) {
+    GroupedPreferenceSection(R.string.section_management, "features-management", buildList {
+        if (search.matches(R.string.config_backup_title)) add(PreferenceCardItem("config_backup_title") {
             BasicComponent(
                 title = stringResource(R.string.config_backup_title),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_save) },
@@ -77,8 +77,8 @@ internal fun LazyListScope.featureManagementSection(
                 enabled = !ioBusy,
                 onClick = onExport,
             )
-        }
-        if (search.matches(R.string.config_restore_title)) {
+        })
+        if (search.matches(R.string.config_restore_title)) add(PreferenceCardItem("config_restore_title") {
             BasicComponent(
                 title = stringResource(R.string.config_restore_title),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_file_open) },
@@ -86,14 +86,14 @@ internal fun LazyListScope.featureManagementSection(
                 enabled = !ioBusy,
                 onClick = onImport,
             )
-        }
-        if (search.matches(R.string.restore_feature_defaults)) {
+        })
+        if (search.matches(R.string.restore_feature_defaults)) add(PreferenceCardItem("restore_feature_defaults") {
             BasicComponent(
                 title = stringResource(R.string.restore_feature_defaults),
                 startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_settings_backup_restore) },
                 summary = stringResource(R.string.restore_feature_defaults_summary),
                 onClick = onReset,
             )
-        }
-    }
+        })
+    })
 }
