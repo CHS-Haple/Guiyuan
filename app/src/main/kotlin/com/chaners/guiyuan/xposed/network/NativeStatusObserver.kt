@@ -599,26 +599,12 @@ internal object NativeStatusObserver {
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
             if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
-            findAppliedTint(child)?.let { return it }
+            NativeStatusTintResolver.findAppliedTint(child)?.let { return it }
         }
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
             if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
             resolveStaticDrawableColor(child)?.let { return it }
-        }
-        return null
-    }
-
-    private fun findAppliedTint(view: View): Int? {
-        if (view is ImageView) {
-            view.imageTintList
-                ?.defaultColor
-                ?.takeIf { color -> (color ushr 24) != 0 }
-                ?.let { return it }
-        }
-        val group = view as? ViewGroup ?: return null
-        for (index in 0 until group.childCount) {
-            findAppliedTint(group.getChildAt(index))?.let { return it }
         }
         return null
     }
