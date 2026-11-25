@@ -31,10 +31,29 @@ internal fun LazyListScope.featureLayoutSection(
         R.string.both_sides_activity_vertical_offset,
     )
     val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
+    if (searching) {
+        Section(R.string.section_layout_size) {
+            featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
+            featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
+            featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
+            featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
+        }
+        return
+    }
+
     Section(R.string.section_layout_size) {
         featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
-        featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
+    }
+    val arrangement = if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
+    if (arrangement != SignalDotArrangement.BOTH_SIDES) {
+        Section {
+            featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
+        }
+    }
+    Section {
         featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
+    }
+    Section {
         featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
     }
 }
