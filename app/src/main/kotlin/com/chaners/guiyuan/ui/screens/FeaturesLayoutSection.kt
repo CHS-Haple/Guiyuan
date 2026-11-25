@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
@@ -15,8 +16,7 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
-@Composable
-internal fun ColumnScope.featureLayoutSection(
+internal fun LazyListScope.featureLayoutSection(
     search: PageSearch,
     visual: VisualCfg,
     visualRepo: VisualRepo,
@@ -31,7 +31,7 @@ internal fun ColumnScope.featureLayoutSection(
         R.string.both_sides_activity_vertical_offset,
     )
     val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
-    PreferenceSection(R.string.section_layout_size) {
+    Section(R.string.section_layout_size) {
         featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
         featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
         featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
