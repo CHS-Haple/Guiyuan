@@ -514,21 +514,20 @@ internal object SysUiNetworkSource {
     ): HookHandle? {
         // The exact HyperOS collector writes its original activity drawable ID to the View tag.
         return runCatching {
-                val collector = Class.forName(WIFI_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
-                val activityField = collector.getDeclaredField("\$wifiActivity").apply { isAccessible = true }
-                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
-                module.hook(method)
-                    .setId(WIFI_ACTIVITY_HOOK_ID)
-                    .intercept(
-                        wifiActivityHooker(
-                            active = active,
-                            activityField = activityField,
-                            sinks = sinks,
-                            diagnostics = diagnostics,
-                        ),
-                    )
+            val collector = Class.forName(WIFI_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+            val activityField = collector.getDeclaredField("\$wifiActivity").apply { isAccessible = true }
+            val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
+            module.hook(method)
+                .setId(WIFI_ACTIVITY_HOOK_ID)
+                .intercept(
+                    wifiActivityHooker(
+                        active = active,
+                        activityField = activityField,
+                        sinks = sinks,
+                        diagnostics = diagnostics,
+                    ),
+                )
         }.onFailure(::rethrowFatal).getOrNull()
-
     }
 
     @Suppress("TooGenericExceptionCaught")
