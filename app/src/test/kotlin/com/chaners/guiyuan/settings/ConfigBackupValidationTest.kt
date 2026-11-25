@@ -68,7 +68,10 @@ class ConfigBackupValidationTest {
         }
         ConfigBackupGuards.checkJsonStructure("""{"items":[{"name":"ok"}]}""", Json)
     }
+}
 
+// Archive content and import ownership are separate from JSON structure validation.
+class ConfigBackupImportBoundaryTest {
     @Test fun invalidUtf8AndNoncanonicalSchemeKeysAreRejected() {
         assertThrows(Exception::class.java) {
             ConfigBackupFormat.decode(byteArrayOf(0xC3.toByte(), 0x28))
