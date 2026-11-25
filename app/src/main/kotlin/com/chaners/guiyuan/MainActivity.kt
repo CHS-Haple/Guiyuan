@@ -121,25 +121,10 @@ class MainActivity : ComponentActivity() {
                 dark = dark,
                 lang = lang,
                 iconHidden = iconHidden,
-                sandbox = AppSandbox(
-                    onPreviewThemeChange = { previewBarDark = it },
-                    sandboxActive = sandboxActive,
-                    onSandboxToggle = { enabled, state ->
-                        val app = application as GyApplication
-                        if (enabled) app.startSandbox(state) else app.stopSandbox()
-                    },
-                    onSandboxUpdate = { (application as GyApplication).updateSandbox(it) },
-                    onSandboxStop = { (application as GyApplication).stopSandbox() },
-                ),
-                actions = AppSettingsActions(
-                    onHotReload = {
-                        (application as GyApplication).hotReloadSysUi()
-                    },
-                    themeActions = appearanceThemeActions(repo, scope),
-                    visualActions = appearanceVisualActions(repo, scope),
-                    onSwipeBackChange = { enabled ->
-                        scope.launch { repo.setSwipeBack(enabled) }
-                    },
+                sandbox = sandboxActions(sandboxActive) { previewBarDark = it },
+                actions = appSettingsActions(
+                    repo = repo,
+                    scope = scope,
                     onLangChange = { language ->
                         if (language != lang) {
                             lang = language
@@ -154,6 +139,36 @@ class MainActivity : ComponentActivity() {
             )
         }
     }
+
+    /** Keep the application as the sole sandbox-lease writer. */
+    private fun sandboxActions(
+        active: Boolean,
+        onPreviewThemeChange: (Boolean?) -> Unit,
+    ): AppSandbox = AppSandbox(
+        onPreviewThemeChange = onPreviewThemeChange,
+        sandboxActive = active,
+        onSandboxToggle = { enabled, state ->
+            val app = application as GyApplication
+            if (enabled) app.startSandbox(state) else app.stopSandbox()
+        },
+        onSandboxUpdate = { (application as GyApplication).updateSandbox(it) },
+        onSandboxStop = { (application as GyApplication).stopSandbox() },
+    )
+
+    /** Appearance settings and platform state retain their existing writers. */
+    private fun appSettingsActions(
+        repo: AppearanceRepo,
+        scope: CoroutineScope,
+        onLangChange: (AppLang) -> Unit,
+        onIconHiddenChange: (Boolean) -> Unit,
+    ): AppSettingsActions = AppSettingsActions(
+        onHotReload = { (application as GyApplication).hotReloadSysUi() },
+        themeActions = appearanceThemeActions(repo, scope),
+        visualActions = appearanceVisualActions(repo, scope),
+        onSwipeBackChange = { enabled -> scope.launch { repo.setSwipeBack(enabled) } },
+        onLangChange = onLangChange,
+        onIconHiddenChange = onIconHiddenChange,
+    )
 
     private fun updateBarIcons(dark: Boolean) {
         val lightBarsMask =
