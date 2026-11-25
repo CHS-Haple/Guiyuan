@@ -30,6 +30,7 @@ internal fun UiOverlayBottomSheet(
         show = show,
         modifier = modifier,
         title = title,
+        progressiveBlur = true,
         containerColor = backgroundColor,
         insideMargin = insideMargin,
         startAction = startAction,
