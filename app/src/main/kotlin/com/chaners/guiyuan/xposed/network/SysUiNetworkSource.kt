@@ -263,6 +263,12 @@ internal object SysUiNetworkSource {
         )
     }
 
+    private class EmitterHooks(
+        val emitMethod: Method,
+        val imageField: Field,
+        val classIdField: Field,
+    )
+
     private class WifiHooks(
         val wifiBindMethod: Method,
         val wifiIconEmitMethod: Method,
@@ -306,6 +312,31 @@ internal object SysUiNetworkSource {
             atStage("wifi.resolve.iconResourceIdAccessor") {
                 resolveIconResourceIdAccessor(iconResourceClass)
             }
+        val emitter = resolveWifiEmitter(classLoader)
+        val wifiIconGetter =
+            wifiLocationVmClass.methods
+                .firstOrNull { method ->
+                    method.name == "getWifiIcon" &&
+                        method.parameterCount == 0
+                }
+                ?.apply { isAccessible = true }
+        val seedContract =
+            WifiSeedContract(
+                wifiIconGetter = wifiIconGetter,
+                wifiVisibleIconField = wifiVisibleIconField,
+                iconResourceIdAccessor = iconResourceIdAccessor,
+            )
+        return WifiHooks(
+            wifiBindMethod = wifiBindMethod,
+            wifiIconEmitMethod = emitter.emitMethod,
+            wifiIconImageField = emitter.imageField,
+            wifiIconClassIdField = emitter.classIdField,
+            seedContract = seedContract,
+        )
+    }
+
+    // Source and emitter contracts resolve independently; preserve stage labels.
+    private fun resolveWifiEmitter(classLoader: ClassLoader): EmitterHooks {
         val wifiIconEmitterClass =
             atStage("wifi.resolve.iconEmitterClass") {
                 Class.forName(WIFI_ICON_EMITTER_CLASS_NAME, false, classLoader)
@@ -329,26 +360,7 @@ internal object SysUiNetworkSource {
                     .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
                     .apply { isAccessible = true }
             }
-        val wifiIconGetter =
-            wifiLocationVmClass.methods
-                .firstOrNull { method ->
-                    method.name == "getWifiIcon" &&
-                        method.parameterCount == 0
-                }
-                ?.apply { isAccessible = true }
-        val seedContract =
-            WifiSeedContract(
-                wifiIconGetter = wifiIconGetter,
-                wifiVisibleIconField = wifiVisibleIconField,
-                iconResourceIdAccessor = iconResourceIdAccessor,
-            )
-        return WifiHooks(
-            wifiBindMethod = wifiBindMethod,
-            wifiIconEmitMethod = wifiIconEmitMethod,
-            wifiIconImageField = wifiIconImageField,
-            wifiIconClassIdField = wifiIconClassIdField,
-            seedContract = seedContract,
-        )
+        return EmitterHooks(wifiIconEmitMethod, wifiIconImageField, wifiIconClassIdField)
     }
 
     private class MobileHooks(
@@ -386,6 +398,23 @@ internal object SysUiNetworkSource {
                     mobileLoggerClass,
                 )
             }
+        val emitter = resolveMobileEmitter(classLoader)
+        val subscriptionIdMethod =
+            atStage("mobile.resolve.subscriptionIdMethod") {
+                mobileLocationVmClass
+                    .getDeclaredMethod("getSubscriptionId")
+                    .apply { isAccessible = true }
+            }
+        return MobileHooks(
+            mobileBindMethod = mobileBindMethod,
+            mobileSignalEmitMethod = emitter.emitMethod,
+            mobileImageField = emitter.imageField,
+            mobileClassIdField = emitter.classIdField,
+            subscriptionIdMethod = subscriptionIdMethod,
+        )
+    }
+
+    private fun resolveMobileEmitter(classLoader: ClassLoader): EmitterHooks {
         val mobileSignalEmitterClass =
             atStage("mobile.resolve.signalEmitterClass") {
                 Class.forName(MOBILE_SIGNAL_EMITTER_CLASS_NAME, false, classLoader)
@@ -409,19 +438,7 @@ internal object SysUiNetworkSource {
                     .getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME)
                     .apply { isAccessible = true }
             }
-        val subscriptionIdMethod =
-            atStage("mobile.resolve.subscriptionIdMethod") {
-                mobileLocationVmClass
-                    .getDeclaredMethod("getSubscriptionId")
-                    .apply { isAccessible = true }
-            }
-        return MobileHooks(
-            mobileBindMethod = mobileBindMethod,
-            mobileSignalEmitMethod = mobileSignalEmitMethod,
-            mobileImageField = mobileImageField,
-            mobileClassIdField = mobileClassIdField,
-            subscriptionIdMethod = subscriptionIdMethod,
-        )
+        return EmitterHooks(mobileSignalEmitMethod, mobileImageField, mobileClassIdField)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -469,22 +486,8 @@ internal object SysUiNetworkSource {
                         )
                 }
 
-            // The exact HyperOS collector writes its original activity drawable ID to the View tag.
-            runCatching {
-                val collector = Class.forName(WIFI_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
-                val activityField = collector.getDeclaredField("\$wifiActivity").apply { isAccessible = true }
-                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
-                module.hook(method)
-                    .setId(WIFI_ACTIVITY_HOOK_ID)
-                    .intercept(
-                        wifiActivityHooker(
-                            active = active,
-                            activityField = activityField,
-                            sinks = sinks,
-                            diagnostics = diagnostics,
-                        ),
-                    )
-            }.onSuccess { created += it }.onFailure(::rethrowFatal)
+            installOptionalWifiActivity(module, classLoader, active, sinks, diagnostics)
+                ?.let { created += it }
 
             active.set(true)
             BranchInstallResult(
@@ -499,6 +502,34 @@ internal object SysUiNetworkSource {
         }
     }
 
+
+    // This third Wi-Fi activity signal is optional: a missing OEM collector
+    // must not roll back the mandatory bind and icon delivery Hooks.
+    private fun installOptionalWifiActivity(
+        module: XposedModule,
+        classLoader: ClassLoader,
+        active: AtomicBoolean,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+    ): HookHandle? {
+        // The exact HyperOS collector writes its original activity drawable ID to the View tag.
+        return runCatching {
+                val collector = Class.forName(WIFI_ACTIVITY_COLLECTOR_CLASS_NAME, false, classLoader)
+                val activityField = collector.getDeclaredField("\$wifiActivity").apply { isAccessible = true }
+                val method = collector.getDeclaredMethod("invokeSuspend", Any::class.java)
+                module.hook(method)
+                    .setId(WIFI_ACTIVITY_HOOK_ID)
+                    .intercept(
+                        wifiActivityHooker(
+                            active = active,
+                            activityField = activityField,
+                            sinks = sinks,
+                            diagnostics = diagnostics,
+                        ),
+                    )
+        }.onFailure(::rethrowFatal).getOrNull()
+
+    }
 
     @Suppress("TooGenericExceptionCaught")
     private fun installMobile(
