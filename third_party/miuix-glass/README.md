@@ -7,17 +7,15 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The source and Maven graph target MIUIX snapshot
-  `0.9.5-a09d4f32-SNAPSHOT` at full revision
-  `a09d4f3268ece3fc262d0bba433a3941a312bb9a`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910324)
-  succeeded; the exact-source
-  [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910306)
-  passed all four jobs. This is a pre-release snapshot, not stable v0.9.5.
-  Keep source and Maven revisions identical; Guiyuan source/Maven builds
-  and focused device validation remain required. The prior `07d48590`
-  baseline passed focused maintainer acceptance in signed B1952
-  ([#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866)).
+- This work branch proposes the source and Maven graph
+  `0.9.5-04e9b818-SNAPSHOT` at full revision
+  `04e9b8188a1226c7fff84d5690895849e1fec568`.
+  The candidate is not accepted until exact-coordinate Maven compilation,
+  source-matched CI and focused device acceptance pass. The previous
+  `a09d4f32` pin had a successful
+  [publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910324)
+  and [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910306).
+  Both are pre-release revisions, not stable v0.9.5.
   Guiyuan-specific Back, long-press, touch-extension and title
   clip boundaries remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
@@ -273,6 +271,20 @@ entrypoint.
   The updated top-bar BandOverhang and GlassCard, GlassTextField and
   GlassDialogButton defaults come from the dependency. Predictive Back
   reset and upward overscroll surface fixes are upstream-owned.
+
+- **Adopt 04e9b818 candidate:** the local GlassTopAppBar follows the
+  upstream one-pass fixed-fade shader (removing the split draw and
+  translation), bounded collapse offset and progressive scrim. Retain
+  measured native title/compact slots and existing backdrop ownership.
+  The shared GlassBottomSheet wrapper explicitly opts into progressive
+  blur because the new upstream default is false; its battery deck,
+  editor and agreement consumers already apply the supplied header padding.
+  No additional local Sheet effect is needed. The new GlassScrollableTabRow
+  is an independent scrolling pill row, not a replacement for fixed
+  segmented tabs. No current caller warrants migration; the segmented
+  recognizer still checks X touch slop alone, so its axis adapter remains.
+  Updated baseline profiles are consumed from the upstream graph, not
+  copied from the example.
 
 ### Final local-boundary review
 
