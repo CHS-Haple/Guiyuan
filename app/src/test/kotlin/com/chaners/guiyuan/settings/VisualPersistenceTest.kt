@@ -99,6 +99,7 @@ class VisualPersistenceTest {
         resetVisualPreferences(prefs, BatteryColorSchemeLibrary())
         assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
         assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 0))
         assertTrue(prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false))
 
         prefs.edit()
@@ -211,7 +212,7 @@ class VisualPersistenceTest {
             layoutOverride = ContentLayout.BATTERY_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
 
-        // The single-row arrangement controls the single-mode slider's offset bank.
+        // Both SIM modes and both arrangements now share one offset within this layout.
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
             .putString(
                 visualProfileKey(ContentLayout.BATTERY_CENTER, SINGLE_ROW_DOT_STYLE_KEY),
@@ -230,10 +231,29 @@ class VisualPersistenceTest {
             .apply()
         prefs.writeSignalDotOffsetY(7f)
         assertEquals(7f, prefs.readVisualCfg().activeSignalDotOffsetY, 0f)
-        assertEquals(-6f, prefs.readVisualCfg(
+        assertEquals(4f, prefs.readVisualCfg(
             dual = true,
             layoutOverride = ContentLayout.BATTERY_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
+    }
+
+    @Test
+    fun bothSidesMigratesTheSingleRowOffsetWithoutMovingFixedDualDots() {
+        val prefs = VisualTestPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        prefs.edit().putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putString(visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY), SignalDotArrangement.BOTH_SIDES.persistedValue)
+            .putString(visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY), SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putFloat(visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY), 3f)
+            .putFloat(visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY), -4f)
+            .apply()
+        migrateMobileSignalDotOffsetIfNeeded(prefs)
+        val visual = prefs.readVisualCfg(dual = true)
+        assertEquals(0f, visual.activeSignalDotOffsetY, 0f)
+        assertEquals(-4f, visual.singleRowDotOffsetY, 0f)
+        assertEquals(-4f, visual.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).activeSignalDotOffsetY, 0f)
     }
 
     @Test
