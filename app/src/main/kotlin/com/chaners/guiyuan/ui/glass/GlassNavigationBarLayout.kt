@@ -87,29 +87,29 @@ private fun MeasureScope.measureGlassNavigationGroup(
     spacing: Dp,
     fraction: Float,
 ): MeasureResult {
-        val action = measurables.getOrNull(1)?.measure(constraints.copy(minWidth = 0, minHeight = 0))
-        val actionWidth = ((action?.width ?: 0) * fraction).toInt()
-        val gap = if (action != null) {
-            (spacing.toPx() * fraction).toInt().coerceIn(0, (constraints.maxWidth - actionWidth).coerceAtLeast(0))
-        } else {
-            0
-        }
-        val bar = measurables[0].measure(
-            constraints.copy(
-                minWidth = (constraints.minWidth - actionWidth - gap).coerceAtLeast(0),
-                maxWidth = if (constraints.hasBoundedWidth) {
-                    (constraints.maxWidth - actionWidth - gap).coerceAtLeast(0)
-                } else {
-                    constraints.maxWidth
-                },
-            ),
-        )
-        val groupWidth = bar.width + gap + actionWidth
-        val width = constraints.constrainWidth(groupWidth)
-        val height = constraints.constrainHeight(maxOf(bar.height, action?.height ?: 0))
-        layout(width, height) {
-            val start = (width - groupWidth) / 2
-            bar.placeRelative(start, (height - bar.height) / 2)
-            action?.placeRelative(start + bar.width + gap + (actionWidth - action.width) / 2, (height - action.height) / 2)
-        }
+    val action = measurables.getOrNull(1)?.measure(constraints.copy(minWidth = 0, minHeight = 0))
+    val actionWidth = ((action?.width ?: 0) * fraction).toInt()
+    val gap = if (action != null) {
+        (spacing.toPx() * fraction).toInt().coerceIn(0, (constraints.maxWidth - actionWidth).coerceAtLeast(0))
+    } else {
+        0
+    }
+    val bar = measurables[0].measure(
+        constraints.copy(
+            minWidth = (constraints.minWidth - actionWidth - gap).coerceAtLeast(0),
+            maxWidth = if (constraints.hasBoundedWidth) {
+                (constraints.maxWidth - actionWidth - gap).coerceAtLeast(0)
+            } else {
+                constraints.maxWidth
+            },
+        ),
+    )
+    val groupWidth = bar.width + gap + actionWidth
+    val width = constraints.constrainWidth(groupWidth)
+    val height = constraints.constrainHeight(maxOf(bar.height, action?.height ?: 0))
+    layout(width, height) {
+        val start = (width - groupWidth) / 2
+        bar.placeRelative(start, (height - bar.height) / 2)
+        action?.placeRelative(start + bar.width + gap + (actionWidth - action.width) / 2, (height - action.height) / 2)
+    }
 }
