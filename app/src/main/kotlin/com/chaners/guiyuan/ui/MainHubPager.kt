@@ -149,10 +149,11 @@ private fun HubRailPage(
 ) {
     val pageProgress = remember(railProgress, hidden) {
         var last: Float? = null
-        return@remember {
+        val readProgress: () -> Float = {
             val held = last
             if (hidden.value && held != null) held else railProgress().also { last = it }
         }
+        readProgress
     }
     val clearance = if (railWidth > 0.dp) {
         Modifier.layout { measurable, constraints ->
