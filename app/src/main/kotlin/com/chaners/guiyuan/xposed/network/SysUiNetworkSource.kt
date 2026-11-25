@@ -1578,6 +1578,64 @@ internal object SysUiNetworkSource {
 
     // Recoverable OEM argument-read failures proceed natively; VM fatals rethrow.
     @Suppress("TooGenericExceptionCaught")
+    /** A single native bind owns a reversible cached-subscription receipt. */
+    private class MobileBindReceipt(
+        var pending: MobileBinding? = null,
+        var previous: MobileBinding? = null,
+        var bindingChanged: Boolean = false,
+        var bindingLog: String? = null,
+    )
+
+    /** Record the selected SIM before native bind emits, without owning its ViewModel. */
+    private fun prepareMobileBindingBeforeProceed(
+        boundRoot: ViewGroup?,
+        locationViewModel: Any?,
+        iconViewModel: Any?,
+        subscriptionIdMethod: Method,
+        diagnostics: Diagnostics,
+        receipt: MobileBindReceipt,
+    ) {
+        val nativeRoot = boundRoot ?: return
+        val subscriptionId = optionalNativeRead {
+            (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
+        } ?: -1
+        val nextId = subscriptionId.takeIf { it >= 0 }
+        // An invalid ID must mask older binds, including across Hot Reload.
+        val candidate = MobileBinding(nextId)
+        receipt.pending = candidate
+        receipt.previous = synchronized(this) { mobileRoots.put(nativeRoot, candidate) }
+        receipt.bindingChanged = receipt.previous?.subscriptionId != nextId
+        if (receipt.bindingChanged && diagnostics.onEvent != null && diagnostics.isDetailedDiagnosticsEnabled()) {
+            receipt.bindingLog = optionalNativeRead {
+                "networkPipeline mobile bound " +
+                    "stage=beforeProceed " +
+                    "root=" + nativeRoot.javaClass.simpleName +
+                    ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(nativeRoot) +
+                    " locationVm=" + locationViewModel?.javaClass?.simpleName +
+                    " subId=" + subscriptionId +
+                    " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
+                    PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(nativeRoot) +
+                    LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(nativeRoot)
+            }
+        }
+    }
+
+    /** A native bind may replace children without changing its subscription identity. */
+    private fun notifyMobilePresentationAfterBind(
+        boundRoot: ViewGroup?,
+        onPresentationChanged: (() -> Unit)?,
+        priorFailure: Throwable?,
+    ): Throwable? {
+        if (boundRoot == null) return priorFailure
+        return try {
+            onPresentationChanged?.invoke()
+            priorFailure
+        } catch (error: Throwable) {
+            rethrowFatal(error)
+            priorFailure ?: error
+        }
+    }
+
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
@@ -1587,7 +1645,8 @@ internal object SysUiNetworkSource {
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
         val onPresentationChanged = sinks.onPresentationChanged
-        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        val onRuntimeFailure = diagnostics.onRuntimeFailure
+        val onEvent = diagnostics.onEvent
         val root: ViewGroup?
         val locationViewModel: Any?
         val iconViewModel: Any?
@@ -1605,37 +1664,12 @@ internal object SysUiNetworkSource {
             root?.takeIf {
                 locationViewModel?.javaClass?.name == HOME_MOBILE_VIEW_MODEL_CLASS_NAME
             }
-        var bindingLog: String? = null
-        var bindingChanged = false
-        var pending: MobileBinding? = null
-        var previous: MobileBinding? = null
+        val receipt = MobileBindReceipt()
         var callbackError: Throwable? = null
-
         try {
-            if (boundRoot != null) {
-                val subscriptionId = optionalNativeRead {
-                    (subscriptionIdMethod.invoke(locationViewModel) as Number).toInt()
-                } ?: -1
-                val nextId = subscriptionId.takeIf { it >= 0 }
-                // An invalid ID must mask older binds, including across Hot Reload.
-                val candidate = MobileBinding(nextId)
-                pending = candidate
-                previous = synchronized(this) { mobileRoots.put(boundRoot, candidate) }
-                bindingChanged = previous?.subscriptionId != nextId
-                if (bindingChanged && onEvent != null && isDetailedDiagnosticsEnabled()) {
-                    bindingLog = optionalNativeRead {
-                        "networkPipeline mobile bound " +
-                            "stage=beforeProceed " +
-                            "root=" + boundRoot.javaClass.simpleName +
-                            ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(boundRoot) +
-                            " locationVm=" + locationViewModel?.javaClass?.simpleName +
-                            " subId=" + subscriptionId +
-                            " iconVm=" + (iconViewModel?.javaClass?.simpleName ?: "none") +
-                            PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(boundRoot) +
-                            LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(boundRoot)
-                    }
-                }
-            }
+            prepareMobileBindingBeforeProceed(
+                boundRoot, locationViewModel, iconViewModel, subscriptionIdMethod, diagnostics, receipt,
+            )
         } catch (error: Throwable) {
             rethrowFatal(error)
             callbackError = error
@@ -1645,21 +1679,14 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                rollbackPendingBinding(mobileRoots, boundRoot, pending, previous)
+                rollbackPendingBinding(mobileRoots, boundRoot, receipt.pending, receipt.previous)
                 throw error
             }
-        if (bindingChanged) {
-            optionalNativeRead { bindingLog?.let { onEvent?.invoke(it) } }
+        if (receipt.bindingChanged) {
+            optionalNativeRead { receipt.bindingLog?.let { onEvent?.invoke(it) } }
         }
         // A native binder can replace a child even if the SIM ID stays the same.
-        if (boundRoot != null) {
-            try {
-                onPresentationChanged?.invoke()
-            } catch (error: Throwable) {
-                rethrowFatal(error)
-                if (callbackError == null) callbackError = error
-            }
-        }
+        callbackError = notifyMobilePresentationAfterBind(boundRoot, onPresentationChanged, callbackError)
         callbackError?.let { error ->
             callbackFailed("mobile-bind", error, onRuntimeFailure)
         }
@@ -1677,6 +1704,66 @@ internal object SysUiNetworkSource {
     }
 
     @Suppress("TooGenericExceptionCaught")
+    /** A per-emission rollback key and optional diagnostic; never retained across callbacks. */
+    private class MobileSignalReceipt(
+        var pendingKey: String? = null,
+        var eventLog: String? = null,
+    )
+
+    /** Publish the collector semantic state before SystemUI applies its native image. */
+    private fun deliverMobileSignalBeforeProceed(
+        image: ImageView?,
+        classId: Int,
+        value: Any?,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+        receipt: MobileSignalReceipt,
+    ) {
+        val source = image ?: return
+        val subscriptionId = findMobileSubscription(source) ?: return
+        val valueText = when (value) {
+            is Number -> value.toLong().toString()
+            null -> "null"
+            else -> value.javaClass.simpleName
+        }
+        // A native icon view may be rebound to a different SIM.
+        val eventKey = "$"+"subscriptionId:$"+"classId:$"+"valueText"
+        val changed = synchronized(this) {
+            lastMobileEvents.put(source, eventKey) != eventKey
+        }
+        if (!changed) return
+        receipt.pendingKey = eventKey
+        val resourceId = (value as? Number)
+            ?.toInt()
+            ?.takeIf { it != 0 }
+        val resourceName =
+            if (classId == 0) resourceId?.let { id -> NetworkNativeEvidence.resourceName(source, id) }
+            else null
+        when (classId) {
+            0 ->
+                sinks.onMobileSignal(
+                    subscriptionId,
+                    SysUiSignalParser.mobile(resourceName),
+                )
+            1, 2 -> sinks.onPresentationChanged?.invoke()
+        }
+
+        if (diagnostics.onEvent != null && diagnostics.isDetailedDiagnosticsEnabled()) {
+            receipt.eventLog = optionalNativeRead {
+                "networkPipeline mobile iconEvent " +
+                    "phase=beforeProceed " +
+                    SUB_ID_LOG_FIELD + subscriptionId +
+                    " viewId=" + NativeStatusIdentity.resourceId(source) +
+                    " classId=" + classId +
+                    " value=" + valueText +
+                    " resource=" +
+                    (resourceName
+                        ?: resourceId?.let { id -> NetworkNativeEvidence.resourceName(source, id) }
+                        ?: "n/a")
+            }
+        }
+    }
+
     private fun mobileSignalHooker(
         active: AtomicBoolean,
         mobileImageField: Field,
@@ -1685,9 +1772,8 @@ internal object SysUiNetworkSource {
         diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
-        val onMobileSignal = sinks.onMobileSignal
-        val onPresentationChanged = sinks.onPresentationChanged
-        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        val onRuntimeFailure = diagnostics.onRuntimeFailure
+        val onEvent = diagnostics.onEvent
         val emitter =
             try {
                 chain.thisObject
@@ -1713,58 +1799,10 @@ internal object SysUiNetworkSource {
                 return@Hooker result
             }
 
-        var eventLog: String? = null
-        var pendingKey: String? = null
+        val receipt = MobileSignalReceipt()
         var callbackError: Throwable? = null
         try {
-            if (image != null) {
-                val subscriptionId = findMobileSubscription(image)
-                if (subscriptionId != null) {
-                    val valueText = when (value) {
-                        is Number -> value.toLong().toString()
-                        null -> "null"
-                        else -> value.javaClass.simpleName
-                    }
-                    // A native icon view may be rebound to a different SIM.
-                    val eventKey = "$subscriptionId:$classId:$valueText"
-                    val changed = synchronized(this) {
-                        lastMobileEvents.put(image, eventKey) != eventKey
-                    }
-
-                    if (changed) {
-                        pendingKey = eventKey
-                        val resourceId = (value as? Number)
-                            ?.toInt()
-                            ?.takeIf { it != 0 }
-                        val resourceName =
-                            if (classId == 0) resourceId?.let { id -> NetworkNativeEvidence.resourceName(image, id) }
-                            else null
-                        when (classId) {
-                            0 ->
-                                onMobileSignal(
-                                    subscriptionId,
-                                    SysUiSignalParser.mobile(resourceName),
-                                )
-                            1, 2 -> onPresentationChanged?.invoke()
-                        }
-
-                        if (onEvent != null && isDetailedDiagnosticsEnabled()) {
-                            eventLog = optionalNativeRead {
-                                "networkPipeline mobile iconEvent " +
-                                    "phase=beforeProceed " +
-                                    SUB_ID_LOG_FIELD + subscriptionId +
-                                    " viewId=" + NativeStatusIdentity.resourceId(image) +
-                                    " classId=" + classId +
-                                    " value=" + valueText +
-                                    " resource=" +
-                                    (resourceName
-                                        ?: resourceId?.let { id -> NetworkNativeEvidence.resourceName(image, id) }
-                                        ?: "n/a")
-                            }
-                        }
-                    }
-                }
-            }
+            deliverMobileSignalBeforeProceed(image, classId, value, sinks, diagnostics, receipt)
         } catch (error: Throwable) {
             rethrowFatal(error)
             callbackError = error
@@ -1774,14 +1812,14 @@ internal object SysUiNetworkSource {
             try {
                 chain.proceed()
             } catch (error: Throwable) {
-                rollbackPendingMobileEvent(image, pendingKey)
+                rollbackPendingMobileEvent(image, receipt.pendingKey)
                 throw error
             }
         callbackError?.let { error ->
             callbackFailed("mobile-signal", error, onRuntimeFailure)
-            rollbackPendingMobileEvent(image, pendingKey)
+            rollbackPendingMobileEvent(image, receipt.pendingKey)
         }
-        optionalNativeRead { eventLog?.let { onEvent?.invoke(it) } }
+        optionalNativeRead { receipt.eventLog?.let { onEvent?.invoke(it) } }
         result
     }
 
