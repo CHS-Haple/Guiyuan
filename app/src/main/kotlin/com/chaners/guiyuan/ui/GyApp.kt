@@ -3,6 +3,7 @@ package com.chaners.guiyuan.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,10 +112,10 @@ internal fun GyApp(
         var lastDiagSnapshot by remember { mutableStateOf<DiagSnapshot?>(null) }
         // A single writer owns the preview-only edit state; the display projection does not
         // overwrite the saved selection (notably SIM1-only with no selected network type).
-        var previewSelection by rememberSaveable(stateSaver = PreviewSandboxUiStateSaver) {
+        val previewSelection = rememberSaveable(stateSaver = PreviewSandboxUiStateSaver) {
             mutableStateOf(PreviewSandboxUiState())
         }
-        val previewState = previewSelection.previewForPresentation()
+        val previewState = previewSelection.value.previewForPresentation()
 
         // Only a changed preview updates an active lease; start() owns its first snapshot.
         LaunchedEffect(previewState) {
@@ -193,7 +194,7 @@ internal fun GyApp(
                 ) {
                     PreviewSandboxScreen(
                         display = PreviewSandboxDisplay(previewState, sandboxActive, previewDark),
-                        actions = PreviewSandboxActions(
+                        actions = previewSandboxActions(
                             ui = PreviewSandboxUiActions(
                                 onParasiteChange = { enabled, snapshot ->
                                     onSandboxToggle(enabled, snapshot)
@@ -204,32 +205,7 @@ internal fun GyApp(
                                     navigateBack()
                                 },
                             ),
-                            network = PreviewSandboxNetworkActions(
-                                onAirplaneModeChange = { previewSelection = previewSelection.copy(airplaneMode = it) },
-                                onNetworkModeChange = { previewSelection = previewSelection.selectPreviewNetworkMode(it) },
-                                onWifiStateChange = { previewSelection = previewSelection.copy(wifiState = it) },
-                                onWifiSignalLevelChange = { previewSelection = previewSelection.copy(wifiSignalLevel = it) },
-                                onNetworkActivityChange = { previewSelection = previewSelection.copy(networkActivity = it) },
-                            ),
-                            sims = PreviewSandboxSimActions(
-                                first = PreviewSandboxSim1Actions(
-                                    onMobileNetworkChange = { previewSelection = previewSelection.copy(mobileNetwork = it) },
-                                    onMobileSignalLevelChange = { previewSelection = previewSelection.copy(mobileSignalLevel = it) },
-                                ),
-                                second = PreviewSandboxSim2Actions(
-                                    onSim2SignalLevelChange = { previewSelection = previewSelection.copy(sim2SignalLevel = it) },
-                                    onSim2NetworkChange = { previewSelection = previewSelection.copy(sim2MobileNetwork = it) },
-                                ),
-                                selection = PreviewSandboxSimSelectionActions(
-                                    onDataSimChange = { previewSelection = previewSelection.copy(dataSim = it) },
-                                    onSimCardsChange = { previewSelection = previewSelection.copy(simCards = it) },
-                                ),
-                            ),
-                            battery = PreviewSandboxBatteryActions(
-                                onBatteryPercentChange = { previewSelection = previewSelection.copy(batteryPercent = it) },
-                                onBatteryModeChange = { previewSelection = previewSelection.copy(batteryMode = it) },
-                                onChargingStateChange = { previewSelection = previewSelection.copy(chargingState = it) },
-                            ),
+                            selection = previewSelection,
                         ),
                     )
                 }
@@ -276,3 +252,37 @@ internal fun GyApp(
         }
     }
 }
+
+// Field actions edit the existing route-owned selection, never the projected state.
+private fun previewSandboxActions(
+    ui: PreviewSandboxUiActions,
+    selection: MutableState<PreviewSandboxUiState>,
+): PreviewSandboxActions = PreviewSandboxActions(
+    ui = ui,
+    network = PreviewSandboxNetworkActions(
+        onAirplaneModeChange = { selection.value = selection.value.copy(airplaneMode = it) },
+        onNetworkModeChange = { selection.value = selection.value.selectPreviewNetworkMode(it) },
+        onWifiStateChange = { selection.value = selection.value.copy(wifiState = it) },
+        onWifiSignalLevelChange = { selection.value = selection.value.copy(wifiSignalLevel = it) },
+        onNetworkActivityChange = { selection.value = selection.value.copy(networkActivity = it) },
+    ),
+    sims = PreviewSandboxSimActions(
+        first = PreviewSandboxSim1Actions(
+            onMobileNetworkChange = { selection.value = selection.value.copy(mobileNetwork = it) },
+            onMobileSignalLevelChange = { selection.value = selection.value.copy(mobileSignalLevel = it) },
+        ),
+        second = PreviewSandboxSim2Actions(
+            onSim2SignalLevelChange = { selection.value = selection.value.copy(sim2SignalLevel = it) },
+            onSim2NetworkChange = { selection.value = selection.value.copy(sim2MobileNetwork = it) },
+        ),
+        selection = PreviewSandboxSimSelectionActions(
+            onDataSimChange = { selection.value = selection.value.copy(dataSim = it) },
+            onSimCardsChange = { selection.value = selection.value.copy(simCards = it) },
+        ),
+    ),
+    battery = PreviewSandboxBatteryActions(
+        onBatteryPercentChange = { selection.value = selection.value.copy(batteryPercent = it) },
+        onBatteryModeChange = { selection.value = selection.value.copy(batteryMode = it) },
+        onChargingStateChange = { selection.value = selection.value.copy(chargingState = it) },
+    ),
+)
