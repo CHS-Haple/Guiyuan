@@ -1744,6 +1744,16 @@ internal object SysUiPresentationOwner {
             }
         }
 
+        /** Listener registration is scoped to this live presentation session. */
+        private fun registerPresentationLayoutListeners(group: ViewGroup) {
+            nativePadding = PaddingState.from(group)
+            battery.get()?.addOnLayoutChangeListener(reservationWidthListener)
+            batteryCarrier.get()?.addOnLayoutChangeListener(reservationWidthListener)
+            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
+                host.get()?.addOnLayoutChangeListener(ccFakeHostLayoutListener)
+            }
+        }
+
         private fun startPresentation(
             preMaskBeforeLayout: Boolean,
             deferNativeLayoutOwnershipUntilCommit: Boolean,
@@ -1756,12 +1766,7 @@ internal object SysUiPresentationOwner {
                         onFailNative(REASON_STATUS_ICON_GROUP_RELEASED)
                         return 0
                     }
-            nativePadding = PaddingState.from(group)
-            battery.get()?.addOnLayoutChangeListener(reservationWidthListener)
-            batteryCarrier.get()?.addOnLayoutChangeListener(reservationWidthListener)
-            if (surfaceName == CONTROL_CENTER_FAKE_SURFACE) {
-                host.get()?.addOnLayoutChangeListener(ccFakeHostLayoutListener)
-            }
+            registerPresentationLayoutListeners(group)
             if (deferNativeLayoutOwnershipUntilCommit) {
                 nativeLayoutOwnershipDeferred = true
                 compactLayoutReady = false
@@ -1938,6 +1943,20 @@ internal object SysUiPresentationOwner {
             return true
         }
 
+        /** Always attempt independent unregisters; keep each failure receipt. */
+        private fun releasePresentationListeners(failures: MutableList<Throwable>) {
+            releaseAttempt(failures) { releaseCcCutoverListener() }
+            releaseAttempt(failures) { releaseCcReflowListener() }
+            releaseAttempt(failures) { host.get()?.removeOnLayoutChangeListener(ccFakeHostLayoutListener) }
+            releaseAttempt(failures) { host.get()?.removeOnAttachStateChangeListener(this) }
+            releaseAttempt(failures) {
+                battery.get()?.removeOnLayoutChangeListener(reservationWidthListener)
+            }
+            releaseAttempt(failures) {
+                batteryCarrier.get()?.removeOnLayoutChangeListener(reservationWidthListener)
+            }
+        }
+
         fun stop(
             source: String,
             requestLayout: Boolean = true,
@@ -1952,16 +1971,7 @@ internal object SysUiPresentationOwner {
             deferVisualMaskUntilLayout = false
 
             val failures = ArrayList<Throwable>(1)
-            releaseAttempt(failures) { releaseCcCutoverListener() }
-            releaseAttempt(failures) { releaseCcReflowListener() }
-            releaseAttempt(failures) { host.get()?.removeOnLayoutChangeListener(ccFakeHostLayoutListener) }
-            releaseAttempt(failures) { host.get()?.removeOnAttachStateChangeListener(this) }
-            releaseAttempt(failures) {
-                battery.get()?.removeOnLayoutChangeListener(reservationWidthListener)
-            }
-            releaseAttempt(failures) {
-                batteryCarrier.get()?.removeOnLayoutChangeListener(reservationWidthListener)
-            }
+            releasePresentationListeners(failures)
 
             var reservationRestored = false
             var ignoredSlotsRestored = false
@@ -2092,6 +2102,23 @@ internal object SysUiPresentationOwner {
         private fun nativeIgnoredSlotsList(group: ViewGroup): MutableList<String>? =
             ignoredSlotsField.get(group) as? MutableList<String>
 
+        /** SystemUI remains the ignored-slot writer; verify its own post-add state. */
+        private fun addAndVerifyPersistentIgnoredSlots(
+            group: ViewGroup,
+            method: java.lang.reflect.Method,
+            owned: List<String>,
+        ) {
+            if (owned.isNotEmpty()) {
+                method.invoke(group, ArrayList(owned))
+            }
+            val after =
+                nativeIgnoredSlotsList(group)
+                    ?: error("ignored-slots-list-unavailable-after-add")
+            check(representedSlots.all(after::contains)) {
+                "ignored-slots-native-api-did-not-retain-represented-slots"
+            }
+        }
+
         private fun applyPersistentIgnoredSlots(group: ViewGroup): Boolean {
             if (
                 ignoreScope != IgnoreScope.SESSION ||
@@ -2121,15 +2148,7 @@ internal object SysUiPresentationOwner {
                 )
             val applied =
                 runCatching {
-                    if (owned.isNotEmpty()) {
-                        addMethod.invoke(group, ArrayList(owned))
-                    }
-                    val after =
-                        nativeIgnoredSlotsList(group)
-                            ?: error("ignored-slots-list-unavailable-after-add")
-                    check(representedSlots.all(after::contains)) {
-                        "ignored-slots-native-api-did-not-retain-represented-slots"
-                    }
+                    addAndVerifyPersistentIgnoredSlots(group, addMethod, owned)
                 }
             if (applied.isFailure) {
                 val failure = applied.exceptionOrNull()
