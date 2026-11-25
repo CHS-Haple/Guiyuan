@@ -60,8 +60,11 @@ private class StableLazyListScrollBarAdapter(
     private fun range(): StableListIndicatorRange {
         val info = list.layoutInfo
         val count = info.totalItemsCount
-        if (count <= 0) return stableListIndicatorRange(0, 0.0, 0.0)
-        if (!list.canScrollBackward && !list.canScrollForward) {
+        if (count <= 0 || (!list.canScrollBackward && !list.canScrollForward)) {
+            // No active scroll range: a later expansion may have the same item count
+            // but a different viewport span. Do not revive its previous thumb length.
+            observedCount = -1
+            initialViewportOrdinal = null
             return stableListIndicatorRange(count, count.toDouble(), count.toDouble())
         }
         val last = info.visibleItemsInfo
