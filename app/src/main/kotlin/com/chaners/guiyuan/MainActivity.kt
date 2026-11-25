@@ -42,6 +42,7 @@ import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
 import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -157,50 +158,8 @@ class MainActivity : ComponentActivity() {
                     onHotReload = {
                         (application as GyApplication).hotReloadSysUi()
                     },
-                    themeActions = AppearanceThemeActions(
-                        onThemeChange = { mode ->
-                            scope.launch { repo.setTheme(mode) }
-                        },
-                        onDynamicChange = { enabled ->
-                            scope.launch { repo.setDynamicColor(enabled) }
-                        },
-                        onCustomPaletteChange = { enabled ->
-                            scope.launch { repo.setCustomPalette(enabled) }
-                        },
-                        onColorSpecChange = { spec: ThemeColorSpec ->
-                            scope.launch { repo.setColorSpec(spec) }
-                        },
-                        onPaletteStyleChange = { style: ThemePaletteStyle ->
-                            scope.launch { repo.setPaletteStyle(style) }
-                        },
-                    ),
-                    visualActions = AppearanceVisualActions(
-                        style = AppearanceStyleActions(
-                            onTopBarProgressiveBlurChange = { enabled ->
-                                scope.launch { repo.setTopBarProgressiveBlur(enabled) }
-                            },
-                            onUiScaleChange = { percent ->
-                                scope.launch { repo.setUiScalePercent(percent) }
-                            },
-                        ),
-                        navigation = AppearanceNavigationActions(
-                            onNavEnabledChange = { enabled ->
-                                scope.launch { repo.setNavEnabled(enabled) }
-                            },
-                            onNavStyleChange = { style: NavStyle ->
-                                scope.launch { repo.setNavStyle(style) }
-                            },
-                            onNavTouchExtensionChange = { enabled ->
-                                scope.launch { repo.setNavTouchExtension(enabled) }
-                            },
-                            onNavContentChange = { content: NavContent ->
-                                scope.launch { repo.setNavContent(content) }
-                            },
-                            onLiquidModeChange = { mode: LiquidMode ->
-                                scope.launch { repo.setLiquidMode(mode) }
-                            },
-                        ),
-                    ),
+                    themeActions = appearanceThemeActions(repo, scope),
+                    visualActions = appearanceVisualActions(repo, scope),
                     onSwipeBackChange = { enabled ->
                         scope.launch { repo.setSwipeBack(enabled) }
                     },
@@ -229,3 +188,51 @@ class MainActivity : ComponentActivity() {
         )
     }
 }
+
+private fun appearanceThemeActions(repo: AppearanceRepo, scope: CoroutineScope): AppearanceThemeActions =
+    AppearanceThemeActions(
+        onThemeChange = { mode ->
+            scope.launch { repo.setTheme(mode) }
+        },
+        onDynamicChange = { enabled ->
+            scope.launch { repo.setDynamicColor(enabled) }
+        },
+        onCustomPaletteChange = { enabled ->
+            scope.launch { repo.setCustomPalette(enabled) }
+        },
+        onColorSpecChange = { spec: ThemeColorSpec ->
+            scope.launch { repo.setColorSpec(spec) }
+        },
+        onPaletteStyleChange = { style: ThemePaletteStyle ->
+            scope.launch { repo.setPaletteStyle(style) }
+        },
+    )
+
+private fun appearanceVisualActions(repo: AppearanceRepo, scope: CoroutineScope): AppearanceVisualActions =
+    AppearanceVisualActions(
+        style = AppearanceStyleActions(
+            onTopBarProgressiveBlurChange = { enabled ->
+                scope.launch { repo.setTopBarProgressiveBlur(enabled) }
+            },
+            onUiScaleChange = { percent ->
+                scope.launch { repo.setUiScalePercent(percent) }
+            },
+        ),
+        navigation = AppearanceNavigationActions(
+            onNavEnabledChange = { enabled ->
+                scope.launch { repo.setNavEnabled(enabled) }
+            },
+            onNavStyleChange = { style: NavStyle ->
+                scope.launch { repo.setNavStyle(style) }
+            },
+            onNavTouchExtensionChange = { enabled ->
+                scope.launch { repo.setNavTouchExtension(enabled) }
+            },
+            onNavContentChange = { content: NavContent ->
+                scope.launch { repo.setNavContent(content) }
+            },
+            onLiquidModeChange = { mode: LiquidMode ->
+                scope.launch { repo.setLiquidMode(mode) }
+            },
+        ),
+    )
