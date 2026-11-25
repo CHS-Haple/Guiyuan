@@ -57,22 +57,26 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
             )
             PreferenceSection(R.string.static_scope_primary_group) {
                 StaticScopeItem(
-                    packageName = "com.android.systemui",
+                    details = ScopeDetails(
+                        packageName = "com.android.systemui",
+                        version = env.sysUiVersion,
+                        installed = env.sysUiInstalled,
+                        status = scopeState("com.android.systemui", env.sysUiInstalled, xposedStatus),
+                    ),
                     name = stringResource(R.string.static_scope_sysui),
-                    version = env.sysUiVersion,
-                    installed = env.sysUiInstalled,
-                    status = scopeState("com.android.systemui", env.sysUiInstalled, xposedStatus),
                     fallbackIcon = R.drawable.ic_material_symbol_display_settings,
                     usage = stringResource(R.string.static_scope_sysui_usage),
                 )
             }
             PreferenceSection(R.string.static_scope_optional_group) {
                 StaticScopeItem(
-                    packageName = "com.android.settings",
+                    details = ScopeDetails(
+                        packageName = "com.android.settings",
+                        version = env.settingsVersion,
+                        installed = env.settingsInstalled,
+                        status = scopeState("com.android.settings", env.settingsInstalled, xposedStatus),
+                    ),
                     name = stringResource(R.string.runtime_scope_settings),
-                    version = env.settingsVersion,
-                    installed = env.settingsInstalled,
-                    status = scopeState("com.android.settings", env.settingsInstalled, xposedStatus),
                     fallbackIcon = R.drawable.ic_material_symbol_settings_applications,
                     usage = stringResource(R.string.static_scope_settings_usage),
                 )
@@ -81,16 +85,25 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
     )
 }
 
+/** Runtime status is a single observed package snapshot, not a second scope writer. */
+private class ScopeDetails(
+    val packageName: String,
+    val version: String,
+    val installed: Boolean?,
+    val status: ScopeState,
+)
+
 @Composable
 private fun StaticScopeItem(
-    packageName: String,
+    details: ScopeDetails,
     name: String,
-    version: String,
-    installed: Boolean?,
-    status: ScopeState,
     @DrawableRes fallbackIcon: Int,
     usage: String,
 ) {
+    val packageName = details.packageName
+    val version = details.version
+    val installed = details.installed
+    val status = details.status
     val versionText = when {
         installed == false || version.isBlank() || version == "—" ->
             stringResource(R.string.static_scope_version_unavailable)
