@@ -248,12 +248,9 @@ internal object KeyguardRenderSession {
         hostAttached: Boolean,
         sceneEligible: Boolean,
     ): Boolean =
-        featureEnabled &&
-            modelReady &&
-            tintReady &&
-            layoutReady &&
-            hostAttached &&
-            sceneEligible
+        ProjectionReadinessPolicy.structuralReady(
+            featureEnabled, modelReady, tintReady, layoutReady, hostAttached,
+        ) && sceneEligible
 
     private enum class Scene(
         val logPrefix: String,

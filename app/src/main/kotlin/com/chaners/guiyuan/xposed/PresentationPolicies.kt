@@ -10,6 +10,22 @@ internal enum class KeyguardFamilySurface(
     AOD("aod", "aodPresentation"),
 }
 
+/** The same structural checks gate Home, Keyguard and CC projections. */
+internal object ProjectionReadinessPolicy {
+    fun structuralReady(
+        featureEnabled: Boolean,
+        modelReady: Boolean,
+        tintReady: Boolean,
+        layoutReady: Boolean,
+        hostAttached: Boolean,
+    ): Boolean =
+        featureEnabled &&
+            modelReady &&
+            tintReady &&
+            layoutReady &&
+            hostAttached
+}
+
 internal object SteadyPeerMirrorPolicy {
     private const val VISIBLE_STATE_HIDDEN = 2
     private const val ISLAND_STATE_HIDDEN = 10
