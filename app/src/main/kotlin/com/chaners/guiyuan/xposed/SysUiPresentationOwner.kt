@@ -509,21 +509,15 @@ internal object SysUiPresentationOwner {
         existing?.let { stopHome(it, "host-replaced") }
         val session =
             Session(
-                host = hostView,
-                statusIcons = statusIcons,
-                batteryContainer = batteryContainer,
-                battery = battery,
-                batteryCarrier = batteryCarrier,
-                ignoredSlotsField = field,
-                addIgnoredSlotsMethod = null,
-                setIgnoredSlotsMethod = null,
-                ignoreScope = IgnoreScope.CALL,
-                batteryHideField = hideField,
-                surfaceName = "home",
-                eventPrefix = "homePresentation",
-                retainReservationOnWidthLoss = false,
-                onEvent = { event -> eventSink?.invoke(event) },
-                onFailure = ::onSessionFailure,
+                native = PresentationNativeViews(hostView, statusIcons, batteryContainer, battery, batteryCarrier),
+                contract = PresentationNativeContracts(
+                    field, null, null, IgnoreScope.CALL, hideField,
+                ),
+                surface = PresentationSurface("home", "homePresentation", false),
+                callbacks = PresentationCallbacks(
+                    onEvent = { event -> eventSink?.invoke(event) },
+                    onFailure = ::onSessionFailure,
+                ),
             )
         current = session
         val masked = session.start()
@@ -674,21 +668,17 @@ internal object SysUiPresentationOwner {
         } else {
             existing?.let { stopFamily(it, surface.surfaceName + "-host-replaced") }
             Session(
-                host = resolved.host,
-                statusIcons = resolved.statusIcons,
-                batteryContainer = resolved.systemIcons,
-                battery = resolved.battery,
-                batteryCarrier = resolved.batteryCarrier,
-                ignoredSlotsField = field,
-                addIgnoredSlotsMethod = addMethod,
-                setIgnoredSlotsMethod = setMethod,
-                ignoreScope = IgnoreScope.SESSION,
-                batteryHideField = hideField,
-                surfaceName = surface.surfaceName,
-                eventPrefix = surface.eventPrefix,
-                retainReservationOnWidthLoss = false,
-                onEvent = { event -> keyguardFamilySinks?.event?.invoke(event) },
-                onFailure = ::onKeyguardFamilySessionFailure,
+                native = PresentationNativeViews(
+                    resolved.host, resolved.statusIcons, resolved.systemIcons, resolved.battery, resolved.batteryCarrier,
+                ),
+                contract = PresentationNativeContracts(
+                    field, addMethod, setMethod, IgnoreScope.SESSION, hideField,
+                ),
+                surface = PresentationSurface(surface.surfaceName, surface.eventPrefix, false),
+                callbacks = PresentationCallbacks(
+                    onEvent = { event -> keyguardFamilySinks?.event?.invoke(event) },
+                    onFailure = ::onKeyguardFamilySessionFailure,
+                ),
             ).also { created ->
                 keyguardFamilyCurrent = created
                 keyguardFamilySurface = surface
@@ -818,22 +808,16 @@ internal object SysUiPresentationOwner {
         } else {
             existing?.let { stopCc(it, "host-replaced") }
             Session(
-                host = host,
-                statusIcons = statusIcons,
-                batteryContainer = batteryContainer,
-                battery = battery,
-                batteryCarrier = batteryCarrier,
-                ignoredSlotsField = field,
-                addIgnoredSlotsMethod = addMethod,
-                setIgnoredSlotsMethod = setMethod,
-                ignoreScope = IgnoreScope.SESSION,
-                batteryHideField = hideField,
-                surfaceName = "control-center-fake",
-                eventPrefix = "controlCenterPresentation",
-                retainReservationOnWidthLoss = true,
-                onEvent = { event -> controlCenterSinks?.event?.invoke(event) },
-                onFailure = ::onCcSessionFailure,
-                isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                native = PresentationNativeViews(host, statusIcons, batteryContainer, battery, batteryCarrier),
+                contract = PresentationNativeContracts(
+                    field, addMethod, setMethod, IgnoreScope.SESSION, hideField,
+                ),
+                surface = PresentationSurface("control-center-fake", "controlCenterPresentation", true),
+                callbacks = PresentationCallbacks(
+                    onEvent = { event -> controlCenterSinks?.event?.invoke(event) },
+                    onFailure = ::onCcSessionFailure,
+                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                ),
             ).also { created ->
                 controlCenterCurrent = created
             }
@@ -1364,29 +1348,58 @@ internal object SysUiPresentationOwner {
         clearPresentationCallbacksAndPeerState()
     }
 
+    /** Transient native identities; Session copies only weak references. */
+    private class PresentationNativeViews(
+        val host: ViewGroup,
+        val statusIcons: ViewGroup,
+        val batteryContainer: ViewGroup,
+        val battery: View,
+        val batteryCarrier: View,
+    )
+
+    /** Verified ROM contract and its owned ignored-slot scope. */
+    private class PresentationNativeContracts(
+        val ignoredSlotsField: Field,
+        val addIgnoredSlotsMethod: java.lang.reflect.Method?,
+        val setIgnoredSlotsMethod: java.lang.reflect.Method?,
+        val ignoreScope: IgnoreScope,
+        val batteryHideField: Field,
+    )
+
+    private class PresentationSurface(
+        val surfaceName: String,
+        val eventPrefix: String,
+        val retainReservationOnWidthLoss: Boolean,
+    )
+
+    private class PresentationCallbacks(
+        val onEvent: (String) -> Unit,
+        val onFailure: (Session, String) -> Unit,
+        val isDetailedDiagnosticsEnabled: () -> Boolean = { true },
+    )
+
     private class Session(
-        host: ViewGroup,
-        statusIcons: ViewGroup,
-        batteryContainer: ViewGroup,
-        battery: View,
-        batteryCarrier: View,
-        private val ignoredSlotsField: Field,
-        private val addIgnoredSlotsMethod: java.lang.reflect.Method?,
-        private val setIgnoredSlotsMethod: java.lang.reflect.Method?,
-        private val ignoreScope: IgnoreScope,
-        private val batteryHideField: Field,
-        private var surfaceName: String,
-        private var eventPrefix: String,
-        private val retainReservationOnWidthLoss: Boolean,
-        private val onEvent: (String) -> Unit,
-        private val onFailure: (Session, String) -> Unit,
-        private val isDetailedDiagnosticsEnabled: () -> Boolean = { true },
+        native: PresentationNativeViews,
+        contract: PresentationNativeContracts,
+        surface: PresentationSurface,
+        callbacks: PresentationCallbacks,
     ) : View.OnAttachStateChangeListener {
-        private val host = WeakReference(host)
-        private val statusIcons = WeakReference(statusIcons)
-        private val batteryContainer = WeakReference(batteryContainer)
-        private val battery = WeakReference(battery)
-        private val batteryCarrier = WeakReference(batteryCarrier)
+        private val ignoredSlotsField = contract.ignoredSlotsField
+        private val addIgnoredSlotsMethod = contract.addIgnoredSlotsMethod
+        private val setIgnoredSlotsMethod = contract.setIgnoredSlotsMethod
+        private val ignoreScope = contract.ignoreScope
+        private val batteryHideField = contract.batteryHideField
+        private var surfaceName = surface.surfaceName
+        private var eventPrefix = surface.eventPrefix
+        private val retainReservationOnWidthLoss = surface.retainReservationOnWidthLoss
+        private val onEvent = callbacks.onEvent
+        private val onFailure = callbacks.onFailure
+        private val isDetailedDiagnosticsEnabled = callbacks.isDetailedDiagnosticsEnabled
+        private val host = WeakReference(native.host)
+        private val statusIcons = WeakReference(native.statusIcons)
+        private val batteryContainer = WeakReference(native.batteryContainer)
+        private val battery = WeakReference(native.battery)
+        private val batteryCarrier = WeakReference(native.batteryCarrier)
         private fun onFailNative(reason: String) = onFailure(this, reason)
 
         private enum class Lifecycle {
