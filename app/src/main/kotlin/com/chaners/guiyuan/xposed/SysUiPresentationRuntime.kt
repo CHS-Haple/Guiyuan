@@ -149,6 +149,7 @@ internal object SysUiPresentationRuntime {
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): AttachResult {
+        val diagnostics = HookDiagnostics(onEvent, isDetailedDiagnosticsEnabled)
         var tintFailure: String? = null
         val tintHooks =
             attemptHookInstall {
@@ -157,14 +158,13 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onTintState = sinks.onTintState,
                     onRuntimeFailure = { error -> sinks.onRuntimeFailure("tint", error) },
-                    onEvent = onEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                    diagnostics = diagnostics,
                 ).size
             }.getOrElse { error ->
                 tintFailure = error.message ?: error.javaClass.simpleName
                 SysUiTintSource.failedInstallHookCount
             }
-        val keyguard = attachKeyguardSources(module, classLoader, sinks, onEvent, isDetailedDiagnosticsEnabled)
+        val keyguard = attachKeyguardSources(module, classLoader, sinks, diagnostics)
         var sceneFailure: String? = null
         val sceneHooks =
             attemptHookInstall {
@@ -173,8 +173,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onSceneState = sinks.onSceneState,
                     onRuntimeFailure = { error -> sinks.onRuntimeFailure("scene", error) },
-                    onEvent = onEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                    diagnostics = diagnostics,
                 ).size
             }.getOrElse { error ->
                 sceneFailure = error.message ?: error.javaClass.simpleName
@@ -286,9 +285,9 @@ internal object SysUiPresentationRuntime {
         module: XposedModule,
         classLoader: ClassLoader,
         sinks: Sinks,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): KeyguardSourceHooks {
+        val onEvent = diagnostics.onEvent
         val warned = AtomicBoolean(false)
         @Suppress("TooGenericExceptionCaught")
         fun reportAodFailure(message: String) {
@@ -304,7 +303,7 @@ internal object SysUiPresentationRuntime {
             }
         }
         val request = KeyguardHookInstallRequest(
-            module, classLoader, sinks, HookDiagnostics(onEvent, isDetailedDiagnosticsEnabled),
+            module, classLoader, sinks, diagnostics,
         )
         val keyguardAodHooks = installKeyguardAod(request, ::reportAodFailure)
         val keyguardFullAodHooks = installFullAodTransition(request, ::reportAodFailure)

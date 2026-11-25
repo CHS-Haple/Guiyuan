@@ -795,8 +795,7 @@ class GyModule : XposedModule() {
             NativeStatusObserver.install(
                 module = this,
                 classLoader = classLoader,
-                onEvent = ::logRuntimeEvent,
-                isDetailedDiagnosticsEnabled = { detailedDiagnosticsEnabled },
+                diagnostics = HookDiagnostics(::logRuntimeEvent) { detailedDiagnosticsEnabled },
                 onObservationAttached = { observationSource ->
                     logDiagnostic(
                         level = Log.INFO,
