@@ -107,7 +107,7 @@ private fun MeasureScope.measureGlassNavigationGroup(
     val groupWidth = bar.width + gap + actionWidth
     val width = constraints.constrainWidth(groupWidth)
     val height = constraints.constrainHeight(maxOf(bar.height, action?.height ?: 0))
-    layout(width, height) {
+    return layout(width, height) {
         val start = (width - groupWidth) / 2
         bar.placeRelative(start, (height - bar.height) / 2)
         action?.placeRelative(start + bar.width + gap + (actionWidth - action.width) / 2, (height - action.height) / 2)
