@@ -146,6 +146,10 @@ class AppearanceCompatibilityTest {
         )
     }
 
+}
+
+// Persistence migration rules are independent from fresh-install UI defaults.
+class AppearanceMigrationTest {
     @Test
     fun migrationUsesActiveStyleLabelChoiceAndRetiresSeparateKey() {
         val regularKey = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
