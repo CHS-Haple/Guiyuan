@@ -38,38 +38,52 @@ internal fun SettingsHubScreen(
         bottomContentPadding = bottomContentPadding,
         overlay = { AppSettingsEntryDialogs(entryState) },
     ) {
-        Section(R.string.section_appearance_interaction) {
-            ArrowPreference(
-                title = stringResource(R.string.appearance_title),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_display_settings,
+        GroupedPreferenceSection(
+            R.string.section_appearance_interaction,
+            "settings-appearance",
+            listOf(
+                PreferenceCardItem("appearance") {
+                    ArrowPreference(
+                        title = stringResource(R.string.appearance_title),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_display_settings,
+                            )
+                        },
+                        summary = stringResource(R.string.appearance_summary),
+                        onClick = { actions.onNavigate(AppRoute.Appearance) },
                     )
                 },
-                summary = stringResource(R.string.appearance_summary),
-                onClick = { actions.onNavigate(AppRoute.Appearance) },
-            )
-            SwitchPreference(
-                title = stringResource(R.string.swipe_back),
-                startAction = {
-                    SemanticLeadingIcon(
-                        iconRes = R.drawable.ic_material_symbol_swipe,
+                PreferenceCardItem("swipe-back") {
+                    SwitchPreference(
+                        title = stringResource(R.string.swipe_back),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_swipe,
+                            )
+                        },
+                        summary = stringResource(R.string.swipe_back_summary),
+                        checked = snapshot.swipeBackEnabled,
+                        onCheckedChange = actions.onSwipeBackChange,
                     )
                 },
-                summary = stringResource(R.string.swipe_back_summary),
-                checked = snapshot.swipeBackEnabled,
-                onCheckedChange = actions.onSwipeBackChange,
-            )
-        }
-        Section(R.string.section_app) {
-            AppSettingsRows(
-                lang = snapshot.lang,
-                iconHidden = snapshot.iconHidden,
-                onLangChange = actions.onLangChange,
-                onIconHiddenChange = actions.onIconHiddenChange,
-                entryState = entryState,
-            )
-        }
+            ),
+        )
+        GroupedPreferenceSection(
+            R.string.section_app,
+            "settings-app",
+            listOf(
+                PreferenceCardItem("language") {
+                    AppLanguageRow(snapshot.lang, actions.onLangChange)
+                },
+                PreferenceCardItem("launcher-icon") {
+                    AppLauncherIconRow(snapshot.iconHidden, actions.onIconHiddenChange)
+                },
+                PreferenceCardItem("settings-entry") {
+                    AppSettingsEntryRows(entryState)
+                },
+            ),
+        )
         settingsHubMaintenanceSection(entryState, actions.onRestart, actions.onNavigate)
     }
 }
@@ -79,38 +93,48 @@ private fun LazyListScope.settingsHubMaintenanceSection(
     onRestart: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
-    Section(R.string.section_diagnostics_maintenance) {
-        ArrowPreference(
-            title = stringResource(R.string.about_title),
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_info,
+    GroupedPreferenceSection(
+        R.string.section_diagnostics_maintenance,
+        "settings-maintenance",
+        listOf(
+            PreferenceCardItem("about") {
+                ArrowPreference(
+                    title = stringResource(R.string.about_title),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            iconRes = R.drawable.ic_material_symbol_info,
+                        )
+                    },
+                    summary = stringResource(R.string.about_summary),
+                    onClick = { onNavigate(AppRoute.About) },
                 )
             },
-            summary = stringResource(R.string.about_summary),
-            onClick = { onNavigate(AppRoute.About) },
-        )
-        ArrowPreference(
-            title = stringResource(R.string.diagnostics_title),
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
+            PreferenceCardItem("diagnostics") {
+                ArrowPreference(
+                    title = stringResource(R.string.diagnostics_title),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            iconRes = R.drawable.ic_material_symbol_troubleshoot_outlined,
+                        )
+                    },
+                    summary = stringResource(R.string.diagnostics_summary),
+                    onClick = { onNavigate(AppRoute.Diagnostics) },
                 )
             },
-            summary = stringResource(R.string.diagnostics_summary),
-            onClick = { onNavigate(AppRoute.Diagnostics) },
-        )
-        BasicComponent(
-            title = stringResource(R.string.restart_scope),
-            startAction = {
-                SemanticLeadingIcon(
-                    iconRes = R.drawable.ic_material_symbol_restart_alt,
+            PreferenceCardItem("restart") {
+                BasicComponent(
+                    title = stringResource(R.string.restart_scope),
+                    startAction = {
+                        SemanticLeadingIcon(
+                            iconRes = R.drawable.ic_material_symbol_restart_alt,
+                            enabled = !entryState.busy,
+                        )
+                    },
+                    summary = stringResource(R.string.restart_scope_summary),
                     enabled = !entryState.busy,
+                    onClick = onRestart,
                 )
             },
-            summary = stringResource(R.string.restart_scope_summary),
-            enabled = !entryState.busy,
-            onClick = onRestart,
-        )
-    }
+        ),
+    )
 }

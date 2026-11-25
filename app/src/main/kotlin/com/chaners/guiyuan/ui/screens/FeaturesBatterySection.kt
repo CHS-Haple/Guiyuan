@@ -53,21 +53,25 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureBatterySectio
     dialogs: BatteryFeatureDialogs,
     bothSidesChargingSearch: Boolean,
 ) {
-    Section(R.string.section_battery, key = "features-battery-colors-threshold") {
-        batteryColorAndThreshold(search, state, repositories, dialogs)
-        if (search.filtering) {
+    if (search.filtering) {
+        Section(R.string.section_battery, key = "features-battery") {
+            batteryColorAndThreshold(search, state, repositories, dialogs)
             batteryTopReadout(search, state, repositories, dialogs)
             batteryChargingIcon(search, state, repositories, bothSidesChargingSearch)
         }
+        return
     }
-    if (!search.filtering) {
-        Section(key = "features-battery-readout") {
+    GroupedPreferenceSection(R.string.section_battery, "features-battery", listOf(
+        PreferenceCardItem("colors-threshold") {
+            batteryColorAndThreshold(search, state, repositories, dialogs)
+        },
+        PreferenceCardItem("readout") {
             batteryTopReadout(search, state, repositories, dialogs)
-        }
-        Section(key = "features-battery-charging") {
+        },
+        PreferenceCardItem("charging") {
             batteryChargingIcon(search, state, repositories, bothSidesChargingSearch)
-        }
-    }
+        },
+    ))
 }
 
 @Composable

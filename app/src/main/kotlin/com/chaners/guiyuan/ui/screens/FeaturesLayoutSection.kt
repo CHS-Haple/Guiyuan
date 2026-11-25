@@ -41,21 +41,21 @@ internal fun LazyListScope.featureLayoutSection(
         return
     }
 
-    Section(R.string.section_layout_size, key = "features-layout-choices") {
-        featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
-    }
-    val arrangement = if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
-    if (arrangement != SignalDotArrangement.BOTH_SIDES) {
-        Section(key = "features-layout-signal-adjustments") {
+    GroupedPreferenceSection(R.string.section_layout_size, "features-layout", listOf(
+        PreferenceCardItem("layout-selection") {
+            featureLayoutSelection(search, visual, visualRepo, enabled)
+        },
+        PreferenceCardItem("signal-rows") {
+            featureSignalRowChoices(search, visual, visualRepo, enabled, bothSidesSearch)
             featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
-        }
-    }
-    Section(key = "features-layout-both-sides") {
-        featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
-    }
-    Section(key = "features-layout-size-offsets") {
-        featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
-    }
+        },
+        PreferenceCardItem("both-sides") {
+            featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
+        },
+        PreferenceCardItem("geometry") {
+            featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
+        },
+    ))
 }
 
 @Composable

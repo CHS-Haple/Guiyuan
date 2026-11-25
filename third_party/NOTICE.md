@@ -25,6 +25,10 @@ Resolved dependency versions come from Gradle, not this document.
   Source: [MIUIX Glass](https://github.com/compose-miuix-ui/miuix/pull/423).
   Apache-2.0; [license copy](miuix-glass/LICENSE) and
   [source attribution](miuix-glass/README.md).
+- **MIUIX grouped preference cards:** Adapted from the upstream
+  [GroupedCardItems example](https://github.com/compose-miuix-ui/miuix/blob/a09d4f3268ece3fc262d0bba433a3941a312bb9a/example/shared/src/commonMain/kotlin/component/GroupedCardItems.kt)
+  in `app/src/main/kotlin/com/chaners/guiyuan/ui/screens/GroupedPreferenceSection.kt`.
+  Apache-2.0; [license copy](miuix-glass/LICENSE).
 - **MIUIX background effect:** Local source under
   `app/src/main/kotlin/top/yukonga/miuix/kmp/effect/bg/` is adapted from
   [MIUIX effect](https://github.com/compose-miuix-ui/miuix/pull/321),

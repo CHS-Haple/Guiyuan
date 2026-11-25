@@ -121,6 +121,13 @@ internal fun AppSettingsRows(
     onIconHiddenChange: (Boolean) -> Unit,
     entryState: AppSettingsEntryState,
 ) {
+    AppLanguageRow(lang, onLangChange)
+    AppLauncherIconRow(iconHidden, onIconHiddenChange)
+    AppSettingsEntryRows(entryState)
+}
+
+@Composable
+internal fun AppLanguageRow(lang: AppLang, onLangChange: (AppLang) -> Unit) {
     UiDropdownPreference(
         items = listOf(
             stringResource(R.string.language_system),
@@ -138,6 +145,10 @@ internal fun AppSettingsRows(
             AppLang.entries.getOrNull(index)?.let(onLangChange)
         },
     )
+}
+
+@Composable
+internal fun AppLauncherIconRow(iconHidden: Boolean, onIconHiddenChange: (Boolean) -> Unit) {
     SwitchPreference(
         title = stringResource(R.string.hide_launcher_icon),
         startAction = {
@@ -147,11 +158,10 @@ internal fun AppSettingsRows(
         checked = iconHidden,
         onCheckedChange = onIconHiddenChange,
     )
-    AppSettingsEntryRows(entryState)
 }
 
 @Composable
-private fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
+internal fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
     UiDropdownPreference(
         items = listOf(
             stringResource(R.string.settings_entry_disabled),
