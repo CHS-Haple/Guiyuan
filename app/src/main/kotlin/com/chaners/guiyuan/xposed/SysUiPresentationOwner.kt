@@ -309,58 +309,41 @@ internal object SysUiPresentationOwner {
             return "partial-hook-state"
         }
 
-        val containerClass =
-            optionalNativeRead {
-                Class.forName(STATUS_ICON_CONTAINER, false, classLoader)
-            } ?: return "status-icon-container-class-missing"
-        val field =
-            optionalNativeRead {
-                SysUiPresentationContracts.ignoredSlotsField(containerClass)
-            } ?: return "ignored-slots-field-missing"
-        val addIgnoredSlots =
-            optionalNativeRead {
-                SysUiPresentationContracts.ignoredSlotsMethod(containerClass, "addIgnoredSlots")
-            } ?: return "add-ignored-slots-contract-missing"
-        val setIgnoredSlots =
-            optionalNativeRead {
-                SysUiPresentationContracts.ignoredSlotsMethod(containerClass, "setIgnoredSlots")
-            } ?: return "set-ignored-slots-contract-missing"
-        val batteryContainerClass =
-            optionalNativeRead {
-                Class.forName(BATTERY_CONTAINER, false, classLoader)
-            } ?: return "battery-container-class-missing"
-        val hideField =
-            optionalNativeRead {
-                SysUiPresentationContracts.batteryHideField(batteryContainerClass)
-            } ?: return "battery-hide-field-missing"
-        val batterySetIsHide =
-            optionalNativeRead {
-                SysUiPresentationContracts.batteryHideMethod(batteryContainerClass)
-            } ?: return "battery-hide-method-contract-missing"
+        val containerClass = optionalNativeRead { Class.forName(STATUS_ICON_CONTAINER, false, classLoader) }
+            ?: return "status-icon-container-class-missing"
+        val field = optionalNativeRead { SysUiPresentationContracts.ignoredSlotsField(containerClass) }
+            ?: return "ignored-slots-field-missing"
+        val addIgnoredSlots = optionalNativeRead {
+            SysUiPresentationContracts.ignoredSlotsMethod(containerClass, "addIgnoredSlots")
+        } ?: return "add-ignored-slots-contract-missing"
+        val setIgnoredSlots = optionalNativeRead {
+            SysUiPresentationContracts.ignoredSlotsMethod(containerClass, "setIgnoredSlots")
+        } ?: return "set-ignored-slots-contract-missing"
+        val batteryContainerClass = optionalNativeRead { Class.forName(BATTERY_CONTAINER, false, classLoader) }
+            ?: return "battery-container-class-missing"
+        val hideField = optionalNativeRead {
+            SysUiPresentationContracts.batteryHideField(batteryContainerClass)
+        } ?: return "battery-hide-field-missing"
+        val batterySetIsHide = optionalNativeRead {
+            SysUiPresentationContracts.batteryHideMethod(batteryContainerClass)
+        } ?: return "battery-hide-method-contract-missing"
 
         // Exact-ROM privacy layout state is independent of native battery hiding.
-        val nativePrivacyField =
-            optionalNativeRead {
-                SysUiPresentationContracts.privacyField(batteryContainerClass)
-            } ?: return "native-privacy-state-field-missing"
-        val nativePrivacyMethod =
-            optionalNativeRead {
-                SysUiPresentationContracts.privacyMethod(batteryContainerClass, nativePrivacyField)
-            } ?: return "native-privacy-state-method-missing"
+        val nativePrivacyField = optionalNativeRead {
+            SysUiPresentationContracts.privacyField(batteryContainerClass)
+        } ?: return "native-privacy-state-field-missing"
+        val nativePrivacyMethod = optionalNativeRead {
+            SysUiPresentationContracts.privacyMethod(batteryContainerClass, nativePrivacyField)
+        } ?: return "native-privacy-state-method-missing"
 
-        val onMeasure =
-            optionalNativeRead {
-                SysUiPresentationContracts.measureMethod(containerClass)
-            } ?: return "on-measure-contract-missing"
-        val onLayout =
-            optionalNativeRead {
-                SysUiPresentationContracts.layoutMethod(containerClass)
-            } ?: return "on-layout-contract-missing"
+        val onMeasure = optionalNativeRead { SysUiPresentationContracts.measureMethod(containerClass) }
+            ?: return "on-measure-contract-missing"
+        val onLayout = optionalNativeRead { SysUiPresentationContracts.layoutMethod(containerClass) }
+            ?: return "on-layout-contract-missing"
 
-        val getIslandShowing =
-            optionalNativeRead {
-                SysUiPresentationContracts.islandShowingMethod(containerClass)
-            } ?: return "island-showing-contract-missing"
+        val getIslandShowing = optionalNativeRead {
+            SysUiPresentationContracts.islandShowingMethod(containerClass)
+        } ?: return "island-showing-contract-missing"
 
         eventSink = guardedDiagnostic(onEvent)
         failNativeSink = onFailNative
