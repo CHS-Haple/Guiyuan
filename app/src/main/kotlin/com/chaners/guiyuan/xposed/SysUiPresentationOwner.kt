@@ -501,14 +501,13 @@ internal object SysUiPresentationOwner {
         hideField: Field,
         requestNativeStatusIconLayout: Boolean,
     ): Result {
-        val (hostView, statusIcons, batteryContainer, battery, batteryCarrier) = native
         // Only the verified same-host reload prearm requests layout directly on
         // the native status-icon owner. Ordinary activation keeps the existing
         // battery-container lifecycle to avoid unrelated native relayouts.
         val nativeLayoutTarget =
-            if (requestNativeStatusIconLayout) statusIcons else batteryContainer
+            if (requestNativeStatusIconLayout) native.statusIcons else native.batteryContainer
         val existing = current
-        if (existing?.matches(hostView, statusIcons, batteryContainer, battery, batteryCarrier) == true) {
+        if (existing?.matches(native.host, native.statusIcons, native.batteryContainer, native.battery, native.batteryCarrier) == true) {
             if (!existing.syncEndReservation()) {
                 return Result.Failure("home-reuse-sync-failed-native-restored")
             }
