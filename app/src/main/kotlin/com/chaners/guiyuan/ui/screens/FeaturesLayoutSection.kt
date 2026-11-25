@@ -98,8 +98,7 @@ private fun ColumnScope.featureLayoutSelection(
         (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
             search.matches(R.string.top_info_vertical_offset)) ||
         (searching && visual.centeredMobileSignal &&
-            search.any(R.string.curved_signal_dot_vertical_offset,
-                R.string.horizontal_signal_dot_vertical_offset))) {
+            search.matches(R.string.mobile_signal_dot_vertical_offset))) {
         UiDropdownPreference(
             items = layoutChoices.map { it.second },
             selectedIndex = layoutChoices.indexOfFirst { it.first == visual.layout },
