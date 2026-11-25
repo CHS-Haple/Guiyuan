@@ -656,12 +656,16 @@ internal object SysUiPresentationOwner {
             field, resolved.statusIcons, resolved.batteryCarrier, surfaceName = surface.surfaceName,
         )?.let { return it }
 
+        keyguardFamilySinks = ActivationSinks(
+            guardedDiagnostic(handlers.onEvent),
+            handlers.onFailNative,
+            handlers.onReady,
+        )
         return startKeyguardFamilyPresentation(
             surface = surface,
             resolved = resolved,
             preMaskBeforeLayout = preMaskBeforeLayout,
             deferNativeLayoutOwnershipUntilCommit = deferNativeLayoutOwnershipUntilCommit,
-            handlers = handlers,
             contract = PresentationNativeContracts(
                 field, addMethod, setMethod, IgnoreScope.SESSION, hideField,
             ),
@@ -714,14 +718,8 @@ internal object SysUiPresentationOwner {
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         preMaskBeforeLayout: Boolean,
         deferNativeLayoutOwnershipUntilCommit: Boolean,
-        handlers: KeyguardFamilyHandlers,
         contract: PresentationNativeContracts,
     ): Result {
-        val onEvent = handlers.onEvent
-        val onFailNative = handlers.onFailNative
-        val onReady = handlers.onReady
-        keyguardFamilySinks = ActivationSinks(guardedDiagnostic(onEvent), onFailNative, onReady)
-
         val existing = keyguardFamilyCurrent
         val session = keyguardFamilySession(existing, surface, resolved, contract)
         val reused = session === existing
