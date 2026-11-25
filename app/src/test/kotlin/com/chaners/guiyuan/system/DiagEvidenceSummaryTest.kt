@@ -49,6 +49,16 @@ class DiagEvidenceSummaryTest {
     }
 
     @Test
+    fun emptySessionHasZeroCountsAndNoNotableEntries() {
+        val report = DiagEvidenceSummary.reportLines(snapshot(emptyList()))
+        assertTrue(report.contains("structuredEntries=0"))
+        assertTrue(report.contains("warningEntries=0"))
+        assertTrue(report.contains("errorEntries=0"))
+        assertTrue(report.contains("notableEntries=0"))
+        assertFalse(report.any { it.startsWith("notable[") })
+    }
+
+    @Test
     fun ordinaryReportDoesNotIncludeExtraAnalysis() {
         val report = DiagReport.build(
             snapshot(listOf(event("W", "hook.error", TEST_HOOK_COMPONENT, TEST_SESSION_CURRENT)))

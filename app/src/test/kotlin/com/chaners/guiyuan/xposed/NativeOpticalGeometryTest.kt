@@ -124,6 +124,31 @@ class NativeOpticalGeometryTest {
     }
 
     @Test
+    fun fitRejectsInvalidReferenceAndViewportWithoutInventingBounds() {
+        val asset = NativeOpticalGeometry.OpticalAsset(
+            intrinsicWidth = 100,
+            intrinsicHeight = 80,
+            optical = NativeOpticalGeometry.OpticalRectangle(0.1f, 0.2f, 0.9f, 0.8f),
+        )
+        val viewport = NativeOpticalGeometry.OpticalViewport(
+            centerX = 60f, centerY = 58f, maxWidth = 58f, maxHeight = 45f,
+        )
+        val valid = NativeOpticalGeometry.OpticalFitInput(
+            current = asset, reference = asset, viewport = viewport,
+        )
+        assertNotNull(NativeOpticalGeometry.resolve(valid))
+        assertEquals(null, NativeOpticalGeometry.resolve(
+            valid.copy(reference = asset.copy(intrinsicWidth = 0)),
+        ))
+        assertEquals(null, NativeOpticalGeometry.resolve(
+            valid.copy(viewport = viewport.copy(maxHeight = 0f)),
+        ))
+        assertEquals(null, NativeOpticalGeometry.resolve(
+            valid.copy(viewport = viewport.copy(maxWidth = Float.NaN)),
+        ))
+    }
+
+    @Test
     fun invalidIntrinsicSizeDoesNotInventGeometry() {
         val resolved =
             NativeOpticalGeometry.resolve(

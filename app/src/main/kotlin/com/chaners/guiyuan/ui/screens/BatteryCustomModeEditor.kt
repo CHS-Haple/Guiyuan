@@ -1,6 +1,13 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -80,6 +87,7 @@ internal data class ColorEditorState(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun BatteryCustomModeEditor(
     custom: BatteryCustomColorScheme,
@@ -91,18 +99,25 @@ internal fun BatteryCustomModeEditor(
     val state = rememberColorEditorState(custom, slot)
     val scrollState = rememberScrollState()
     val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-            .verticalScroll(scrollState)
-            .padding(contentPadding)
-            .padding(bottom = 24.dp),
-    ) {
-        BatteryColorSourceSelector(custom, slot, state, onSourceChange)
-        BatteryColorCommonGrid(custom, slot, state, onSourceChange, onColorChange)
-        BatteryColorHsvPanel(state, onColorChange)
-        BatteryColorPreciseFields(state, onColorChange)
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+                .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+                .verticalScroll(scrollState)
+                .padding(contentPadding)
+                .padding(horizontal = BottomSheetDefaults.insideMargin.width)
+                .padding(bottom = 24.dp),
+        ) {
+            BatteryColorSourceSelector(custom, slot, state, onSourceChange)
+            BatteryColorCommonGrid(custom, slot, state, onSourceChange, onColorChange)
+            BatteryColorHsvPanel(state, onColorChange)
+            BatteryColorPreciseFields(state, onColorChange)
+        }
+        VerticalScrollBar(
+            adapter = rememberScrollBarAdapter(scrollState),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            trackPadding = contentPadding,
+        )
     }
 }
 

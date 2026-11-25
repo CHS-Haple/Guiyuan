@@ -4,7 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -28,7 +28,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal data class SandboxTopBarFrame(
     val backdrop: LayerBackdrop?,
     val scrollBehavior: ScrollBehavior,
-    val listState: LazyListState,
+    val scrollState: ScrollState,
     val dockHeight: Dp,
 )
 
@@ -53,7 +53,7 @@ internal fun PreviewSandboxTopBar(
     Box(Modifier.onSizeChanged { onHeightChanged(it.height) }) {
         GlassTopAppBar(
             progressiveBlur = LocalTopBarProgressiveBlur.current,
-            isContentScrolled = frame.listState.canScrollBackward,
+            isContentScrolled = frame.scrollState.canScrollBackward,
             title = stringResource(R.string.home_preview_sandbox_title),
             backdrop = frame.backdrop,
             scrollBehavior = frame.scrollBehavior,

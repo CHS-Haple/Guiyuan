@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.background
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -102,6 +106,7 @@ private enum class PermissionWarningPhase {
 
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun OnboardingFlow(
     config: OnboardingConfig,
@@ -294,42 +299,51 @@ internal fun OnboardingFlow(
                     .padding(scaffoldPadding).padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f).fillMaxWidth().then(
-                        if (step == 2) Modifier
-                        else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
-                    ),
-                ) {
-                    GuideStageHeading(step)
-                    when (step) {
-                        1 -> GuidePermissionStage(
-                            status = GuideFrameworkSnapshot(
-                                framework, sysUiInScope, canRequestScope, scopeBusy, scopeRequestFailed,
-                            ),
-                            root = GuideRootSnapshot(rootChecking, rootAccess),
-                            actions = GuidePermissionActions(
-                                expandedPermission = expandedPermission,
-                                onToggleExpanded = { id ->
-                                    expandedPermission = if (expandedPermission == id) 0 else id
-                                },
-                                onRequestScope = {
-                                    scopeRequestFailed = false
-                                    if (!app.requestSysUiScope { approved ->
-                                            scopeRequestFailed = !approved
-                                        }) scopeRequestFailed = true
-                                },
-                            ),
-                        )
-                        2 -> GuidePrivacyStage(
-                            requirements = requiredReading,
-                            importantScroll = importantScroll,
-                            termsViewed = termsViewed,
-                            privacyViewed = privacyViewed,
-                            onOpen = ::showAgreement,
-                        )
-                        3 -> GuideAppSettingsStage(config, handlers, entryState)
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().then(
+                            if (step == 2) Modifier
+                            else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
+                        ),
+                    ) {
+                        GuideStageHeading(step)
+                        when (step) {
+                            1 -> GuidePermissionStage(
+                                status = GuideFrameworkSnapshot(
+                                    framework, sysUiInScope, canRequestScope, scopeBusy, scopeRequestFailed,
+                                ),
+                                root = GuideRootSnapshot(rootChecking, rootAccess),
+                                actions = GuidePermissionActions(
+                                    expandedPermission = expandedPermission,
+                                    onToggleExpanded = { id ->
+                                        expandedPermission = if (expandedPermission == id) 0 else id
+                                    },
+                                    onRequestScope = {
+                                        scopeRequestFailed = false
+                                        if (!app.requestSysUiScope { approved ->
+                                                scopeRequestFailed = !approved
+                                            }) scopeRequestFailed = true
+                                    },
+                                ),
+                            )
+                            2 -> GuidePrivacyStage(
+                                requirements = requiredReading,
+                                importantScroll = importantScroll,
+                                termsViewed = termsViewed,
+                                privacyViewed = privacyViewed,
+                                onOpen = ::showAgreement,
+                            )
+                            3 -> GuideAppSettingsStage(config, handlers, entryState)
+                        }
+                        if (step != 2) Spacer(Modifier.height(24.dp))
                     }
-                    if (step != 2) Spacer(Modifier.height(24.dp))
+                    if (step != 2) {
+                        VerticalScrollBar(
+                            adapter = rememberScrollBarAdapter(scroll),
+                            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                            topAppBarScrollBehavior = scrollBehavior,
+                        )
+                    }
                 }
                 if (step == 2) {
                     GuidePrivacyAcknowledgment(

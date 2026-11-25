@@ -7,6 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
 
 @Composable
 internal fun pageContentPadding(
@@ -28,4 +31,17 @@ internal fun pageContentPadding(
             bottom = bottom,
         )
     }
+}
+
+// Scaffold derives the content inset from measured TopAppBar height, which
+// decreases by heightOffset. Cancel only that offset for a stable scroll track.
+@Composable
+internal fun pageScrollBarTrackPadding(
+    contentPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior,
+): PaddingValues {
+    val offset = with(LocalDensity.current) { scrollBehavior.state.heightOffset.toDp() }
+    val top = (contentPadding.calculateTopPadding() - offset).coerceAtLeast(0.dp)
+    val bottom = contentPadding.calculateBottomPadding()
+    return remember(top, bottom) { PaddingValues(top = top, bottom = bottom) }
 }

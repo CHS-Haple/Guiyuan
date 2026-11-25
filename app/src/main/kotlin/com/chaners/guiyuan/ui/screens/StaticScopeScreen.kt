@@ -48,38 +48,37 @@ internal fun StaticScopeScreen(onBack: () -> Unit) {
     SettingsPage(
         title = stringResource(R.string.static_scope_title),
         onBack = onBack,
-    ) {
-        item {
+        scrollContent = {
             Text(
                 text = stringResource(R.string.static_scope_description),
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
                 fontSize = MiuixTheme.textStyles.body2.fontSize,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
-        }
-        Section(R.string.static_scope_primary_group) {
-            StaticScopeItem(
-                packageName = "com.android.systemui",
-                name = stringResource(R.string.static_scope_sysui),
-                version = env.sysUiVersion,
-                installed = env.sysUiInstalled,
-                status = scopeState("com.android.systemui", env.sysUiInstalled, xposedStatus),
-                fallbackIcon = R.drawable.ic_material_symbol_display_settings,
-                usage = stringResource(R.string.static_scope_sysui_usage),
-            )
-        }
-        Section(R.string.static_scope_optional_group) {
-            StaticScopeItem(
-                packageName = "com.android.settings",
-                name = stringResource(R.string.runtime_scope_settings),
-                version = env.settingsVersion,
-                installed = env.settingsInstalled,
-                status = scopeState("com.android.settings", env.settingsInstalled, xposedStatus),
-                fallbackIcon = R.drawable.ic_material_symbol_settings_applications,
-                usage = stringResource(R.string.static_scope_settings_usage),
-            )
-        }
-    }
+            PreferenceSection(R.string.static_scope_primary_group) {
+                StaticScopeItem(
+                    packageName = "com.android.systemui",
+                    name = stringResource(R.string.static_scope_sysui),
+                    version = env.sysUiVersion,
+                    installed = env.sysUiInstalled,
+                    status = scopeState("com.android.systemui", env.sysUiInstalled, xposedStatus),
+                    fallbackIcon = R.drawable.ic_material_symbol_display_settings,
+                    usage = stringResource(R.string.static_scope_sysui_usage),
+                )
+            }
+            PreferenceSection(R.string.static_scope_optional_group) {
+                StaticScopeItem(
+                    packageName = "com.android.settings",
+                    name = stringResource(R.string.runtime_scope_settings),
+                    version = env.settingsVersion,
+                    installed = env.settingsInstalled,
+                    status = scopeState("com.android.settings", env.settingsInstalled, xposedStatus),
+                    fallbackIcon = R.drawable.ic_material_symbol_settings_applications,
+                    usage = stringResource(R.string.static_scope_settings_usage),
+                )
+            }
+        },
+    )
 }
 
 @Composable

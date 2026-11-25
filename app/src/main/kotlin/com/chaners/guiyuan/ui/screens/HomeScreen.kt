@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.core.Spring
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.updateTransition
@@ -20,8 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberOverscrollEffect
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
@@ -57,6 +61,7 @@ import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.layout.pageScrollBarTrackPadding
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -88,10 +93,10 @@ internal fun HomeScreen(
     actions: HomeScreenActions,
 ) {
     val sources = rememberHomeScreenSources()
-    val listState = rememberLazyListState()
+    val scrollState = rememberScrollState()
     val scrollBehavior = MiuixScrollBehavior()
     val backdrop = rememberTopBarBackdrop()
-    val frame = HomeScreenFrame(listState, scrollBehavior, backdrop)
+    val frame = HomeScreenFrame(scrollState, scrollBehavior, backdrop)
     CompositionLocalProvider(LocalGlassBackdrop provides backdrop) {
         Scaffold(
             topBar = { HomeScreenTopBar(runtime, actions, frame) },
@@ -103,44 +108,49 @@ internal fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 private fun HomeScreenScrollingContent(
     contents: HomeScreenContents,
     frame: HomeScreenFrame,
     padding: PaddingValues,
 ) {
-    val canScroll = frame.listState.canScrollBackward || frame.listState.canScrollForward
+    val canScroll = frame.scrollState.canScrollBackward || frame.scrollState.canScrollForward
     val glassOverscroll = canScroll
     val onOverscrollChanged: (Float) -> Unit = remember(frame.scrollBehavior) {
         { offset -> frame.scrollBehavior.state.overscrollOffset = offset }
     }
+    val contentPadding = pageContentPadding(
+        innerPadding = padding,
+        outerBottomPadding = contents.layout.bottomContentPadding,
+        extraBottom = 12.dp,
+    )
     Box(Modifier.fillMaxSize().topBarBackdropSource(frame.backdrop)) {
-        LazyColumn(
-            state = frame.listState,
-            overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                 .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                .nestedScroll(frame.scrollBehavior.nestedScrollConnection),
-            contentPadding = pageContentPadding(
-                innerPadding = padding,
-                outerBottomPadding = contents.layout.bottomContentPadding,
-                extraBottom = 12.dp,
-            ),
+                .nestedScroll(frame.scrollBehavior.nestedScrollConnection)
+                .verticalScroll(frame.scrollState, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
+                .padding(contentPadding),
         ) {
-            item { HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources) }
-            item {
-                HomePreviewSandboxCard(
-                    state = contents.layout.previewState,
-                    resources = contents.sources.previewResources,
-                    visual = contents.sources.visual.value,
-                    featureSettings = contents.sources.featureSettings,
-                    onOpen = contents.actions.onOpenPreviewSandbox,
-                    modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp),
-                )
-            }
+            HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources)
+            HomePreviewSandboxCard(
+                state = contents.layout.previewState,
+                resources = contents.sources.previewResources,
+                visual = contents.sources.visual.value,
+                featureSettings = contents.sources.featureSettings,
+                onOpen = contents.actions.onOpenPreviewSandbox,
+                modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp),
+            )
         }
+        VerticalScrollBar(
+            adapter = rememberScrollBarAdapter(frame.scrollState),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            trackPadding = pageScrollBarTrackPadding(contentPadding, frame.scrollBehavior),
+            topAppBarScrollBehavior = frame.scrollBehavior,
+        )
     }
 }
 

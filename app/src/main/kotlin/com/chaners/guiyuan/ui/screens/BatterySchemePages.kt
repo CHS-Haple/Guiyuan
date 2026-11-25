@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.Box
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -109,13 +113,7 @@ internal fun BatterySchemeOverview(
     val navigation = actions.navigation
     val catalog = actions.catalog
     val pages = remember(library.customSchemes) {
-        buildList {
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
-            add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
-            library.customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
-            add(BatterySchemePage.Add)
-        }
+        buildSchemeDeckPages(library.customSchemes)
     }
     val pageKeys = remember(pages) { pages.map { it.key } }
     val initial = pages.indexOfFirst { it.key == library.activeSchemeKey }.takeIf { it >= 0 } ?: 0
@@ -151,16 +149,7 @@ internal fun BatterySchemeOverview(
         onDismissRequest = onDismissRequest,
         onDismissFinished = { if (!show) retained = false },
         headerBottomContent = {
-            BatterySchemeIndicatorRail(
-                pages = pages,
-                pagerState = pagerState,
-                targetPage = target.intValue,
-                onPageSelect = { next ->
-                    if (next != pagerState.currentPage || target.intValue >= 0 || pagerState.isScrollInProgress) {
-                        target.intValue = next
-                    }
-                },
-            )
+            BatterySchemeOverviewIndicator(pages, pagerState, target)
         },
         scrollOffset = currentScrollOffset,
     ) { innerPadding ->
@@ -173,6 +162,36 @@ internal fun BatterySchemeOverview(
             }
         }
     }
+}
+
+// Match the previous page order and keys; a new scheme remains immediately
+// before the Add page, so the native Pager's index identity stays unchanged.
+private fun buildSchemeDeckPages(
+    customSchemes: List<BatteryCustomColorScheme>,
+): List<BatterySchemePage> = buildList {
+    add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.HYPEROS))
+    add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.IOS))
+    add(BatterySchemePage.BuiltIn(BatteryBuiltInColorScheme.LOW_SATURATION))
+    customSchemes.forEach { add(BatterySchemePage.Custom(it)) }
+    add(BatterySchemePage.Add)
+}
+
+@Composable
+private fun BatterySchemeOverviewIndicator(
+    pages: List<BatterySchemePage>,
+    pagerState: PagerState,
+    target: androidx.compose.runtime.MutableIntState,
+) {
+    BatterySchemeIndicatorRail(
+        pages = pages,
+        pagerState = pagerState,
+        targetPage = target.intValue,
+        onPageSelect = { next ->
+            if (next != pagerState.currentPage || target.intValue >= 0 || pagerState.isScrollInProgress) {
+                target.intValue = next
+            }
+        },
+    )
 }
 
 @Composable
@@ -212,6 +231,7 @@ private fun SchemeDotNavigationEffect(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
     context: SchemeDeckContext,
@@ -224,24 +244,46 @@ private fun androidx.compose.foundation.layout.ColumnScope.BatterySchemeDeck(
         state = pager,
         snapAnimationSpec = PagerNavigationSpringSpec,
     )
-    HorizontalPager(
-        state = pager,
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
-            .clipToBounds()
-            .pagerGestureOverride(pagerState = pager, flingBehavior = flingBehavior),
-        userScrollEnabled = false,
-        flingBehavior = flingBehavior,
-        pageNestedScrollConnection = PagerGestureNestedScrollConnection,
-        contentPadding = PaddingValues(horizontal = BottomSheetDefaults.insideMargin.width),
-        pageSpacing = 12.dp,
-        verticalAlignment = Alignment.Top,
-        // A scheme insertion changes pageCount; an old key lookup may still be measured
-        // against its previous list. Let Pager use its index identity instead.
-        // Per-scheme scroll states are already owned by page.key.
-    ) { index ->
-        BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
+    Box(Modifier.fillMaxWidth().weight(1f)) {
+        HorizontalPager(
+            state = pager,
+            modifier = Modifier
+                .fillMaxSize()
+                .clipToBounds()
+                .pagerGestureOverride(pagerState = pager, flingBehavior = flingBehavior),
+            userScrollEnabled = false,
+            flingBehavior = flingBehavior,
+            pageNestedScrollConnection = PagerGestureNestedScrollConnection,
+            contentPadding = PaddingValues(horizontal = BottomSheetDefaults.insideMargin.width),
+            pageSpacing = 12.dp,
+            verticalAlignment = Alignment.Top,
+            // A scheme insertion changes pageCount; an old key lookup may still be measured
+            // against its previous list. Let Pager use its index identity instead.
+            // Per-scheme scroll states are already owned by page.key.
+        ) { index ->
+            BatterySchemeDeckPage(context.pages[index], context, navigation, catalog, contentPadding)
+        }
+        BatterySchemeDeckScrollBar(context, contentPadding)
+    }
+}
+
+// The pager owns one indicator for its current page; the page itself owns
+// the ScrollState. Keep lookup outside the composable drawing scope so a
+// missing or changing page does not introduce nested fallback paths.
+@OptIn(ExperimentalScrollBarApi::class)
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.BatterySchemeDeckScrollBar(
+    context: SchemeDeckContext,
+    contentPadding: PaddingValues,
+) {
+    val page = context.pages.getOrNull(context.pager.currentPage) ?: return
+    val activeScroll = context.scrollStates[page.key] ?: return
+    key(page.key) {
+        VerticalScrollBar(
+            adapter = rememberScrollBarAdapter(activeScroll),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            trackPadding = contentPadding,
+        )
     }
 }
 

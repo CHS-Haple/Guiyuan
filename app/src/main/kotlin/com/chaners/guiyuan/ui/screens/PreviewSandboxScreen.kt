@@ -1,6 +1,11 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Column
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.expandVertically
@@ -19,8 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.rememberOverscrollEffect
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -56,6 +61,7 @@ import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.components.signalValueText
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.layout.pageScrollBarTrackPadding
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Card
@@ -72,6 +78,7 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun PreviewSandboxScreen(
     display: PreviewSandboxDisplay,
@@ -107,28 +114,21 @@ internal fun PreviewSandboxScreen(
 
     val choices = previewSandboxOptions()
 
-    // The dock is an overlay; compare the preview against the list's native content inset.
-    val listState = rememberLazyListState()
-    val showDock by remember(listState) {
-        derivedStateOf {
-            val info = listState.layoutInfo
-            val preview = info.visibleItemsInfo.firstOrNull { it.key == "fullPreview" }
-            when {
-                info.totalItemsCount == 0 -> false
-                preview != null -> preview.offset + preview.size <= info.beforeContentPadding
-                else -> listState.firstVisibleItemIndex > 0
-            }
-        }
+    val scrollState = rememberScrollState()
+    var previewHeightPx by remember { mutableIntStateOf(0) }
+    // The first preview and its title scroll together; use their measured height.
+    val showDock by remember(scrollState) {
+        derivedStateOf { previewHeightPx > 0 && scrollState.value >= previewHeightPx }
     }
     val scope = rememberCoroutineScope()
 
-    val canScroll = listState.canScrollBackward || listState.canScrollForward
+    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberTopBarBackdrop()
     val scrollToTop: () -> Unit = {
         scope.launch {
-            listState.animateScrollToItem(0)
-            if (!listState.canScrollBackward) {
+            scrollState.animateScrollTo(0)
+            if (!scrollState.canScrollBackward) {
                 // Clear stale Glass shadow while keeping MIUIX's current title collapse state.
                 scrollBehavior.state.contentOffset = 0f
             }
@@ -157,7 +157,7 @@ internal fun PreviewSandboxScreen(
             topBar = {
                 PreviewSandboxTopBar(
                     frame = SandboxTopBarFrame(
-                        topBarBackdrop, scrollBehavior, listState, dockHeight,
+                        topBarBackdrop, scrollBehavior, scrollState, dockHeight,
                     ),
                     actions = SandboxTopBarActions(
                         dark = dark,
@@ -181,25 +181,33 @@ internal fun PreviewSandboxScreen(
                 }
             },
     ) { paddingValues ->
+        val contentPadding = pageContentPadding(
+            innerPadding = paddingValues,
+            extraBottom = 12.dp,
+        )
         Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                state = listState,
-                overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
+            Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .topBarBackdropSource(topBarBackdrop)
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding =
-                    pageContentPadding(
-                        innerPadding = paddingValues,
-                        extraBottom = 12.dp,
-                    ),
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .verticalScroll(scrollState, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
+                        .padding(contentPadding),
             ) {
-                previewSandboxRows(display, choices, renderModel, visual, actions)
+                Box(Modifier.fillMaxWidth().onSizeChanged { previewHeightPx = it.height }) {
+                    PreviewSandboxPrimarySection(state, renderModel, visual)
+                }
+                previewSandboxRows(display, choices, visual, actions)
             }
+            VerticalScrollBar(
+                adapter = rememberScrollBarAdapter(scrollState),
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
+                topAppBarScrollBehavior = scrollBehavior,
+            )
          }
     }
     }

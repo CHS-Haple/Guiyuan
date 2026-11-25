@@ -51,7 +51,7 @@ internal fun AboutScreen(
     SettingsPage(
         title = stringResource(R.string.about_title),
         onBack = onBack,
-        listState = scroll.list,
+        columnState = scroll.scroll,
         keepCompactTitle = true,
         titleAlpha = titleAlpha,
         background = {
@@ -63,9 +63,10 @@ internal fun AboutScreen(
             )
         },
         foreground = { padding -> AboutHeroForeground(scroll, padding, blur, backdrop, logoBlend) },
-    ) {
-        aboutPageItems(scroll) {
-            AboutPageContent(env, xposedStatus, actions)
-        }
-    }
+        scrollContent = { padding ->
+            AboutPageItems(scroll, padding) {
+                AboutPageContent(env, xposedStatus, actions)
+            }
+        },
+    )
 }

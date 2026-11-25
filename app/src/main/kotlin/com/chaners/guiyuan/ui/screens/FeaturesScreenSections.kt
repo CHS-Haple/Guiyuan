@@ -1,9 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -73,7 +74,8 @@ private fun PageSearch.matchFeatureSections(showChargingIcon: Boolean): FeatureS
     )
 }
 
-internal fun LazyListScope.featureScreenSections(
+@Composable
+internal fun ColumnScope.featureScreenSections(
     settings: FeaturesSectionSettings,
     resources: FeaturesSectionResources,
     ui: FeaturesSectionUi,
@@ -85,7 +87,8 @@ internal fun LazyListScope.featureScreenSections(
     if (settings.search.filtering && !matches.hasResults) featureScreenEmptySearch()
 }
 
-private fun LazyListScope.featureScreenDisplayLayoutNetwork(
+@Composable
+private fun ColumnScope.featureScreenDisplayLayoutNetwork(
     settings: FeaturesSectionSettings,
     resources: FeaturesSectionResources,
     ui: FeaturesSectionUi,
@@ -119,7 +122,8 @@ private fun LazyListScope.featureScreenDisplayLayoutNetwork(
     }
 }
 
-private fun LazyListScope.featureScreenBatteryManagement(
+@Composable
+private fun ColumnScope.featureScreenBatteryManagement(
     settings: FeaturesSectionSettings,
     resources: FeaturesSectionResources,
     ui: FeaturesSectionUi,
@@ -152,17 +156,16 @@ private fun LazyListScope.featureScreenBatteryManagement(
     }
 }
 
-private fun LazyListScope.featureScreenEmptySearch() {
-    item {
-        Box(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = stringResource(R.string.feature_search_empty),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            )
-        }
+@Composable
+private fun ColumnScope.featureScreenEmptySearch() {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.feature_search_empty),
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+        )
     }
 }

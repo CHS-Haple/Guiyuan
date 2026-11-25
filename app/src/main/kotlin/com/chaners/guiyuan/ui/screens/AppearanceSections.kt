@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
@@ -14,12 +13,13 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.preference.SliderPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
-internal fun LazyListScope.appearanceVisualSection(
+@Composable
+internal fun ColumnScope.appearanceVisualSection(
     appearance: Appearance,
     actions: AppearanceVisualActions,
     scale: AppearanceScaleUiState,
 ) {
-    Section(R.string.section_visual_effects) {
+    PreferenceSection(R.string.section_visual_effects) {
         appearanceStyle(appearance, actions.style)
         appearanceScale(appearance, actions.style, scale)
         appearanceNavigation(appearance, actions.navigation)

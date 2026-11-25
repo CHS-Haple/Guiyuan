@@ -22,8 +22,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.glass.ScrollAwareGlassSegmentedTabRow
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRowDefaults
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -132,6 +132,7 @@ internal fun UiTabRow(
     modifier: Modifier = Modifier,
     inCard: Boolean = true,
 ) {
+    if (tabs.isEmpty()) return
     if (isRuntimeShaderSupported()) {
         // A tab inside the scrolling page must not sample the page's own
         // backdrop: that recorder also contains this tab. Record only its base.
@@ -139,7 +140,7 @@ internal fun UiTabRow(
         val backdrop = rememberLayerBackdrop { drawRect(surface) }
         Box(modifier = modifier) {
             Box(Modifier.matchParentSize().layerBackdrop(backdrop))
-            GlassSegmentedTabRow(
+            ScrollAwareGlassSegmentedTabRow(
                 tabs = tabs,
                 selectedIndex = selectedTabIndex,
                 onSelect = onTabSelected,

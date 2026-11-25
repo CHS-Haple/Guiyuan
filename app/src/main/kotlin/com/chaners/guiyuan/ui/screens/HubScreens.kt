@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -25,8 +29,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberOverscrollEffect
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +55,7 @@ import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.layout.pageScrollBarTrackPadding
 import kotlin.math.roundToInt
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalDensity
@@ -78,6 +83,7 @@ internal fun AnimatedPreferenceGroup(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun HubPage(
     title: String,
@@ -85,14 +91,14 @@ internal fun HubPage(
     search: PageSearch? = null,
     searchInNavigationBar: Boolean = false,
     overlay: @Composable () -> Unit = {},
-    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     // Browsing and filtered results must not overwrite each other's scroll position.
-    val browsingState = rememberLazyListState()
-    val resultsState = rememberLazyListState()
+    val browsingState = rememberScrollState()
+    val resultsState = rememberScrollState()
     val filtering = search?.filtering == true
-    val listState = if (filtering) resultsState else browsingState
-    val canScroll = listState.canScrollBackward || listState.canScrollForward
+    val scrollState = if (filtering) resultsState else browsingState
+    val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     val railProgress = LocalGlassRailProgress.current
     val density = LocalDensity.current
     val browsingScroll = MiuixScrollBehavior()
@@ -106,7 +112,7 @@ internal fun HubPage(
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(filtering, search?.query) {
         if (filtering) {
-            resultsState.requestScrollToItem(0)
+            resultsState.scrollTo(0)
         }
     }
     val searchExpanded = search?.active == true
@@ -123,7 +129,7 @@ internal fun HubPage(
     val barAlpha = rememberGlassSearchBarAlpha(searchExpanded)
     // Search shadow follows its surface material transition; geometry has its own motion.
     val searchMaterial = animateFloatAsState(
-        targetValue = if (listState.canScrollBackward || scrollBehavior.state.overscrollOffset < -1f) 1f else 0f,
+        targetValue = if (scrollState.canScrollBackward || scrollBehavior.state.overscrollOffset < -1f) 1f else 0f,
         animationSpec = GlassMotion.topBarButtonFloat(),
         label = "os4SearchMaterial",
     )
@@ -192,7 +198,7 @@ internal fun HubPage(
                     titleAlpha = { titleReveal.value * railProgress() },
                     largeTitle = title,
                     compact = filtering,
-                    isContentScrolled = listState.canScrollBackward,
+                    isContentScrolled = scrollState.canScrollBackward,
                     backdrop = topBarBackdrop,
                     scrollBehavior = scrollBehavior,
                     actions = searchAction,
@@ -227,21 +233,27 @@ internal fun HubPage(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
-            LazyColumn(
-                state = listState,
-                overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
+            val contentPadding = pageContentPadding(
+                innerPadding = paddingValues,
+                outerBottomPadding = bottomContentPadding,
+                extraBottom = 12.dp,
+            )
+            Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = pageContentPadding(
-                    innerPadding = paddingValues,
-                    outerBottomPadding = bottomContentPadding,
-                    extraBottom = 12.dp,
-                ),
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .verticalScroll(scrollState, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
+                        .padding(contentPadding),
                 content = content,
+            )
+            VerticalScrollBar(
+                adapter = rememberScrollBarAdapter(scrollState),
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
+                topAppBarScrollBehavior = scrollBehavior,
             )
         }
 
