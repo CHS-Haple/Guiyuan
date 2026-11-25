@@ -53,7 +53,8 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
     val weight = state.weight
     if (search.filtering) {
         Section(R.string.section_network, key = "features-network-wifi-airplane") {
-            networkSizesAndWeights(search, visual, visualRepo, enabled)
+            networkWifiAirplaneControls(search, visual, visualRepo, enabled)
+            networkSimTypeControls(search, visual, visualRepo, enabled)
             networkMobileWeight(search, visual, visualRepo, weight, weightDialog)
             networkFollowBatteryColor(search, visual, visualRepo, enabled)
         }
@@ -72,17 +73,6 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
     Section(key = "features-network-battery-color") {
         networkFollowBatteryColor(search, visual, visualRepo, enabled)
     }
-}
-
-@Composable
-private fun ColumnScope.networkSizesAndWeights(
-    search: PageSearch,
-    visual: VisualCfg,
-    visualRepo: VisualRepo,
-    enabled: Boolean,
-) {
-    networkWifiAirplaneControls(search, visual, visualRepo, enabled)
-    networkSimTypeControls(search, visual, visualRepo, enabled)
 }
 
 @Composable
