@@ -1,7 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.chaners.guiyuan.R
@@ -38,7 +38,7 @@ internal fun SettingsHubScreen(
         bottomContentPadding = bottomContentPadding,
         overlay = { AppSettingsEntryDialogs(entryState) },
     ) {
-        PreferenceSection(R.string.section_appearance_interaction) {
+        Section(R.string.section_appearance_interaction) {
             ArrowPreference(
                 title = stringResource(R.string.appearance_title),
                 startAction = {
@@ -61,7 +61,7 @@ internal fun SettingsHubScreen(
                 onCheckedChange = actions.onSwipeBackChange,
             )
         }
-        PreferenceSection(R.string.section_app) {
+        Section(R.string.section_app) {
             AppSettingsRows(
                 lang = snapshot.lang,
                 iconHidden = snapshot.iconHidden,
@@ -74,13 +74,12 @@ internal fun SettingsHubScreen(
     }
 }
 
-@Composable
-private fun ColumnScope.settingsHubMaintenanceSection(
+private fun LazyListScope.settingsHubMaintenanceSection(
     entryState: AppSettingsEntryState,
     onRestart: () -> Unit,
     onNavigate: (AppRoute) -> Unit,
 ) {
-    PreferenceSection(R.string.section_diagnostics_maintenance) {
+    Section(R.string.section_diagnostics_maintenance) {
         ArrowPreference(
             title = stringResource(R.string.about_title),
             startAction = {
