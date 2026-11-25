@@ -1836,6 +1836,46 @@ internal object SysUiPresentationOwner {
             }
         }
 
+        /** A previously adopted native width is the sole authority for immediate layout readiness. */
+        private fun adoptExistingNativeLayout(group: ViewGroup): Int? {
+            if (!shouldAdoptNativeLayout(group)) return null
+            val masked = refreshClipMasks()
+            compactLayoutReady = true
+            layoutReadyCallback = null
+            onEvent(
+                eventPrefix + " layoutReady source=existing-native-status-icons-layout" +
+                    LOG_MASKED_VIEWS + masked,
+            )
+            return masked
+        }
+
+        /** Await the existing native layout owner without introducing a visual or timer writer. */
+        private fun awaitNativeLayoutVisualHandoff(
+            group: ViewGroup,
+            preMaskBeforeLayout: Boolean,
+        ): Int {
+            compactLayoutReady = false
+            val preMasked = deferVisualMaskUntilLayout && preMaskBeforeLayout
+            val masked =
+                if (preMasked) {
+                    refreshClipMasks()
+                } else {
+                    0
+                }
+            onEvent(
+                eventPrefix + " preLayoutVisualMask active=" + preMasked +
+                    LOG_MASKED_VIEWS + masked +
+                    " fallbackVisual=" +
+                    if (preMasked) {
+                        "outgoing-guiyuan-or-masked-native-until-layout"
+                    } else {
+                        "native-until-native-layout"
+                    },
+            )
+            awaitCcNativeLayout(group)
+            return masked
+        }
+
         private fun startPresentation(
             preMaskBeforeLayout: Boolean,
             deferNativeLayoutOwnershipUntilCommit: Boolean,
@@ -1863,41 +1903,11 @@ internal object SysUiPresentationOwner {
             if (!applyPersistentIgnoredSlots(group)) return 0
             if (!syncEndReservation()) return 0
 
-            if (
-                shouldAdoptNativeLayout(group)
-            ) {
-                val masked = refreshClipMasks()
-                compactLayoutReady = true
-                layoutReadyCallback = null
-                onEvent(
-                    eventPrefix + " layoutReady source=existing-native-status-icons-layout" +
-                        LOG_MASKED_VIEWS + masked,
-                )
-                return masked
-            }
+            val adopted = adoptExistingNativeLayout(group)
+            if (adopted != null) return adopted
 
             if (deferVisualMaskUntilLayout) {
-                compactLayoutReady = false
-                val preMasked =
-                    deferVisualMaskUntilLayout && preMaskBeforeLayout
-                val masked =
-                    if (preMasked) {
-                        refreshClipMasks()
-                    } else {
-                        0
-                    }
-                onEvent(
-                    eventPrefix + " preLayoutVisualMask active=" + preMasked +
-                        LOG_MASKED_VIEWS + masked +
-                        " fallbackVisual=" +
-                        if (preMasked) {
-                            "outgoing-guiyuan-or-masked-native-until-layout"
-                        } else {
-                            "native-until-native-layout"
-                        },
-                )
-                awaitCcNativeLayout(group)
-                return masked
+                return awaitNativeLayoutVisualHandoff(group, preMaskBeforeLayout)
             }
 
             compactLayoutReady = true
