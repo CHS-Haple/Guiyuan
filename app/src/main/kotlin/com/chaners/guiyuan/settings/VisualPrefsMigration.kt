@@ -137,20 +137,25 @@ internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
         val editor = preferences.edit()
         migrateSignalDotArrangementsIfNeeded(preferences, editor)
         migrateSharedLayoutVisualsIfNeeded(preferences, preserveMigratedSignalStyles = true, sharedEditor = editor)
+        // Include the new offset in this same durable migration transaction.
+        migrateMobileSignalDotOffsetIfNeeded(preferences, sharedEditor = editor)
         check(editor.commit()) { "Could not commit visual preference migration" }
     } else {
         migrateSignalDotArrangementsIfNeeded(preferences)
         migrateSharedLayoutVisualsIfNeeded(preferences)
+        migrateMobileSignalDotOffsetIfNeeded(preferences)
     }
-    migrateMobileSignalDotOffsetIfNeeded(preferences)
 }
 
 // Retire the two style-specific settings after both earlier visual migrations.
 // A both-sides arrangement has no movable dots, so keep the single-row choice.
-internal fun migrateMobileSignalDotOffsetIfNeeded(prefs: SharedPreferences) {
+internal fun migrateMobileSignalDotOffsetIfNeeded(
+    prefs: SharedPreferences,
+    sharedEditor: SharedPreferences.Editor? = null,
+) {
     if (prefs.getInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 0) >= 1) return
     val currentDual = prefs.dualSignalEnabled()
-    val editor = prefs.edit()
+    val editor = sharedEditor ?: prefs.edit()
     ContentLayout.entries.forEach { layout ->
         val visual = prefs.readVisualCfg(dual = currentDual, layoutOverride = layout)
         val effectiveOffset = if (currentDual && visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES) {
@@ -165,7 +170,9 @@ internal fun migrateMobileSignalDotOffsetIfNeeded(prefs: SharedPreferences) {
             .remove(visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY))
     }
     editor.putInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 1)
-    check(editor.commit()) { "Could not commit mobile signal dot offset migration" }
+    if (sharedEditor == null) {
+        check(editor.commit()) { "Could not commit mobile signal dot offset migration" }
+    }
 }
 
 // Reset visual choices without deleting user-created battery schemes.
