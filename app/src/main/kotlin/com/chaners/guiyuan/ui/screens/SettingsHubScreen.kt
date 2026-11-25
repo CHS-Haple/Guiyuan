@@ -38,70 +38,56 @@ internal fun SettingsHubScreen(
         bottomContentPadding = bottomContentPadding,
         overlay = { AppSettingsEntryDialogs(entryState) },
     ) {
-        settingsHubAppearanceSection(snapshot, actions)
-        settingsHubAppSection(snapshot, actions, entryState)
+        GroupedPreferenceSection(
+            R.string.section_appearance_interaction,
+            "settings-appearance",
+            listOf(
+                PreferenceCardItem("appearance") {
+                    ArrowPreference(
+                        title = stringResource(R.string.appearance_title),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_display_settings,
+                            )
+                        },
+                        summary = stringResource(R.string.appearance_summary),
+                        onClick = { actions.onNavigate(AppRoute.Appearance) },
+                    )
+                },
+                PreferenceCardItem("swipe-back") {
+                    SwitchPreference(
+                        title = stringResource(R.string.swipe_back),
+                        startAction = {
+                            SemanticLeadingIcon(
+                                iconRes = R.drawable.ic_material_symbol_swipe,
+                            )
+                        },
+                        summary = stringResource(R.string.swipe_back_summary),
+                        checked = snapshot.swipeBackEnabled,
+                        onCheckedChange = actions.onSwipeBackChange,
+                    )
+                },
+            ),
+        )
+        GroupedPreferenceSection(
+            R.string.section_app,
+            "settings-app",
+            listOf(
+                PreferenceCardItem("language") {
+                    AppLanguageRow(snapshot.lang, actions.onLangChange)
+                },
+                PreferenceCardItem("launcher-icon") {
+                    AppLauncherIconRow(snapshot.iconHidden, actions.onIconHiddenChange)
+                },
+                PreferenceCardItem("settings-entry") {
+                    AppSettingsEntryRows(entryState)
+                },
+            ),
+        )
         settingsHubMaintenanceSection(entryState, actions.onRestart, actions.onNavigate)
     }
 }
 
-private fun LazyListScope.settingsHubAppearanceSection(
-    snapshot: SettingsHubSnapshot,
-    actions: SettingsHubActions,
-) {
-    GroupedPreferenceSection(
-        R.string.section_appearance_interaction,
-        "settings-appearance",
-        listOf(
-            PreferenceCardItem("appearance") {
-                ArrowPreference(
-                    title = stringResource(R.string.appearance_title),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_display_settings,
-                        )
-                    },
-                    summary = stringResource(R.string.appearance_summary),
-                    onClick = { actions.onNavigate(AppRoute.Appearance) },
-                )
-            },
-            PreferenceCardItem("swipe-back") {
-                SwitchPreference(
-                    title = stringResource(R.string.swipe_back),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            iconRes = R.drawable.ic_material_symbol_swipe,
-                        )
-                    },
-                    summary = stringResource(R.string.swipe_back_summary),
-                    checked = snapshot.swipeBackEnabled,
-                    onCheckedChange = actions.onSwipeBackChange,
-                )
-            },
-        ),
-    )
-}
-
-private fun LazyListScope.settingsHubAppSection(
-    snapshot: SettingsHubSnapshot,
-    actions: SettingsHubActions,
-    entryState: AppSettingsEntryState,
-) {
-    GroupedPreferenceSection(
-        R.string.section_app,
-        "settings-app",
-        listOf(
-            PreferenceCardItem("language") {
-                AppLanguageRow(snapshot.lang, actions.onLangChange)
-            },
-            PreferenceCardItem("launcher-icon") {
-                AppLauncherIconRow(snapshot.iconHidden, actions.onIconHiddenChange)
-            },
-            PreferenceCardItem("settings-entry") {
-                AppSettingsEntryRows(entryState)
-            },
-        ),
-    )
-}
 private fun LazyListScope.settingsHubMaintenanceSection(
     entryState: AppSettingsEntryState,
     onRestart: () -> Unit,
