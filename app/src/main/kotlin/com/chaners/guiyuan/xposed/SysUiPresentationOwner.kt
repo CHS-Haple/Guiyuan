@@ -293,20 +293,6 @@ internal object SysUiPresentationOwner {
         controlCenterCurrent?.syncEndReservation()
     }
 
-    // Both native ignored-slot mutations require the same unique List contract.
-    private fun findIgnoredSlotsMethod(
-        containerClass: Class<*>,
-        name: String,
-    ): java.lang.reflect.Method? =
-        containerClass.declaredMethods
-            .filter { method ->
-                method.name == name &&
-                    method.parameterTypes.contentEquals(arrayOf(List::class.java)) &&
-                    method.returnType == Void.TYPE
-            }
-            .singleOrNull()
-            ?.apply { isAccessible = true }
-
     @Synchronized
     fun install(
         module: XposedModule,
@@ -329,23 +315,15 @@ internal object SysUiPresentationOwner {
             } ?: return "status-icon-container-class-missing"
         val field =
             optionalNativeRead {
-                generateSequence(containerClass) { clazz -> clazz.superclass }
-                    .mapNotNull { clazz ->
-                        clazz.declaredFields.firstOrNull { candidate ->
-                            candidate.name == "ignoredSlots" &&
-                                List::class.java.isAssignableFrom(candidate.type)
-                        }
-                    }
-                    .firstOrNull()
-                    ?.apply { isAccessible = true }
+                SysUiPresentationContracts.ignoredSlotsField(containerClass)
             } ?: return "ignored-slots-field-missing"
         val addIgnoredSlots =
             optionalNativeRead {
-                findIgnoredSlotsMethod(containerClass, "addIgnoredSlots")
+                SysUiPresentationContracts.ignoredSlotsMethod(containerClass, "addIgnoredSlots")
             } ?: return "add-ignored-slots-contract-missing"
         val setIgnoredSlots =
             optionalNativeRead {
-                findIgnoredSlotsMethod(containerClass, "setIgnoredSlots")
+                SysUiPresentationContracts.ignoredSlotsMethod(containerClass, "setIgnoredSlots")
             } ?: return "set-ignored-slots-contract-missing"
         val batteryContainerClass =
             optionalNativeRead {
@@ -353,93 +331,35 @@ internal object SysUiPresentationOwner {
             } ?: return "battery-container-class-missing"
         val hideField =
             optionalNativeRead {
-                generateSequence(batteryContainerClass) { clazz -> clazz.superclass }
-                    .mapNotNull { clazz ->
-                        clazz.declaredFields.firstOrNull { candidate ->
-                            candidate.name == "mIsHideBattery" &&
-                                candidate.type == java.lang.Boolean.TYPE
-                        }
-                    }
-                    .firstOrNull()
-                    ?.apply { isAccessible = true }
+                SysUiPresentationContracts.batteryHideField(batteryContainerClass)
             } ?: return "battery-hide-field-missing"
         val batterySetIsHide =
             optionalNativeRead {
-                batteryContainerClass.declaredMethods
-                    .firstOrNull { method ->
-                        method.name == "setIsHideBattery" &&
-                            method.parameterTypes.contentEquals(
-                                arrayOf(Boolean::class.javaObjectType),
-                            ) &&
-                            method.returnType == Void.TYPE
-                    }
-                    ?.apply { isAccessible = true }
+                SysUiPresentationContracts.batteryHideMethod(batteryContainerClass)
             } ?: return "battery-hide-method-contract-missing"
 
         // Exact-ROM privacy layout state is independent of native battery hiding.
         val nativePrivacyField =
             optionalNativeRead {
-                batteryContainerClass.declaredFields.singleOrNull { candidate ->
-                    candidate.name == "mPrivacyState" &&
-                        candidate.type.name ==
-                            "com.android.systemui.statusbar.phone.MiuiHomePrivacyController\$PrivacyState"
-                }?.apply { isAccessible = true }
+                SysUiPresentationContracts.privacyField(batteryContainerClass)
             } ?: return "native-privacy-state-field-missing"
         val nativePrivacyMethod =
             optionalNativeRead {
-                batteryContainerClass.declaredMethods.singleOrNull { method ->
-                    method.name == "setPrivacyState" &&
-                        method.parameterTypes.contentEquals(arrayOf(nativePrivacyField.type)) &&
-                        method.returnType == Void.TYPE
-                }?.apply { isAccessible = true }
+                SysUiPresentationContracts.privacyMethod(batteryContainerClass, nativePrivacyField)
             } ?: return "native-privacy-state-method-missing"
 
         val onMeasure =
             optionalNativeRead {
-                containerClass.declaredMethods
-                    .firstOrNull { method ->
-                        method.name == "onMeasure" &&
-                            method.parameterTypes.contentEquals(
-                                arrayOf(
-                                    Int::class.javaPrimitiveType,
-                                    Int::class.javaPrimitiveType,
-                                ),
-                            ) &&
-                            method.returnType == Void.TYPE
-                    }
-                    ?.apply { isAccessible = true }
+                SysUiPresentationContracts.measureMethod(containerClass)
             } ?: return "on-measure-contract-missing"
         val onLayout =
             optionalNativeRead {
-                containerClass.declaredMethods
-                    .firstOrNull { method ->
-                        method.name == "onLayout" &&
-                            method.parameterTypes.contentEquals(
-                                arrayOf(
-                                    Boolean::class.javaPrimitiveType,
-                                    Int::class.javaPrimitiveType,
-                                    Int::class.javaPrimitiveType,
-                                    Int::class.javaPrimitiveType,
-                                    Int::class.javaPrimitiveType,
-                                ),
-                            ) &&
-                            method.returnType == Void.TYPE
-                    }
-                    ?.apply { isAccessible = true }
+                SysUiPresentationContracts.layoutMethod(containerClass)
             } ?: return "on-layout-contract-missing"
 
         val getIslandShowing =
             optionalNativeRead {
-                generateSequence(containerClass) { clazz -> clazz.superclass }
-                    .mapNotNull { clazz ->
-                        clazz.declaredMethods.firstOrNull { method ->
-                            method.name == "getIslandShowing" &&
-                                method.parameterCount == 0 &&
-                                method.returnType == Boolean::class.javaPrimitiveType
-                        }
-                    }
-                    .firstOrNull()
-                    ?.apply { isAccessible = true }
+                SysUiPresentationContracts.islandShowingMethod(containerClass)
             } ?: return "island-showing-contract-missing"
 
         eventSink = guardedDiagnostic(onEvent)
@@ -451,17 +371,23 @@ internal object SysUiPresentationOwner {
         privacyStateField = nativePrivacyField
 
         return registerPresentationHooks(
-            module, onMeasure, onLayout, batterySetIsHide, getIslandShowing, nativePrivacyMethod,
+            module,
+            PresentationHookMethods(onMeasure, onLayout, batterySetIsHide, getIslandShowing, nativePrivacyMethod),
         )
     }
 
+    // A complete five-method native Hook transaction is either installed or rolled back.
+    private class PresentationHookMethods(
+        val onMeasure: java.lang.reflect.Method,
+        val onLayout: java.lang.reflect.Method,
+        val batterySetIsHide: java.lang.reflect.Method,
+        val getIslandShowing: java.lang.reflect.Method,
+        val nativePrivacyMethod: java.lang.reflect.Method,
+    )
+
     private fun registerPresentationHooks(
         module: XposedModule,
-        onMeasure: java.lang.reflect.Method,
-        onLayout: java.lang.reflect.Method,
-        batterySetIsHide: java.lang.reflect.Method,
-        getIslandShowing: java.lang.reflect.Method,
-        nativePrivacyMethod: java.lang.reflect.Method,
+        methods: PresentationHookMethods,
     ): String? {
         val installed = ArrayList<HookHandle>(HOOK_COUNT)
         fun register(
@@ -490,19 +416,19 @@ internal object SysUiPresentationOwner {
             return null
         }
 
-        register(onMeasure, MEASURE_HOOK_ID, "measure-hook-") {
+        register(methods.onMeasure, MEASURE_HOOK_ID, "measure-hook-") {
             layoutHooker(refreshMasksAfter = false)
         }?.let { return it }
-        register(onLayout, LAYOUT_HOOK_ID, "layout-hook-") {
+        register(methods.onLayout, LAYOUT_HOOK_ID, "layout-hook-") {
             layoutHooker(refreshMasksAfter = true)
         }?.let { return it }
-        register(batterySetIsHide, BATTERY_HIDE_HOOK_ID, "battery-hide-hook-") {
+        register(methods.batterySetIsHide, BATTERY_HIDE_HOOK_ID, "battery-hide-hook-") {
             batteryLayoutStateHooker("battery-hide-post-native")
         }?.let { return it }
-        register(getIslandShowing, ISLAND_SHOWING_HOOK_ID, "island-showing-hook-") {
+        register(methods.getIslandShowing, ISLAND_SHOWING_HOOK_ID, "island-showing-hook-") {
             islandShowingHooker()
         }?.let { return it }
-        register(nativePrivacyMethod, PRIVACY_STATE_HOOK_ID, "privacy-state-hook-") {
+        register(methods.nativePrivacyMethod, PRIVACY_STATE_HOOK_ID, "privacy-state-hook-") {
             batteryLayoutStateHooker("privacy-state-post-native")
         }?.let { return it }
 
