@@ -33,9 +33,10 @@ internal object SysUiSceneSource {
         classLoader: ClassLoader,
         onSceneState: (SceneUpdate) -> Unit,
         onRuntimeFailure: (Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): List<HookHandle> {
+        val onEvent = diagnostics.onEvent
+        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         val batteryClass =
             Class.forName(BATTERY_VIEW_CLASS_NAME, false, classLoader)
         val stateField =

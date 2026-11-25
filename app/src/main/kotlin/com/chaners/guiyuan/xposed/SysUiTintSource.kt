@@ -133,9 +133,10 @@ internal object SysUiTintSource {
         classLoader: ClassLoader,
         onTintState: (TintUpdate) -> Unit,
         onRuntimeFailure: (Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): List<HookHandle> {
+        val onEvent = diagnostics.onEvent
+        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         check(!hooksReady && failedInstallHandles.isEmpty()) { "tint-hooks-already-installed" }
 
         val native = TintNativeMembers.resolve(classLoader)
