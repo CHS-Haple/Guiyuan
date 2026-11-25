@@ -1066,7 +1066,6 @@ internal object SysUiNetworkSource {
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     /** Seed from the existing native binding before its collector can emit. */
     private fun deliverWifiSeedBeforeNativeBind(
         root: ViewGroup,
@@ -1096,6 +1095,7 @@ internal object SysUiNetworkSource {
         )?.let(sinks.onWifiState)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun wifiBindHooker(
         active: AtomicBoolean,
         seedContract: WifiSeedContract,
@@ -1477,7 +1477,6 @@ internal object SysUiNetworkSource {
         result
     }
 
-    @Suppress("TooGenericExceptionCaught")
     /** Only a verified changed native hotspot tag can override Hidden semantics. */
     private fun effectiveAppliedWifiSemantic(
         semantic: WifiSemanticValue,
@@ -1536,6 +1535,7 @@ internal object SysUiNetworkSource {
         " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
         " presentation=" + NetworkNativeEvidence.wifiPresentationToken(image)
 
+    @Suppress("TooGenericExceptionCaught")
     private fun publishAppliedWifiIcon(
         image: ImageView?,
         semantic: WifiSemanticValue?,
