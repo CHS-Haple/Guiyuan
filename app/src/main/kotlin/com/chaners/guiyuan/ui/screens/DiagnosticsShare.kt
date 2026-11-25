@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import com.chaners.guiyuan.system.DiagFiles
+import com.chaners.guiyuan.system.DiagShareDiagnostics
 
 /** The companion UI owns the chooser; DiagFiles owns MediaStore publication and cleanup. */
 internal suspend fun shareDiagnosticReport(
@@ -22,18 +23,18 @@ internal suspend fun shareDiagnosticReport(
         )
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    DiagFiles.logIntent(sendIntent, prepared.uri)
+    DiagShareDiagnostics.logIntent(sendIntent, prepared.uri)
     val chooserIntent = Intent.createChooser(sendIntent, shareTitle).apply {
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     return runCatching { context.startActivity(chooserIntent) }
         .fold(
             onSuccess = {
-                DiagFiles.logChooser()
+                DiagShareDiagnostics.logChooser()
                 true
             },
             onFailure = { error ->
-                DiagFiles.logChooser(error)
+                DiagShareDiagnostics.logChooser(error)
                 DiagFiles.discard(context, prepared)
                 false
             },
