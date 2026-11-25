@@ -1066,6 +1066,35 @@ internal object SysUiNetworkSource {
         }
     }
 
+    /** Seed from the existing native binding before its collector can emit. */
+    private fun deliverWifiSeedBeforeNativeBind(
+        root: ViewGroup,
+        viewModel: Any?,
+        seedContract: WifiSeedContract,
+        sinks: Sinks,
+        diagnostics: Diagnostics,
+    ) {
+        val diagnosticEvent = diagnostics.onEvent?.takeIf { diagnostics.isDetailedDiagnosticsEnabled() }
+        optionalNativeRead {
+            diagnosticEvent?.invoke(
+                "networkPipeline wifi bound " +
+                    "stage=beforeProceed " +
+                    "root=" + root.javaClass.simpleName +
+                    ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(root) +
+                    " vm=" + viewModel?.javaClass?.simpleName +
+                    PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(root) +
+                    LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(root),
+            )
+        }
+        readWifiSeed(
+            root = root,
+            viewModel = requireNotNull(viewModel),
+            contract = seedContract,
+            source = "bind",
+            onEvent = diagnosticEvent,
+        )?.let(sinks.onWifiState)
+    }
+
     @Suppress("TooGenericExceptionCaught")
     private fun wifiBindHooker(
         active: AtomicBoolean,
@@ -1074,8 +1103,7 @@ internal object SysUiNetworkSource {
         diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
         if (!active.get()) return@Hooker chain.proceed()
-        val onWifiState = sinks.onWifiState
-        val (onRuntimeFailure, onEvent, isDetailedDiagnosticsEnabled) = diagnostics
+        val onRuntimeFailure = diagnostics.onRuntimeFailure
         val root: ViewGroup?
         val viewModel: Any?
         try {
@@ -1099,25 +1127,7 @@ internal object SysUiNetworkSource {
         var seedFailure: Throwable? = null
         if (boundRoot != null && previous?.viewModel !== viewModel) {
             try {
-                val diagnosticEvent = onEvent?.takeIf { isDetailedDiagnosticsEnabled() }
-                optionalNativeRead {
-                    diagnosticEvent?.invoke(
-                        "networkPipeline wifi bound " +
-                        "stage=beforeProceed " +
-                        "root=" + boundRoot.javaClass.simpleName +
-                        ROOT_ID_LOG_FIELD + NativeStatusIdentity.resourceId(boundRoot) +
-                        " vm=" + viewModel?.javaClass?.simpleName +
-                        PARENT_CHAIN_LOG_FIELD + NetworkNativeEvidence.parentChain(boundRoot) +
-                        LAYOUT_LOG_FIELD + NetworkNativeEvidence.layoutToken(boundRoot),
-                    )
-                }
-                readWifiSeed(
-                    root = boundRoot,
-                    viewModel = requireNotNull(viewModel),
-                    contract = seedContract,
-                    source = "bind",
-                    onEvent = diagnosticEvent,
-                )?.let(onWifiState)
+                deliverWifiSeedBeforeNativeBind(boundRoot, viewModel, seedContract, sinks, diagnostics)
             } catch (error: Throwable) {
                 rethrowFatal(error)
                 seedFailure = error
@@ -1467,6 +1477,64 @@ internal object SysUiNetworkSource {
         result
     }
 
+    /** Only a verified changed native hotspot tag can override Hidden semantics. */
+    private fun effectiveAppliedWifiSemantic(
+        semantic: WifiSemanticValue,
+        taggedResId: Int?,
+        taggedResource: String?,
+        hotspotAppliedFallback: Boolean,
+    ): WifiSemanticValue =
+        if (hotspotAppliedFallback) {
+            WifiSemanticValue(
+                state =
+                    StatusStateStore.WifiState.Visible(
+                        iconResId = taggedResId,
+                        signal = SysUiSignalParser.wifi(taggedResource),
+                        internetValidated = SysUiSignalParser.wifiInternetValidated(taggedResource),
+                    ),
+                resourceId = taggedResId,
+                resourceName = taggedResource,
+                valueType = semantic.valueType + "+AppliedHotspot",
+            )
+        } else {
+            semantic
+        }
+
+    /** Diagnostic-only values; never a second semantic event or native writer. */
+    private class WifiAppliedDiagnostic(
+        val classId: Int,
+        val semantic: WifiSemanticValue,
+        val effective: WifiSemanticValue,
+        val native: WifiAppliedNativeTag,
+    )
+
+    private class WifiAppliedNativeTag(
+        val taggedResId: Int?,
+        val taggedResource: String?,
+        val hotspotAppliedFallback: Boolean,
+    )
+
+    /** Formatting stays within the original optional-native-read diagnostic boundary. */
+    private fun appliedWifiEventMessage(image: ImageView, receipt: WifiAppliedDiagnostic): String =
+        "networkPipeline wifi iconEvent " +
+        "phase=semanticBeforeProceed/viewAfterProceed " +
+        "viewId=" + NativeStatusIdentity.resourceId(image) +
+        " classId=" + receipt.classId +
+        " valueType=" + receipt.semantic.valueType +
+        " effectiveType=" + receipt.effective.valueType +
+        " modelResId=" + (receipt.semantic.resourceId ?: 0) +
+        " modelResource=" + (receipt.semantic.resourceName ?: "n/a") +
+        " taggedResId=" + (receipt.native.taggedResId ?: 0) +
+        " taggedResource=" + (receipt.native.taggedResource ?: "n/a") +
+        " appliedFallback=" +
+        if (receipt.native.hotspotAppliedFallback) {
+            "hotspot-tag-change"
+        } else {
+            "none"
+        } +
+        " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
+        " presentation=" + NetworkNativeEvidence.wifiPresentationToken(image)
+
     @Suppress("TooGenericExceptionCaught")
     private fun publishAppliedWifiIcon(
         image: ImageView?,
@@ -1499,24 +1567,7 @@ internal object SysUiNetworkSource {
                     taggedResource = taggedResource,
                 )
             val effective =
-                if (hotspotAppliedFallback) {
-                    WifiSemanticValue(
-                        state =
-                            StatusStateStore.WifiState.Visible(
-                                iconResId = taggedResId,
-                                signal = SysUiSignalParser.wifi(taggedResource),
-                                internetValidated =
-                                    SysUiSignalParser.wifiInternetValidated(
-                                        taggedResource,
-                                    ),
-                            ),
-                        resourceId = taggedResId,
-                        resourceName = taggedResource,
-                        valueType = semantic.valueType + "+AppliedHotspot",
-                    )
-                } else {
-                    semantic
-                }
+                effectiveAppliedWifiSemantic(semantic, taggedResId, taggedResource, hotspotAppliedFallback)
             val eventKey =
                 effective.valueType + ":" +
                     (effective.resourceId?.toString() ?: "none")
@@ -1531,24 +1582,13 @@ internal object SysUiNetworkSource {
                 if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                     optionalNativeRead {
                         onEvent(
-                            "networkPipeline wifi iconEvent " +
-                            "phase=semanticBeforeProceed/viewAfterProceed " +
-                            "viewId=" + NativeStatusIdentity.resourceId(image) +
-                            " classId=" + classId +
-                            " valueType=" + semantic.valueType +
-                            " effectiveType=" + effective.valueType +
-                            " modelResId=" + (semantic.resourceId ?: 0) +
-                            " modelResource=" + (semantic.resourceName ?: "n/a") +
-                            " taggedResId=" + (taggedResId ?: 0) +
-                            " taggedResource=" + (taggedResource ?: "n/a") +
-                            " appliedFallback=" +
-                            if (hotspotAppliedFallback) {
-                                "hotspot-tag-change"
-                            } else {
-                                "none"
-                            } +
-                            " visibility=" + NativeStatusIdentity.visibilityName(image.visibility) +
-                            " presentation=" + NetworkNativeEvidence.wifiPresentationToken(image),
+                            appliedWifiEventMessage(
+                                image,
+                                WifiAppliedDiagnostic(
+                                    classId, semantic, effective,
+                                    WifiAppliedNativeTag(taggedResId, taggedResource, hotspotAppliedFallback),
+                                ),
+                            ),
                         )
                     }
                 }
