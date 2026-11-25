@@ -17,7 +17,7 @@ class StatusStateStoreAirplaneRecoveryTest {
 
         StatusStateStore.restoreHotReloadState(null)
         StatusStateStore.updateAirplaneMode(true)
-        val restored = StatusStateStore.mergeHotReloadSnapshots(old, StatusStateStore.snapshot())
+        val restored = HotReloadSnapshotMergePolicy.merge(old, StatusStateStore.snapshot())
         assertEquals(true, restored.airplaneMode)
         assertTrue(restored.mobileActivityResIds.isEmpty())
         StatusStateStore.restoreHotReloadState(null)
@@ -35,7 +35,7 @@ class StatusStateStoreAirplaneRecoveryTest {
         val fresh = StatusStateStore.snapshot()
         assertTrue(fresh.mobileRecoveryPending)
 
-        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        val merged = HotReloadSnapshotMergePolicy.merge(saved, fresh)
         assertEquals(false, merged.airplaneMode)
         assertTrue(merged.mobileRecoveryPending)
         StatusStateStore.restoreHotReloadState(null)
@@ -54,7 +54,7 @@ class StatusStateStoreAirplaneRecoveryTest {
         val fresh = StatusStateStore.snapshot()
         assertFalse(fresh.mobileRecoveryPending)
 
-        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        val merged = HotReloadSnapshotMergePolicy.merge(saved, fresh)
         assertEquals(true, merged.airplaneMode)
         assertFalse(merged.mobileRecoveryPending)
         StatusStateStore.restoreHotReloadState(null)
@@ -70,7 +70,7 @@ class StatusStateStoreAirplaneRecoveryTest {
 
         StatusStateStore.restoreHotReloadState(null)
         val merged =
-            StatusStateStore.mergeHotReloadSnapshots(saved, StatusStateStore.snapshot())
+            HotReloadSnapshotMergePolicy.merge(saved, StatusStateStore.snapshot())
         assertEquals(false, merged.airplaneMode)
         assertTrue(merged.mobileRecoveryPending)
         StatusStateStore.restoreHotReloadState(null)
@@ -89,7 +89,7 @@ class StatusStateStoreAirplaneRecoveryTest {
         assertNull(fresh.airplaneMode)
         assertEquals(220, fresh.mobileActivityResIds[4])
 
-        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        val merged = HotReloadSnapshotMergePolicy.merge(saved, fresh)
         assertEquals(true, merged.airplaneMode)
         assertTrue(merged.mobileActivityResIds.isEmpty())
         assertFalse(merged.mobileRecoveryPending)
