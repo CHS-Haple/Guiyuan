@@ -1576,8 +1576,6 @@ internal object SysUiNetworkSource {
             taggedResId != previousTaggedResId &&
             SysUiSignalParser.isHotspotWifiResource(taggedResource)
 
-    // Recoverable OEM argument-read failures proceed natively; VM fatals rethrow.
-    @Suppress("TooGenericExceptionCaught")
     /** A single native bind owns a reversible cached-subscription receipt. */
     private class MobileBindReceipt(
         var pending: MobileBinding? = null,
@@ -1621,6 +1619,7 @@ internal object SysUiNetworkSource {
     }
 
     /** A native bind may replace children without changing its subscription identity. */
+    @Suppress("TooGenericExceptionCaught")
     private fun notifyMobilePresentationAfterBind(
         boundRoot: ViewGroup?,
         onPresentationChanged: (() -> Unit)?,
@@ -1636,6 +1635,8 @@ internal object SysUiNetworkSource {
         }
     }
 
+    // Recoverable OEM argument-read failures proceed natively; VM fatals rethrow.
+    @Suppress("TooGenericExceptionCaught")
     private fun mobileBindHooker(
         active: AtomicBoolean,
         subscriptionIdMethod: Method,
@@ -1703,7 +1704,6 @@ internal object SysUiNetworkSource {
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     /** A per-emission rollback key and optional diagnostic; never retained across callbacks. */
     private class MobileSignalReceipt(
         var pendingKey: String? = null,
@@ -1727,7 +1727,7 @@ internal object SysUiNetworkSource {
             else -> value.javaClass.simpleName
         }
         // A native icon view may be rebound to a different SIM.
-        val eventKey = "$"+"subscriptionId:$"+"classId:$"+"valueText"
+        val eventKey = "$subscriptionId:$classId:$valueText"
         val changed = synchronized(this) {
             lastMobileEvents.put(source, eventKey) != eventKey
         }
@@ -1764,6 +1764,7 @@ internal object SysUiNetworkSource {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun mobileSignalHooker(
         active: AtomicBoolean,
         mobileImageField: Field,
