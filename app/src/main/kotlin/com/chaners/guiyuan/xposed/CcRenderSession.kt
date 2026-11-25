@@ -114,16 +114,9 @@ internal object CcRenderSession {
                     "battery-core-carrier-missing",
                     retryAfterLayout = true,
                 )
+        val views = ResolvedStatusHost(host, statusBarArea, statusIcons, battery, carrier)
         val existing = current
-        if (
-            existing?.matches(
-                host = host,
-                statusBarArea = statusBarArea,
-                statusIcons = statusIcons,
-                battery = battery,
-                carrier = carrier,
-            ) == true
-        ) {
+        if (existing?.matches(views) == true) {
             existing.setSceneEligible(sceneEligible)
             existing.refresh()
             return existing.prepareNativePresentation(reused = true)
@@ -139,15 +132,9 @@ internal object CcRenderSession {
 
         val session =
             Session(
-                host = host,
-                statusBarArea = statusBarArea,
-                statusIcons = statusIcons,
-                battery = battery,
-                carrier = carrier,
+                views = views,
                 sinks = sinks,
-                initialSceneEligible = sceneEligible,
-                initialSourceScene = sourceScene,
-                initialPanelVisualOwner = panelVisualOwner,
+                initial = InitialPresentation(sceneEligible, sourceScene, panelVisualOwner),
             )
         current = session
         return startSession(session)
@@ -556,23 +543,23 @@ internal object CcRenderSession {
             hostAttached &&
             nativePresentationReady
 
+    private class InitialPresentation(
+        val sceneEligible: Boolean,
+        val sourceScene: SourceScene,
+        val panelVisualOwner: Boolean,
+    )
+
     private class Session(
-        host: ViewGroup,
-        statusBarArea: ViewGroup,
-        statusIcons: ViewGroup,
-        battery: ViewGroup,
-        carrier: View,
+        views: ResolvedStatusHost,
         private val sinks: Sinks,
-        initialSceneEligible: Boolean,
-        initialSourceScene: SourceScene,
-        initialPanelVisualOwner: Boolean,
+        initial: InitialPresentation,
     ) : View.OnAttachStateChangeListener {
-        private val host = WeakReference(host)
-        private val statusBarArea = WeakReference(statusBarArea)
-        private val statusIcons = WeakReference(statusIcons)
-        private val battery = WeakReference(battery)
-        private val carrier = WeakReference(carrier)
-        private val renderView = RenderView(host.context)
+        private val host = WeakReference(views.host)
+        private val statusBarArea = WeakReference(views.batteryContainer)
+        private val statusIcons = WeakReference(views.statusIcons)
+        private val battery = WeakReference(views.batteryView)
+        private val carrier = WeakReference(views.batteryCarrier)
+        private val renderView = RenderView(views.host.context)
         private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
         private val hostLocationScratch = IntArray(2)
@@ -580,8 +567,8 @@ internal object CcRenderSession {
 
         private var currentModel: RenderModel? = null
         private var currentTint: TintState? = null
-        private var sourceScene = initialSourceScene
-        private var panelVisualOwner = initialPanelVisualOwner
+        private var sourceScene = initial.sourceScene
+        private var panelVisualOwner = initial.panelVisualOwner
         private var visual = VisualPrefsOwner.current()
         private var transitionStateVersion = 0L
         private var cachedTransitionSourceSnapshot: TransitionSourceSnapshot? = null
@@ -589,7 +576,7 @@ internal object CcRenderSession {
 
         private var requestedVisible = false
         private var featureEnabled = FeaturePrefsOwner.current().enabled
-        private var sceneEligible = initialSceneEligible
+        private var sceneEligible = initial.sceneEligible
         private var modelReady = false
         private var tintReady = false
         private var layoutReady = false
@@ -612,19 +599,13 @@ internal object CcRenderSession {
                 }
             }
 
-        fun matches(
-            host: ViewGroup,
-            statusBarArea: ViewGroup,
-            statusIcons: ViewGroup,
-            battery: ViewGroup,
-            carrier: View,
-        ): Boolean =
+        fun matches(views: ResolvedStatusHost): Boolean =
             !retired &&
-                this.host.get() === host &&
-                this.statusBarArea.get() === statusBarArea &&
-                this.statusIcons.get() === statusIcons &&
-                this.battery.get() === battery &&
-                this.carrier.get() === carrier
+                host.get() === views.host &&
+                statusBarArea.get() === views.batteryContainer &&
+                statusIcons.get() === views.statusIcons &&
+                battery.get() === views.batteryView &&
+                carrier.get() === views.batteryCarrier
 
         fun attachedHost(): ViewGroup? =
             host.get()?.takeIf { candidate -> !retired && candidate.isAttachedToWindow }

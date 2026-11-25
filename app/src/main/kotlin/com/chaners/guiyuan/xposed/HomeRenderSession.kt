@@ -69,34 +69,24 @@ internal object HomeRenderSession {
             SysUiCarrierMetrics.resolveView(batteryView)
                 ?: return "battery-core-carrier-missing"
 
+        val views = ResolvedStatusHost(hostView, batteryContainer, statusIcons, batteryView, batteryCarrier)
         val existing = current
-        if (
-            existing?.matches(
-                hostView,
-                batteryContainer,
-                statusIcons,
-                batteryView,
-                batteryCarrier,
-            ) == true
-        ) {
+        if (existing?.matches(views) == true) {
             existing.update(StatusStateStore.snapshot())
             return null
         }
 
         existing?.let { stop(it) }
         val session = Session(
-            host = hostView,
-            batteryContainer = batteryContainer,
-            statusIcons = statusIcons,
-            batteryView = batteryView,
-            batteryCarrier = batteryCarrier,
+            views = views,
             sinks = sinks,
-            initialNativeHandoffActive = initialNativeHandoffActive,
-            initialControlCenterAllowsHome = initialControlCenterAllowsHome,
-            initialTintState = initialTintState,
-            allowLiveTintSeed = allowLiveTintSeed,
-            initialFeatureEnabled =
-                FeaturePrefsOwner.current().enabled,
+            initial = InitialPresentation(
+                nativeHandoffActive = initialNativeHandoffActive,
+                controlCenterAllowsHome = initialControlCenterAllowsHome,
+                tintState = initialTintState,
+                allowLiveTintSeed = allowLiveTintSeed,
+                featureEnabled = FeaturePrefsOwner.current().enabled,
+            ),
         )
         current = session
         session.start()
@@ -250,30 +240,30 @@ internal object HomeRenderSession {
     }
 
 
+    private class InitialPresentation(
+        val nativeHandoffActive: Boolean,
+        val controlCenterAllowsHome: Boolean,
+        val tintState: TintState?,
+        val allowLiveTintSeed: Boolean,
+        val featureEnabled: Boolean,
+    )
+
     private class Session(
-        host: ViewGroup,
-        batteryContainer: ViewGroup,
-        statusIcons: ViewGroup,
-        batteryView: ViewGroup,
-        batteryCarrier: View,
+        views: ResolvedStatusHost,
         private val sinks: Sinks,
-        initialNativeHandoffActive: Boolean,
-        initialControlCenterAllowsHome: Boolean,
-        private val initialTintState: TintState?,
-        private val allowLiveTintSeed: Boolean,
-        initialFeatureEnabled: Boolean,
+        private val initial: InitialPresentation,
     ) : View.OnAttachStateChangeListener {
-        private val host = WeakReference(host)
-        private val batteryContainer = WeakReference(batteryContainer)
-        private val statusIcons = WeakReference(statusIcons)
-        private val batteryView = WeakReference(batteryView)
-        private val batteryCarrier = WeakReference(batteryCarrier)
+        private val host = WeakReference(views.host)
+        private val batteryContainer = WeakReference(views.batteryContainer)
+        private val statusIcons = WeakReference(views.statusIcons)
+        private val batteryView = WeakReference(views.batteryView)
+        private val batteryCarrier = WeakReference(views.batteryCarrier)
         private var lastCompletedDrawElapsedRealtimeMs = 0L
         private var lastDrawnCharging: Boolean? = null
         private var lastDrawnBatterySemantic: BatterySemanticState? = null
         private val probeView =
             RenderView(
-                context = host.context,
+                context = views.host.context,
                 // Passive draw witness: the Overlay child may report isShown=false
                 // even when the native host actually dispatches its overlay.
                 onModelDrawn = { drawn ->
@@ -328,9 +318,9 @@ internal object HomeRenderSession {
         private var nativeTintObserved = false
         // Home eligibility follows native CC ownership independently of the
         // separate QS_FAKE projection readiness.
-        private var controlCenterAllowsHome = initialControlCenterAllowsHome
-        private var nativeHandoffActive = initialNativeHandoffActive
-        private var featureEnabled = initialFeatureEnabled
+        private var controlCenterAllowsHome = initial.controlCenterAllowsHome
+        private var nativeHandoffActive = initial.nativeHandoffActive
+        private var featureEnabled = initial.featureEnabled
         private var modelReady = false
         private var tintReady = false
         private var layoutReady = false
@@ -393,18 +383,12 @@ internal object HomeRenderSession {
             nativeDrawObserver = null
         }
 
-        fun matches(
-            host: ViewGroup,
-            batteryContainer: ViewGroup,
-            statusIcons: ViewGroup,
-            batteryView: ViewGroup,
-            batteryCarrier: View,
-        ): Boolean =
-            this.host.get() === host &&
-                this.batteryContainer.get() === batteryContainer &&
-                this.statusIcons.get() === statusIcons &&
-                this.batteryView.get() === batteryView &&
-                this.batteryCarrier.get() === batteryCarrier
+        fun matches(views: ResolvedStatusHost): Boolean =
+            host.get() === views.host &&
+                batteryContainer.get() === views.batteryContainer &&
+                statusIcons.get() === views.statusIcons &&
+                batteryView.get() === views.batteryView &&
+                batteryCarrier.get() === views.batteryCarrier
 
         fun start() {
             val overlayHost = host.get() ?: return
@@ -426,8 +410,8 @@ internal object HomeRenderSession {
                 VisualPrefsOwner.current(),
             )
             resolveInitialTintSeed(
-                transferred = initialTintState,
-                allowLiveSeed = allowLiveTintSeed,
+                transferred = initial.tintState,
+                allowLiveSeed = initial.allowLiveTintSeed,
                 liveState = {
                     SysUiTintSource.currentState(battery)?.also { state ->
                         if (state.isVisible) nativeTintObserved = true
