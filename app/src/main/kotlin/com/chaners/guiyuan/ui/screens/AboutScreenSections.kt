@@ -17,8 +17,6 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalUriHandler
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
 private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
@@ -34,9 +32,8 @@ internal data class AboutPageActions(
 internal fun AboutHeroForeground(
     scroll: AboutScrollState,
     padding: PaddingValues,
-    blur: Boolean,
-    backdrop: LayerBackdrop,
-    logoBlend: List<BlendColorEntry>,
+    blur: Modifier,
+    ripple: AboutHeroWave,
 ) {
     val scrollState = scroll.scroll
     val layout = scroll.layout
@@ -52,8 +49,8 @@ internal fun AboutHeroForeground(
     ) {
         AboutHero(
             topPadding = padding.calculateTopPadding(),
-            backdrop = backdrop.takeIf { blur },
-            logoBlend = logoBlend,
+            blur = blur,
+            ripple = ripple,
             motion = AboutHeroMotion(
                 active = scroll.visible,
                 versionProgress = scroll.collapse.first,
