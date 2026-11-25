@@ -55,15 +55,19 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureBatterySectio
 ) {
     if (search.filtering) {
         Section(R.string.section_battery, key = "features-battery") {
-            batteryColorAndThreshold(search, state, repositories, dialogs)
+            batteryColorChoice(search, state, dialogs)
+            batteryThreshold(search, state, repositories)
             batteryTopReadout(search, state, repositories, dialogs)
             batteryChargingIcon(search, state, repositories, bothSidesChargingSearch)
         }
         return
     }
     GroupedPreferenceSection(R.string.section_battery, "features-battery", listOf(
-        PreferenceCardItem("colors-threshold") {
-            batteryColorAndThreshold(search, state, repositories, dialogs)
+        PreferenceCardItem("colors") {
+            batteryColorChoice(search, state, dialogs)
+        },
+        PreferenceCardItem("threshold") {
+            batteryThreshold(search, state, repositories)
         },
         PreferenceCardItem("readout") {
             batteryTopReadout(search, state, repositories, dialogs)
@@ -75,28 +79,36 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureBatterySectio
 }
 
 @Composable
-private fun ColumnScope.batteryColorAndThreshold(
+private fun ColumnScope.batteryColorChoice(
     search: PageSearch,
     state: BatteryFeatureSnapshot,
-    repositories: BatteryFeatureRepositories,
     dialogs: BatteryFeatureDialogs,
 ) {
     val featureCfg = state.cfg
-    val featureRepo = repositories.feature
     val schemeLibrary = state.library
     val colorSheetOpen = dialogs.colorOpen
     val onOpenColorSheet = dialogs.onOpenColor
 
     if (search.matches(R.string.battery_colors)) {
-    BatteryColorPreference(
-        library = schemeLibrary,
-        enabled = featureCfg.enabled,
-        holdDownState = colorSheetOpen,
-        onClick = {
-            onOpenColorSheet()
-        },
-    )
+        BatteryColorPreference(
+            library = schemeLibrary,
+            enabled = featureCfg.enabled,
+            holdDownState = colorSheetOpen,
+            onClick = {
+                onOpenColorSheet()
+            },
+        )
     }
+}
+
+@Composable
+private fun ColumnScope.batteryThreshold(
+    search: PageSearch,
+    state: BatteryFeatureSnapshot,
+    repositories: BatteryFeatureRepositories,
+) {
+    val featureCfg = state.cfg
+    val featureRepo = repositories.feature
     if (search.matches(R.string.low_battery_threshold)) {
         SliderPreference(
             value = featureCfg.lowBatteryThreshold.toFloat(),

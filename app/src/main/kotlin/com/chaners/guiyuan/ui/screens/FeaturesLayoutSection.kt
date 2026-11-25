@@ -36,7 +36,8 @@ internal fun LazyListScope.featureLayoutSection(
             featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
             featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
             featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
-            featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
+            featureLayoutOffsetsAndSize(search, visual, visualRepo, enabled)
+            featureOuterWeight(search, visual, visualRepo, enabled)
         }
         return
     }
@@ -44,6 +45,9 @@ internal fun LazyListScope.featureLayoutSection(
     GroupedPreferenceSection(R.string.section_layout_size, "features-layout", listOf(
         PreferenceCardItem("layout-selection") {
             featureLayoutSelection(search, visual, visualRepo, enabled)
+        },
+        PreferenceCardItem("dual-signal") {
+            featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
         },
         PreferenceCardItem("signal-rows") {
             featureSignalRowChoices(search, visual, visualRepo, enabled, bothSidesSearch)
@@ -53,7 +57,10 @@ internal fun LazyListScope.featureLayoutSection(
             featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
         },
         PreferenceCardItem("geometry") {
-            featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
+            featureLayoutOffsetsAndSize(search, visual, visualRepo, enabled)
+        },
+        PreferenceCardItem("outer-weight") {
+            featureOuterWeight(search, visual, visualRepo, enabled)
         },
     ))
 }
@@ -67,6 +74,7 @@ private fun ColumnScope.featureLayoutChoices(
     bothSidesSearch: Boolean,
 ) {
     featureLayoutSelection(search, visual, visualRepo, enabled)
+    featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
     featureSignalRowChoices(search, visual, visualRepo, enabled, bothSidesSearch)
 }
 
@@ -129,7 +137,6 @@ private fun ColumnScope.featureSignalRowChoices(
     )
     val dualSignalDotArrangements = signalDotArrangements +
         stringResource(R.string.signal_dot_arrangement_both_sides)
-    featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
     featureSingleRowSignalDots(search, visual, visualRepo, enabled, signalDotArrangements)
     featureDualRowSignalDots(
         search, visual, visualRepo, enabled,
