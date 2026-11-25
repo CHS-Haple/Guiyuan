@@ -46,18 +46,6 @@ internal object SysUiCcSource {
     private var anchorContract: AnchorContract? = null
     private var headerRef = WeakReference<Any>(null)
     private var fakeIslandContractRootRef = WeakReference<ViewGroup>(null)
-    private val FAKE_ISLAND_PROBE_FIELDS =
-        listOf(
-            "slot",
-            "visibleState",
-            "inIslandState",
-            "beforeInIslandState",
-            "islandChanged",
-            "supportAnim",
-            "forceAppear",
-            "layoutTranslationX",
-        )
-
     internal class Callbacks(
         val onUpdate: ((Update) -> Unit)? = null,
         val onAfterNativeExpansion: ((Float) -> Unit)? = null,
@@ -358,93 +346,7 @@ internal object SysUiCcSource {
     private fun describeFakeIslandContractOnce(root: ViewGroup): String? {
         if (fakeIslandContractRootRef.get() === root) return null
         fakeIslandContractRootRef = WeakReference(root)
-
-        val views = ArrayList<View>()
-        fun collect(
-            view: View,
-            depth: Int,
-        ) {
-            if (views.size >= 64 || depth > 6) return
-            views += view
-            if (view is ViewGroup) {
-                for (index in 0 until view.childCount) {
-                    collect(view.getChildAt(index), depth + 1)
-                    if (views.size >= 64) return
-                }
-            }
-        }
-        collect(root, 0)
-
-        fun hierarchy(type: Class<*>): List<Class<*>> {
-            val result = ArrayList<Class<*>>()
-            var current: Class<*>? = type
-            while (current != null && current != Any::class.java) {
-                result += current
-                current = current.superclass
-            }
-            return result
-        }
-
-        fun field(
-            type: Class<*>,
-            name: String,
-        ): Field? =
-            hierarchy(type)
-                .firstNotNullOfOrNull { owner ->
-                    optionalNativeRead {
-                        owner.getDeclaredField(name).apply { isAccessible = true }
-                    }
-                }
-
-        val contractViews =
-            views.mapNotNull { view ->
-                val resolvedFields =
-                    FAKE_ISLAND_PROBE_FIELDS.mapNotNull { name ->
-                        field(view.javaClass, name)?.let { resolved -> name to resolved }
-                    }
-                val methodNames =
-                    hierarchy(view.javaClass)
-                        .flatMap { owner -> owner.declaredMethods.asList() }
-                        .map { method -> method.name }
-                        .filter { name ->
-                            name.contains("island", ignoreCase = true) ||
-                                name.contains("forceAppear", ignoreCase = true) ||
-                                name.contains("visibleState", ignoreCase = true)
-                        }
-                        .distinct()
-                        .sorted()
-                if (resolvedFields.none { (name, _) -> name == "inIslandState" } &&
-                    methodNames.none { name -> name.contains("island", ignoreCase = true) }
-                ) {
-                    null
-                } else {
-                    val location = IntArray(2)
-                    view.getLocationOnScreen(location)
-                    val values =
-                        resolvedFields.joinToString(",") { (name, resolved) ->
-                            val value =
-                                optionalNativeRead { resolved.get(view) }
-                                    ?.toString()
-                                    ?: "unavailable"
-                            name + "=" + value
-                        }
-                    view.javaClass.name +
-                        "(x=" + location[0] +
-                        ",y=" + location[1] +
-                        ",w=" + view.width +
-                        ",h=" + view.height +
-                        ",fields={" + values +
-                        "},methods=[" + methodNames.take(16).joinToString(",") +
-                        "])"
-                }
-            }
-                .distinct()
-                .take(8)
-
-        return "controlCenterFakeIslandContract root=" + root.javaClass.name +
-            " candidates=" + contractViews.size +
-            " entries=[" + contractViews.joinToString("|") +
-            "]"
+        return CcFakeIslandContractProbe.describe(root)
     }
 
     @Suppress("TooGenericExceptionCaught")
