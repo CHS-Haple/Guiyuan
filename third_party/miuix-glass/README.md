@@ -286,10 +286,10 @@ entrypoint.
   Updated baseline profiles are consumed from the upstream graph, not
   copied from the example.
 
-### Final local-boundary review
+### Prior a09d4f32 local-boundary review
 
-The remaining 29 app-local Glass Kotlin files include implementation fragments
-that match this upstream revision apart from package/import adaptation (popup
+The remaining 29 app-local Glass Kotlin files at a09d4f32 included implementation fragments
+that matched that upstream revision apart from package/import adaptation (popup
 Back progress, popup column, shader, drag target and secondary popup). Their
 internal entrypoints are not callable through the published dependency. Do not
 replace them with reflection or a second implementation. Top-app-bar public
