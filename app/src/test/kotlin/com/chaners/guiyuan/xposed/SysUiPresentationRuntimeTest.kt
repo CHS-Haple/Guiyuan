@@ -125,6 +125,10 @@ class SysUiPresentationRuntimeTest {
         SysUiFatal.rethrow(InvocationTargetException(NoSuchMethodException("optional")))
     }
 
+}
+
+// Distinguish installation transactions from optional native read and diagnostic contracts.
+class SysUiHookInstallContractTest {
     @Test
     fun hookInstallRunsOnceOnSuccessWithoutFallback() {
         var installCalls = 0
