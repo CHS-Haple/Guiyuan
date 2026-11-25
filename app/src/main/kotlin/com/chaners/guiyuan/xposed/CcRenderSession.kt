@@ -740,27 +740,31 @@ internal object CcRenderSession {
 
             val result =
                     SysUiPresentationOwner.activateCc(
-                        host = statusArea,
-                        statusIcons = statusIconGroup,
-                        batteryContainer = statusArea,
-                        battery = batteryView,
-                        batteryCarrier = carrierView,
-                        onEvent = sinks.onEvent,
-                        isDetailedDiagnosticsEnabled = sinks.isDetailedDiagnosticsEnabled,
-                        onFailNative = { reason ->
-                            setNativePresentationReady(
-                                ready = false,
-                                maskedViews = 0,
-                                source = "fail-native:" + reason,
-                            )
-                        },
-                        onReady = { active ->
-                            setNativePresentationReady(
-                                ready = true,
-                                maskedViews = active.maskedViews,
-                                source = "native-layout",
-                            )
-                        },
+                        target = SysUiPresentationOwner.CcPresentationTarget(
+                            host = statusArea,
+                            statusIcons = statusIconGroup,
+                            batteryContainer = statusArea,
+                            battery = batteryView,
+                            batteryCarrier = carrierView,
+                        ),
+                        handlers = SysUiPresentationOwner.CcPresentationHandlers(
+                            onEvent = sinks.onEvent,
+                            isDetailedDiagnosticsEnabled = sinks.isDetailedDiagnosticsEnabled,
+                            onFailNative = { reason ->
+                                setNativePresentationReady(
+                                    ready = false,
+                                    maskedViews = 0,
+                                    source = "fail-native:" + reason,
+                                )
+                            },
+                            onReady = { active ->
+                                setNativePresentationReady(
+                                    ready = true,
+                                    maskedViews = active.maskedViews,
+                                    source = "native-layout",
+                                )
+                            },
+                        ),
                     )
             return handleActivationResult(result, reused)
         }

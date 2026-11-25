@@ -553,9 +553,7 @@ internal object SysUiPresentationOwner {
             preMaskBeforeLayout = false,
             deferNativeLayoutOwnershipUntilCommit =
                 deferNativeLayoutOwnershipUntilCommit,
-            onEvent = onEvent,
-            onFailNative = onFailNative,
-            onReady = onReady,
+            handlers = KeyguardFamilyHandlers(onEvent, onFailNative, onReady),
         )
 
     @Synchronized
@@ -602,9 +600,7 @@ internal object SysUiPresentationOwner {
             resolved = resolved,
             preMaskBeforeLayout = preMaskBeforeLayout,
             deferNativeLayoutOwnershipUntilCommit = false,
-            onEvent = onEvent,
-            onFailNative = onFailNative,
-            onReady = onReady,
+            handlers = KeyguardFamilyHandlers(onEvent, onFailNative, onReady),
         )
 
     @Synchronized
@@ -619,10 +615,11 @@ internal object SysUiPresentationOwner {
         resolved: SysUiKeyguardHostResolver.ResolvedHost,
         preMaskBeforeLayout: Boolean,
         deferNativeLayoutOwnershipUntilCommit: Boolean,
-        onEvent: (String) -> Unit,
-        onFailNative: (String) -> Unit,
-        onReady: (Result.Active) -> Unit,
+        handlers: KeyguardFamilyHandlers,
     ): Result {
+        val onEvent = handlers.onEvent
+        val onFailNative = handlers.onFailNative
+        val onReady = handlers.onReady
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure(REASON_MAIN_THREAD_REQUIRED)
         }
@@ -743,18 +740,35 @@ internal object SysUiPresentationOwner {
         keyguardFamilySurface == KeyguardFamilySurface.KEYGUARD &&
             keyguardFamilyCurrent?.ownsBatteryContainer(candidate) == true
 
+    /** CC presentation receives native targets but never takes ownership of their lifecycle. */
+    internal data class CcPresentationTarget(
+        val host: ViewGroup,
+        val statusIcons: ViewGroup,
+        val batteryContainer: ViewGroup,
+        val battery: View,
+        val batteryCarrier: View,
+    )
+
+    internal data class CcPresentationHandlers(
+        val onEvent: (String) -> Unit,
+        val isDetailedDiagnosticsEnabled: () -> Boolean,
+        val onFailNative: (String) -> Unit,
+        val onReady: (Result.Active) -> Unit,
+    )
+
+    private class KeyguardFamilyHandlers(
+        val onEvent: (String) -> Unit,
+        val onFailNative: (String) -> Unit,
+        val onReady: (Result.Active) -> Unit,
+    )
+
     @Synchronized
     fun activateCc(
-        host: ViewGroup,
-        statusIcons: ViewGroup,
-        batteryContainer: ViewGroup,
-        battery: View,
-        batteryCarrier: View,
-        onEvent: (String) -> Unit,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
-        onFailNative: (String) -> Unit,
-        onReady: (Result.Active) -> Unit,
+        target: CcPresentationTarget,
+        handlers: CcPresentationHandlers,
     ): Result {
+        val (host, statusIcons, batteryContainer, battery, batteryCarrier) = target
+        val (onEvent, isDetailedDiagnosticsEnabled, onFailNative, onReady) = handlers
         if (Looper.myLooper() !== Looper.getMainLooper()) {
             return Result.Failure(REASON_MAIN_THREAD_REQUIRED)
         }
