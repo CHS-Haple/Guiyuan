@@ -233,27 +233,38 @@ private fun RailRowContent(
             }
         }
         identity.item.label?.let { label ->
-            Text(
-                text = label,
-                modifier = Modifier.layout { measurable, constraints ->
-                    val placeable = measurable.measure(
-                        constraints.copy(maxWidth = maxOf(constraints.maxWidth, frame.geometry.labelMinWidth)),
-                    )
-                    layout(placeable.width.coerceAtMost(constraints.maxWidth), placeable.height) {
-                        placeable.placeRelative(0, 0)
-                    }
-                }.graphicsLayer {
-                    scaleX = liquidScale
-                    scaleY = liquidScale
-                },
-                color = frame.tint,
-                style = appearance.labelStyle,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
+            RailRowLabel(label, frame, appearance.labelStyle, liquidScale)
         }
     }
+}
+
+/** Native text measurement is separate from the row's press and icon owners. */
+@Composable
+private fun RailRowLabel(
+    label: String,
+    frame: RailRowFrame,
+    style: TextStyle,
+    scale: Float,
+) {
+    Text(
+        text = label,
+        modifier = Modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(
+                constraints.copy(maxWidth = maxOf(constraints.maxWidth, frame.geometry.labelMinWidth)),
+            )
+            layout(placeable.width.coerceAtMost(constraints.maxWidth), placeable.height) {
+                placeable.placeRelative(0, 0)
+            }
+        }.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        },
+        color = frame.tint,
+        style = style,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 /** The same indicator follows the active destination through the entire morph. */
