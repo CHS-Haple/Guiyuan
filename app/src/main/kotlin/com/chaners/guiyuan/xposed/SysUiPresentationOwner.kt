@@ -514,6 +514,28 @@ internal object SysUiPresentationOwner {
         return null
     }
 
+    // All three surfaces require the same native carrier width and mutable slot list.
+    // Keep their failure reasons and retry policy distinct; this does not claim ownership.
+    private fun nativeLayoutPrerequisiteFailure(
+        field: Field,
+        statusIcons: ViewGroup,
+        batteryCarrier: View,
+        surfaceName: String? = null,
+        retryAfterLayout: Boolean = false,
+    ): Result.Failure? {
+        if (SysUiCarrierMetrics.resolveWidthPx(batteryCarrier) == null) {
+            val reason = surfaceName?.let { "$it-$REASON_BATTERY_CORE_WIDTH_UNAVAILABLE" }
+                ?: REASON_BATTERY_CORE_WIDTH_UNAVAILABLE
+            return Result.Failure(reason, retryAfterLayout)
+        }
+        if (optionalNativeRead { field.get(statusIcons) as? MutableList<*> } == null) {
+            val reason = surfaceName?.let { "$it-$REASON_IGNORED_SLOTS_LIST_UNAVAILABLE" }
+                ?: REASON_IGNORED_SLOTS_LIST_UNAVAILABLE
+            return Result.Failure(reason, retryAfterLayout)
+        }
+        return null
+    }
+
     @Synchronized
     fun activate(
         host: Any,
@@ -553,11 +575,7 @@ internal object SysUiPresentationOwner {
         val hideField =
             batteryHideField
                 ?: return Result.Failure(REASON_BATTERY_HIDE_FIELD_UNAVAILABLE)
-        SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
-            ?: return Result.Failure(REASON_BATTERY_CORE_WIDTH_UNAVAILABLE)
-
-        optionalNativeRead { field.get(statusIcons) as? MutableList<*> }
-            ?: return Result.Failure(REASON_IGNORED_SLOTS_LIST_UNAVAILABLE)
+        nativeLayoutPrerequisiteFailure(field, statusIcons, batteryCarrier)?.let { return it }
 
         // Only the verified same-host reload prearm requests layout directly on
         // the native status-icon owner. Ordinary activation keeps the existing
@@ -722,13 +740,9 @@ internal object SysUiPresentationOwner {
         val hideField =
             batteryHideField
                 ?: return Result.Failure(REASON_BATTERY_HIDE_FIELD_UNAVAILABLE)
-        SysUiCarrierMetrics.resolveWidthPx(resolved.batteryCarrier)
-            ?: return Result.Failure(surface.surfaceName + "-battery-core-width-unavailable")
-
-        optionalNativeRead { field.get(resolved.statusIcons) as? MutableList<*> }
-            ?: return Result.Failure(
-                surface.surfaceName + "-ignored-slots-list-unavailable",
-            )
+        nativeLayoutPrerequisiteFailure(
+            field, resolved.statusIcons, resolved.batteryCarrier, surfaceName = surface.surfaceName,
+        )?.let { return it }
 
         keyguardFamilySinks = ActivationSinks(guardedDiagnostic(onEvent), onFailNative, onReady)
 
@@ -871,17 +885,9 @@ internal object SysUiPresentationOwner {
         val hideField =
             batteryHideField
                 ?: return Result.Failure(REASON_BATTERY_HIDE_FIELD_UNAVAILABLE)
-        SysUiCarrierMetrics.resolveWidthPx(batteryCarrier)
-            ?: return Result.Failure(
-                REASON_BATTERY_CORE_WIDTH_UNAVAILABLE,
-                retryAfterLayout = true,
-            )
-
-        optionalNativeRead { field.get(statusIcons) as? MutableList<*> }
-            ?: return Result.Failure(
-                REASON_IGNORED_SLOTS_LIST_UNAVAILABLE,
-                retryAfterLayout = true,
-            )
+        nativeLayoutPrerequisiteFailure(
+            field, statusIcons, batteryCarrier, retryAfterLayout = true,
+        )?.let { return it }
 
         controlCenterSinks = ActivationSinks(guardedDiagnostic(onEvent), onFailNative, onReady)
 
