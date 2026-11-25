@@ -9,6 +9,7 @@ import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
 import java.lang.reflect.Field
+import java.lang.reflect.Method
 import java.util.ArrayList
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -89,6 +90,43 @@ internal object SysUiTintSource {
             }
     }
 
+    /** Read-only native members; the source owner still installs, rolls back and retires hooks. */
+    private class TintNativeMembers(
+        val percentField: Field,
+        val iconField: Field,
+        val updateMethod: Method,
+        val internalMethod: Method,
+    ) {
+        companion object {
+            fun resolve(classLoader: ClassLoader): TintNativeMembers {
+                val batteryClass =
+                    Class.forName(BATTERY_VIEW_CLASS_NAME, false, classLoader)
+                val percentField =
+                    batteryClass.getDeclaredField("mBatteryPercentView")
+                        .apply { isAccessible = true }
+                val iconField =
+                    batteryClass.getDeclaredField("mBatteryIconView")
+                        .apply { isAccessible = true }
+                val updateMethod =
+                    batteryClass.getDeclaredMethod(
+                        UPDATE_TINT_METHOD_NAME,
+                        ArrayList::class.java,
+                        Float::class.javaPrimitiveType,
+                        Int::class.javaPrimitiveType,
+                        Int::class.javaPrimitiveType,
+                        Int::class.javaPrimitiveType,
+                        Boolean::class.javaPrimitiveType,
+                    ).apply { isAccessible = true }
+                val internalMethod =
+                    batteryClass
+                        .getDeclaredMethod(ON_DARK_CHANGED_INTERNAL_METHOD_NAME)
+                        .apply { isAccessible = true }
+
+                return TintNativeMembers(percentField, iconField, updateMethod, internalMethod)
+            }
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
@@ -100,33 +138,11 @@ internal object SysUiTintSource {
     ): List<HookHandle> {
         check(!hooksReady && failedInstallHandles.isEmpty()) { "tint-hooks-already-installed" }
 
-        val batteryClass =
-            Class.forName(BATTERY_VIEW_CLASS_NAME, false, classLoader)
-        val percentField =
-            batteryClass.getDeclaredField("mBatteryPercentView")
-                .apply { isAccessible = true }
-        val iconField =
-            batteryClass.getDeclaredField("mBatteryIconView")
-                .apply { isAccessible = true }
-        val updateMethod =
-            batteryClass.getDeclaredMethod(
-                UPDATE_TINT_METHOD_NAME,
-                ArrayList::class.java,
-                Float::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                Boolean::class.javaPrimitiveType,
-            ).apply { isAccessible = true }
-        val internalMethod =
-            batteryClass
-                .getDeclaredMethod(ON_DARK_CHANGED_INTERNAL_METHOD_NAME)
-                .apply { isAccessible = true }
-
-        batteryPercentViewField = percentField
+        val native = TintNativeMembers.resolve(classLoader)
+        batteryPercentViewField = native.percentField
         val callbacks = TintHookCallbacks(
-            percentField = percentField,
-            iconField = iconField,
+            percentField = native.percentField,
+            iconField = native.iconField,
             onTintState = onTintState,
             onRuntimeFailure = onRuntimeFailure,
             onEvent = onEvent,
@@ -136,7 +152,7 @@ internal object SysUiTintSource {
         val updateHandle =
             runCatching {
                 module
-                    .hook(updateMethod)
+                    .hook(native.updateMethod)
                     .setId(UPDATE_HOOK_ID)
                     .intercept(
                         callbacks.hooker(UPDATE_TINT_METHOD_NAME, reportNativeArguments = true),
@@ -148,7 +164,7 @@ internal object SysUiTintSource {
         val internalHandle =
             runCatching {
                 module
-                    .hook(internalMethod)
+                    .hook(native.internalMethod)
                     .setId(INTERNAL_HOOK_ID)
                     .intercept(
                         callbacks.hooker(

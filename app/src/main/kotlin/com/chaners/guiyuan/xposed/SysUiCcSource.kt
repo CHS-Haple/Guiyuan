@@ -65,6 +65,68 @@ internal object SysUiCcSource {
         val onRuntimeFailure: ((Throwable) -> Unit)? = null,
     )
 
+    /** Exact native method selection only; no listener, HookHandle or runtime state stored here. */
+    private class CcHookMethods(
+        val ccClass: Class<*>,
+        val visibleMethod: Method,
+        val fakeAttachedMethod: Method,
+        val expansionMethod: Method,
+        val appearanceMethod: Method,
+    ) {
+        companion object {
+            fun resolve(classLoader: ClassLoader): CcHookMethods {
+                val ccClass =
+                    Class.forName(CONTROL_CENTER_CLASS, false, classLoader)
+                val visibleMethod =
+                    ccClass
+                        .getDeclaredMethod(
+                            CONTROL_CENTER_VISIBLE_METHOD,
+                            Boolean::class.javaPrimitiveType,
+                        )
+                        .apply { isAccessible = true }
+                val fakeStatusBarClass =
+                    Class.forName(
+                        CONTROL_CENTER_FAKE_STATUS_BAR_CLASS,
+                        false,
+                        classLoader,
+                    )
+                val fakeAttachedMethod =
+                    fakeStatusBarClass.declaredMethods
+                        .firstOrNull { method ->
+                            method.name == "onAttachedToWindow" &&
+                                method.parameterCount == 0
+                        }
+                        ?.apply { isAccessible = true }
+                        ?: error("control-center-fake-attached-method-missing")
+                val headerCallbackClass =
+                    Class.forName(
+                        CONTROL_CENTER_HEADER_CALLBACK_CLASS,
+                        false,
+                        classLoader,
+                    )
+                val expansionMethod =
+                    headerCallbackClass
+                        .getDeclaredMethod(
+                            CONTROL_CENTER_EXPANSION_METHOD,
+                            Float::class.javaPrimitiveType,
+                        )
+                        .apply { isAccessible = true }
+                val appearanceMethod =
+                    headerCallbackClass
+                        .getDeclaredMethod(
+                            CONTROL_CENTER_APPEARANCE_METHOD,
+                            Boolean::class.javaPrimitiveType,
+                            Boolean::class.javaPrimitiveType,
+                        )
+                        .apply { isAccessible = true }
+
+                return CcHookMethods(
+                    ccClass, visibleMethod, fakeAttachedMethod, expansionMethod, appearanceMethod,
+                )
+            }
+        }
+    }
+
     @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
@@ -75,55 +137,12 @@ internal object SysUiCcSource {
     ): List<HookHandle> {
         check(failedInstallHandles.isEmpty()) { "partial-hook-state" }
 
-        val ccClass =
-            Class.forName(CONTROL_CENTER_CLASS, false, classLoader)
-        val visibleMethod =
-            ccClass
-                .getDeclaredMethod(
-                    CONTROL_CENTER_VISIBLE_METHOD,
-                    Boolean::class.javaPrimitiveType,
-                )
-                .apply { isAccessible = true }
-        val fakeStatusBarClass =
-            Class.forName(
-                CONTROL_CENTER_FAKE_STATUS_BAR_CLASS,
-                false,
-                classLoader,
-            )
-        val fakeAttachedMethod =
-            fakeStatusBarClass.declaredMethods
-                .firstOrNull { method ->
-                    method.name == "onAttachedToWindow" &&
-                        method.parameterCount == 0
-                }
-                ?.apply { isAccessible = true }
-                ?: error("control-center-fake-attached-method-missing")
-        val headerCallbackClass =
-            Class.forName(
-                CONTROL_CENTER_HEADER_CALLBACK_CLASS,
-                false,
-                classLoader,
-            )
-        val expansionMethod =
-            headerCallbackClass
-                .getDeclaredMethod(
-                    CONTROL_CENTER_EXPANSION_METHOD,
-                    Float::class.javaPrimitiveType,
-                )
-                .apply { isAccessible = true }
-        val appearanceMethod =
-            headerCallbackClass
-                .getDeclaredMethod(
-                    CONTROL_CENTER_APPEARANCE_METHOD,
-                    Boolean::class.javaPrimitiveType,
-                    Boolean::class.javaPrimitiveType,
-                )
-                .apply { isAccessible = true }
+        val methods = CcHookMethods.resolve(classLoader)
 
         anchorContract =
             AnchorContract.resolve(
                 classLoader = classLoader,
-                delegateClass = ccClass,
+                delegateClass = methods.ccClass,
             )
 
         val handles =
@@ -131,13 +150,13 @@ internal object SysUiCcSource {
         try {
             handles +=
                 module
-                    .hook(visibleMethod)
+                    .hook(methods.visibleMethod)
                     .setId(CONTROL_CENTER_VISIBLE_HOOK_ID)
                     .intercept(visibleHooker(callbacks, onEvent, isProbeEnabled))
 
             handles +=
                 module
-                    .hook(fakeAttachedMethod)
+                    .hook(methods.fakeAttachedMethod)
                     .setId(CONTROL_CENTER_FAKE_ATTACHED_HOOK_ID)
                     .intercept(fakeAttachedHooker(callbacks, onEvent, isProbeEnabled))
 
@@ -149,13 +168,13 @@ internal object SysUiCcSource {
 
             handles +=
                 module
-                    .hook(expansionMethod)
+                    .hook(methods.expansionMethod)
                     .setId(CONTROL_CENTER_EXPANSION_HOOK_ID)
                     .intercept(expansionHooker(callbacks))
 
             handles +=
                 module
-                    .hook(appearanceMethod)
+                    .hook(methods.appearanceMethod)
                     .setId(CONTROL_CENTER_APPEARANCE_HOOK_ID)
                     .intercept(appearanceHooker(callbacks))
 
