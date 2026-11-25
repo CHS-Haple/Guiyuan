@@ -203,13 +203,15 @@ private fun AboutHeroMark(
     ) {
         GuiyuanAnimatedIdentityMark(
             markSize = size,
-            wave = wave.animation,
-            wavePhase = wave.phase,
-            onWaveRelease = onRelease,
+            wave = MarkWaveSpec(
+                animation = wave.animation,
+                phase = wave.phase,
+                onRelease = onRelease,
+                renderInsideMark = false,
+            ),
             interactive = active,
             active = active,
             effectModifier = material.blur,
-            renderWave = false,
             pressMotion = wave.pressMotion,
         )
     }

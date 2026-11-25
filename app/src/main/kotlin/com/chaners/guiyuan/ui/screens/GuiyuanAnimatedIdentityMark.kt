@@ -59,6 +59,15 @@ internal class MarkPressMotion(
     val scale: State<Float>,
 )
 
+// Animation, phase, release and drawing location belong to one wave contract.
+// The page still owns the animation state; this object never launches work.
+internal class MarkWaveSpec(
+    val animation: Animatable<Float, AnimationVector1D>,
+    val phase: Float,
+    val onRelease: (Float) -> Unit,
+    val renderInsideMark: Boolean = true,
+)
+
 @Composable
 internal fun rememberMarkPressMotion(): MarkPressMotion {
     val press = remember { MarkPressState() }
@@ -73,13 +82,10 @@ internal fun rememberMarkPressMotion(): MarkPressMotion {
 @Composable
 internal fun GuiyuanAnimatedIdentityMark(
     markSize: Dp = 64.dp,
-    wave: Animatable<Float, AnimationVector1D>,
-    wavePhase: Float,
-    onWaveRelease: (Float) -> Unit,
+    wave: MarkWaveSpec,
     interactive: Boolean = false,
     active: Boolean = true,
     effectModifier: Modifier = Modifier,
-    renderWave: Boolean = true,
     pressMotion: MarkPressMotion = rememberMarkPressMotion(),
 ) {
     val press = pressMotion.state
@@ -90,7 +96,7 @@ internal fun GuiyuanAnimatedIdentityMark(
     )
     val pressScale by pressMotion.scale
     val rotation = rememberMarkRotation(active, speed)
-    TriggerMarkWave(wave, press.boosted, active, MarkOrbitMotion(speed, rotation), onWaveRelease)
+    TriggerMarkWave(wave.animation, press.boosted, active, MarkOrbitMotion(speed, rotation), wave.onRelease)
 
     val pressModifier = if (interactive) {
         Modifier.pointerInput(Unit) {
@@ -115,7 +121,7 @@ internal fun GuiyuanAnimatedIdentityMark(
         },
         contentAlignment = Alignment.Center,
     ) {
-        if (renderWave) IdentityMarkWave(markSize, wave, wavePhase, effectModifier)
+        if (wave.renderInsideMark) IdentityMarkWave(markSize, wave.animation, wave.phase, effectModifier)
         IdentityMarkArtwork(effectModifier, rotation.value)
     }
 }
