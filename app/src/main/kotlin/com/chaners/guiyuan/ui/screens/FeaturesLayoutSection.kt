@@ -32,7 +32,7 @@ internal fun LazyListScope.featureLayoutSection(
     )
     val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
     if (searching) {
-        Section(R.string.section_layout_size) {
+        Section(R.string.section_layout_size, key = "features-layout-choices") {
             featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
             featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
             featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
@@ -41,19 +41,19 @@ internal fun LazyListScope.featureLayoutSection(
         return
     }
 
-    Section(R.string.section_layout_size) {
+    Section(R.string.section_layout_size, key = "features-layout-choices") {
         featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
     }
     val arrangement = if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
     if (arrangement != SignalDotArrangement.BOTH_SIDES) {
-        Section {
+        Section(key = "features-layout-signal-adjustments") {
             featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
         }
     }
-    Section {
+    Section(key = "features-layout-both-sides") {
         featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
     }
-    Section {
+    Section(key = "features-layout-size-offsets") {
         featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
     }
 }
