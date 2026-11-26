@@ -668,4 +668,12 @@
     <string name="guide_read_terms_first">View the Terms of Use first</string>
     <string name="guide_read_privacy_first">View the Privacy Policy first</string>
     <string name="guide_open_required_document">View required document</string>
+    <!-- Temporary B1977 font method diagnostic; never promote to production. -->
+    <string name="font_method_lab_title">Font method (test only)</string>
+    <string name="font_method_lab_summary">B1977 only: affects battery digits and mobile type. Forced methods may be unsupported. Not for stable releases.</string>
+    <string name="font_method_lab_auto">Auto (B1976)</string>
+    <string name="font_method_lab_override">Native axis override (Override)</string>
+    <string name="font_method_lab_settings">Legacy variation (Variation Settings)</string>
+    <string name="font_method_lab_native">Unchanged native font (Native)</string>
+    <string name="font_method_lab_unverified">Unverified font axis: forced method may have no effect or render incorrectly</string>
 </resources>
