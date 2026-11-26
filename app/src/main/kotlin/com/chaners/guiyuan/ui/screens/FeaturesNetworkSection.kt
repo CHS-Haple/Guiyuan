@@ -17,6 +17,7 @@ import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MAX
 import com.chaners.guiyuan.settings.NO_SIM_SIZE_SCALE_MIN
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.FontTestMode
 import com.chaners.guiyuan.settings.VisualRepo
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.WIFI_SIZE_SCALE_MAX
@@ -54,6 +55,7 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
         networkWifiAirplaneControls(search, visual, visualRepo, enabled)
         networkSimTypeControls(search, visual, visualRepo, enabled)
         networkMobileWeight(search, visual, visualRepo, weight, weightDialog)
+        networkFontLabChoice(search, visual, visualRepo, enabled)
         networkFollowBatteryColor(search, visual, visualRepo, enabled)
     })
 }
@@ -140,6 +142,33 @@ private fun MutableList<PreferenceCardItem>.networkMobileWeight(
             weight = weight,
             dialogOpen = dialog.open,
             onOpenDialog = dialog.onOpen,
+        )
+    })
+}
+
+private fun MutableList<PreferenceCardItem>.networkFontLabChoice(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
+    if (!FontTestMode.available || !search.matches(R.string.font_method_lab_title)) return
+    add(PreferenceCardItem("font-method-lab") {
+        UiDropdownPreference(
+            items = listOf(
+                stringResource(R.string.font_method_lab_auto),
+                stringResource(R.string.font_method_lab_override),
+                stringResource(R.string.font_method_lab_settings),
+                stringResource(R.string.font_method_lab_native),
+            ),
+            selectedIndex = visual.fontTestMode.ordinal,
+            title = stringResource(R.string.font_method_lab_title),
+            summary = stringResource(R.string.font_method_lab_summary),
+            startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_line_weight, enabled) },
+            enabled = enabled,
+            onSelectedIndexChange = { index ->
+                FontTestMode.entries.getOrNull(index)?.let(visualRepo::setFontTestMode)
+            },
         )
     })
 }
