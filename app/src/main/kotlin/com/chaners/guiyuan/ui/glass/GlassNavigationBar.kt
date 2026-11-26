@@ -531,29 +531,41 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
             ),
         contentAlignment = Alignment.Center,
     ) {
-        androidx.compose.foundation.layout.Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(GlassNavigationBarDefaults.LabelSpacing),
-        ) {
-            BadgedBox(badge = { item.badge?.invoke() }) {
-                Icon(
-                    painter = rememberVectorPainter(item.icon),
-                    tint = tintProducer,
-                    contentDescription = null,
-                    modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
-                )
-            }
-            item.label?.let { label ->
-                if (previewLabel != null) {
-                    Box(
-                        modifier = Modifier.heightIn(min = 14.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        previewLabel(selected)
-                    }
-                } else {
-                    GlassNavigationItemLabel(label, tintProducer, labelSize)
+        GlassNavigationItemVisual(item, selected, tintProducer, labelSize, previewLabel)
+    }
+}
+
+/** The rendered destination stays separate from the press/selection gesture owner. */
+@Composable
+private fun GlassNavigationItemVisual(
+    item: GlassNavigationItem,
+    selected: Boolean,
+    tintProducer: ColorProducer,
+    labelSize: androidx.compose.ui.unit.TextUnit,
+    previewLabel: (@Composable (Boolean) -> Unit)?,
+) {
+androidx.compose.foundation.layout.Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(GlassNavigationBarDefaults.LabelSpacing),
+    ) {
+        BadgedBox(badge = { item.badge?.invoke() }) {
+            Icon(
+                painter = rememberVectorPainter(item.icon),
+                tint = tintProducer,
+                contentDescription = null,
+                modifier = Modifier.size(GlassNavigationBarDefaults.IconSize),
+            )
+        }
+        item.label?.let { label ->
+            if (previewLabel != null) {
+                Box(
+                    modifier = Modifier.heightIn(min = 14.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    previewLabel(selected)
                 }
+            } else {
+                GlassNavigationItemLabel(label, tintProducer, labelSize)
             }
         }
     }
