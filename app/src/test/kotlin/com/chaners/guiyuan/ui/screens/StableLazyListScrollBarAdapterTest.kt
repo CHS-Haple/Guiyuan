@@ -49,6 +49,29 @@ class StableLazyListScrollBarAdapterTest {
         assertEquals(0.0, observedPixelContentSize(intArrayOf(), 200.0, 0), 0.0001)
     }
 
+    @Test fun discoveryOfTallRowDoesNotMoveThumbBackwards() {
+        // A new 400px row raises the total from an initial 300px estimate
+        // to 600px. Preserve the current 30% thumb location without an
+        // instantaneous backwards jump; keep both endpoints exact.
+        val before = PixelScrollProjection(0.0, 0.0, 200.0)
+        val oldFraction = before.toFraction(60.0)
+        val after = PixelScrollProjection(60.0, oldFraction, 500.0)
+        assertEquals(0.30, oldFraction, 0.0001)
+        assertEquals(oldFraction, after.toFraction(60.0), 0.0001)
+        assertEquals(0.0, after.toFraction(0.0), 0.0001)
+        assertEquals(1.0, after.toFraction(500.0), 0.0001)
+        val traveled = listOf(60.0, 80.0, 200.0, 300.0, 450.0, 500.0)
+            .map(after::toFraction)
+        assertTrue(traveled.zipWithNext().all { (a, b) -> b > a })
+    }
+
+    @Test fun calibratedReverseDragUsesTheSamePixelProjection() {
+        val projection = PixelScrollProjection(60.0, 0.30, 500.0)
+        for (pixel in listOf(0.0, 15.0, 60.0, 100.0, 220.0, 400.0, 500.0)) {
+            assertEquals(pixel, projection.toPixel(projection.toFraction(pixel)), 0.0001)
+        }
+    }
+
     @Test fun measuredPixelRangePreservesItemSpacing() {
         val heights = intArrayOf(100, 400, 100)
         assertEquals(616.0, observedPixelContentSize(heights, 100.0, 8), 0.0001)
@@ -56,6 +79,10 @@ class StableLazyListScrollBarAdapterTest {
         val (index, within) = observedPixelTarget(heights, 148.0, 100.0, 8)
         assertEquals(1, index)
         assertEquals(40, within)
+        val (gapIndex, gapOffset) = observedPixelTarget(heights, 105.0, 100.0, 8)
+        assertEquals(0, gapIndex)
+        assertEquals(105, gapOffset)
+        assertEquals(105.0, observedPixelOffset(heights, gapIndex, gapOffset, 100.0, 8), 0.0001)
         assertTrue(observedPixelContentSize(heights, 100.0, 8) > observedPixelContentSize(heights, 100.0, 0))
     }
 }
