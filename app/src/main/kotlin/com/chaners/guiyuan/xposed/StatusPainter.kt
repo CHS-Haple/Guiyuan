@@ -16,6 +16,7 @@ import com.chaners.guiyuan.settings.COMBINED_SCALE_MIN
 import com.chaners.guiyuan.settings.ContentLayout
 import com.chaners.guiyuan.settings.SignalDotArrangement
 import com.chaners.guiyuan.settings.VisualCfg
+import com.chaners.guiyuan.settings.FontTestMode
 import com.chaners.guiyuan.settings.finiteIn
 import com.chaners.guiyuan.settings.topChargingIconUiScale
 import com.chaners.guiyuan.xposed.battery.BatteryRingTransitionPolicy
@@ -42,6 +43,8 @@ internal class StatusPainter(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    // Every draw/measurement entry derives this from its supplied VisualCfg.
+    private var fontTestMode: FontTestMode = FontTestMode.AUTO
     private var mobileTextSource: Typeface? = null
     private var mobileWeightMethod = NativeWeightMethod.platformDefault
     private val mobileTextSamples = BoundedAccessCache<Int, Paint>(128)
@@ -148,6 +151,7 @@ internal class StatusPainter(
         outerWeightScale: Float = visual.outerWeightScale,
         scaleMobileTypeWithCanvas: Boolean = false,
     ) {
+        fontTestMode = visual.fontTestMode
         if (width <= 0 || height <= 0) {
             return
         }
@@ -244,6 +248,7 @@ internal class StatusPainter(
         centerEnterAmount: Float = 1f,
         scaleMobileTypeWithCanvas: Boolean = false,
     ): Int {
+        fontTestMode = visual.fontTestMode
         if (width <= 0 || height <= 0) return 0
         val nativeTransform =
             resolveCanvasTransform(
@@ -289,6 +294,7 @@ internal class StatusPainter(
         previousCenterIndicator: CenterIndicator? = null,
         scaleMobileTypeWithCanvas: Boolean = false,
     ): Int {
+        fontTestMode = visual.fontTestMode
         val transform = resolveCanvasTransform(width, height, visual) ?: return 0
         fun overflow(bottomY: Float): Int {
             val bottomPx = transform.offsetY + bottomY * transform.scale
@@ -344,6 +350,7 @@ internal class StatusPainter(
         batteryRingExitDirection: BatteryRingTransitionPolicy.ExitDirection =
             BatteryRingTransitionPolicy.ExitDirection.NONE,
     ) {
+        fontTestMode = visual.fontTestMode
         if (width <= 0 || height <= 0 || opacity <= 0f) return
 
         val nativeTransform =
@@ -598,6 +605,7 @@ internal class StatusPainter(
         model: RenderModel,
         visual: VisualCfg = VisualCfg(),
     ): List<TransitionComponentSpec> {
+        fontTestMode = visual.fontTestMode
         if (width <= 0 || height <= 0) return emptyList()
 
         val nativeTransform =
@@ -2238,6 +2246,7 @@ internal class StatusPainter(
         mobileTypeBottom: Boolean = false,
         visual: VisualCfg = VisualCfg(),
     ): TransitionBounds? {
+        fontTestMode = visual.fontTestMode
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
             resolveCanvasTransform(
@@ -2283,6 +2292,7 @@ internal class StatusPainter(
         targetStyle: TransitionTextStyle?,
         progress: Float,
     ): TransitionBounds? {
+        fontTestMode = visual.fontTestMode
         if (width <= 0 || height <= 0) return null
         val nativeTransform =
             resolveCanvasTransform(
@@ -2419,22 +2429,28 @@ internal class StatusPainter(
     ) {
         val nativeFont = if (preview) null else SysUiBatterySource.currentNumberFont()
         val source = nativeFont?.face ?: Typeface.DEFAULT
-        val method = nativeFont?.weight?.method ?: NativeWeightMethod.platformDefault
-        if (batteryTextSource != source || batteryWeightMethod != method) {
-            batteryTextSource = source
-            batteryWeightMethod = method
-            batteryTextSamples.clear()
-        }
         val native = progress >= 1f && targetStyle?.typeface != null
-        val sampledWeight = if (native) null else if (nativeFont == null) {
+        val automaticWeight = if (native) null else if (nativeFont == null) {
             weight.coerceIn(200, 1000)
         } else {
             nativeFont.weight?.axis?.let { axis ->
                 weight.coerceIn(ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt())
             }
         }
+        val selected = fontTestMode.selectWeight(
+            observedFace = nativeFont != null,
+            detected = nativeFont?.weight,
+            automaticWeight = automaticWeight,
+            requestedWeight = weight,
+        )
+        if (batteryTextSource != source || batteryWeightMethod != selected.method) {
+            batteryTextSource = source
+            batteryWeightMethod = selected.method
+            batteryTextSamples.clear()
+        }
         batteryTextPaint.set(
-            weightedPaint(source, sampledWeight, batteryTextSamples, step = if (nativeFont == null) 10 else 1, method = method),
+            weightedPaint(source, selected.weight.takeUnless { native }, batteryTextSamples,
+                step = if (nativeFont == null) 10 else 1, method = selected.method),
         )
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
@@ -3287,16 +3303,23 @@ internal class StatusPainter(
         // Preview shares the battery number's system font family. Live 5G still
         // uses the Typeface captured from its verified SystemUI drawable.
         val previewFace = Typeface.DEFAULT.takeIf { preview && indicator.typeface == null }
+        val automaticWeight =
+            if (indicator.typeface == null) geometry.mobileTypeWeight
+            else indicator.weight?.axis?.let { axis ->
+                geometry.mobileTypeWeight.coerceIn(
+                    ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt(),
+                )
+            }
+        val selected = fontTestMode.selectWeight(
+            observedFace = indicator.typeface != null,
+            detected = indicator.weight,
+            automaticWeight = automaticWeight,
+            requestedWeight = geometry.mobileTypeWeight,
+        )
         configureMobileTypeTextStyle(
             nativeFace = indicator.typeface ?: previewFace,
-            weight =
-                if (indicator.typeface == null) geometry.mobileTypeWeight
-                else indicator.weight?.axis?.let { axis ->
-                    geometry.mobileTypeWeight.coerceIn(
-                        ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt(),
-                    )
-                },
-            method = indicator.weight?.method ?: NativeWeightMethod.platformDefault,
+            weight = selected.weight,
+            method = selected.method,
             targetStyle = targetStyle,
             progress = transitionProgress,
             textSize = mainTextSize,
