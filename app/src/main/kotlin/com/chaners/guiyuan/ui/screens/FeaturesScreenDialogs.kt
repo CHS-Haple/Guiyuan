@@ -74,10 +74,10 @@ internal fun FeaturesWeightDialog(
 ) {
     val weight = model.weight
     IntegerInputDialog(
-        show = show && weight.verifiedRange != null,
+        show = show && (weight.verifiedRange != null || weight.allowUnverified),
         model = IntegerInputModel(
             title = stringResource(model.titleRes),
-            summary = weight.rangeText.orEmpty(),
+            summary = weight.rangeText ?: if (weight.allowUnverified) stringResource(R.string.font_method_lab_unverified) else "", 
             value = model.currentValue.coerceIn(
                 weight.valueRange.start.roundToInt(),
                 weight.valueRange.endInclusive.roundToInt(),
@@ -88,7 +88,8 @@ internal fun FeaturesWeightDialog(
             onDismiss = onDismiss,
             onConfirm = { value ->
                 onDismiss()
-                weight.verifiedRange?.let { range -> onConfirmed(value.coerceIn(range)) }
+                val range = weight.verifiedRange ?: model.fallbackRange.takeIf { weight.allowUnverified }
+                range?.let { onConfirmed(value.coerceIn(it)) }
             },
         ),
     )
