@@ -77,7 +77,11 @@ internal fun FeaturesWeightDialog(
         show = show && (weight.verifiedRange != null || weight.allowUnverified),
         model = IntegerInputModel(
             title = stringResource(model.titleRes),
-            summary = weight.rangeText ?: if (weight.allowUnverified) stringResource(R.string.font_method_lab_unverified) else "", 
+            summary = weight.rangeText ?: if (weight.allowUnverified) {
+                stringResource(R.string.font_method_lab_unverified)
+            } else {
+                ""
+            },
             value = model.currentValue.coerceIn(
                 weight.valueRange.start.roundToInt(),
                 weight.valueRange.endInclusive.roundToInt(),
