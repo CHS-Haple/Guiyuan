@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -95,9 +96,10 @@ internal fun HubPage(
     // Browsing and filtered results must not overwrite each other's scroll position.
     val browsingState = rememberLazyListState()
     val resultsState = rememberLazyListState()
-    // Preserve each indicator's measured viewport baseline across search transitions.
-    val browsingIndicator = rememberStableLazyListScrollBarAdapter(browsingState)
-    val resultsIndicator = rememberStableLazyListScrollBarAdapter(resultsState, search?.query)
+    // A rotation invalidates row heights; search has separate list and cache owners.
+    val orientation = LocalConfiguration.current.orientation
+    val browsingIndicator = rememberStableLazyListScrollBarAdapter(browsingState, orientation)
+    val resultsIndicator = rememberStableLazyListScrollBarAdapter(resultsState, search?.query to orientation)
     val filtering = search?.filtering == true
     val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
