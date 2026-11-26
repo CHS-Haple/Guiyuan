@@ -141,13 +141,13 @@ private fun ObserveSecondaryPopupFinish(
     val onFinished by rememberUpdatedState(onDismissFinished)
     var hasOpened by remember { mutableStateOf(false) }
     LaunchedEffect(show) {
-    if (show) {
-    hasOpened = true
-    } else if (hasOpened) {
-    snapshotFlow { state.isIdle }.first { it }
-    hasOpened = false
-    onFinished?.invoke()
-    }
+        if (show) {
+            hasOpened = true
+        } else if (hasOpened) {
+            snapshotFlow { state.isIdle }.first { it }
+            hasOpened = false
+            onFinished?.invoke()
+        }
     }
 }
 
