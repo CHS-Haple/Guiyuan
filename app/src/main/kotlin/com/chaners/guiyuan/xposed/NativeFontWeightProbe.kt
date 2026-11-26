@@ -8,7 +8,6 @@ import android.graphics.Rect
 import android.graphics.Typeface
 import android.graphics.text.PositionedGlyphs
 import android.graphics.text.TextRunShaper
-import android.os.Build
 import com.chaners.guiyuan.settings.FontAxes
 import com.chaners.guiyuan.settings.FontWeightAxis
 import com.chaners.guiyuan.settings.NativeFontAxisPolicy
@@ -28,16 +27,13 @@ internal object NativeFontWeightProbe {
         else -> (MOBILE_GLYPHS + label.filterNot { it == '-' || it == '_' }).toSet().joinToString("")
     }
 
-    fun mobile(face: Typeface, coverage: String): FontWeightAxis? =
+    fun mobile(face: Typeface, coverage: String): NativeFontWeight? =
         probe(face, coverage, "5GA")
 
-    fun battery(face: Typeface): FontWeightAxis? = probe(face, "0123456789", "0123456789")
+    fun battery(face: Typeface): NativeFontWeight? = probe(face, "0123456789", "0123456789")
 
-    private fun probe(face: Typeface, coverage: String, sample: String): FontWeightAxis? =
+    private fun probe(face: Typeface, coverage: String, sample: String): NativeFontWeight? =
         SysUiPresentationRuntime.optionalNativeRead {
-            if (Build.VERSION.SDK_INT_FULL < Build.VERSION_CODES_FULL.BAKLAVA_1) {
-                return@optionalNativeRead null
-            }
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = face
                 textSize = 32f
@@ -49,12 +45,21 @@ internal object NativeFontWeightProbe {
             val high = floor(axis.max.toDouble()).toInt()
             val middle = low + (high - low) / 2
             if (middle <= low || middle >= high) return@optionalNativeRead null
-            if (listOf(low, middle, high).any { weight ->
-                    paint.setFontVariationOverride("'wght' $weight")
-                    !matches(original, shape(coverage, paint), weight)
+            val preferred = NativeWeightMethod.platformDefault
+            val methods = if (preferred == NativeWeightMethod.OVERRIDE) {
+                listOf(preferred, NativeWeightMethod.VARIATION_SETTINGS)
+            } else listOf(preferred)
+            methods.firstNotNullOfOrNull { method ->
+                SysUiPresentationRuntime.optionalNativeRead {
+                    val candidates = listOf(low, middle, high).map { weight ->
+                        Paint(paint).takeIf { candidate ->
+                            method.apply(candidate, weight) &&
+                                matches(original, shape(coverage, candidate), weight)
+                        } ?: return@optionalNativeRead null
+                    }
+                    NativeFontWeight(axis, method).takeIf { distinctInk(candidates, sample) }
                 }
-            ) return@optionalNativeRead null
-            axis.takeIf { distinctInk(paint, sample, low, middle, high) }
+            }
         }
 
     private fun shape(text: String, paint: Paint): PositionedGlyphs =
@@ -78,7 +83,9 @@ internal object NativeFontWeightProbe {
     }
 
     private fun matches(original: PositionedGlyphs, candidate: PositionedGlyphs, weight: Int): Boolean {
-        if (original.glyphCount() != candidate.glyphCount()) return false
+        if (original.glyphCount() != candidate.glyphCount() ||
+            !candidate.advance.isFinite() || candidate.advance <= 0f
+        ) return false
         for (index in 0 until candidate.glyphCount()) {
             val before = original.getFont(index)
             val after = candidate.getFont(index)
@@ -86,7 +93,8 @@ internal object NativeFontWeightProbe {
                 original.getGlyphId(index) != candidate.getGlyphId(index) ||
                 original.getFakeBold(index) != candidate.getFakeBold(index) ||
                 original.getFakeItalic(index) != candidate.getFakeItalic(index) ||
-                original.getItalicOverride(index) != candidate.getItalicOverride(index)
+                original.getItalicOverride(index) != candidate.getItalicOverride(index) ||
+                nonWeightAxes(before.axes) != nonWeightAxes(after.axes)
             ) return false
             val overrideWeight = candidate.getWeightOverride(index)
             val effective = if (overrideWeight != PositionedGlyphs.NO_OVERRIDE) overrideWeight
@@ -96,14 +104,16 @@ internal object NativeFontWeightProbe {
         return true
     }
 
+    private fun nonWeightAxes(axes: Array<android.graphics.fonts.FontVariationAxis>?): Map<String, Float> =
+        axes.orEmpty().filter { it.tag != "wght" }.associate { it.tag to it.styleValue }
+
     // API acceptance and axis metadata alone do not establish visible variation.
-    private fun distinctInk(paint: Paint, text: String, low: Int, middle: Int, high: Int): Boolean {
+    private fun distinctInk(paints: List<Paint>, text: String): Boolean {
         val bitmap = Bitmap.createBitmap(512, 96, Bitmap.Config.ARGB_8888)
         try {
             val canvas = Canvas(bitmap)
             val bounds = Rect()
-            val samples = listOf(low, middle, high).map { weight ->
-                paint.setFontVariationOverride("'wght' $weight")
+            val samples = paints.map { paint ->
                 paint.getTextBounds(text, 0, text.length, bounds)
                 if (bounds.isEmpty || bounds.left + 8 < 0 || bounds.right + 8 >= bitmap.width ||
                     bounds.top + 64 < 0 || bounds.bottom + 64 >= bitmap.height
