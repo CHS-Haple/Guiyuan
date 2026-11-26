@@ -2,6 +2,7 @@ package com.chaners.guiyuan.settings
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Transient
 
 
 
@@ -262,6 +263,7 @@ internal data class VisualCfg(
     val noSimScale: Float = NO_SIM_SIZE_SCALE_DEFAULT,
     val mobileTypeScale: Float = mobileTypeScaleDefault(layout),
     val mobileTypeWeight: Int = MOBILE_TYPE_WEIGHT_DEFAULT,
+    @Transient val fontTestMode: FontTestMode = FontTestMode.AUTO,
     val batteryColorPreset: BatteryColorPreset =
         BatteryColorPreset.HYPEROS,
     val batteryColorModes: BatteryColorModes =
