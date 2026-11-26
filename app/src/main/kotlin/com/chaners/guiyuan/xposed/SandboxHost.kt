@@ -112,6 +112,7 @@ internal object SandboxHost {
                     resolver,
                     dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
                     mobileTypeface = nativeFace,
+                    mobileWeightAxis = native?.weightAxis,
                     lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
                     nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
                 )
