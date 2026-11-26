@@ -153,7 +153,7 @@ private fun MiniPreviewFrame(
         Box(
             modifier =
                 Modifier
-                    .fillMaxSize()
+                    .matchParentSize()
                     .then(
                         if (miuixBackdrop != null) {
                             Modifier.layerBackdrop(miuixBackdrop)
