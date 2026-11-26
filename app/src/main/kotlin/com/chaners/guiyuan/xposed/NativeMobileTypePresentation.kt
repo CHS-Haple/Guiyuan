@@ -59,12 +59,14 @@ internal object NativeMobileTypePresentation {
 
         NativeStatusSlots.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
             ?.let { view ->
-                val text = (view as? TextView)?.text?.toString()?.trim().orEmpty()
+                val textView = view as? TextView ?: return@let
+                val text = textView.text?.toString()?.trim().orEmpty()
                 if (text.isNotEmpty()) {
                     return NetworkType(
                         label = text,
                         enhanced = false,
                         source = NetworkTypeSource.MOBILE_TYPE_SINGLE,
+                        typeface = textView.typeface,
                     )
                 }
             }
