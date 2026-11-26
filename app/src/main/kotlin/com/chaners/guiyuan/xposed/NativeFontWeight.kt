@@ -9,8 +9,8 @@ internal enum class NativeWeightMethod {
     OVERRIDE,
     VARIATION_SETTINGS;
 
-    fun apply(paint: Paint, weight: Int?): Boolean {
-        val variation = weight?.let { "'wght' $it" }
+    fun apply(paint: Paint, weight: Int): Boolean {
+        val variation = "'wght' $weight"
         return when (this) {
             OVERRIDE -> {
                 paint.setFontVariationOverride(variation)
