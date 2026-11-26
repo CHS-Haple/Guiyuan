@@ -9,11 +9,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import java.lang.reflect.Field
-import java.io.File
-import java.io.FileInputStream
-import java.nio.channels.FileChannel
-import com.chaners.guiyuan.settings.FontAxes
-import com.chaners.guiyuan.settings.NativeFontAxisPolicy
 import java.util.concurrent.ConcurrentHashMap
 import com.chaners.guiyuan.xposed.network.SysUiMobileTypeSource
 import com.chaners.guiyuan.xposed.NativePresentationResolver.NetworkType
@@ -74,43 +69,20 @@ internal object NativeMobileTypePresentation {
         return null
     }
 
-    // The static native glyph face is available even when Wi-Fi hides the mobile type.
-    // Follow SystemUI's own fallback selection; never substitute a guessed app font.
-    fun sandboxMobileTypeface(context: Context): Typeface? = SysUiPresentationRuntime.optionalNativeRead {
-        val verified = verifiedMobileFont(context)
-        if (verified == null) {
-            null
-        } else {
-            val (face, path) = verified
-            val file = File(path)
-            if (file.isFile && file.length() in 1..(64L * 1024 * 1024)) {
-                val axis = FileInputStream(file).channel.use { channel ->
-                    FontAxes.weight(channel.map(FileChannel.MapMode.READ_ONLY, 0L, channel.size()))
-                }?.let(NativeFontAxisPolicy::checked)
-                face.takeIf { axis != null }
-            } else {
-                null
-            }
-        }
-    }
-
-    // This static SystemUI face remains authoritative when no mobile type is visible.
-    fun verifiedMobileFont(context: Context): Pair<Typeface, String>? = SysUiPresentationRuntime.optionalNativeRead {
+    // Use the native setter on a private Paint when no live mobile face is observable.
+    // Only the original static face proves the optional OEM path.
+    fun systemMobileFont(context: Context): Pair<Typeface, String?>? = SysUiPresentationRuntime.optionalNativeRead {
         val loader = context.classLoader
         val clazz = loader.loadClass(SysUiMobileTypeSource.CLASS_NAME)
-        val face = clazz.getField("sMiproTypeface").get(null) as? Typeface
-        if (face == null) {
-            null
-        } else {
-            val paint = Paint()
-            clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
-                .invoke(null, arrayOf(paint) as Any)
-            if (paint.typeface === face) {
-                val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
-                (config.getField("FONT_MIPRO_PATH").get(null) as? String)?.let { face to it }
-            } else {
-                null
-            }
+        val paint = Paint()
+        clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
+            .invoke(null, arrayOf(paint) as Any)
+        val face = paint.typeface ?: return@optionalNativeRead null
+        face to SysUiPresentationRuntime.optionalNativeRead {
+            val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
+            if (original !== face) return@optionalNativeRead null
+            val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
+            config.getField("FONT_MIPRO_PATH").get(null) as? String
         }
     }
 
