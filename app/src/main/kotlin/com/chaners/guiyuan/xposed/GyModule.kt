@@ -130,6 +130,7 @@ class GyModule : XposedModule() {
     private var reportedBatteryFont: Typeface? = null
     private var reportedBatteryFontPath: String? = null
     private var reportedFontHost: View? = null
+    private var reportedFontConfiguration: Int? = null
     private var fontAxisReported = false
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
@@ -2029,7 +2030,9 @@ class GyModule : XposedModule() {
         val coverage = networkType?.let { NativeFontWeightProbe.mobileCoverage(it.label) }
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
-        val sameHost = !force && fontAxisReported && reportedFontHost === host
+        val configuration = host.resources.configuration.hashCode()
+        val sameHost = !force && fontAxisReported && reportedFontHost === host &&
+            reportedFontConfiguration == configuration
         val sameMobile = sameHost && reportedFont === face &&
             reportedFontPath == networkType?.fontPath && reportedFontCoverage == coverage
         val sameBattery = sameHost && reportedBatteryFont === batteryFace &&
@@ -2061,8 +2064,13 @@ class GyModule : XposedModule() {
                     }
             }
         val mobileFileAxis = if (sameMobile) null else weightAxis(mobileFont?.second)
-        val mobileAxis = if (sameMobile) reportedMobileAxis else mobileFileAxis
-            ?: if (face != null && coverage != null) NativeFontWeightProbe.mobile(face, coverage) else null
+        val mobileAxis = if (sameMobile) {
+            reportedMobileAxis
+        } else {
+            mobileFileAxis ?: if (face != null && coverage != null) {
+                NativeFontWeightProbe.mobile(face, coverage)
+            } else null
+        }
         val batteryPath = batteryFont?.second
         val batteryAxis = if (sameBattery) {
             SysUiBatterySource.currentNumberFont()?.axis
@@ -2098,6 +2106,7 @@ class GyModule : XposedModule() {
             reportedBatteryFont = batteryFace
             reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
+            reportedFontConfiguration = configuration
             fontAxisReported = true
         }.onFailure { error ->
             SysUiHotReload.rethrowFatal(error)
