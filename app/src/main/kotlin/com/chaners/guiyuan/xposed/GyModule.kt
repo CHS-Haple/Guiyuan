@@ -577,6 +577,15 @@ class GyModule : XposedModule() {
 
     // Keep native scene state identical across reload recovery and old-generation retirement.
     private fun clearHotReloadSceneState() {
+        reportedFont = null
+        reportedFontPath = null
+        reportedFontCoverage = null
+        reportedMobileFont = null
+        reportedBatteryFont = null
+        reportedBatteryFontPath = null
+        reportedFontHost = null
+        reportedFontConfiguration = null
+        fontAxisReported = false
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
@@ -2101,6 +2110,18 @@ class GyModule : XposedModule() {
         reportedFontHost = host
         reportedFontConfiguration = configuration
         fontAxisReported = false
+        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled && (!sameMobile || !sameBattery)) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "font.selection",
+                component = "nativeTypography",
+                "mobileSource" to if (face != null) "live" else if (mobileFont != null) "native-default" else "unavailable",
+                "mobileMethod" to (mobileFont?.weight?.method?.name ?: "unchanged"),
+                "mobileAxis" to mobileFont?.weight?.axis,
+                "batteryMethod" to (batteryWeight?.method?.name ?: "unchanged"),
+                "batteryAxis" to batteryWeight?.axis,
+            )
+        }
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
         mobileFont?.weight?.axis?.let {
@@ -4353,6 +4374,14 @@ class GyModule : XposedModule() {
                         onEvent = ::logRuntimeEvent,
                         onLatencySample = ::onRenderLatencySample,
                         isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                        onNativeConfigurationChanged = {
+                            // Let native configuration dispatch finish before taking font evidence.
+                            Handler(Looper.getMainLooper()).post {
+                                if (!retiredForHotReload && SysUiHostRegistry.current() === host) {
+                                    refreshMobilePresentation(forceRefresh = true, forceFontReport = true)
+                                }
+                            }
+                        },
                         onPresentationReadinessChanged = { ready, readinessSource ->
                             rendererReadyOnAttach = ready
                             onHomeReadyChanged(host, ready, source, readinessSource)
