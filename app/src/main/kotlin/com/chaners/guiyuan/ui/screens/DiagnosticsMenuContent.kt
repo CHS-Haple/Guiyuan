@@ -332,16 +332,22 @@ internal fun DiagMenu(
     DiagToolbarMenu(title = title, entries = entries, content = icon)
 }
 
+/** Content selected by the diagnostics state; retry behavior remains screen-owned. */
+internal data class LogEmptyGuideContent(
+    val title: String,
+    val description: String,
+    val note: String?,
+    val icon: ImageVector,
+)
+
 @Composable
 internal fun LogEmptyGuide(
-    title: String,
-    description: String,
-    note: String?,
-    icon: ImageVector,
+    content: LogEmptyGuideContent,
     busy: Boolean,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val (title, description, note, icon) = content
     Box(
         modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp),
         contentAlignment = Alignment.Center,
