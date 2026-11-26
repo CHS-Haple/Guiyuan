@@ -99,20 +99,19 @@ internal object SandboxHost {
                 resources = it
             }
             val native = PresentationStore.snapshot().mobilePresentation?.networkType
-            val verifiedFace = native?.takeIf { it.fontPath != null }?.typeface
-                ?: staticMobileFace(context)
+            val nativeFace = native?.typeface ?: staticMobileFace(context)
             if (lease.state.dataMobileNetwork ==
                 com.chaners.guiyuan.ui.screens.PreviewMobileNetwork.FIVE_GA &&
                 lease.state.previewCenterSource() ==
                 com.chaners.guiyuan.ui.screens.PreviewCenterSource.MOBILE &&
-                verifiedFace == null
+                nativeFace == null
             ) {
                 null
             } else {
                 lease.state.toRenderModel(
                     resolver,
                     dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
-                    mobileTypeface = verifiedFace,
+                    mobileTypeface = nativeFace,
                     lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
                     nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
                 )
