@@ -174,8 +174,8 @@ reference, not this public repository.
 - Scroll ownership follows the public MIUIX scrollbar APIs: bounded
   heterogeneous preference pages use measured ScrollState, while genuinely
   lazy log lists retain their lazy state and estimated indicator size. Shared
-  page track padding removes the changing large-title height offset without
-  changing content padding. Battery scheme decks expose one active-page
+  page track padding follows Scaffold's live content padding, as in the pinned
+  MIUIX examples, without a local large-title height-offset correction. Battery scheme decks expose one active-page
   indicator rather than separate bars in every pager child. The removable
   `ScrollAwareGlassSegmentedTabRow` adapter arbitrates horizontal versus
   vertical intent using platform touch slop; upstream still owns tab rendering,
