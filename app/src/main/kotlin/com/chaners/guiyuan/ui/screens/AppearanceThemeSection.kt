@@ -1,10 +1,11 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
@@ -16,7 +17,7 @@ import com.chaners.guiyuan.settings.PaletteSeedPreset
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.supportsSpec2025
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
@@ -111,21 +112,27 @@ private fun ColumnScope.appearancePalettePresets(
     appearance: Appearance,
     actions: AppearanceThemeActions,
 ) {
-    SmallTitle(text = stringResource(R.string.theme_palette_preset_title))
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+    BatterySheetSmallTitle(text = stringResource(R.string.theme_palette_preset_title))
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        insideMargin = PaddingValues(16.dp),
     ) {
-        PaletteSeedPreset.entries.forEach { preset ->
-            BatteryCommonColorButton(
-                color = preset.argb,
-                selected = appearance.paletteSeedPreset == preset,
-                onClick = {
-                    if (preset != appearance.paletteSeedPreset) {
-                        actions.onPaletteSeedPresetChange(preset)
-                    }
-                },
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PaletteSeedPreset.entries.forEach { preset ->
+                BatteryCommonColorButton(
+                    color = preset.argb,
+                    selected = appearance.paletteSeedPreset == preset,
+                    onClick = {
+                        if (preset != appearance.paletteSeedPreset) {
+                            actions.onPaletteSeedPresetChange(preset)
+                        }
+                    },
+                )
+            }
         }
     }
 }
