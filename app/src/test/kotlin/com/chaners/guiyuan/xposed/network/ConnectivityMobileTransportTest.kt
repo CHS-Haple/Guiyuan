@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.xposed.network
 
+import com.chaners.guiyuan.settings.FontWeightAxis
 import com.chaners.guiyuan.xposed.NativePresentationResolver
 import com.chaners.guiyuan.xposed.StatusStateStore
 import org.junit.Assert.assertEquals
@@ -16,6 +17,7 @@ class ConnectivityMobileTransportTest {
                 enhanced = false,
                 source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
                 fontPath = "/system/fonts/verified-variable.ttf",
+                weightAxis = FontWeightAxis(150f, 330f, 700f),
             )
         val result =
             ConnectivityPolicy.resolve(
@@ -27,6 +29,7 @@ class ConnectivityMobileTransportTest {
 
         assertEquals(source.fontPath, result.fontPath)
         assertEquals(source.typeface, result.typeface)
+        assertEquals(source.weightAxis, result.weightAxis)
     }
 
     @Test
