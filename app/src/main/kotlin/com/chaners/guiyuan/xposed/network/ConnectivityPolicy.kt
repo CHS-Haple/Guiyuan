@@ -79,7 +79,6 @@ internal object ConnectivityPolicy {
             label = label,
             enhanced = enhanced,
             typeface = typeface,
-            fontPath = fontPath,
             weightAxis = weightAxis,
             internet = internet,
         )
@@ -150,7 +149,6 @@ internal sealed interface CenterIndicator {
         val enhanced: Boolean,
         val internet: InternetState,
         val typeface: Typeface? = null,
-        val fontPath: String? = null,
         val weightAxis: FontWeightAxis? = null,
     ) : CenterIndicator
 
