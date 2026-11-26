@@ -3,7 +3,7 @@ package com.chaners.guiyuan.ui.screens
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Typeface
-import com.chaners.guiyuan.settings.FontWeightAxis
+import com.chaners.guiyuan.xposed.NativeFontWeight
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
@@ -226,7 +226,7 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
 internal fun PreviewSandboxUiState.previewCenterIndicator(
     resources: PreviewSysUiResources,
     mobileTypeface: Typeface? = null,
-    mobileWeightAxis: FontWeightAxis? = null,
+    mobileWeight: NativeFontWeight? = null,
 ): CenterIndicator {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     return when (previewCenterSource()) {
@@ -270,7 +270,7 @@ internal fun PreviewSandboxUiState.previewCenterIndicator(
                 enhanced = false,
                 internet = InternetState.VALIDATED,
                 typeface = mobileTypeface,
-                weightAxis = mobileWeightAxis,
+                weight = mobileWeight,
             )
     }
 }
@@ -305,7 +305,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
     mobileTypeface: Typeface? = null,
     lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
     nativeLowColor: Int? = null,
-    mobileWeightAxis: FontWeightAxis? = null,
+    mobileWeight: NativeFontWeight? = null,
 ): RenderModel {
     val mobileLevel =
         if (mobileControlsEnabled) {
@@ -314,7 +314,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
             null
         }
     val charging = chargingState != PreviewChargingState.NOT_CHARGING
-    val center = previewCenterIndicator(resources, mobileTypeface, mobileWeightAxis)
+    val center = previewCenterIndicator(resources, mobileTypeface, mobileWeight)
     val semanticState = previewBatterySemanticState(lowBatteryThreshold)
 
     return RenderModel(
