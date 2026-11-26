@@ -75,7 +75,14 @@ execution ownership is in [architecture](../architecture/README.md).
   and charging/optimization semantics; keep native slot occupancy separate
   from drawing and transition geometry. Use measured native font geometry for
   optical clearance; do not invent permanent pixel, shader or alpha patches
-  to mask unverified behavior.
+  to mask unverified behavior. The observed mobile-type and battery-number
+  fonts are validated independently: expose only a verified variable-font
+  `wght` range; otherwise retain the captured native face and disable weight
+  adjustment without disabling independent font-size controls. Choose the
+  available Android variation method at the native report boundary, preserving
+  native fallback and the font's actual axis bounds. Maintainer acceptance of
+  the signed B1982 integration is specific to the tested device, not every
+  third-party font or ROM.
 - **Hot Reload (API 102):** transfer neutral V10 data, retire old callbacks,
   Views and listeners on the SystemUI main thread before accepting generation
   retirement, and revalidate the live host before reacquiring. Old V9 callback
@@ -98,7 +105,7 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
-- MIUIX `a09d4f32` retains the earlier native and Glass sheet motion,
+- The pinned MIUIX `bc1024d7` graph retains the verified native and Glass sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
   navigation runtime through the matched dependency graph. Search uses
   the public `SearchClearButton`; transformed menus share one settled placement
@@ -150,6 +157,13 @@ reference, not this public repository.
   specification and palette style remain independent of the source preference;
   legacy nullable specification settings retain their previous source choice.
   App and sandbox share this contract; MIUIX owns actual color generation.
+  On first enabling dynamic color, the source defaults to following the
+  system; explicit prior source choices survive a later off/on toggle.
+  A fixed seven-color preset seed selector uses the pinned native
+  GlassDropdownPreference via Guiyuan's existing adapter rather than a custom
+  row of swatches; the selected name is sufficient, since the actual theme
+  updates immediately. Blue remains the default seed, and stored choices
+  use stable preset names rather than ordinal positions.
 - The single MIUIX interface retains Glass navigation's selection-before-Pager
   contract, release-committed pointer selection, fixed icons and noninteractive
   preview. Standard/Blur floating navigation, native Rail and native capability

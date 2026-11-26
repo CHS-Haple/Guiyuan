@@ -176,6 +176,7 @@ internal object NativePresentationResolver {
         val source: NetworkTypeSource,
         val typeface: Typeface? = null,
         val fontPath: String? = null,
+        val weight: NativeFontWeight? = null,
     )
 
 
@@ -207,6 +208,7 @@ internal object NativePresentationResolver {
         val effectiveDataSubscriptionId: Int?,
         val networkTypeSubscriptionId: Int?,
         val networkType: NetworkType?,
+        val mobileFont: NativeMobileFont? = null,
     ) {
         // Diagnostic values are stable; only the source fact controls rendering.
         val activeSubscriptionAuthority: String

@@ -45,6 +45,7 @@ internal object HomeRenderSession {
         val onPresentationReadinessChanged: ((Boolean, String) -> Unit)? = null,
         val onHomeFrameDrawn: (() -> Unit)? = null,
         val onBatteryDrawn: ((RenderModel, Long) -> Unit)? = null,
+        val onNativeConfigurationChanged: (() -> Unit)? = null,
     )
 
     /** Resolved host identity is transient; Session retains only weak references. */
@@ -271,6 +272,11 @@ internal object HomeRenderSession {
         private val probeView =
             RenderView(
                 context = native.host.context,
+                onNativeConfigurationChanged = {
+                    if (HomeRenderSession.current === this) {
+                        sinks.onNativeConfigurationChanged?.invoke()
+                    }
+                },
                 // Passive draw witness: the Overlay child may report isShown=false
                 // even when the native host actually dispatches its overlay.
                 onModelDrawn = { drawn ->

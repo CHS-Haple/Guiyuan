@@ -27,6 +27,7 @@ internal class RenderView(
         committedOnMainThread: Boolean,
         sample: RuntimeRenderLatencySample?,
     ) -> Unit)? = null,
+    private val onNativeConfigurationChanged: (() -> Unit)? = null,
 ) : View(context) {
     private val painter = StatusPainter(context, preview = preview)
     private val centerEnterInterpolator: Interpolator =
@@ -330,6 +331,7 @@ internal class RenderView(
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         painter.clearNativeResources()
+        onNativeConfigurationChanged?.invoke()
         requestRedraw()
     }
 

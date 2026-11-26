@@ -7,18 +7,21 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The candidate source and Maven graph target
+- The migration candidate source and Maven graph target
+  `0.9.5-bc1024d7-SNAPSHOT` at
+  `bc1024d78a154f5167efff262ae5ed66264c481e`. This revision is
+  **not yet accepted**: validate upstream publication and Guiyuan's independent
+  published-Maven and source-substituted CI before advancing protected branches.
+  The previously accepted signed B1975 source used
   `0.9.5-588d029f-SNAPSHOT` at
-  `588d029f2b0747a0a8710db0858ed0957d78b122`. The matching
-  [publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501062)
-  and [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501001)
-  succeeded. Exact-Maven resolution and source-matched Guiyuan CI are still
-  required; this is a pre-release snapshot, not stable v0.9.5. B1972 accepted
-  the previous `542463a0` graph in [#1923](https://github.com/CHS-Haple/Guiyuan/pull/1923).
-  The new revision includes the previously unpublished Sheet default and
-  one-pass top-bar fade, scrolling pill tabs, and dropdown scroll indicators.
-  Guiyuan-specific Back, long-press, touch-extension and title clip boundaries
-  remain locally owned.
+  `588d029f2b0747a0a8710db0858ed0957d78b122`
+  ([publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501062)).
+  The candidate changes blur shader handoff and sharp-band decay, lowers the
+  progressive blur radius from 80dp to 32dp and default overhang from 32dp to
+  10dp, and anchors the progressive ramp to measured `bottomContent`.
+  Example-only changes are reviewed but need no duplicate runtime code.
+  Local title clipping and action controls remain Guiyuan-owned until the
+  public API covers those differences.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).

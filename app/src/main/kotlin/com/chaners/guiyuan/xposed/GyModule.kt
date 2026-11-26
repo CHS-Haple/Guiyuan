@@ -124,10 +124,14 @@ class GyModule : XposedModule() {
     private var inSettings = false
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
+    private var reportedFontSource: NativePresentationResolver.NetworkTypeSource? = null
     private var reportedFontPath: String? = null
+    private var reportedFontCoverage: String? = null
+    private var reportedMobileFont: NativeMobileFont? = null
     private var reportedBatteryFont: Typeface? = null
     private var reportedBatteryFontPath: String? = null
     private var reportedFontHost: View? = null
+    private var reportedFontConfiguration: Int? = null
     private var fontAxisReported = false
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
@@ -574,6 +578,16 @@ class GyModule : XposedModule() {
 
     // Keep native scene state identical across reload recovery and old-generation retirement.
     private fun clearHotReloadSceneState() {
+        reportedFont = null
+        reportedFontSource = null
+        reportedFontPath = null
+        reportedFontCoverage = null
+        reportedMobileFont = null
+        reportedBatteryFont = null
+        reportedBatteryFontPath = null
+        reportedFontHost = null
+        reportedFontConfiguration = null
+        fontAxisReported = false
         ccSourceInstalled = false
         controlCenterSceneVisible = false
         controlCenterSceneEligible = false
@@ -1938,13 +1952,20 @@ class GyModule : XposedModule() {
         trace: RuntimeRenderTrace? = null,
         pendingMobileTypeDrawable: Drawable? = null,
         forceRefresh: Boolean = false,
+        forceFontReport: Boolean = false,
     ) {
-        val presentation =
+        val resolved =
             NativePresentationResolver.resolve(
                 state = StatusStateStore.snapshot(),
                 pendingMobileTypeDrawable = pendingMobileTypeDrawable,
             )
-        reportFontAxis(presentation.networkType)
+        val font = reportFontAxis(resolved.networkType, force = forceFontReport)
+        val presentation = resolved.copy(
+            networkType = resolved.networkType?.let { type ->
+                type.copy(weight = font?.takeIf { type.typeface === it.face }?.weight)
+            },
+            mobileFont = font,
+        )
         val changed =
             PresentationStore.updateMobilePresentation(presentation)
         val recoveryCompleted =
@@ -2019,22 +2040,30 @@ class GyModule : XposedModule() {
     private fun reportFontAxis(
         networkType: NativePresentationResolver.NetworkType?,
         force: Boolean = false,
-    ) {
-        val host = SysUiHostRegistry.current() as? View ?: return
+    ): NativeMobileFont? {
+        val host = SysUiHostRegistry.current() as? View ?: return null
         val face = networkType?.typeface
+        val coverage = NativeFontWeightProbe.mobileCoverage(networkType?.label.orEmpty())
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
-        if (!force && fontAxisReported && reportedFontHost === host &&
-            reportedFont === face && reportedFontPath == networkType?.fontPath &&
-            reportedBatteryFont === batteryFace && reportedBatteryFontPath == batteryFont?.second
-        ) return
+        val configuration = host.resources.configuration.hashCode()
+        val sameHost = !force && reportedFontHost === host &&
+            reportedFontConfiguration == configuration
+        val sameMobile = sameHost && reportedFont === face &&
+            reportedFontSource == networkType?.source &&
+            reportedFontPath == networkType?.fontPath && reportedFontCoverage == coverage
+        val sameBattery = sameHost && reportedBatteryFont === batteryFace &&
+            reportedBatteryFontPath == batteryFont?.second
+        if (sameMobile && sameBattery && fontAxisReported) return reportedMobileFont
         // A live face without a verified file must not borrow the static font's axis.
-        val mobileFont =
-            if (face != null) {
-                networkType?.fontPath?.let { face to it }
-            } else {
-                NativeMobileTypePresentation.verifiedMobileFont(host.context)
-            }
+        val mobileSource = when {
+            sameMobile -> null
+            face != null -> face to networkType?.fontPath
+            // No live mobile glyph exists on Wi-Fi; only then use SystemUI's setter.
+            // A present TextView/Drawable with no observed face cannot borrow its axis.
+            networkType == null -> NativeMobileTypePresentation.systemMobileFont(host.context)
+            else -> null
+        }
 
         fun weightAxis(path: String?): FontWeightAxis? =
             path?.let {
@@ -2053,21 +2082,61 @@ class GyModule : XposedModule() {
                             kotlin.math.floor(axis.max.toDouble()).toInt()
                     }
             }
-        val mobileAxis = weightAxis(mobileFont?.second)
-        val batteryAxis = if (batteryFont?.second == mobileFont?.second) {
-            mobileAxis
+        val mobileFileAxis = weightAxis(mobileSource?.second)
+        fun accepted(axis: FontWeightAxis): NativeFontWeight =
+            NativeFontWeight(axis, NativeWeightMethod.platformDefault)
+        val mobileFont = if (sameMobile) {
+            reportedMobileFont
         } else {
-            weightAxis(batteryFont?.second)
+            mobileSource?.let { (selectedFace, _) ->
+                val selectedWeight = mobileFileAxis?.let(::accepted)
+                    ?: coverage?.let { NativeFontWeightProbe.mobile(selectedFace, it) }
+                NativeMobileFont(selectedFace, selectedWeight)
+            }
         }
-        SysUiBatterySource.setVerifiedNumberFont(host, batteryFace, batteryAxis)
+        val batteryPath = batteryFont?.second
+        val batteryWeight = if (sameBattery) {
+            SysUiBatterySource.currentNumberFont()?.weight
+        } else {
+            val fileAxis = if (!sameMobile && batteryPath != null && batteryPath == mobileSource?.second) {
+                mobileFileAxis
+            } else {
+                weightAxis(batteryPath)
+            }
+            fileAxis?.let(::accepted) ?: batteryFace?.let(NativeFontWeightProbe::battery)
+        }
+        SysUiBatterySource.setNumberFont(host, batteryFace, batteryWeight)
+        // Cache the selected sources independently of broadcast delivery.
+        reportedFont = face
+        reportedFontSource = networkType?.source
+        reportedFontPath = networkType?.fontPath
+        reportedFontCoverage = coverage
+        reportedMobileFont = mobileFont
+        reportedBatteryFont = batteryFace
+        reportedBatteryFontPath = batteryPath
+        reportedFontHost = host
+        reportedFontConfiguration = configuration
+        fontAxisReported = false
+        if (BuildConfig.RUNTIME_DIAGNOSTICS && detailedDiagnosticsEnabled && (!sameMobile || !sameBattery)) {
+            logDiagnostic(
+                level = Log.INFO,
+                event = "font.selection",
+                component = "nativeTypography",
+                "mobileSource" to if (face != null) "live" else if (mobileFont != null) "native-default" else "unavailable",
+                "mobileMethod" to (mobileFont?.weight?.method?.name ?: "unchanged"),
+                "mobileAxis" to mobileFont?.weight?.axis,
+                "batteryMethod" to (batteryWeight?.method?.name ?: "unchanged"),
+                "batteryAxis" to batteryWeight?.axis,
+            )
+        }
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
-        mobileAxis?.let {
+        mobileFont?.weight?.axis?.let {
             intent.putExtra(NativeFontAxis.MIN, it.min)
             intent.putExtra(NativeFontAxis.DEFAULT, it.default)
             intent.putExtra(NativeFontAxis.MAX, it.max)
         }
-        batteryAxis?.let {
+        batteryWeight?.axis?.let {
             intent.putExtra(NativeFontAxis.BAT_MIN, it.min)
             intent.putExtra(NativeFontAxis.BAT_DEFAULT, it.default)
             intent.putExtra(NativeFontAxis.BAT_MAX, it.max)
@@ -2076,16 +2145,12 @@ class GyModule : XposedModule() {
             val options = BroadcastOptions.makeBasic().setShareIdentityEnabled(true).toBundle()
             host.context.sendBroadcast(intent, null, options)
         }.onSuccess {
-            reportedFont = face
-            reportedFontPath = networkType?.fontPath
-            reportedBatteryFont = batteryFace
-            reportedBatteryFontPath = batteryFont?.second
-            reportedFontHost = host
             fontAxisReported = true
         }.onFailure { error ->
             SysUiHotReload.rethrowFatal(error)
             Log.w(TAG, "Unable to report verified native font axes", error)
         }
+        return mobileFont
     }
 
     private fun onCombinedStateChanged(
@@ -4316,6 +4381,14 @@ class GyModule : XposedModule() {
                         onEvent = ::logRuntimeEvent,
                         onLatencySample = ::onRenderLatencySample,
                         isDetailedDiagnosticsEnabled = { deepDiagnosticsEnabled },
+                        onNativeConfigurationChanged = {
+                            // Let native configuration dispatch finish before taking font evidence.
+                            Handler(Looper.getMainLooper()).post {
+                                if (!retiredForHotReload && SysUiHostRegistry.current() === host) {
+                                    refreshMobilePresentation(forceRefresh = true, forceFontReport = true)
+                                }
+                            }
+                        },
                         onPresentationReadinessChanged = { ready, readinessSource ->
                             rendererReadyOnAttach = ready
                             onHomeReadyChanged(host, ready, source, readinessSource)
@@ -4905,7 +4978,7 @@ class GyModule : XposedModule() {
             Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
         }
-        reportFontAxis(PresentationStore.snapshot().mobilePresentation?.networkType, force = true)
+        refreshMobilePresentation(forceRefresh = true, forceFontReport = true)
     }
 
     private fun onVisualCfgChanged(
