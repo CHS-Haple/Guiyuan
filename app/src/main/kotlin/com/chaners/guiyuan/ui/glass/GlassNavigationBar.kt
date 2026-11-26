@@ -544,7 +544,7 @@ private fun GlassNavigationItemVisual(
     labelSize: androidx.compose.ui.unit.TextUnit,
     previewLabel: (@Composable (Boolean) -> Unit)?,
 ) {
-androidx.compose.foundation.layout.Column(
+    androidx.compose.foundation.layout.Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(GlassNavigationBarDefaults.LabelSpacing),
     ) {
