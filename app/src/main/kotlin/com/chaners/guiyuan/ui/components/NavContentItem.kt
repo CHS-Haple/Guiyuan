@@ -2,7 +2,9 @@ package com.chaners.guiyuan.ui.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
@@ -33,6 +35,7 @@ internal fun NavContentItem(
     label: String,
     modifier: Modifier = Modifier,
     interactive: Boolean = true,
+    previewLabel: (@Composable () -> Unit)? = null,
 ) {
     if (content == NavContent.IconOnly) {
         FloatingNavigationBarItem(
@@ -79,13 +82,22 @@ internal fun NavContentItem(
                     .size(FloatingNavigationBarDefaults.IconSize),
             tint = contentColor,
         )
-        Text(
-            text = label,
-            modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
-            color = contentColor,
-            textAlign = TextAlign.Center,
-            fontSize = NavigationBarDefaults.LabelFontSize,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-        )
+        if (previewLabel != null) {
+            Box(
+                modifier = Modifier
+                    .padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
+                    .height(14.dp),
+                contentAlignment = Alignment.Center,
+            ) { previewLabel() }
+        } else {
+            Text(
+                text = label,
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
+                color = contentColor,
+                textAlign = TextAlign.Center,
+                fontSize = NavigationBarDefaults.LabelFontSize,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            )
+        }
     }
 }

@@ -96,8 +96,7 @@ internal fun MiniNavigationPreview(
     MiniPreviewFrame(
         miuixBackdrop = miuixBackdrop,
         liquidBackdrop = liquidBackdrop,
-        height = MiniNavigationViewportHeight + liquidBottomSpace,
-        bottomPadding = if (standardNav) 0.dp else liquidBottomSpace,
+        bottomPadding = liquidBottomSpace,
     ) {
         when {
             standardNav -> MiniStandardNavigationPreview(appearance.navContent, glassNavigation)
@@ -132,10 +131,9 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
                 onSelect = {},
                 backdrop = miuixBackdrop,
                 interactive = false,
-                defaultWindowInsetsPadding = false,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 24.dp),
+                defaultWindowInsetsPadding = true,
+                previewLabel = { selected -> MiniNavLabelBar(selected) },
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
     }
@@ -145,18 +143,17 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
 private fun MiniPreviewFrame(
     miuixBackdrop: LayerBackdrop?,
     liquidBackdrop: LayerBackdrop?,
-    height: Dp,
     bottomPadding: Dp,
     content: @Composable () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().height(height),
+        modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.TopCenter,
     ) {
         Box(
             modifier =
                 Modifier
-                    .fillMaxSize()
+                    .matchParentSize()
                     .then(
                         if (miuixBackdrop != null) {
                             Modifier.layerBackdrop(miuixBackdrop)
@@ -217,6 +214,7 @@ private fun MiniLiquidNavigationPreview(
                 icon = icons[index],
                 label = labels[index],
                 interactive = false,
+                previewLabel = { MiniNavLabelBar(index == 2) },
             )
         }
     }
@@ -243,7 +241,7 @@ private fun MiniFloatingNavigationPreview(
             } else {
                 MiuixTheme.colorScheme.surfaceContainer
             },
-        defaultWindowInsetsPadding = false,
+        defaultWindowInsetsPadding = true,
     ) {
         NavContentItem(
             content = content,
@@ -252,6 +250,7 @@ private fun MiniFloatingNavigationPreview(
             icon = MiuixIcons.Normal.Home,
             label = stringResource(R.string.nav_home),
             interactive = false,
+            previewLabel = { MiniNavLabelBar(false) },
         )
         NavContentItem(
             content = content,
@@ -260,6 +259,7 @@ private fun MiniFloatingNavigationPreview(
             icon = MiuixIcons.Normal.Tune,
             label = stringResource(R.string.nav_features),
             interactive = false,
+            previewLabel = { MiniNavLabelBar(false) },
         )
         NavContentItem(
             content = content,
@@ -268,6 +268,7 @@ private fun MiniFloatingNavigationPreview(
             icon = MiuixIcons.Normal.Settings,
             label = stringResource(R.string.nav_settings),
             interactive = false,
+            previewLabel = { MiniNavLabelBar(true) },
         )
     }
 }
@@ -293,9 +294,10 @@ private fun MiniNavViewport(
     content: @Composable () -> Unit,
 ) {
     Layout(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         content = content,
     ) { measurables, constraints ->
+        // Measure the native component's own bottom inset; do not approximate its margin.
         val placeable =
             measurables.single().measure(
                 constraints.copy(
@@ -304,15 +306,23 @@ private fun MiniNavViewport(
                 ),
             )
         val bottomPx = bottomPadding.roundToPx()
-        layout(constraints.maxWidth, constraints.maxHeight) {
+        val minHeightPx = (MiniNavigationViewportHeight + bottomPadding).roundToPx()
+        val viewportHeight = maxOf(minHeightPx, placeable.height + bottomPx)
+        layout(constraints.maxWidth, viewportHeight) {
             placeable.placeRelative(
                 x = ((constraints.maxWidth - placeable.width) / 2).coerceAtLeast(0),
-                y =
-                    (constraints.maxHeight - placeable.height - bottomPx)
-                        .coerceAtLeast(0),
+                y = (viewportHeight - placeable.height - bottomPx).coerceAtLeast(0),
             )
         }
     }
+}
+
+@Composable
+private fun MiniNavLabelBar(selected: Boolean) {
+    MiniTextBar(
+        width = if (selected) 30.dp else 26.dp,
+        role = MiniTextRole.Body2,
+    )
 }
 
 @Composable
@@ -343,10 +353,7 @@ private fun RowScope.MiniStandardNavigationItem(
         )
         if (showLabel) {
             Spacer(modifier = Modifier.height(3.dp))
-            MiniTextBar(
-                width = if (selected) 30.dp else 26.dp,
-                role = MiniTextRole.Body2,
-            )
+            MiniNavLabelBar(selected)
         }
     }
 }

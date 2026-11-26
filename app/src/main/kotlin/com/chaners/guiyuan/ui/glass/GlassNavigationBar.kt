@@ -155,6 +155,7 @@ fun GlassNavigationBar(
     trailingActionTouchExclusion: Dp = 0.dp,
     trailingActionTouchSize: Dp = 0.dp,
     onTrailingActionTouch: (() -> Unit)? = null,
+    previewLabel: (@Composable (Boolean) -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
     val index = selectedIndex.coerceIn(0, items.lastIndex)
@@ -465,6 +466,7 @@ fun GlassNavigationBar(
                             height = height,
                             interactionEnabled = inputEnabled,
                             onSelect = onSelectState,
+                            previewLabel = previewLabel,
                         )
                     }
                 }
@@ -485,6 +487,7 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
     height: Dp,
     interactionEnabled: Boolean,
     onSelect: (Int) -> Unit,
+    previewLabel: (@Composable (Boolean) -> Unit)?,
 ) {
     val tintState = animateColorAsState(
         targetValue = if (selected) selectedColor else unselectedColor,
@@ -541,7 +544,16 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
                 )
             }
             item.label?.let { label ->
-                GlassNavigationItemLabel(label, tintProducer, labelSize)
+                if (previewLabel != null) {
+                    Box(
+                        modifier = Modifier.heightIn(min = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        previewLabel(selected)
+                    }
+                } else {
+                    GlassNavigationItemLabel(label, tintProducer, labelSize)
+                }
             }
         }
     }

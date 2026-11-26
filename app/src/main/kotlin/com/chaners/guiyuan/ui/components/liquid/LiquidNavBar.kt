@@ -587,6 +587,7 @@ internal fun RowScope.LiquidNavEntry(
     icon: ImageVector,
     label: String,
     interactive: Boolean = true,
+    previewLabel: (@Composable () -> Unit)? = null,
 ) {
     LiquidNavItem(onClick = onClick, selected = selected, interactive = interactive) {
         Icon(
@@ -596,10 +597,16 @@ internal fun RowScope.LiquidNavEntry(
             modifier = Modifier.size(28.dp),
         )
         if (contentMode == NavContent.IconAndText) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-            )
+            if (previewLabel != null) {
+                Box(modifier = Modifier.height(14.dp), contentAlignment = Alignment.Center) {
+                    previewLabel()
+                }
+            } else {
+                Text(
+                    text = label,
+                    fontSize = 12.sp,
+                )
+            }
         }
     }
 }
