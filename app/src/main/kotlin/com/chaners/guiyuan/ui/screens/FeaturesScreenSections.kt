@@ -47,6 +47,19 @@ internal data class FeaturesSectionActions(
     val reset: () -> Unit,
 )
 
+// Shared search semantics for both section inclusion and its visible child controls.
+internal fun PageSearch.matchesBothSidesActivity(): Boolean = filtering && any(
+    R.string.both_sides_activity_title,
+    R.string.both_sides_idle_activity_title,
+    R.string.both_sides_activity_size,
+    R.string.both_sides_activity_vertical_offset,
+)
+
+internal fun PageSearch.matchesBothSidesCharging(): Boolean = filtering && any(
+    R.string.both_sides_charging_title,
+    R.string.both_sides_charging_vertical_offset,
+)
+
 private data class FeatureSectionsMatching(
     val display: Boolean,
     val layout: Boolean,
@@ -59,10 +72,7 @@ private data class FeatureSectionsMatching(
 }
 
 private fun PageSearch.matchFeatureSections(showChargingIcon: Boolean): FeatureSectionsMatching {
-    val charging = filtering && any(
-        R.string.both_sides_charging_title,
-        R.string.both_sides_charging_vertical_offset,
-    )
+    val charging = matchesBothSidesCharging()
     return FeatureSectionsMatching(
         display = anyFrom(FeatureSearchIds.display),
         layout = anyFrom(FeatureSearchIds.layout),
