@@ -96,8 +96,7 @@ internal fun MiniNavigationPreview(
     MiniPreviewFrame(
         miuixBackdrop = miuixBackdrop,
         liquidBackdrop = liquidBackdrop,
-        height = MiniNavigationViewportHeight + liquidBottomSpace,
-        bottomPadding = if (standardNav) 0.dp else liquidBottomSpace,
+        bottomPadding = liquidBottomSpace,
     ) {
         when {
             standardNav -> MiniStandardNavigationPreview(appearance.navContent, glassNavigation)
@@ -132,11 +131,9 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
                 onSelect = {},
                 backdrop = miuixBackdrop,
                 interactive = false,
-                defaultWindowInsetsPadding = false,
+                defaultWindowInsetsPadding = true,
                 previewLabel = { selected -> MiniNavLabelBar(selected) },
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 24.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
     }
@@ -146,12 +143,11 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
 private fun MiniPreviewFrame(
     miuixBackdrop: LayerBackdrop?,
     liquidBackdrop: LayerBackdrop?,
-    height: Dp,
     bottomPadding: Dp,
     content: @Composable () -> Unit,
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth().height(height),
+        modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.TopCenter,
     ) {
         Box(
@@ -245,7 +241,7 @@ private fun MiniFloatingNavigationPreview(
             } else {
                 MiuixTheme.colorScheme.surfaceContainer
             },
-        defaultWindowInsetsPadding = false,
+        defaultWindowInsetsPadding = true,
     ) {
         NavContentItem(
             content = content,
@@ -298,9 +294,10 @@ private fun MiniNavViewport(
     content: @Composable () -> Unit,
 ) {
     Layout(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         content = content,
     ) { measurables, constraints ->
+        // Measure the native component's own bottom inset; do not approximate its margin.
         val placeable =
             measurables.single().measure(
                 constraints.copy(
@@ -309,12 +306,12 @@ private fun MiniNavViewport(
                 ),
             )
         val bottomPx = bottomPadding.roundToPx()
-        layout(constraints.maxWidth, constraints.maxHeight) {
+        val minHeightPx = (MiniNavigationViewportHeight + bottomPadding).roundToPx()
+        val viewportHeight = maxOf(minHeightPx, placeable.height + bottomPx)
+        layout(constraints.maxWidth, viewportHeight) {
             placeable.placeRelative(
                 x = ((constraints.maxWidth - placeable.width) / 2).coerceAtLeast(0),
-                y =
-                    (constraints.maxHeight - placeable.height - bottomPx)
-                        .coerceAtLeast(0),
+                y = (viewportHeight - placeable.height - bottomPx).coerceAtLeast(0),
             )
         }
     }
