@@ -2059,7 +2059,7 @@ class GyModule : XposedModule() {
         } else {
             weightAxis(batteryFont?.second)
         }
-        SysUiBatterySource.setVerifiedNumberFont(host, batteryFace, batteryAxis)
+        SysUiBatterySource.setNumberFont(host, batteryFace, batteryAxis)
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
         mobileAxis?.let {
