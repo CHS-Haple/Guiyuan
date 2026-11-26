@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
@@ -51,29 +50,21 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.featureNetworkSectio
     val visual = state.visual
     val enabled = state.enabled
     val weight = state.weight
-    Section(R.string.section_network) {
-        networkSizesAndWeights(search, visual, visualRepo, enabled)
-        if (search.matches(R.string.mobile_type_weight)) {
-            NativeWeightSlider(
-                value = visual.mobileTypeWeight,
-                onValueChange = visualRepo::setMobileTypeWeight,
-                weight = weight,
-                dialogOpen = weightDialog.open,
-                onOpenDialog = weightDialog.onOpen,
-            )
-        }
+    GroupedPreferenceSection(R.string.section_network, "features-network", buildList {
+        networkWifiAirplaneControls(search, visual, visualRepo, enabled)
+        networkSimTypeControls(search, visual, visualRepo, enabled)
+        networkMobileWeight(search, visual, visualRepo, weight, weightDialog)
         networkFollowBatteryColor(search, visual, visualRepo, enabled)
-    }
+    })
 }
 
-@Composable
-private fun ColumnScope.networkSizesAndWeights(
+private fun MutableList<PreferenceCardItem>.networkWifiAirplaneControls(
     search: PageSearch,
     visual: VisualCfg,
     visualRepo: VisualRepo,
     enabled: Boolean,
 ) {
-    if (search.matches(R.string.wifi_size)) {
+    if (search.matches(R.string.wifi_size)) add(PreferenceCardItem("wifi_size") {
         NetworkSizeSlider(
             value = visual.wifiScale,
             onValueChange = visualRepo::setWifiScale,
@@ -81,16 +72,16 @@ private fun ColumnScope.networkSizesAndWeights(
             defaultValue = WIFI_SIZE_SCALE_DEFAULT,
             enabled = enabled,
         )
-    }
-    if (search.matches(R.string.wifi_weight)) {
+    })
+    if (search.matches(R.string.wifi_weight)) add(PreferenceCardItem("wifi_weight") {
         NetworkWeightSlider(
             value = visual.wifiWeight,
             onValueChange = visualRepo::setWifiWeight,
             row = NetworkWeightRow.WIFI,
             enabled = enabled,
         )
-    }
-    if (search.matches(R.string.airplane_size)) {
+    })
+    if (search.matches(R.string.airplane_size)) add(PreferenceCardItem("airplane_size") {
         NetworkSizeSlider(
             value = visual.airplaneScale,
             onValueChange = visualRepo::setAirplaneScale,
@@ -98,16 +89,24 @@ private fun ColumnScope.networkSizesAndWeights(
             defaultValue = AIRPLANE_SIZE_SCALE_DEFAULT,
             enabled = enabled,
         )
-    }
-    if (search.matches(R.string.airplane_weight)) {
+    })
+    if (search.matches(R.string.airplane_weight)) add(PreferenceCardItem("airplane_weight") {
         NetworkWeightSlider(
             value = visual.airplaneWeight,
             onValueChange = visualRepo::setAirplaneWeight,
             row = NetworkWeightRow.AIRPLANE,
             enabled = enabled,
         )
-    }
-    if (search.matches(R.string.no_sim_size)) {
+    })
+}
+
+private fun MutableList<PreferenceCardItem>.networkSimTypeControls(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
+    if (search.matches(R.string.no_sim_size)) add(PreferenceCardItem("no_sim_size") {
         NetworkSizeSlider(
             value = visual.noSimScale,
             onValueChange = visualRepo::setNoSimScale,
@@ -115,8 +114,8 @@ private fun ColumnScope.networkSizesAndWeights(
             defaultValue = NO_SIM_SIZE_SCALE_DEFAULT,
             enabled = enabled,
         )
-    }
-    if (search.matches(R.string.mobile_type_size)) {
+    })
+    if (search.matches(R.string.mobile_type_size)) add(PreferenceCardItem("mobile_type_size") {
         NetworkSizeSlider(
             value = visual.mobileTypeScale,
             onValueChange = visualRepo::setMobileTypeScale,
@@ -124,17 +123,34 @@ private fun ColumnScope.networkSizesAndWeights(
             defaultValue = mobileTypeScaleDefault(visual.layout),
             enabled = enabled,
         )
-    }
+    })
 }
 
-@Composable
-private fun ColumnScope.networkFollowBatteryColor(
+private fun MutableList<PreferenceCardItem>.networkMobileWeight(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    weight: FeatureWeightUi,
+    dialog: NetworkWeightDialog,
+) {
+    if (search.matches(R.string.mobile_type_weight)) add(PreferenceCardItem("mobile_type_weight") {
+        NativeWeightSlider(
+            value = visual.mobileTypeWeight,
+            onValueChange = visualRepo::setMobileTypeWeight,
+            weight = weight,
+            dialogOpen = dialog.open,
+            onOpenDialog = dialog.onOpen,
+        )
+    })
+}
+
+private fun MutableList<PreferenceCardItem>.networkFollowBatteryColor(
     search: PageSearch,
     visual: VisualCfg,
     visualRepo: VisualRepo,
     enabled: Boolean,
 ) {
-    if (search.matches(R.string.mobile_follow_battery_color)) {
+    if (search.matches(R.string.mobile_follow_battery_color)) add(PreferenceCardItem("mobile_follow_battery_color") {
         SwitchPreference(
             title = stringResource(R.string.mobile_follow_battery_color),
             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_signal_cellular_alt, enabled, R.drawable.ic_material_symbol_colorize) },
@@ -143,8 +159,8 @@ private fun ColumnScope.networkFollowBatteryColor(
             enabled = enabled,
             onCheckedChange = visualRepo::setMobileFollowsBatteryColor,
         )
-    }
-    if (search.matches(R.string.center_follow_battery_color)) {
+    })
+    if (search.matches(R.string.center_follow_battery_color)) add(PreferenceCardItem("center_follow_battery_color") {
         SwitchPreference(
             title = stringResource(R.string.center_follow_battery_color),
             startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_wifi, enabled, R.drawable.ic_material_symbol_colorize) },
@@ -153,7 +169,7 @@ private fun ColumnScope.networkFollowBatteryColor(
             enabled = enabled,
             onCheckedChange = visualRepo::setCenterFollowsBatteryColor,
         )
-    }
+    })
 }
 
 private enum class NetworkSizeRow(

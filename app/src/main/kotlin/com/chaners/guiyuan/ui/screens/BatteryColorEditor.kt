@@ -27,15 +27,23 @@ import com.chaners.guiyuan.ui.components.dialogActionGap
 import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 
+/** Renaming is one transaction; the dialog never owns the persistent color library. */
+internal class BatteryRenameActions(
+    val onDismissFinished: () -> Unit,
+    val onDismiss: () -> Unit,
+    val onRename: (Int, String) -> Unit,
+)
+
 @Composable
 internal fun BatteryRenameSchemeDialog(
     scheme: BatteryCustomColorScheme?,
     originalName: String,
     show: Boolean,
-    onDismissFinished: () -> Unit,
-    onDismiss: () -> Unit,
-    onRename: (Int, String) -> Unit,
+    actions: BatteryRenameActions,
 ) {
+    val onDismissFinished = actions.onDismissFinished
+    val onDismiss = actions.onDismiss
+    val onRename = actions.onRename
     val currentName = originalName
     var name by remember(scheme?.id, currentName) { mutableStateOf(currentName) }
     UiOverlayDialog(

@@ -33,9 +33,10 @@ internal object SysUiSceneSource {
         classLoader: ClassLoader,
         onSceneState: (SceneUpdate) -> Unit,
         onRuntimeFailure: (Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): List<HookHandle> {
+        val onEvent = diagnostics.onEvent
+        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         val batteryClass =
             Class.forName(BATTERY_VIEW_CLASS_NAME, false, classLoader)
         val stateField =
@@ -94,55 +95,26 @@ internal object SysUiSceneSource {
     fun matches(handle: HookHandle): Boolean = handle.id == HOOK_ID
 
     fun steadySourceScene(update: SceneUpdate): SourceScene =
-        steadySourceScene(steadySourceScene(update.sourceView), update.surface)
+        SceneClassificationPolicy.steadySourceScene(steadySourceScene(update.sourceView), update.surface)
 
     // A new generation must re-read native state even if updateState never fires.
     // Do not turn the read into a delivered hook callback or infer scene from ancestry alone.
     fun currentSteadySourceScene(sourceView: View): SourceScene =
         if (sourceView.isAttachedToWindow) {
-            steadySourceScene(steadySourceScene(sourceView), currentSurface(sourceView))
+            SceneClassificationPolicy.steadySourceScene(steadySourceScene(sourceView), currentSurface(sourceView))
         } else {
             SourceScene.UNKNOWN
-        }
-
-    internal fun steadySourceScene(structural: SourceScene, surface: Surface?): SourceScene =
-        when (structural) {
-            SourceScene.HOME ->
-                if (surface == Surface.UNLOCKED_STATUS_BAR) {
-                    SourceScene.HOME
-                } else {
-                    SourceScene.UNKNOWN
-                }
-
-            SourceScene.KEYGUARD ->
-                if (
-                    surface == Surface.KEYGUARD ||
-                    surface == Surface.SHADE_LOCKED
-                ) {
-                    SourceScene.KEYGUARD
-                } else {
-                    SourceScene.UNKNOWN
-                }
-
-            SourceScene.UNKNOWN -> SourceScene.UNKNOWN
         }
 
     fun steadySourceScene(sourceView: View): SourceScene {
         var current: View? = sourceView
         while (current != null) {
-            val scene = classifyHost(current.javaClass.name)
+            val scene = SceneClassificationPolicy.classifyHost(current.javaClass.name)
             if (scene != SourceScene.UNKNOWN) return scene
             current = current.parent as? View
         }
         return SourceScene.UNKNOWN
     }
-
-    internal fun classifyHost(className: String): SourceScene =
-        when (className) {
-            StatusBarHostCapture.HOST_CLASS_NAME -> SourceScene.HOME
-            KEYGUARD_HOST_CLASS_NAME -> SourceScene.KEYGUARD
-            else -> SourceScene.UNKNOWN
-        }
 
     @Synchronized
     fun currentSurface(sourceView: View): Surface? {
@@ -154,7 +126,7 @@ internal object SysUiSceneSource {
                         ?.also { states[sourceView] = it }
                         ?: return null
                 }
-        return classifyRawState(rawState)
+        return SceneClassificationPolicy.classifyRawState(rawState)
     }
 
     @Synchronized
@@ -163,14 +135,6 @@ internal object SysUiSceneSource {
         deliveredStates.clear()
         statusBarStateField = null
     }
-
-    internal fun classifyRawState(rawState: Int): Surface =
-        when (rawState) {
-            STATUS_BAR_STATE_SHADE -> Surface.UNLOCKED_STATUS_BAR
-            STATUS_BAR_STATE_KEYGUARD -> Surface.KEYGUARD
-            STATUS_BAR_STATE_SHADE_LOCKED -> Surface.SHADE_LOCKED
-            else -> Surface.UNKNOWN
-        }
 
     @Suppress("TooGenericExceptionCaught")
     private fun publish(
@@ -192,7 +156,7 @@ internal object SysUiSceneSource {
         val update =
             SceneUpdate(
                 sourceView = sourceView,
-                surface = classifyRawState(rawState),
+                surface = SceneClassificationPolicy.classifyRawState(rawState),
                 rawState = rawState,
             )
         try {
@@ -229,11 +193,4 @@ internal object SysUiSceneSource {
         val surface: Surface,
         val rawState: Int,
     )
-
-    private const val KEYGUARD_HOST_CLASS_NAME =
-        "com.android.systemui.statusbar.phone.MiuiKeyguardStatusBarView"
-
-    private const val STATUS_BAR_STATE_SHADE = 0
-    private const val STATUS_BAR_STATE_KEYGUARD = 1
-    private const val STATUS_BAR_STATE_SHADE_LOCKED = 2
 }

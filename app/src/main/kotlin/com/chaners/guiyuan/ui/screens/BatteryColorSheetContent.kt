@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.ui.screens
 
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
 
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.size
@@ -159,10 +162,12 @@ internal fun BatteryColorDetailSheet(
                 )
             },
         backgroundColor = MiuixTheme.colorScheme.surface,
-        insideMargin = BottomSheetDefaults.insideMargin,
+        insideMargin = DpSize(0.dp, 0.dp),
         enableWindowDim = false,
         startAction = {
-            BatteryColorDetailBackAction(state)
+            Box(Modifier.padding(start = BottomSheetDefaults.insideMargin.width)) {
+                BatteryColorDetailBackAction(state)
+            }
         },
         onDismissRequest = { state.showDetail = false },
     ) { innerPadding ->
@@ -248,14 +253,16 @@ internal fun BatteryColorModalDialogs(
         scheme = state.renameRequest?.id?.let(library::customById),
         originalName = state.renameRequest?.originalName.orEmpty(),
         show = state.renameRequest?.visible == true,
-        onDismiss = { state.renameRequest = state.renameRequest?.copy(visible = false) },
-        onDismissFinished = {
-            if (state.renameRequest?.visible == false) state.renameRequest = null
-        },
-        onRename = { id, name ->
-            state.renameRequest = state.renameRequest?.copy(visible = false)
-            repository.renameCustom(id, name)
-        },
+        actions = BatteryRenameActions(
+            onDismiss = { state.renameRequest = state.renameRequest?.copy(visible = false) },
+            onDismissFinished = {
+                if (state.renameRequest?.visible == false) state.renameRequest = null
+            },
+            onRename = { id, name ->
+                state.renameRequest = state.renameRequest?.copy(visible = false)
+                repository.renameCustom(id, name)
+            },
+        ),
     )
 
     BatteryDeleteSchemeDialog(

@@ -83,9 +83,10 @@ internal fun AppearanceScreen(
                 ),
             )
         },
-    ) {
-        item { AppearanceThemePreview(appearance = appearance, dark = dark) }
-        appearanceThemeSection(appearance, themeActions)
-        appearanceVisualSection(appearance, visualActions, scaleState)
-    }
+        scrollContent = {
+            AppearanceThemePreview(appearance = appearance, dark = dark)
+            appearanceThemeSection(appearance, themeActions)
+            appearanceVisualSection(appearance, visualActions, scaleState)
+        },
+    )
 }

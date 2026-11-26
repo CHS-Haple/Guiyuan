@@ -139,27 +139,30 @@ internal object ConfigBackupGuards {
                 }
                 continue
             }
-            when (char) {
-                '"' -> {
-                    quoted = true
-                    start = index
-                }
-                '{' -> parents.add(mutableSetOf())
-                '[' -> parents.add(null)
-                '}' -> {
-                    require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) != null) {
-                        "Invalid JSON object nesting"
-                    }
-                }
-                ']' -> {
-                    require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) == null) {
-                        "Invalid JSON array nesting"
-                    }
-                }
+            if (char == '"') {
+                quoted = true
+                start = index
+            } else {
+                updateStructureStack(char, parents)
             }
             require(parents.size <= 16) { "JSON nesting limit exceeded" }
         }
         require(!quoted && parents.isEmpty()) { "Incomplete JSON" }
+    }
+
+    // Keep container pairing separate from quote parsing; neither can skip
+    // the depth check or the final completeness check in the caller.
+    private fun updateStructureStack(char: Char, parents: MutableList<MutableSet<String>?>) {
+        when (char) {
+            '{' -> parents.add(mutableSetOf())
+            '[' -> parents.add(null)
+            '}' -> require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) != null) {
+                "Invalid JSON object nesting"
+            }
+            ']' -> require(parents.isNotEmpty() && parents.removeAt(parents.lastIndex) == null) {
+                "Invalid JSON array nesting"
+            }
+        }
     }
 
     // Keys are decoded before deduplication so escaped spellings cannot hide duplicates.

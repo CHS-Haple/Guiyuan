@@ -47,6 +47,24 @@ internal object HomeRenderSession {
         val onBatteryDrawn: ((RenderModel, Long) -> Unit)? = null,
     )
 
+    /** Resolved host identity is transient; Session retains only weak references. */
+    private class HomeNativeViews(
+        val host: ViewGroup,
+        val batteryContainer: ViewGroup,
+        val statusIcons: ViewGroup,
+        val batteryView: ViewGroup,
+        val batteryCarrier: View,
+    )
+
+    /** Initial native/feature facts are sampled once at attachment, never replayed as live state. */
+    private class HomeSessionSeed(
+        val nativeHandoffActive: Boolean,
+        val controlCenterAllowsHome: Boolean,
+        val tintState: TintState?,
+        val allowLiveTintSeed: Boolean,
+        val featureEnabled: Boolean,
+    )
+
     @Synchronized
     fun attach(
         host: Any,
@@ -69,35 +87,22 @@ internal object HomeRenderSession {
             SysUiCarrierMetrics.resolveView(batteryView)
                 ?: return "battery-core-carrier-missing"
 
+        val native = HomeNativeViews(hostView, batteryContainer, statusIcons, batteryView, batteryCarrier)
         val existing = current
-        if (
-            existing?.matches(
-                hostView,
-                batteryContainer,
-                statusIcons,
-                batteryView,
-                batteryCarrier,
-            ) == true
-        ) {
+        if (existing?.matches(native) == true) {
             existing.update(StatusStateStore.snapshot())
             return null
         }
 
         existing?.let { stop(it) }
-        val session = Session(
-            host = hostView,
-            batteryContainer = batteryContainer,
-            statusIcons = statusIcons,
-            batteryView = batteryView,
-            batteryCarrier = batteryCarrier,
-            sinks = sinks,
-            initialNativeHandoffActive = initialNativeHandoffActive,
-            initialControlCenterAllowsHome = initialControlCenterAllowsHome,
-            initialTintState = initialTintState,
+        val seed = HomeSessionSeed(
+            nativeHandoffActive = initialNativeHandoffActive,
+            controlCenterAllowsHome = initialControlCenterAllowsHome,
+            tintState = initialTintState,
             allowLiveTintSeed = allowLiveTintSeed,
-            initialFeatureEnabled =
-                FeaturePrefsOwner.current().enabled,
+            featureEnabled = FeaturePrefsOwner.current().enabled,
         )
+        val session = Session(native = native, sinks = sinks, seed = seed)
         current = session
         session.start()
         session.update(StatusStateStore.snapshot())
@@ -198,11 +203,9 @@ internal object HomeRenderSession {
         layoutReady: Boolean,
         hostAttached: Boolean,
     ): Boolean =
-        featureEnabled &&
-            modelReady &&
-            tintReady &&
-            layoutReady &&
-            hostAttached
+        ProjectionReadinessPolicy.structuralReady(
+            featureEnabled, modelReady, tintReady, layoutReady, hostAttached,
+        )
 
     // A child onLayout can run before SystemUI's parent finishes its traversal.
     // Retire an already verified Home owner only on actual detach, or at the
@@ -251,29 +254,23 @@ internal object HomeRenderSession {
 
 
     private class Session(
-        host: ViewGroup,
-        batteryContainer: ViewGroup,
-        statusIcons: ViewGroup,
-        batteryView: ViewGroup,
-        batteryCarrier: View,
+        native: HomeNativeViews,
         private val sinks: Sinks,
-        initialNativeHandoffActive: Boolean,
-        initialControlCenterAllowsHome: Boolean,
-        private val initialTintState: TintState?,
-        private val allowLiveTintSeed: Boolean,
-        initialFeatureEnabled: Boolean,
+        seed: HomeSessionSeed,
     ) : View.OnAttachStateChangeListener {
-        private val host = WeakReference(host)
-        private val batteryContainer = WeakReference(batteryContainer)
-        private val statusIcons = WeakReference(statusIcons)
-        private val batteryView = WeakReference(batteryView)
-        private val batteryCarrier = WeakReference(batteryCarrier)
+        private val initialTintState = seed.tintState
+        private val allowLiveTintSeed = seed.allowLiveTintSeed
+        private val host = WeakReference(native.host)
+        private val batteryContainer = WeakReference(native.batteryContainer)
+        private val statusIcons = WeakReference(native.statusIcons)
+        private val batteryView = WeakReference(native.batteryView)
+        private val batteryCarrier = WeakReference(native.batteryCarrier)
         private var lastCompletedDrawElapsedRealtimeMs = 0L
         private var lastDrawnCharging: Boolean? = null
         private var lastDrawnBatterySemantic: BatterySemanticState? = null
         private val probeView =
             RenderView(
-                context = host.context,
+                context = native.host.context,
                 // Passive draw witness: the Overlay child may report isShown=false
                 // even when the native host actually dispatches its overlay.
                 onModelDrawn = { drawn ->
@@ -328,9 +325,9 @@ internal object HomeRenderSession {
         private var nativeTintObserved = false
         // Home eligibility follows native CC ownership independently of the
         // separate QS_FAKE projection readiness.
-        private var controlCenterAllowsHome = initialControlCenterAllowsHome
-        private var nativeHandoffActive = initialNativeHandoffActive
-        private var featureEnabled = initialFeatureEnabled
+        private var controlCenterAllowsHome = seed.controlCenterAllowsHome
+        private var nativeHandoffActive = seed.nativeHandoffActive
+        private var featureEnabled = seed.featureEnabled
         private var modelReady = false
         private var tintReady = false
         private var layoutReady = false
@@ -393,18 +390,12 @@ internal object HomeRenderSession {
             nativeDrawObserver = null
         }
 
-        fun matches(
-            host: ViewGroup,
-            batteryContainer: ViewGroup,
-            statusIcons: ViewGroup,
-            batteryView: ViewGroup,
-            batteryCarrier: View,
-        ): Boolean =
-            this.host.get() === host &&
-                this.batteryContainer.get() === batteryContainer &&
-                this.statusIcons.get() === statusIcons &&
-                this.batteryView.get() === batteryView &&
-                this.batteryCarrier.get() === batteryCarrier
+        fun matches(native: HomeNativeViews): Boolean =
+            this.host.get() === native.host &&
+                this.batteryContainer.get() === native.batteryContainer &&
+                this.statusIcons.get() === native.statusIcons &&
+                this.batteryView.get() === native.batteryView &&
+                this.batteryCarrier.get() === native.batteryCarrier
 
         fun start() {
             val overlayHost = host.get() ?: return

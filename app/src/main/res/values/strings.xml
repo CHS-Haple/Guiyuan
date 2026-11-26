@@ -37,8 +37,7 @@
     <string name="both_sides_charging_title">Bottom charging bolt</string>
     <string name="both_sides_charging_summary">Move the charging bolt to the bottom in two-sided distribution, ahead of network activity</string>
     <string name="both_sides_charging_vertical_offset">Bottom charging bolt vertical offset</string>
-    <string name="curved_signal_dot_vertical_offset">Curved signal dots vertical offset</string>
-    <string name="horizontal_signal_dot_vertical_offset">Horizontal signal dots vertical offset</string>
+    <string name="mobile_signal_dot_vertical_offset">Mobile signal dots vertical offset</string>
     <string name="battery_lower_opening_title">Lower battery ring opening</string>
     <string name="battery_lower_opening_summary">For curved and horizontal dots: follow their position or keep a fixed opening</string>
     <string name="battery_lower_opening_follow">Follow dots</string>

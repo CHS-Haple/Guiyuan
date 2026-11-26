@@ -47,6 +47,7 @@ internal fun BatteryAddSchemePage(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
+
             .verticalScroll(scrollState)
             .padding(contentPadding),
     ) {
@@ -92,33 +93,7 @@ private fun BatteryAddSchemeCardBody(count: Int, enabled: Boolean) {
                     onSlotClick = {},
                 )
             }
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Surface(
-                    modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
-                    shape = CircleShape,
-                    color =
-                        if (enabled) MiuixTheme.colorScheme.primary
-                        else MiuixTheme.colorScheme.disabledPrimaryButton,
-                    shadowElevation = 0.dp,
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = MiuixIcons.Add,
-                            contentDescription = stringResource(
-                                if (enabled) R.string.battery_custom_scheme_new
-                                else R.string.battery_custom_scheme_limit,
-                            ),
-                            modifier = Modifier.size(32.dp),
-                            tint =
-                                if (enabled) MiuixTheme.colorScheme.onPrimary
-                                else MiuixTheme.colorScheme.disabledOnPrimaryButton,
-                        )
-                    }
-                }
-            }
+            BatteryAddSchemeCreationGlyph(enabled)
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 16.dp),
             ) {
@@ -143,6 +118,37 @@ private fun BatteryAddSchemeCardBody(count: Int, enabled: Boolean) {
         layout(reference.width, height) {
             creation.placeRelative(0, (footerTop - creation.height) / 2)
             footer.placeRelative(0, footerTop)
+        }
+    }
+}
+
+@Composable
+private fun BatteryAddSchemeCreationGlyph(enabled: Boolean) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier.size(FloatingActionButtonDefaults.MinWidth),
+            shape = CircleShape,
+            color =
+                if (enabled) MiuixTheme.colorScheme.primary
+                else MiuixTheme.colorScheme.disabledPrimaryButton,
+            shadowElevation = 0.dp,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = MiuixIcons.Add,
+                    contentDescription = stringResource(
+                        if (enabled) R.string.battery_custom_scheme_new
+                        else R.string.battery_custom_scheme_limit,
+                    ),
+                    modifier = Modifier.size(32.dp),
+                    tint =
+                        if (enabled) MiuixTheme.colorScheme.onPrimary
+                        else MiuixTheme.colorScheme.disabledOnPrimaryButton,
+                )
+            }
         }
     }
 }

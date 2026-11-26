@@ -22,8 +22,7 @@ internal object FeatureSearchIds {
         R.string.both_sides_activity_vertical_offset,
         R.string.both_sides_charging_vertical_offset,
         R.string.mobile_type_bottom_offset,
-        R.string.curved_signal_dot_vertical_offset,
-        R.string.horizontal_signal_dot_vertical_offset,
+        R.string.mobile_signal_dot_vertical_offset,
         R.string.battery_lower_opening_title,
         R.string.combined_size,
         R.string.outer_weight,
@@ -86,8 +85,11 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
         "双排", "双排信号", "双排信号点", "双卡", "双卡信号点", "双卡样式", "Duo", "八点", "双排样式", "弧形排列", "横向排列",
         "Dual-row dots", "Dual-SIM dots", "Curved arrangement", "Horizontal arrangement",
     )
-    R.string.curved_signal_dot_vertical_offset -> listOf("弧形偏移", "弧形上下位置", "Curved dot offset")
-    R.string.horizontal_signal_dot_vertical_offset -> listOf("横向偏移", "横排上下位置", "Horizontal dot offset")
+    R.string.mobile_signal_dot_vertical_offset -> listOf(
+        "移动信号点上下偏移", "信号点偏移", "弧形信号点上下偏移", "横向信号点上下偏移",
+        "弧形偏移", "横向偏移", "弧形上下位置", "横排上下位置",
+        "Curved dot offset", "Horizontal dot offset", "Mobile signal dot offset",
+    )
     R.string.both_sides_activity_title -> listOf("上传下载", "网络活动", "流量指示器", "activity indicator")
     R.string.both_sides_idle_activity_title -> listOf("空闲箭头", "保留活动箭头", "隐藏活动箭头", "空闲隐藏", "隐藏空闲网络指示器", "空闲网络活动指示器", "Hide network activity when idle")
     R.string.both_sides_activity_size -> listOf("活动箭头大小", "流量图标大小")

@@ -137,10 +137,41 @@ internal fun migrateVisualPrefsIfNeeded(preferences: SharedPreferences) {
         val editor = preferences.edit()
         migrateSignalDotArrangementsIfNeeded(preferences, editor)
         migrateSharedLayoutVisualsIfNeeded(preferences, preserveMigratedSignalStyles = true, sharedEditor = editor)
+        // Include the new offset in this same durable migration transaction.
+        migrateMobileSignalDotOffsetIfNeeded(preferences, sharedEditor = editor)
         check(editor.commit()) { "Could not commit visual preference migration" }
     } else {
         migrateSignalDotArrangementsIfNeeded(preferences)
         migrateSharedLayoutVisualsIfNeeded(preferences)
+        migrateMobileSignalDotOffsetIfNeeded(preferences)
+    }
+}
+
+// Retire the two style-specific settings after both earlier visual migrations.
+// A both-sides arrangement has no movable dots, so keep the single-row choice.
+internal fun migrateMobileSignalDotOffsetIfNeeded(
+    prefs: SharedPreferences,
+    sharedEditor: SharedPreferences.Editor? = null,
+) {
+    if (prefs.getInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 0) >= 1) return
+    val currentDual = prefs.dualSignalEnabled()
+    val editor = sharedEditor ?: prefs.edit()
+    ContentLayout.entries.forEach { layout ->
+        val visual = prefs.readVisualCfg(dual = currentDual, layoutOverride = layout)
+        val effectiveOffset = if (currentDual && visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES) {
+            visual.singleRowDotOffsetY
+        } else {
+            visual.activeSignalDotOffsetY
+        }
+        editor.putFloat(
+            visualProfileKey(layout, MOBILE_SIGNAL_DOT_OFFSET_Y_KEY),
+            effectiveOffset.normalizedNetworkOffset(),
+        ).remove(visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY))
+            .remove(visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY))
+    }
+    editor.putInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 1)
+    if (sharedEditor == null) {
+        check(editor.commit()) { "Could not commit mobile signal dot offset migration" }
     }
 }
 
@@ -155,6 +186,7 @@ internal fun resetVisualPreferences(
     // single-bank preferences and discard them when dual mode is enabled.
     editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+        .putInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 1)
         .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
     writeBatterySchemeLibrary(
         editor,

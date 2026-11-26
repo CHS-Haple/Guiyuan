@@ -44,6 +44,9 @@ internal fun AboutScreen(
     val backdrop = rememberLayerBackdrop()
     val blur = remember { isRuntimeShaderSupported() }
     val logoBlend = rememberBrandLogoBlend()
+    val pressMotion = rememberMarkPressMotion()
+    val ripple = remember(pressMotion) { AboutHeroWave(pressMotion) }
+    val heroBlur = remember(blur, backdrop, logoBlend) { aboutHeroBlur(backdrop.takeIf { blur }, logoBlend) }
     val env by produceState(initialValue = RuntimeEnv.basic(), key1 = context.applicationContext) {
         value = RuntimeEnv.resolve(context.applicationContext)
     }
@@ -51,21 +54,23 @@ internal fun AboutScreen(
     SettingsPage(
         title = stringResource(R.string.about_title),
         onBack = onBack,
-        listState = scroll.list,
+        columnState = scroll.scroll,
         keepCompactTitle = true,
         titleAlpha = titleAlpha,
-        background = {
+        background = { padding ->
             GyBgEffect(
                 playing = lifecycleState.isAtLeast(Lifecycle.State.RESUMED) &&
                     scroll.visible && scroll.progress < 1f,
                 bgModifier = if (blur) Modifier.layerBackdrop(backdrop) else Modifier,
                 alpha = { 1f - scroll.progress },
             )
+            AboutHeroRipple(padding.calculateTopPadding(), ripple, scroll.collapse.third, heroBlur)
         },
-        foreground = { padding -> AboutHeroForeground(scroll, padding, blur, backdrop, logoBlend) },
-    ) {
-        aboutPageItems(scroll) {
-            AboutPageContent(env, xposedStatus, actions)
-        }
-    }
+        foreground = { padding -> AboutHeroForeground(scroll, padding, heroBlur, ripple) },
+        scrollContent = { padding ->
+            AboutPageItems(scroll, padding) {
+                AboutPageContent(env, xposedStatus, actions)
+            }
+        },
+    )
 }

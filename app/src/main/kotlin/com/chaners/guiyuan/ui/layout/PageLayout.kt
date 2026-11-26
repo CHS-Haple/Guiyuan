@@ -1,31 +1,28 @@
 package com.chaners.guiyuan.ui.layout
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 
 @Composable
 internal fun pageContentPadding(
     innerPadding: PaddingValues,
     outerBottomPadding: Dp? = null,
     extraBottom: Dp,
-): PaddingValues {
-    val layoutDirection = LocalLayoutDirection.current
-    val start = innerPadding.calculateStartPadding(layoutDirection)
-    val top = innerPadding.calculateTopPadding()
-    val end = innerPadding.calculateEndPadding(layoutDirection)
-    val bottom = (outerBottomPadding ?: innerPadding.calculateBottomPadding()) + extraBottom
+): PaddingValues = remember(innerPadding, outerBottomPadding, extraBottom) {
+    // Follow MIUIX Scaffold's live padding contract: read during layout, not composition.
+    object : PaddingValues {
+        override fun calculateLeftPadding(layoutDirection: LayoutDirection): Dp =
+            innerPadding.calculateLeftPadding(layoutDirection)
 
-    return remember(start, top, end, bottom) {
-        PaddingValues(
-            start = start,
-            top = top,
-            end = end,
-            bottom = bottom,
-        )
+        override fun calculateRightPadding(layoutDirection: LayoutDirection): Dp =
+            innerPadding.calculateRightPadding(layoutDirection)
+
+        override fun calculateTopPadding(): Dp = innerPadding.calculateTopPadding()
+
+        override fun calculateBottomPadding(): Dp =
+            (outerBottomPadding ?: innerPadding.calculateBottomPadding()) + extraBottom
     }
 }

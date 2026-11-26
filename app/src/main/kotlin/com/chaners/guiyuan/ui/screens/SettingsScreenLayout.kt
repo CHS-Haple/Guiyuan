@@ -1,6 +1,15 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.ScrollState
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -49,6 +58,7 @@ internal data class SettingsPullToRefresh(
     val texts: List<String>,
 )
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun SettingsPage(
     title: String,
@@ -66,10 +76,14 @@ internal fun SettingsPage(
     background: @Composable BoxScope.(PaddingValues) -> Unit = {},
     foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
     overlay: @Composable () -> Unit = {},
-    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+    showLazyScrollbar: Boolean = false,
+    columnState: ScrollState? = null,
+    scrollContent: (@Composable ColumnScope.(PaddingValues) -> Unit)? = null,
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit = {},
 ) {
     val scrollBehavior = MiuixScrollBehavior()
-    val resolvedListState = listState ?: rememberLazyListState()
+    val resolvedListState = if (scrollContent == null) listState ?: rememberLazyListState() else null
+    val scrollState = if (scrollContent != null) columnState ?: rememberScrollState() else null
     val topBarBackdrop = rememberTopBarBackdrop()
     val railProgress = LocalGlassRailProgress.current
     val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
@@ -85,7 +99,7 @@ internal fun SettingsPage(
         topBar = {
             GlassTopAppBar(
                 progressiveBlur = LocalTopBarProgressiveBlur.current,
-                isContentScrolled = resolvedListState.canScrollBackward,
+                isContentScrolled = scrollState?.canScrollBackward ?: (resolvedListState?.canScrollBackward == true),
                 title = title,
                 expandable = !keepCompactTitle,
                 backdrop = topBarBackdrop,
@@ -125,10 +139,11 @@ internal fun SettingsPage(
 
             @Composable
             fun SettingsList(allowEdgeHaptic: Boolean = true) {
-                val canScroll = resolvedListState.canScrollBackward || resolvedListState.canScrollForward
+                val lazyState = requireNotNull(resolvedListState)
+                val canScroll = lazyState.canScrollBackward || lazyState.canScrollForward
                 val glassOverscroll = pullToRefresh == null && userScrollEnabled && canScroll
                 LazyColumn(
-                    state = resolvedListState,
+                    state = lazyState,
                     userScrollEnabled = userScrollEnabled,
                     overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
                     modifier =
@@ -142,7 +157,19 @@ internal fun SettingsPage(
                 )
             }
 
-            if (pullToRefresh != null) {
+            if (scrollState != null && scrollContent != null) {
+                val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
+                val glassOverscroll = userScrollEnabled && canScroll
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                        .then(if (glassOverscroll) Modifier.scrollEndHaptic() else Modifier)
+                        .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .verticalScroll(scrollState, enabled = userScrollEnabled, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
+                        .padding(contentPadding),
+                    content = { scrollContent(contentPadding) },
+                )
+            } else if (pullToRefresh != null) {
                 val pullState = rememberPullToRefreshState()
                 PullToRefresh(
                     isRefreshing = pullToRefresh.refreshing,
@@ -159,6 +186,15 @@ internal fun SettingsPage(
                 SettingsList()
             }
             foreground(contentPadding)
+            val indicatorState: ScrollableState? = scrollState ?: resolvedListState?.takeIf { showLazyScrollbar }
+            if (userScrollEnabled && indicatorState != null) {
+                VerticalScrollBar(
+                    adapter = rememberScrollBarAdapter(indicatorState),
+                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                    trackPadding = contentPadding,
+                    topAppBarScrollBehavior = scrollBehavior,
+                )
+            }
         }
 
         overlay()
@@ -168,15 +204,22 @@ internal fun SettingsPage(
 
 internal fun androidx.compose.foundation.lazy.LazyListScope.Section(
     @StringRes titleRes: Int? = null,
+    key: Any? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    item {
-        titleRes?.let { SmallTitle(stringResource(it)) }
-        Card(
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
-            content = content,
-        )
-    }
+    item(key = key) { PreferenceSection(titleRes, content) }
+}
+
+@Composable
+internal fun PreferenceSection(
+    @StringRes titleRes: Int? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    titleRes?.let { SmallTitle(stringResource(it)) }
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+        content = content,
+    )
 }

@@ -4,8 +4,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -20,7 +18,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -45,13 +42,9 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
-import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavRole
 
-@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun DiagnosticsScreen(
     onBack: () -> Unit,
@@ -314,17 +307,7 @@ internal fun DiagnosticsScreen(
         listState = listState,
         // Use MIUIX's auto-fading scrollbar for the potentially long diagnostic log.
         // Keep the Root failure guide non-scrollable and free of decorative controls.
-        foreground = { padding ->
-            if (!captureStatus.showRootGuide) {
-                VerticalScrollBar(
-                    adapter = rememberScrollBarAdapter(listState),
-                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(
-                        top = padding.calculateTopPadding(),
-                        bottom = padding.calculateBottomPadding(),
-                    ),
-                )
-            }
-        },
+        showLazyScrollbar = true,
         userScrollEnabled = !captureStatus.showRootGuide,
         // The Root failure guide has a retry action; no pull gesture in this state.
         pullToRefresh =
@@ -353,9 +336,11 @@ internal fun DiagnosticsScreen(
                 captureStatus = captureStatus,
                 loading = loading,
                 expandedKey = expandedKey,
-                rise = rise,
-                risePx = risePx,
-                placementSpec = placementSpec,
+                motion = DiagnosticsLogMotion(
+                    rise = rise,
+                    risePx = risePx,
+                    placementSpec = placementSpec,
+                ),
             ),
             context = context,
             onToggle = { rowKey -> expandedKey = if (expandedKey == rowKey) null else rowKey },

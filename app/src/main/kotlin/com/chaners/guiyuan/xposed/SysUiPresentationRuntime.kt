@@ -149,6 +149,7 @@ internal object SysUiPresentationRuntime {
         onEvent: ((String) -> Unit)?,
         isDetailedDiagnosticsEnabled: () -> Boolean,
     ): AttachResult {
+        val diagnostics = HookDiagnostics(onEvent, isDetailedDiagnosticsEnabled)
         var tintFailure: String? = null
         val tintHooks =
             attemptHookInstall {
@@ -157,14 +158,13 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onTintState = sinks.onTintState,
                     onRuntimeFailure = { error -> sinks.onRuntimeFailure("tint", error) },
-                    onEvent = onEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                    diagnostics = diagnostics,
                 ).size
             }.getOrElse { error ->
                 tintFailure = error.message ?: error.javaClass.simpleName
                 SysUiTintSource.failedInstallHookCount
             }
-        val keyguard = attachKeyguardSources(module, classLoader, sinks, onEvent, isDetailedDiagnosticsEnabled)
+        val keyguard = attachKeyguardSources(module, classLoader, sinks, diagnostics)
         var sceneFailure: String? = null
         val sceneHooks =
             attemptHookInstall {
@@ -173,8 +173,7 @@ internal object SysUiPresentationRuntime {
                     classLoader = classLoader,
                     onSceneState = sinks.onSceneState,
                     onRuntimeFailure = { error -> sinks.onRuntimeFailure("scene", error) },
-                    onEvent = onEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
+                    diagnostics = diagnostics,
                 ).size
             }.getOrElse { error ->
                 sceneFailure = error.message ?: error.javaClass.simpleName
@@ -206,13 +205,89 @@ internal object SysUiPresentationRuntime {
         ).also { current = it }
     }
 
+    /** Transient exact-Hook inputs owned by this single installation generation. */
+    private class KeyguardHookInstallRequest(
+        val module: XposedModule,
+        val classLoader: ClassLoader,
+        val sinks: Sinks,
+        val diagnostics: HookDiagnostics,
+    )
+
+    private fun installKeyguardAod(
+        request: KeyguardHookInstallRequest,
+        reportAodFailure: (String) -> Unit,
+    ): Int =
+        attemptHookInstall {
+            SysUiKeyguardAodSource.install(
+                module = request.module,
+                classLoader = request.classLoader,
+                onAodState = request.sinks.keyguard.onAodState,
+                onRuntimeFailure = { error ->
+                    request.sinks.keyguard.onRuntimeFailure("aod-state", error)
+                },
+                diagnostics = request.diagnostics,
+            ).size
+        }.getOrElse { error ->
+            reportAodFailure(
+                "keyguardAod install=unavailable reason=" +
+                    (error.message ?: error.javaClass.simpleName) +
+                    " fallback=native-keyguard",
+            )
+            SysUiKeyguardAodSource.failedInstallHookCount
+        }
+
+    private fun installFullAodTransition(
+        request: KeyguardHookInstallRequest,
+        reportAodFailure: (String) -> Unit,
+    ): Int =
+        attemptHookInstall {
+            FullAodTransitionSource.install(
+                module = request.module,
+                classLoader = request.classLoader,
+                onTransitionStarted = request.sinks.keyguard.onFullAodStarted,
+                onTransitionCommitted = request.sinks.keyguard.onFullAodCommitted,
+                onRuntimeFailure = request.sinks.onRuntimeFailure,
+                diagnostics = request.diagnostics,
+            ).size
+        }.getOrElse { error ->
+            reportAodFailure(
+                "keyguardFullAod install=unavailable reason=" +
+                    (error.message ?: error.javaClass.simpleName) +
+                    " fallback=status-icons-alpha",
+            )
+            0
+        }
+
+    private fun installKeyguardIconTransition(
+        request: KeyguardHookInstallRequest,
+        reportAodFailure: (String) -> Unit,
+    ): Int =
+        attemptHookInstall {
+            KeyguardIconTransitionSource.install(
+                module = request.module,
+                classLoader = request.classLoader,
+                onTransition = request.sinks.keyguard.onIconTransition,
+                onRuntimeFailure = { error ->
+                    request.sinks.keyguard.onRuntimeFailure("icon-transition", error)
+                },
+                diagnostics = request.diagnostics,
+            ).size
+        }.getOrElse { error ->
+            reportAodFailure(
+                "keyguardStatusIconTransition install=unavailable reason=" +
+                    (error.message ?: error.javaClass.simpleName) +
+                    " fallback=status-icons-alpha",
+            )
+            0
+        }
+
     private fun attachKeyguardSources(
         module: XposedModule,
         classLoader: ClassLoader,
         sinks: Sinks,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): KeyguardSourceHooks {
+        val onEvent = diagnostics.onEvent
         val warned = AtomicBoolean(false)
         @Suppress("TooGenericExceptionCaught")
         fun reportAodFailure(message: String) {
@@ -227,65 +302,12 @@ internal object SysUiPresentationRuntime {
                 }
             }
         }
-        val keyguardAodHooks =
-            attemptHookInstall {
-                SysUiKeyguardAodSource.install(
-                    module = module,
-                    classLoader = classLoader,
-                    onAodState = sinks.keyguard.onAodState,
-                    onRuntimeFailure = { error ->
-                        sinks.keyguard.onRuntimeFailure("aod-state", error)
-                    },
-                    onEvent = onEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                ).size
-            }.getOrElse { error ->
-                reportAodFailure(
-                    "keyguardAod install=unavailable reason=" +
-                        (error.message ?: error.javaClass.simpleName) +
-                        " fallback=native-keyguard",
-                )
-                SysUiKeyguardAodSource.failedInstallHookCount
-            }
-        val keyguardFullAodHooks =
-            attemptHookInstall {
-                FullAodTransitionSource.install(
-                    module = module,
-                    classLoader = classLoader,
-                    onTransitionStarted = sinks.keyguard.onFullAodStarted,
-                    onTransitionCommitted = sinks.keyguard.onFullAodCommitted,
-                    onRuntimeFailure = sinks.onRuntimeFailure,
-                    onEvent = onEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                ).size
-            }.getOrElse { error ->
-                reportAodFailure(
-                    "keyguardFullAod install=unavailable reason=" +
-                        (error.message ?: error.javaClass.simpleName) +
-                        " fallback=status-icons-alpha",
-                )
-                0
-            }
-        val keyguardStatusIconHooks =
-            attemptHookInstall {
-                KeyguardIconTransitionSource.install(
-                    module = module,
-                    classLoader = classLoader,
-                    onTransition = sinks.keyguard.onIconTransition,
-                    onRuntimeFailure = { error ->
-                        sinks.keyguard.onRuntimeFailure("icon-transition", error)
-                    },
-                    onEvent = onEvent,
-                    isDetailedDiagnosticsEnabled = isDetailedDiagnosticsEnabled,
-                ).size
-            }.getOrElse { error ->
-                reportAodFailure(
-                    "keyguardStatusIconTransition install=unavailable reason=" +
-                        (error.message ?: error.javaClass.simpleName) +
-                        " fallback=status-icons-alpha",
-                )
-                0
-            }
+        val request = KeyguardHookInstallRequest(
+            module, classLoader, sinks, diagnostics,
+        )
+        val keyguardAodHooks = installKeyguardAod(request, ::reportAodFailure)
+        val keyguardFullAodHooks = installFullAodTransition(request, ::reportAodFailure)
+        val keyguardStatusIconHooks = installKeyguardIconTransition(request, ::reportAodFailure)
         return KeyguardSourceHooks(keyguardAodHooks, keyguardFullAodHooks, keyguardStatusIconHooks)
     }
 

@@ -7,6 +7,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
+private const val TEST_DIAGNOSTIC_TAG = "Guiyuan[Test]"
+
 class SysUiPresentationRuntimeTest {
     @Test
     fun passiveDiagnosticSuppressesNonfatalButRetainsWrappedFatal() {
@@ -27,12 +29,12 @@ class SysUiPresentationRuntimeTest {
     @Test
     fun diagnosticWarningReceiptDoesNotDisableLaterEventsOrSwallowFatalErrors() {
         val warned = AtomicBoolean(false)
-        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
+        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, TEST_DIAGNOSTIC_TAG) {
             throw IllegalStateException("diagnostic")
         }
         assertEquals(true, warned.get())
         var delivered = false
-        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
+        SysUiPresentationRuntime.emitPassiveDiagnostic(warned, TEST_DIAGNOSTIC_TAG) {
             delivered = true
         }
         assertEquals(true, delivered)
@@ -40,7 +42,7 @@ class SysUiPresentationRuntimeTest {
         assertSame(
             fatal,
             runCatching {
-                SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[Test]") {
+                SysUiPresentationRuntime.emitPassiveDiagnostic(warned, TEST_DIAGNOSTIC_TAG) {
                     throw InvocationTargetException(fatal)
                 }
             }.exceptionOrNull(),
@@ -123,6 +125,10 @@ class SysUiPresentationRuntimeTest {
         SysUiFatal.rethrow(InvocationTargetException(NoSuchMethodException("optional")))
     }
 
+}
+
+// Distinguish installation transactions from optional native read and diagnostic contracts.
+class SysUiHookInstallContractTest {
     @Test
     fun hookInstallRunsOnceOnSuccessWithoutFallback() {
         var installCalls = 0

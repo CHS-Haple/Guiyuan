@@ -21,7 +21,7 @@ import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.preference.SliderPreference
 
 @Composable
-internal fun ColumnScope.featureLayoutOffsetsAndScale(
+internal fun ColumnScope.featureLayoutOffsetsAndSize(
     search: PageSearch,
     visual: VisualCfg,
     visualRepo: VisualRepo,
@@ -29,7 +29,7 @@ internal fun ColumnScope.featureLayoutOffsetsAndScale(
 ) {
     featureBatteryCenteredOffsets(search, visual, visualRepo, enabled)
     featureRelativePositionOffsets(search, visual, visualRepo, enabled)
-    featureLayoutSizeAndWeight(search, visual, visualRepo, enabled)
+    featureLayoutSize(search, visual, visualRepo, enabled)
 }
 
 @Composable
@@ -110,7 +110,7 @@ private fun ColumnScope.featureRelativePositionOffsets(
 }
 
 @Composable
-private fun ColumnScope.featureLayoutSizeAndWeight(
+private fun ColumnScope.featureLayoutSize(
     search: PageSearch,
     visual: VisualCfg,
     visualRepo: VisualRepo,
@@ -136,6 +136,15 @@ private fun ColumnScope.featureLayoutSizeAndWeight(
             enabled = enabled,
         )
     }
+}
+
+@Composable
+internal fun ColumnScope.featureOuterWeight(
+    search: PageSearch,
+    visual: VisualCfg,
+    visualRepo: VisualRepo,
+    enabled: Boolean,
+) {
     if (search.matches(R.string.outer_weight)) {
         SliderPreference(
             value = visual.outerWeightScale,

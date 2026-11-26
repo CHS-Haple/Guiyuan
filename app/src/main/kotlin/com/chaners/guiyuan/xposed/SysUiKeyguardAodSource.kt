@@ -43,9 +43,10 @@ internal object SysUiKeyguardAodSource {
         classLoader: ClassLoader,
         onAodState: (AodUpdate) -> Unit,
         onRuntimeFailure: (Throwable) -> Unit,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
     ): List<HookHandle> {
+        val onEvent = diagnostics.onEvent
+        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         check(!hooksReady && failedInstallHandles.isEmpty()) { "keyguard-aod-hooks-already-installed" }
 
         val batteryClass = Class.forName(BATTERY_VIEW_CLASS, false, classLoader)

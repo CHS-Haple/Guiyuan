@@ -1,13 +1,13 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -17,8 +17,6 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalUriHandler
 import com.chaners.guiyuan.system.RuntimeEnv
 import com.chaners.guiyuan.system.XposedStatus
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
 
 private const val ABOUT_PROJECT_URL = "https://github.com/CHS-Haple/Guiyuan"
 private const val ABOUT_LICENSE_URL = "https://github.com/CHS-Haple/Guiyuan/blob/main/LICENSE"
@@ -34,19 +32,16 @@ internal data class AboutPageActions(
 internal fun AboutHeroForeground(
     scroll: AboutScrollState,
     padding: PaddingValues,
-    blur: Boolean,
-    backdrop: LayerBackdrop,
-    logoBlend: List<BlendColorEntry>,
+    blur: Modifier,
+    ripple: AboutHeroWave,
 ) {
-    val list = scroll.list
+    val scrollState = scroll.scroll
     val layout = scroll.layout
     Box(
         modifier = Modifier.fillMaxSize().drawWithContent {
-            // Read the list position in the draw phase, including flings.
-            val firstCardTopPx = if (list.firstVisibleItemIndex == 0) {
-                (padding.calculateTopPadding() + layout.spacerHeight).toPx() -
-                    list.firstVisibleItemScrollOffset
-            } else 0f
+            // Read the measured scroll position in the draw phase, including flings.
+            val firstCardTopPx = (padding.calculateTopPadding() + layout.spacerHeight).toPx() -
+                scrollState.value
             clipRect(bottom = firstCardTopPx.coerceIn(0f, size.height)) {
                 this@drawWithContent.drawContent()
             }
@@ -54,8 +49,8 @@ internal fun AboutHeroForeground(
     ) {
         AboutHero(
             topPadding = padding.calculateTopPadding(),
-            backdrop = backdrop.takeIf { blur },
-            logoBlend = logoBlend,
+            blur = blur,
+            ripple = ripple,
             motion = AboutHeroMotion(
                 active = scroll.visible,
                 versionProgress = scroll.collapse.first,
@@ -65,38 +60,40 @@ internal fun AboutHeroForeground(
             measurements = AboutHeroMeasurements(
                 onHeight = { if (layout.height != it) layout.height = it },
                 onIconBottom = {
-                    if (layout.atRest(list) && layout.iconBottom != it) layout.iconBottom = it
+                    if (layout.atRest(scrollState) && layout.iconBottom != it) layout.iconBottom = it
                 },
                 onNameBottom = {
-                    if (layout.atRest(list) && layout.nameBottom != it) layout.nameBottom = it
+                    if (layout.atRest(scrollState) && layout.nameBottom != it) layout.nameBottom = it
                 },
                 onVersionBottom = {
-                    if (layout.atRest(list) && layout.versionBottom != it) layout.versionBottom = it
+                    if (layout.atRest(scrollState) && layout.versionBottom != it) layout.versionBottom = it
                 },
             ),
         )
     }
 }
 
-internal fun LazyListScope.aboutPageItems(
+@Composable
+internal fun AboutPageItems(
     scroll: AboutScrollState,
+    padding: PaddingValues,
     content: @Composable () -> Unit,
 ) {
-    item(key = "logoSpacer") {
-        Box(
-            Modifier.fillMaxWidth().height(scroll.layout.spacerHeight)
-                .onGloballyPositioned { coords ->
-                    if (scroll.layout.atRest(scroll.list)) {
-                        val bottom = coords.positionInWindow().y + coords.size.height
-                        if (scroll.layout.spacerBottom != bottom) scroll.layout.spacerBottom = bottom
-                    }
-                },
-        )
+    Box(
+        Modifier.fillMaxWidth().height(scroll.layout.spacerHeight)
+            .onGloballyPositioned { coords ->
+                if (scroll.layout.atRest(scroll.scroll)) {
+                    val bottom = coords.positionInWindow().y + coords.size.height
+                    if (scroll.layout.spacerBottom != bottom) scroll.layout.spacerBottom = bottom
+                }
+            },
+    )
+    val contentMinHeight = with(LocalDensity.current) {
+        (scroll.scroll.viewportSize - padding.calculateTopPadding().roundToPx() -
+            padding.calculateBottomPadding().roundToPx()).coerceAtLeast(0).toDp()
     }
-    item(key = "aboutContent") {
-        Column(Modifier.fillMaxWidth().heightIn(min = scroll.contentMinHeight)) {
-            content()
-        }
+    Column(Modifier.fillMaxWidth().heightIn(min = contentMinHeight)) {
+        content()
     }
 }
 

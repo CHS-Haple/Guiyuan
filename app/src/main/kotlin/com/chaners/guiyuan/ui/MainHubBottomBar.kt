@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,17 +47,23 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+/** Shared destination and action ownership for all bottom navigation surfaces. */
+internal data class HubBottomNavigation(
+    val appearance: Appearance,
+    val dark: Boolean,
+    val items: List<MainNavItem>,
+    val pageSelection: HubPagerSelection,
+    val navigationAction: NavigationAction?,
+    val actionControls: NavigationActionControls,
+)
+
 // App-owned bottom-bar routing. Each surface keeps its native/MIUIX component and gesture owner.
 @Composable
 internal fun HubGlassBottomBar(
-    appearance: Appearance,
-    dark: Boolean,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     navBackdrop: Backdrop,
-    navigationAction: NavigationAction?,
-    actionControls: NavigationActionControls,
 ) {
+    val (appearance, dark, items, pageSelection, navigationAction, actionControls) = bar
     val selectedPage = pageSelection.selectedPage
     val includeLabels = appearance.navContent == NavContent.IconAndText
     val glassItems = remember(items, includeLabels) {
@@ -100,11 +107,10 @@ internal fun HubGlassBottomBar(
 
 @Composable
 internal fun HubNativeBottomBar(
-    appearance: Appearance,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     glassNavigation: Boolean,
 ) {
+    val (appearance, _, items, pageSelection) = bar
     NavigationBar(
         mode = if (glassNavigation && appearance.navContent == NavContent.IconOnly) {
             NavigationBarDisplayMode.IconOnly
@@ -126,15 +132,11 @@ internal fun HubNativeBottomBar(
 
 @Composable
 internal fun HubLiquidBottomBar(
-    appearance: Appearance,
-    dark: Boolean,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     liquidBackdrop: Backdrop,
-    navigationAction: NavigationAction?,
-    actionControls: NavigationActionControls,
     liquidBottomPadding: Dp,
 ) {
+    val (appearance, dark, _, _, navigationAction, actionControls) = bar
     val liquidPressLink = remember { LiquidNavPressLink() }
     Column(
         modifier =
@@ -144,54 +146,9 @@ internal fun HubLiquidBottomBar(
                     WindowInsets.displayCutout.union(WindowInsets.navigationBars)
                         .only(WindowInsetsSides.Horizontal),
                 )
-                .then(
-                    if (appearance.navTouchExtension) {
-                        Modifier.navTouchExtension(
-                            geometry = NavTouchStripGeometry(
-                                bottomPadding = liquidBottomPadding,
-                                horizontalPadding = LiquidNavSpec.sidePadding,
-                                contentPadding = 4.dp,
-                                itemCount = items.size,
-                                rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
-                            ),
-                            onSelect = pageSelection::select,
-                            trailing = NavTouchTrailingAction(
-                                width = if (navigationAction != null) {
-                                    LiquidNavSpec.height + GlassNavigationBarDefaults.ActionSpacing
-                                } else 0.dp,
-                                size = if (navigationAction != null) {
-                                    LiquidNavSpec.height
-                                } else 0.dp,
-                                onTap = navigationAction?.let { action -> actionControls.callbackFor(action) },
-                            ),
-                        )
-                    } else {
-                        Modifier
-                    },
-                )
+                .then(liquidTouchExtension(bar, liquidBottomPadding))
                 .padding(bottom = liquidBottomPadding),
     ) {
-        val liquidBar: @Composable () -> Unit = {
-            LiquidNavBar(
-                selectedIndex = { pageSelection.selectedPage },
-                onSelected = pageSelection::select,
-                backdrop = liquidBackdrop,
-                tabsCount = items.size,
-                dark = dark,
-                mode = appearance.liquidMode,
-                pressLink = liquidPressLink,
-            ) {
-                items.forEachIndexed { index, item ->
-                    LiquidNavEntry(
-                        contentMode = appearance.navContent,
-                        selected = pageSelection.selectedPage == index,
-                        onClick = { pageSelection.select(index) },
-                        icon = item.icon,
-                        label = item.label,
-                    )
-                }
-            }
-        }
         GlassNavigationBarLayout(
             modifier = Modifier
                 .fillMaxWidth()
@@ -208,18 +165,69 @@ internal fun HubLiquidBottomBar(
                     )
                 }
             },
-        ) { liquidBar() }
+        ) { HubLiquidNavItems(bar, liquidBackdrop, liquidPressLink) }
     }
+}
+
+/** The liquid bar alone owns the MIUIX tab/press interaction subtree. */
+@Composable
+private fun HubLiquidNavItems(
+    bar: HubBottomNavigation,
+    liquidBackdrop: Backdrop,
+    liquidPressLink: LiquidNavPressLink,
+) {
+    val (appearance, dark, items, pageSelection) = bar
+    LiquidNavBar(
+        selectedIndex = { pageSelection.selectedPage },
+        onSelected = pageSelection::select,
+        backdrop = liquidBackdrop,
+        tabsCount = items.size,
+        dark = dark,
+        mode = appearance.liquidMode,
+        pressLink = liquidPressLink,
+    ) {
+        items.forEachIndexed { index, item ->
+            LiquidNavEntry(
+                contentMode = appearance.navContent,
+                selected = pageSelection.selectedPage == index,
+                onClick = { pageSelection.select(index) },
+                icon = item.icon,
+                label = item.label,
+            )
+        }
+    }
+}
+
+/** The optional extended hit strip stays separate from MIUIX's visual/press owner. */
+@Composable
+private fun liquidTouchExtension(bar: HubBottomNavigation, bottomPadding: Dp): Modifier {
+    if (!bar.appearance.navTouchExtension) return Modifier
+    val action = bar.navigationAction
+    val actionSize = LiquidNavSpec.height
+    return Modifier.navTouchExtension(
+        geometry = NavTouchStripGeometry(
+            bottomPadding = bottomPadding,
+            horizontalPadding = LiquidNavSpec.sidePadding,
+            contentPadding = 4.dp,
+            itemCount = bar.items.size,
+            rtl = LocalLayoutDirection.current == LayoutDirection.Rtl,
+        ),
+        onSelect = bar.pageSelection::select,
+        trailing = NavTouchTrailingAction(
+            width = if (action != null) actionSize + GlassNavigationBarDefaults.ActionSpacing else 0.dp,
+            size = if (action != null) actionSize else 0.dp,
+            onTap = action?.let { bar.actionControls.callbackFor(it) },
+        ),
+    )
 }
 
 @Composable
 internal fun HubFloatingBottomBar(
-    appearance: Appearance,
-    items: List<MainNavItem>,
-    pageSelection: HubPagerSelection,
+    bar: HubBottomNavigation,
     navigationBarModifier: Modifier,
     navBackdrop: Backdrop?,
 ) {
+    val (appearance, _, items, pageSelection) = bar
     val barBounds = remember(appearance.navStyle) {
         mutableStateOf<Rect?>(null)
     }
@@ -234,34 +242,23 @@ internal fun HubFloatingBottomBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .recordFloatingNavBounds(appearance.navTouchExtension, hostBounds)
             .then(
                 if (appearance.navTouchExtension) {
-                    Modifier
-                        .onGloballyPositioned { coordinates ->
-                            val bounds = coordinates.boundsInRoot()
-                            if (hostBounds.value != bounds) hostBounds.value = bounds
-                        }
-                        .measuredNavTouchExtension(
-                            hostBounds = hostBounds.value,
-                            barBounds = barBounds.value,
-                            itemBounds = itemBounds.toList(),
-                            onSelect = pageSelection::select,
-                        )
+                    Modifier.measuredNavTouchExtension(
+                        hostBounds = hostBounds.value,
+                        barBounds = barBounds.value,
+                        itemBounds = itemBounds.toList(),
+                        onSelect = pageSelection::select,
+                    )
                 } else {
                     Modifier
                 },
             ),
     ) {
         FloatingNavigationBar(
-            modifier = navigationBarModifier.then(
-                if (appearance.navTouchExtension) {
-                    Modifier.onGloballyPositioned { coordinates ->
-                        val bounds = coordinates.boundsInRoot()
-                        if (barBounds.value != bounds) barBounds.value = bounds
-                    }
-                } else {
-                    Modifier
-                },
+            modifier = navigationBarModifier.recordFloatingNavBounds(
+                appearance.navTouchExtension, barBounds,
             ),
             color =
                 if (navBackdrop != null) {
@@ -270,24 +267,50 @@ internal fun HubFloatingBottomBar(
                     MiuixTheme.colorScheme.surfaceContainer
                 },
         ) {
-            items.forEachIndexed { index, item ->
-                val selected = pageSelection.selectedPage == index
-                NavContentItem(
-                    content = appearance.navContent,
-                    selected = selected,
-                    onClick = { pageSelection.select(index) },
-                    icon = item.icon,
-                    label = item.label,
-                    modifier = if (appearance.navTouchExtension) {
-                        Modifier.onGloballyPositioned { coordinates ->
-                            val bounds = coordinates.boundsInRoot()
-                            if (itemBounds[index] != bounds) itemBounds[index] = bounds
-                        }
-                    } else {
-                        Modifier
-                    },
-                )
-            }
+            HubFloatingNavItems(bar, itemBounds)
         }
+    }
+}
+
+/** Root/bar geometry shares one update policy; only changed layout publishes state. */
+private fun Modifier.recordFloatingNavBounds(
+    enabled: Boolean,
+    bounds: MutableState<Rect?>,
+): Modifier =
+    then(
+        if (enabled) {
+            Modifier.onGloballyPositioned { coordinates ->
+                val measured = coordinates.boundsInRoot()
+                if (bounds.value != measured) bounds.value = measured
+            }
+        } else {
+            Modifier
+        },
+    )
+
+/** Measure each rendered tab using its actual MIUIX bounds, not a guessed hit width. */
+@Composable
+private fun HubFloatingNavItems(
+    bar: HubBottomNavigation,
+    itemBounds: androidx.compose.runtime.snapshots.SnapshotStateList<Rect?>,
+) {
+    val (appearance, _, items, pageSelection) = bar
+    items.forEachIndexed { index, item ->
+        val selected = pageSelection.selectedPage == index
+        NavContentItem(
+            content = appearance.navContent,
+            selected = selected,
+            onClick = { pageSelection.select(index) },
+            icon = item.icon,
+            label = item.label,
+            modifier = if (appearance.navTouchExtension) {
+                Modifier.onGloballyPositioned { coordinates ->
+                    val bounds = coordinates.boundsInRoot()
+                    if (itemBounds[index] != bounds) itemBounds[index] = bounds
+                }
+            } else {
+                Modifier
+            },
+        )
     }
 }

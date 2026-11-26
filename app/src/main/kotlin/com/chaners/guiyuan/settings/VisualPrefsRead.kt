@@ -22,6 +22,14 @@ internal fun SharedPreferences.readVisualCfg(
 
     val dualStyle = readDualDotStyle(dual, layout, legacyDualBank)
     val singleStyle = readSingleDotStyle(layout, legacyDualBank, dualStyle)
+    // The canonical setting is shared by curved/horizontal and both SIM modes.
+    // Read the released style-specific fields only until the one-time migration.
+    val oldCurved = size(CURVED_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT)
+    val oldHorizontal = size(HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT)
+    val activeStyle = (if (dual) dualStyle else singleStyle)
+        .takeUnless { it == SignalDotArrangement.BOTH_SIDES } ?: singleStyle
+    val legacyOffset = if (activeStyle == SignalDotArrangement.HORIZONTAL) oldHorizontal else oldCurved
+    val dotOffset = size(MOBILE_SIGNAL_DOT_OFFSET_Y_KEY, legacyOffset)
 
     return VisualCfg(
         layout = layout,
@@ -49,8 +57,8 @@ internal fun SharedPreferences.readVisualCfg(
         topOffsetY = topOffset,
         wifiOffsetY = size(WIFI_VERTICAL_OFFSET_KEY, oldNetworkOffset),
         mobileTypeOffsetY = size(MOBILE_TYPE_VERTICAL_OFFSET_KEY, oldNetworkOffset),
-        curvedSignalDotOffsetY = size(CURVED_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
-        horizontalSignalDotOffsetY = size(HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
+        curvedSignalDotOffsetY = dotOffset,
+        horizontalSignalDotOffsetY = dotOffset,
         bothSidesSignalDotOffsetY = size(BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY, NETWORK_TOP_OFFSET_DEFAULT),
         topChargingIconScale = size(BATTERY_TOP_CHARGING_ICON_SCALE_KEY, topChargingIconScaleDefault(layout)),
         combinedScale = size(COMBINED_SCALE_KEY, COMBINED_SCALE_DEFAULT),

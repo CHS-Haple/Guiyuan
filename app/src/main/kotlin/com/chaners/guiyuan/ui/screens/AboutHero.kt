@@ -5,6 +5,7 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,6 +65,12 @@ internal fun rememberBrandLogoBlend(): List<BlendColorEntry> {
 
 
 private val AboutHeroMarkSize = 100.dp
+private val AboutHeroTopGap = 92.dp
+
+internal class AboutHeroWave(val pressMotion: MarkPressMotion) {
+    val animation = Animatable(0f)
+    var phase by mutableFloatStateOf(0f)
+}
 
 internal data class AboutHeroMotion(
     val active: Boolean,
@@ -85,6 +92,7 @@ private data class HeroWave(
     val phase: Float,
     val diameter: Float,
     val radius: Float,
+    val pressMotion: MarkPressMotion,
 )
 
 private data class HeroMaterial(
@@ -93,35 +101,68 @@ private data class HeroMaterial(
     val blur: Modifier,
 )
 
+internal fun aboutHeroBlur(
+    backdrop: LayerBackdrop?,
+    logoBlend: List<BlendColorEntry>,
+): Modifier = if (backdrop == null) Modifier else Modifier.textureBlur(
+    backdrop = backdrop,
+    shape = RoundedCornerShape(0.dp),
+    blurRadius = 150f,
+    colors = BlurColors(blendColors = logoBlend),
+    contentBlendMode = BlendMode.DstIn,
+)
+
+// The ripple belongs to the page background, not the clipped mark/text foreground.
+// Keep the same center and collapse geometry without shrinking its canvas to the mark.
+@Composable
+internal fun AboutHeroRipple(
+    topPadding: Dp,
+    ripple: AboutHeroWave,
+    iconProgress: Float,
+    blur: Modifier,
+) {
+    if (!ripple.animation.isRunning || iconProgress >= 1f) return
+    Box(
+        modifier = Modifier.fillMaxWidth()
+            .padding(top = topPadding + AboutHeroTopGap)
+            .height(AboutHeroMarkSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        IdentityMarkWave(
+            markSize = AboutHeroMarkSize,
+            wave = ripple.animation,
+            wavePhase = ripple.phase,
+            effectModifier = blur,
+            modifier = Modifier.graphicsLayer {
+                alpha = 1f - iconProgress
+                val scale = (1f - iconProgress * 0.05f) * ripple.pressMotion.scale.value
+                scaleX = scale
+                scaleY = scale
+            },
+        )
+    }
+}
+
 @Composable
 internal fun AboutHero(
     topPadding: Dp,
-    backdrop: LayerBackdrop?,
-    logoBlend: List<BlendColorEntry>,
+    blur: Modifier,
+    ripple: AboutHeroWave,
     motion: AboutHeroMotion,
     measurements: AboutHeroMeasurements,
 ) {
     val density = LocalDensity.current
     val markSize = AboutHeroMarkSize
     val diameter = with(density) { markSize.toPx() }
-    val animation = remember { Animatable(0f) }
-    var phase by remember { mutableFloatStateOf(0f) }
     val accent = MiuixTheme.colorScheme.primary
     val dark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
     val glint = if (dark) lerp(accent, Color.Black, 0.35f) else lerp(accent, Color.White, 0.70f)
-    val blur = if (backdrop == null) Modifier else Modifier.textureBlur(
-        backdrop = backdrop,
-        shape = RoundedCornerShape(0.dp),
-        blurRadius = 150f,
-        colors = BlurColors(blendColors = logoBlend),
-        contentBlendMode = BlendMode.DstIn,
-    )
-    val wave = HeroWave(animation, phase, diameter, diameter / 2f)
+    val wave = HeroWave(ripple.animation, ripple.phase, diameter, diameter / 2f, ripple.pressMotion)
     val material = HeroMaterial(glint, accent, blur)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = topPadding + 92.dp)
+            .padding(top = topPadding + AboutHeroTopGap)
             .onSizeChanged { size -> measurements.onHeight(with(density) { size.height.toDp() }) },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -129,7 +170,7 @@ internal fun AboutHero(
             wave = wave,
             material = material,
             motion = motion,
-            onRelease = { phase = it },
+            onRelease = { ripple.phase = it },
             onBottom = measurements.onIconBottom,
         )
         AboutHeroName(wave, material, motion.nameProgress, measurements.onNameBottom)
@@ -168,6 +209,8 @@ private fun AboutHeroMark(
             interactive = active,
             active = active,
             effectModifier = material.blur,
+            renderWave = false,
+            pressMotion = wave.pressMotion,
         )
     }
 }

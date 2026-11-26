@@ -49,9 +49,25 @@ private data class MarkOrbitMotion(
     val rotation: State<Float>,
 )
 
-private class MarkPressState {
+internal class MarkPressState {
     var boosted by mutableStateOf(false)
     var pressed by mutableStateOf(false)
+}
+
+internal class MarkPressMotion(
+    val state: MarkPressState,
+    val scale: State<Float>,
+)
+
+@Composable
+internal fun rememberMarkPressMotion(): MarkPressMotion {
+    val press = remember { MarkPressState() }
+    val scale = animateFloatAsState(
+        targetValue = if (press.pressed) 0.92f else 1f,
+        animationSpec = folmeSpring(damping = 0.85f, response = if (press.pressed) 0.23f else 0.38f),
+        label = "aboutLogoPress",
+    )
+    return remember(press, scale) { MarkPressMotion(press, scale) }
 }
 
 @Composable
@@ -63,18 +79,16 @@ internal fun GuiyuanAnimatedIdentityMark(
     interactive: Boolean = false,
     active: Boolean = true,
     effectModifier: Modifier = Modifier,
+    renderWave: Boolean = true,
+    pressMotion: MarkPressMotion = rememberMarkPressMotion(),
 ) {
-    val press = remember { MarkPressState() }
+    val press = pressMotion.state
     val speed = animateFloatAsState(
         targetValue = if (press.boosted) 20f else 1f,
         animationSpec = folmeSpring(damping = 1f, response = if (press.boosted) 0.48f else 0.95f),
         label = "aboutOrbitSpeed",
     )
-    val pressScale by animateFloatAsState(
-        targetValue = if (press.pressed) 0.92f else 1f,
-        animationSpec = folmeSpring(damping = 0.85f, response = if (press.pressed) 0.23f else 0.38f),
-        label = "aboutLogoPress",
-    )
+    val pressScale by pressMotion.scale
     val rotation = rememberMarkRotation(active, speed)
     TriggerMarkWave(wave, press.boosted, active, MarkOrbitMotion(speed, rotation), onWaveRelease)
 
@@ -101,7 +115,8 @@ internal fun GuiyuanAnimatedIdentityMark(
         },
         contentAlignment = Alignment.Center,
     ) {
-        IdentityMarkArtwork(markSize, wave, wavePhase, effectModifier, rotation.value)
+        if (renderWave) IdentityMarkWave(markSize, wave, wavePhase, effectModifier)
+        IdentityMarkArtwork(effectModifier, rotation.value)
     }
 }
 
@@ -147,24 +162,32 @@ private fun TriggerMarkWave(
 }
 
 @Composable
-private fun BoxScope.IdentityMarkArtwork(
+internal fun IdentityMarkWave(
     markSize: Dp,
     wave: Animatable<Float, AnimationVector1D>,
     wavePhase: Float,
+    effectModifier: Modifier,
+    modifier: Modifier = Modifier,
+) {
+    if (!wave.isRunning) return
+    val tint = MiuixTheme.colorScheme.onSurfaceContainer
+    val airflow = lerp(tint, MiuixTheme.colorScheme.primary, 0.55f)
+    // Radius + feather + drift peaks at 1.995 mark diameters.
+    Canvas(Modifier.requiredSize(markSize * 4f).then(modifier).then(effectModifier)) {
+        val progress = wave.value
+        val diameter = markSize.toPx()
+        drawWave(airflow, progress, 0.46f, diameter, wavePhase)
+        drawWave(airflow, (progress - 0.2f) / 0.8f, 0.10f, diameter, wavePhase)
+    }
+}
+
+@Composable
+private fun BoxScope.IdentityMarkArtwork(
     effectModifier: Modifier,
     rotation: Float,
 ) {
     val painter = painterResource(R.drawable.ic_launcher_foreground)
     val tint = MiuixTheme.colorScheme.onSurfaceContainer
-    val airflow = lerp(tint, MiuixTheme.colorScheme.primary, 0.55f)
-    if (wave.isRunning) {
-        Canvas(Modifier.requiredSize(markSize * 3.8f).then(effectModifier)) {
-            val progress = wave.value
-            val diameter = markSize.toPx()
-            drawWave(airflow, progress, 0.46f, diameter, wavePhase)
-            drawWave(airflow, (progress - 0.2f) / 0.8f, 0.10f, diameter, wavePhase)
-        }
-    }
     Box(Modifier.matchParentSize().clipToBounds()) {
         Canvas(Modifier.matchParentSize().then(effectModifier)) {
             val targetSize = Size(size.width * 1.8f, size.height * 1.8f)

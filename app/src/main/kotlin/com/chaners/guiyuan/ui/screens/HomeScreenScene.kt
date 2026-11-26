@@ -1,6 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -31,7 +31,7 @@ internal data class HomeScreenSources(
 )
 
 internal data class HomeScreenFrame(
-    val listState: LazyListState,
+    val scrollState: ScrollState,
     val scrollBehavior: ScrollBehavior,
     val backdrop: LayerBackdrop?,
 )
@@ -66,7 +66,7 @@ internal fun HomeScreenTopBar(
     }
     GlassTopAppBar(
         progressiveBlur = LocalTopBarProgressiveBlur.current,
-        isContentScrolled = frame.listState.canScrollBackward,
+        isContentScrolled = frame.scrollState.canScrollBackward,
         title = stringResource(R.string.home_title),
         titleAlpha = LocalGlassRailProgress.current,
         backdrop = frame.backdrop,

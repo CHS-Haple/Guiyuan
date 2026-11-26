@@ -19,41 +19,42 @@ internal fun AboutThirdPartyScreen(onBack: () -> Unit) {
     SettingsPage(
         title = stringResource(R.string.about_third_party_title),
         onBack = onBack,
-    ) {
-        Section(R.string.section_runtime_dependencies) {
-            runtimeDependencies.forEach { dependency ->
-                AboutDependencyPreference(
-                    dependency = dependency,
-                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+        scrollContent = {
+            PreferenceSection(R.string.section_runtime_dependencies) {
+                runtimeDependencies.forEach { dependency ->
+                    AboutDependencyPreference(
+                        dependency = dependency,
+                        onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                    )
+                }
+            }
+            PreferenceSection(R.string.section_compile_time_dependencies) {
+                compileTimeDependencies.forEach { dependency ->
+                    AboutDependencyPreference(
+                        dependency = dependency,
+                        onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                    )
+                }
+            }
+            PreferenceSection(R.string.section_embedded_assets) {
+                ArrowPreference(
+                    title = "Material Symbols",
+                    summary = stringResource(R.string.about_embedded_asset_summary),
+                    onClick = {
+                        uriHandler.openUri("https://github.com/google/material-design-icons")
+                    },
                 )
             }
-        }
-        Section(R.string.section_compile_time_dependencies) {
-            compileTimeDependencies.forEach { dependency ->
-                AboutDependencyPreference(
-                    dependency = dependency,
-                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
-                )
+            PreferenceSection(R.string.section_development_dependencies) {
+                developmentDependencies.forEach { dependency ->
+                    AboutDependencyPreference(
+                        dependency = dependency,
+                        onClick = { uriHandler.openUri(dependency.upstreamUrl) },
+                    )
+                }
             }
-        }
-        Section(R.string.section_embedded_assets) {
-            ArrowPreference(
-                title = "Material Symbols",
-                summary = stringResource(R.string.about_embedded_asset_summary),
-                onClick = {
-                    uriHandler.openUri("https://github.com/google/material-design-icons")
-                },
-            )
-        }
-        Section(R.string.section_development_dependencies) {
-            developmentDependencies.forEach { dependency ->
-                AboutDependencyPreference(
-                    dependency = dependency,
-                    onClick = { uriHandler.openUri(dependency.upstreamUrl) },
-                )
-            }
-        }
-    }
+        },
+    )
 }
 
 @Composable

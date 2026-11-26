@@ -541,19 +541,29 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
                 )
             }
             item.label?.let { label ->
-                val baseLabelStyle = MiuixTheme.textStyles.footnote2
-                val labelTextStyle = remember(baseLabelStyle, labelSize) {
-                    baseLabelStyle.copy(fontSize = labelSize)
-                }
-                Text(
-                    text = label,
-                    color = tintProducer,
-                    style = labelTextStyle,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                GlassNavigationItemLabel(label, tintProducer, labelSize)
             }
         }
     }
+}
+
+/** Keep large-font caption composition independent of icon press and selection. */
+@Composable
+private fun GlassNavigationItemLabel(
+    label: String,
+    tintProducer: ColorProducer,
+    labelSize: androidx.compose.ui.unit.TextUnit,
+) {
+    val baseLabelStyle = MiuixTheme.textStyles.footnote2
+    val labelTextStyle = remember(baseLabelStyle, labelSize) {
+        baseLabelStyle.copy(fontSize = labelSize)
+    }
+    Text(
+        text = label,
+        color = tintProducer,
+        style = labelTextStyle,
+        textAlign = TextAlign.Center,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
