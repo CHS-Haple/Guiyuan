@@ -81,22 +81,7 @@ fun BoxScope.GlassSecondaryPopup(
         label = "glassSecondaryBounds",
     ) { if (it) 1f else 0f }
     val active = show || state.currentState || !state.isIdle
-    val backProgress = rememberGlassPopupBackProgress(
-        show = show,
-        active = active,
-        enabled = show,
-        retainWhenInactive = false,
-        resetSpec = GlassMotion.secondaryPopup(true),
-        onDismissRequest = onDismissRequest,
-    )
-    DisposableEffect(materialAnchor, backProgress) {
-        materialAnchor?.secondaryBackProgressState = backProgress
-        onDispose {
-            if (materialAnchor?.secondaryBackProgressState === backProgress) {
-                materialAnchor.secondaryBackProgressState = null
-            }
-        }
-    }
+    val backProgress = rememberSecondaryPopupBackProgress(show, active, onDismissRequest, materialAnchor)
     ObserveSecondaryPopupFinish(show, state, onDismissFinished)
     if (!active) return
     val direction = LocalLayoutDirection.current
@@ -129,6 +114,33 @@ fun BoxScope.GlassSecondaryPopup(
         scrollable = true,
         content = content,
     )
+}
+
+/** Shares the one predictive Back owner with its primary anchor until detachment. */
+@Composable
+private fun rememberSecondaryPopupBackProgress(
+    show: Boolean,
+    active: Boolean,
+    onDismissRequest: () -> Unit,
+    materialAnchor: GlassPopupAnchor?,
+): androidx.compose.runtime.State<Float> {
+    val backProgress = rememberGlassPopupBackProgress(
+        show = show,
+        active = active,
+        enabled = show,
+        retainWhenInactive = false,
+        resetSpec = GlassMotion.secondaryPopup(true),
+        onDismissRequest = onDismissRequest,
+    )
+    DisposableEffect(materialAnchor, backProgress) {
+        materialAnchor?.secondaryBackProgressState = backProgress
+        onDispose {
+            if (materialAnchor?.secondaryBackProgressState === backProgress) {
+                materialAnchor.secondaryBackProgressState = null
+            }
+        }
+    }
+    return backProgress
 }
 
 // One effect owner for completion; the panel may remain composed during its exit.
