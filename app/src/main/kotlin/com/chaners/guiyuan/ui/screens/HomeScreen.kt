@@ -136,11 +136,7 @@ private fun HomeScreenScrollingContent(
         ) {
             HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources)
             HomePreviewSandboxCard(
-                state = contents.layout.previewState,
-                resources = contents.sources.previewResources,
-                visual = contents.sources.visual.value,
-                featureSettings = contents.sources.featureSettings,
-                onOpen = contents.actions.onOpenPreviewSandbox,
+                contents = contents,
                 modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp),
             )
         }
@@ -228,14 +224,13 @@ private fun HomeRuntimeCardBody(
 
 @Composable
 private fun HomePreviewSandboxCard(
-    state: PreviewSandboxUiState,
-    resources: PreviewSysUiResources,
-    visual: VisualCfg,
-    featureSettings: State<FeatureCfg>,
-    onOpen: () -> Unit,
+    contents: HomeScreenContents,
     modifier: Modifier = Modifier,
 ) {
-    val lowBatteryThreshold = featureSettings.value.lowBatteryThreshold
+    val state = contents.layout.previewState
+    val resources = contents.sources.previewResources
+    val visual = contents.sources.visual.value
+    val lowBatteryThreshold = contents.sources.featureSettings.value.lowBatteryThreshold
     val model = rememberPreviewRenderModel(
         state = state,
         visual = visual,
@@ -253,7 +248,7 @@ private fun HomePreviewSandboxCard(
         insideMargin = PaddingValues(horizontal = 18.dp, vertical = 16.dp),
         pressFeedbackType = PressFeedbackType.Tilt,
         showIndication = true,
-        onClick = onOpen,
+        onClick = contents.actions.onOpenPreviewSandbox,
     ) {
         HomePreviewSandboxHeader()
         Box(
