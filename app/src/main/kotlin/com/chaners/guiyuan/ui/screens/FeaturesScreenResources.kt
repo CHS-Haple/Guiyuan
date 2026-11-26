@@ -11,6 +11,7 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.FeatureRepo
+import com.chaners.guiyuan.settings.FontTestMode
 import com.chaners.guiyuan.settings.NativeFontAxis
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.VisualRepo
@@ -45,14 +46,17 @@ internal fun rememberFeaturesScreenResources(): FeaturesScreenResources {
         .collectAsState(initial = NativeFontAxis.State.Pending)
     val batteryAxis by remember(context) { NativeFontAxis.observeBattery(context) }
         .collectAsState(initial = NativeFontAxis.State.Pending)
+    val allowTestWeight = FontTestMode.available && visual.fontTestMode.allowsUnverifiedWeight
     val mobileWeight = featureWeightUi(
         fontAxis, 200..1000, NativeWeightRow.MOBILE_TYPE, feature.enabled,
+        allowUnverified = allowTestWeight,
     )
     val batteryWeight = featureWeightUi(
         batteryAxis,
         BATTERY_TOP_TEXT_WEIGHT_MIN..BATTERY_TOP_TEXT_WEIGHT_MAX,
         NativeWeightRow.BATTERY,
         feature.enabled,
+        allowUnverified = allowTestWeight,
     )
     val schemeRepo = remember(context) { BatterySchemeRepo(context) }
     val schemes by schemeRepo.library.collectAsState(initial = schemeRepo.current())
