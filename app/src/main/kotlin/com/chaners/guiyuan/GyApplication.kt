@@ -32,6 +32,7 @@ import com.chaners.guiyuan.settings.readVisualCfg
 import com.chaners.guiyuan.settings.FeatureCfg
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.settings.NativeFontAxis
+import com.chaners.guiyuan.settings.FONT_METHOD_LAB_KEY
 import com.chaners.guiyuan.sandbox.SandboxClient
 import com.chaners.guiyuan.ui.screens.PreviewSandboxUiState
 import com.chaners.guiyuan.system.RestartTarget
@@ -348,6 +349,7 @@ class GyApplication :
                 .putLong(FEATURE_CHANGED_AT_NS_KEY, snapshot.changedAtNs)
                 .putLong(NativeFontAxis.REQUEST_KEY, fontAxisRequestId)
                 .putVisualCfg(snapshot.visual)
+                .putString(FONT_METHOD_LAB_KEY, snapshot.visual.fontTestMode.persistedValue)
             check(editor.commit()) { "remote preference commit failed" }
             if (xposedService === service) lastMirror = service to snapshot
         }.onFailure { throwable ->
