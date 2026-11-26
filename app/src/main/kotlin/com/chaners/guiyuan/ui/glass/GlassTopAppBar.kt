@@ -31,6 +31,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -288,16 +289,10 @@ fun GlassTopAppBar(
     // The app-local title layout retains unclipped action slots, but the blur ramp
     // follows upstream's measured bottomContent/startFraction contract.
     var measuredBottomContentHeight by remember { mutableIntStateOf(0) }
-    var measuredProgressiveBandHeight by remember { mutableIntStateOf(0) }
-    val progressiveGradient = remember(measuredBottomContentHeight, measuredProgressiveBandHeight) {
-        val startFraction = if (measuredBottomContentHeight > 0 && measuredProgressiveBandHeight > 0) {
-            (measuredBottomContentHeight.toFloat() / measuredProgressiveBandHeight.toFloat())
-                .coerceIn(0f, 0.95f)
-        } else {
-            0f
-        }
-        if (startFraction > 0f) {
-            ProgressiveBlur.Top.copy(startFraction = startFraction)
+    var progressiveStartFraction by remember { mutableFloatStateOf(0f) }
+    val progressiveGradient = remember(progressiveStartFraction) {
+        if (progressiveStartFraction > 0f) {
+            ProgressiveBlur.Top.copy(startFraction = progressiveStartFraction)
         } else {
             ProgressiveBlur.Top
         }
@@ -376,8 +371,13 @@ fun GlassTopAppBar(
                             fallbackCoveredHeight
                         }
                         val height = (coveredHeight + bandOverhang.toPx().coerceAtLeast(0f)).fastRoundToInt()
-                        if (measuredProgressiveBandHeight != height) {
-                            measuredProgressiveBandHeight = height
+                        val nextStartFraction = if (height > 0 && measuredBottomContentHeight > 0) {
+                            (measuredBottomContentHeight.toFloat() / height.toFloat()).coerceIn(0f, 0.95f)
+                        } else {
+                            0f
+                        }
+                        if (progressiveStartFraction != nextStartFraction) {
+                            progressiveStartFraction = nextStartFraction
                         }
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
@@ -503,11 +503,15 @@ fun GlassTopAppBar(
                     }
                 },
                 bottomContent = {
-                    Box(Modifier.onSizeChanged { size ->
-                        if (measuredBottomContentHeight != size.height) {
-                            measuredBottomContentHeight = size.height
-                        }
-                    }) {
+                    Box(
+                        modifier = Modifier.layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            if (measuredBottomContentHeight != placeable.height) {
+                                measuredBottomContentHeight = placeable.height
+                            }
+                            layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+                        },
+                    ) {
                         bottomContent()
                     }
                 },
