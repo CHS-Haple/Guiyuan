@@ -7,18 +7,18 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The active candidate source and Maven graph are set to
-  `0.9.5-542463a0-SNAPSHOT` at
-  `542463a0863b393a3d6052237daae6c3da217e70`; matching
-  [upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45557057007)
-  and [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45557057030)
-  passed. Exact-Maven dependency resolution and source-matched Guiyuan CI
-  must still approve this candidate. This revision includes MIUIX's updated
-  Sheet progressive blur curve, color blending and scrim, plus library
-  baseline profiles; it is a pre-release snapshot, not stable v0.9.5.
-  Newer upstream `04e9b818` was not fully published and is not mixed into
-  this graph. Guiyuan-specific Back, long-press, touch-extension and title
-  clip boundaries remain locally owned.
+- The candidate source and Maven graph target
+  `0.9.5-588d029f-SNAPSHOT` at
+  `588d029f2b0747a0a8710db0858ed0957d78b122`. The matching
+  [publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501062)
+  and [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501001)
+  succeeded. Exact-Maven resolution and source-matched Guiyuan CI are still
+  required; this is a pre-release snapshot, not stable v0.9.5. B1972 accepted
+  the previous `542463a0` graph in [#1923](https://github.com/CHS-Haple/Guiyuan/pull/1923).
+  The new revision includes the previously unpublished Sheet default and
+  one-pass top-bar fade, scrolling pill tabs, and dropdown scroll indicators.
+  Guiyuan-specific Back, long-press, touch-extension and title clip boundaries
+  remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
@@ -278,8 +278,7 @@ entrypoint.
   translation), bounded collapse offset and progressive scrim. Retain
   measured native title/compact slots and existing backdrop ownership.
   The shared GlassBottomSheet wrapper explicitly selects a
-  non-overlay default even though this pinned revision still defaults to
-  overlay. Upstream changes that default in a later revision. The battery overview and long-form Terms/Privacy
+  non-overlay default, now matching the pinned upstream default. The battery overview and long-form Terms/Privacy
   readers explicitly opt into progressive blur and apply header padding
   to their scroll content and native scrollbar. The battery detail editor
   uses the normal non-overlay header and its supplied zero header padding.
@@ -289,6 +288,15 @@ entrypoint.
   recognizer still checks X touch slop alone, so its axis adapter remains.
   Library baseline profiles are now supplied by the pinned MIUIX graph;
   do not copy generated example profiles into Guiyuan.
+
+- **Dropdown scroll indicators:** upstream `588d029f` provides a non-interactive,
+  non-fading indicator for scrollable menus. The local shared
+  `GlassPopupSurface` mirrors its 16 dp vertical track padding, using the
+  same ScrollState for the indicator and scrolling. Both transformed and
+  secondary popups inherit this surface. Published GlassDropdownPreference,
+  ListPopupColumn and overlay/window dropdown dialogs inherit their native
+  indicators directly; no second indicator is added. Page scrollbars retain
+  their interactive defaults and existing lazy-list stability policy.
 
 ### Prior a09d4f32 local-boundary review
 
