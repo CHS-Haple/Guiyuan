@@ -129,8 +129,18 @@ internal object SysUiBatteryEvidence {
 
     }
 
-    fun readNumberFontContract(host: View): Pair<Typeface, String>? {
+    fun readNumberFontContract(host: View): Pair<Typeface, String?>? {
         val battery = nativeBatteryMeter(host) ?: return null
+        val hollow = battery.javaClass.getField("mHollowBatteryIconView").get(battery)
+            ?: return null
+        val paint = hollow.javaClass.getField("textPaint").get(hollow) as? Paint
+            ?: return null
+        val face = paint.typeface ?: return null
+        // The live face is useful even when the OEM file identity cannot be proved.
+        return face to optionalNativeRead { readNumberFontPath(battery, face) }
+    }
+
+    private fun readNumberFontPath(battery: View, face: Typeface): String? {
         val loader = battery.javaClass.classLoader ?: return null
         val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
         val percentFace = config.getField("sMiproTypefaceWght500").get(null) as? Typeface
@@ -144,16 +154,10 @@ internal object SysUiBatteryEvidence {
         if (percent.typeface !== percentFace || mark.typeface !== markFace) {
             return null
         }
-        val hollow = battery.javaClass.getField("mHollowBatteryIconView").get(battery)
-            ?: return null
-        val hollowPaint = hollow.javaClass.getField("textPaint").get(hollow) as? Paint
-            ?: return null
         val hollowFace = loader.loadClass("com.android.systemui.statusbar.util.MiuiBatteryUtils")
             .getField("FONT_WGHT").get(null) as? Typeface ?: return null
-        if (hollowPaint.typeface !== hollowFace) return null
-        val path = config.getField("FONT_MIPRO_PATH").get(null) as? String
-            ?: return null
-        return hollowFace to path
+        if (face !== hollowFace) return null
+        return config.getField("FONT_MIPRO_PATH").get(null) as? String
     }
 
     fun nativeBatteryMeter(host: Any): View? {

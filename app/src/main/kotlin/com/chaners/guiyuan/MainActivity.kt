@@ -29,6 +29,8 @@ import com.chaners.guiyuan.settings.AppPlatform
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.AppearanceRepo
+import com.chaners.guiyuan.settings.PaletteSource
+import com.chaners.guiyuan.settings.PaletteSeedPreset
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
@@ -226,8 +228,11 @@ private fun appearanceThemeActions(repo: AppearanceRepo, scope: CoroutineScope):
         onDynamicChange = { enabled ->
             scope.launch { repo.setDynamicColor(enabled) }
         },
-        onCustomPaletteChange = { enabled ->
-            scope.launch { repo.setCustomPalette(enabled) }
+        onPaletteSourceChange = { source: PaletteSource ->
+            scope.launch { repo.setPaletteSource(source) }
+        },
+        onPaletteSeedPresetChange = { preset: PaletteSeedPreset ->
+            scope.launch { repo.setPaletteSeedPreset(preset) }
         },
         onColorSpecChange = { spec: ThemeColorSpec ->
             scope.launch { repo.setColorSpec(spec) }
