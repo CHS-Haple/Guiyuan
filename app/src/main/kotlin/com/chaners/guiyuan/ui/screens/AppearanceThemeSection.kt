@@ -123,7 +123,7 @@ private fun ColumnScope.appearancePalettePresets(
         selectedIndex = presets.indexOf(appearance.paletteSeedPreset),
         title = stringResource(R.string.theme_palette_preset_title),
         summary = stringResource(R.string.theme_palette_preset_summary),
-        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_gradient) },
+        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_format_paint) },
         onSelectedIndexChange = { index ->
             presets.getOrNull(index)?.let { preset ->
                 if (preset != appearance.paletteSeedPreset) {
