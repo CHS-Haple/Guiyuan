@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.PaletteSource
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.system.DiagSnapshot
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -88,6 +89,7 @@ internal fun GyApp(
         dynamicColorEnabled = appearance.dynamicColor,
         colorSpec = appearance.colorSpec.takeIf { appearance.customPalette },
         paletteStyle = appearance.paletteStyle,
+        presetSeed = appearance.paletteSeedPreset.takeIf { appearance.paletteSource == PaletteSource.PRESET },
     ) {
         val hostActivity = LocalContext.current as? android.app.Activity
         val context = LocalContext.current.applicationContext
@@ -191,6 +193,7 @@ internal fun GyApp(
                     dynamicColorEnabled = appearance.dynamicColor,
                     colorSpec = appearance.colorSpec.takeIf { appearance.customPalette },
                     paletteStyle = appearance.paletteStyle,
+        presetSeed = appearance.paletteSeedPreset.takeIf { appearance.paletteSource == PaletteSource.PRESET },
                 ) {
                     PreviewSandboxScreen(
                         display = PreviewSandboxDisplay(previewState, sandboxActive, previewDark),
