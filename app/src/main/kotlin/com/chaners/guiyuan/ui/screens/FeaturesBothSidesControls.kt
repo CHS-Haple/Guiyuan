@@ -21,9 +21,9 @@ internal fun ColumnScope.featureLayoutBothSides(
     visual: VisualCfg,
     visualRepo: VisualRepo,
     enabled: Boolean,
-    bothSidesActivitySearch: Boolean,
-    bothSidesChargingSearch: Boolean,
 ) {
+    val bothSidesActivitySearch = search.matchesBothSidesActivity()
+    val bothSidesChargingSearch = search.matchesBothSidesCharging()
     val bothSidesArrangement = visual.dualSignal &&
         visual.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES
     if (search.matches(R.string.both_sides_activity_title) ||
