@@ -579,6 +579,7 @@ class GyModule : XposedModule() {
     // Keep native scene state identical across reload recovery and old-generation retirement.
     private fun clearHotReloadSceneState() {
         reportedFont = null
+        reportedFontSource = null
         reportedFontPath = null
         reportedFontCoverage = null
         reportedMobileFont = null
