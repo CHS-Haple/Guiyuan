@@ -21,8 +21,11 @@ internal object NativeFontWeightProbe {
     private const val MAX_FONT_BYTES = 64 * 1024 * 1024
     private const val MOBILE_GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-_"
 
-    fun mobileCoverage(label: String): String? =
-        if (label.length <= 24) (MOBILE_GLYPHS + label).toSet().joinToString("") else null
+    fun mobileCoverage(label: String): String? = when {
+        label.length > 24 -> null
+        label.all { it in MOBILE_GLYPHS } -> MOBILE_GLYPHS
+        else -> (MOBILE_GLYPHS + label).toSet().joinToString("")
+    }
 
     fun mobile(face: Typeface, coverage: String): FontWeightAxis? =
         probe(face, coverage, "5GA")
