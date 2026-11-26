@@ -125,6 +125,8 @@ class GyModule : XposedModule() {
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
     private var reportedFontPath: String? = null
+    private var reportedFontLabel: String? = null
+    private var reportedMobileAxis: FontWeightAxis? = null
     private var reportedBatteryFont: Typeface? = null
     private var reportedBatteryFontPath: String? = null
     private var reportedFontHost: View? = null
@@ -1938,13 +1940,15 @@ class GyModule : XposedModule() {
         trace: RuntimeRenderTrace? = null,
         pendingMobileTypeDrawable: Drawable? = null,
         forceRefresh: Boolean = false,
+        forceFontReport: Boolean = false,
     ) {
-        val presentation =
+        val resolved =
             NativePresentationResolver.resolve(
                 state = StatusStateStore.snapshot(),
                 pendingMobileTypeDrawable = pendingMobileTypeDrawable,
             )
-        reportFontAxis(presentation.networkType)
+        val axis = reportFontAxis(resolved.networkType, force = forceFontReport)
+        val presentation = resolved.copy(networkType = resolved.networkType?.copy(weightAxis = axis))
         val changed =
             PresentationStore.updateMobilePresentation(presentation)
         val recoveryCompleted =
@@ -2019,15 +2023,17 @@ class GyModule : XposedModule() {
     private fun reportFontAxis(
         networkType: NativePresentationResolver.NetworkType?,
         force: Boolean = false,
-    ) {
-        val host = SysUiHostRegistry.current() as? View ?: return
+    ): FontWeightAxis? {
+        val host = SysUiHostRegistry.current() as? View ?: return null
         val face = networkType?.typeface
+        val label = networkType?.takeIf { it.fontPath == null }?.label
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
         if (!force && fontAxisReported && reportedFontHost === host &&
             reportedFont === face && reportedFontPath == networkType?.fontPath &&
+            reportedFontLabel == label &&
             reportedBatteryFont === batteryFace && reportedBatteryFontPath == batteryFont?.second
-        ) return
+        ) return reportedMobileAxis
         // A live face without a verified file must not borrow the static font's axis.
         val mobileFont =
             if (face != null) {
@@ -2054,11 +2060,9 @@ class GyModule : XposedModule() {
                     }
             }
         val mobileAxis = weightAxis(mobileFont?.second)
-        val batteryAxis = if (batteryFont?.second == mobileFont?.second) {
-            mobileAxis
-        } else {
-            weightAxis(batteryFont?.second)
-        }
+            ?: face?.let { NativeFontWeightProbe.mobile(it, networkType?.label.orEmpty()) }
+        val batteryAxis = weightAxis(batteryFont?.second)
+            ?: batteryFace?.let(NativeFontWeightProbe::battery)
         SysUiBatterySource.setNumberFont(host, batteryFace, batteryAxis)
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
@@ -2078,6 +2082,8 @@ class GyModule : XposedModule() {
         }.onSuccess {
             reportedFont = face
             reportedFontPath = networkType?.fontPath
+            reportedFontLabel = label
+            reportedMobileAxis = mobileAxis
             reportedBatteryFont = batteryFace
             reportedBatteryFontPath = batteryFont?.second
             reportedFontHost = host
@@ -2086,6 +2092,7 @@ class GyModule : XposedModule() {
             SysUiHotReload.rethrowFatal(error)
             Log.w(TAG, "Unable to report verified native font axes", error)
         }
+        return mobileAxis
     }
 
     private fun onCombinedStateChanged(
@@ -4905,7 +4912,7 @@ class GyModule : XposedModule() {
             Handler(Looper.getMainLooper()).post { onFontAxisRequest() }
             return
         }
-        reportFontAxis(PresentationStore.snapshot().mobilePresentation?.networkType, force = true)
+        refreshMobilePresentation(forceRefresh = true, forceFontReport = true)
     }
 
     private fun onVisualCfgChanged(
