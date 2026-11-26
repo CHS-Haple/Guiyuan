@@ -378,33 +378,43 @@ private fun rememberTransformTravel(
             anchor.contentHidden = false
             // The root host retires as soon as the anchor is restored; do not hand off twice.
             if (active && !currentShow) {
-                val anchorRect = anchor.containerBounds
-                val scaleXFactor = if (anchorRect.width > 0f && travel.endWidth > anchorRect.width) {
-                    (travel.endWidth / anchorRect.width) - 1f
-                } else {
-                    0f
-                }
-                val scaleYFactor = if (anchorRect.height > 0f && travel.endHeight > anchorRect.height) {
-                    (travel.endHeight / anchorRect.height) - 1f
-                } else {
-                    0f
-                }
-                val offsetX = if (anchorRect.width > 0f) travel.endCenterX - anchorRect.center.x else 0f
-                val offsetY = if (anchorRect.height > 0f) travel.endCenterY - anchorRect.center.y else 0f
-                anchor.startCloseRebound(
-                    boundsValue = bounds.value,
-                    boundsVelocity = closeVelocity.boundsVelocity,
-                    centerValue = center.value,
-                    centerVelocity = closeVelocity.centerVelocity,
-                    scaleXFactor = scaleXFactor,
-                    scaleYFactor = scaleYFactor,
-                    offsetX = offsetX,
-                    offsetY = offsetY,
-                )
+                anchor.handoffCloseRebound(travel, bounds, center, closeVelocity)
             }
         }
     }
     return travel
+}
+
+/** The anchor owns the closing rebound; no additional gesture or motion writer is created. */
+private fun GlassPopupAnchor.handoffCloseRebound(
+    travel: TransformTravel,
+    bounds: State<Float>,
+    center: State<Float>,
+    closeVelocity: CloseVelocityTracker,
+) {
+    val anchorRect = containerBounds
+    val scaleXFactor = if (anchorRect.width > 0f && travel.endWidth > anchorRect.width) {
+        (travel.endWidth / anchorRect.width) - 1f
+    } else {
+        0f
+    }
+    val scaleYFactor = if (anchorRect.height > 0f && travel.endHeight > anchorRect.height) {
+        (travel.endHeight / anchorRect.height) - 1f
+    } else {
+        0f
+    }
+    val offsetX = if (anchorRect.width > 0f) travel.endCenterX - anchorRect.center.x else 0f
+    val offsetY = if (anchorRect.height > 0f) travel.endCenterY - anchorRect.center.y else 0f
+    startCloseRebound(
+        boundsValue = bounds.value,
+        boundsVelocity = closeVelocity.boundsVelocity,
+        centerValue = center.value,
+        centerVelocity = closeVelocity.centerVelocity,
+        scaleXFactor = scaleXFactor,
+        scaleYFactor = scaleYFactor,
+        offsetX = offsetX,
+        offsetY = offsetY,
+    )
 }
 
 /**
