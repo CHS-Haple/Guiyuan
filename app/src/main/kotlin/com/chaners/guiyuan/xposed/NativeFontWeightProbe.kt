@@ -19,12 +19,13 @@ import kotlin.math.floor
 // Only invoked at the existing native font report boundary, never during drawing.
 internal object NativeFontWeightProbe {
     private const val MAX_FONT_BYTES = 64 * 1024 * 1024
-    private const val MOBILE_GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-_"
+    // Cover the sandbox's network labels and the actual live label, not unused alphabets.
+    private const val MOBILE_GLYPHS = "2345GAEHLT+"
 
     fun mobileCoverage(label: String): String? = when {
         label.length > 24 -> null
-        label.all { it in MOBILE_GLYPHS } -> MOBILE_GLYPHS
-        else -> (MOBILE_GLYPHS + label).toSet().joinToString("")
+        label.all { it in MOBILE_GLYPHS || it == '-' || it == '_' } -> MOBILE_GLYPHS
+        else -> (MOBILE_GLYPHS + label.filterNot { it == '-' || it == '_' }).toSet().joinToString("")
     }
 
     fun mobile(face: Typeface, coverage: String): FontWeightAxis? =
@@ -68,7 +69,7 @@ internal object NativeFontWeightProbe {
             val font = glyphs.getFont(index)
             val key = font.sourceIdentifier to font.ttcIndex
             if (key in axes) continue
-            val buffer = font.buffer
+            val buffer = font.buffer.duplicate()
             if (buffer.remaining() !in 1..MAX_FONT_BYTES) return null
             val axis = NativeFontAxisPolicy.checked(FontAxes.weight(buffer, font.ttcIndex)) ?: return null
             axes[key] = axis
@@ -83,7 +84,9 @@ internal object NativeFontWeightProbe {
             val after = candidate.getFont(index)
             if (before.sourceIdentifier != after.sourceIdentifier || before.ttcIndex != after.ttcIndex ||
                 original.getGlyphId(index) != candidate.getGlyphId(index) ||
-                original.getFakeBold(index) != candidate.getFakeBold(index)
+                original.getFakeBold(index) != candidate.getFakeBold(index) ||
+                original.getFakeItalic(index) != candidate.getFakeItalic(index) ||
+                original.getItalicOverride(index) != candidate.getItalicOverride(index)
             ) return false
             val overrideWeight = candidate.getWeightOverride(index)
             val effective = if (overrideWeight != PositionedGlyphs.NO_OVERRIDE) overrideWeight
