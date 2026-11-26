@@ -255,6 +255,12 @@ internal class VisualRepo(context: Context) {
             .apply()
     }
 
+    fun setFontTestMode(mode: FontTestMode) {
+        if (FontTestMode.available) {
+            preferences.edit().putString(FONT_METHOD_LAB_KEY, mode.persistedValue).apply()
+        }
+    }
+
     fun setMobileTypeWeight(weight: Int) {
         writeProfileInt(
             MOBILE_TYPE_WEIGHT_KEY,
