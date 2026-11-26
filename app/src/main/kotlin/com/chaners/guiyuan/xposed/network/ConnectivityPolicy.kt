@@ -1,6 +1,7 @@
 package com.chaners.guiyuan.xposed.network
 
 import android.graphics.Typeface
+import com.chaners.guiyuan.settings.FontWeightAxis
 import com.chaners.guiyuan.xposed.NativePresentationResolver
 import com.chaners.guiyuan.xposed.PresentationStore
 import com.chaners.guiyuan.xposed.StatusStateStore
@@ -79,6 +80,7 @@ internal object ConnectivityPolicy {
             enhanced = enhanced,
             typeface = typeface,
             fontPath = fontPath,
+            weightAxis = weightAxis,
             internet = internet,
         )
 
@@ -149,6 +151,7 @@ internal sealed interface CenterIndicator {
         val internet: InternetState,
         val typeface: Typeface? = null,
         val fontPath: String? = null,
+        val weightAxis: FontWeightAxis? = null,
     ) : CenterIndicator
 
     data object Airplane : CenterIndicator
