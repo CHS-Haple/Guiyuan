@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
 import android.view.ViewGroup
+import com.chaners.guiyuan.settings.FontWeightAxis
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
@@ -176,6 +177,7 @@ internal object NativePresentationResolver {
         val source: NetworkTypeSource,
         val typeface: Typeface? = null,
         val fontPath: String? = null,
+        val weightAxis: FontWeightAxis? = null,
     )
 
 
