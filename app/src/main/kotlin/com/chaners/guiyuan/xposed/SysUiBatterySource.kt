@@ -46,21 +46,20 @@ internal object SysUiBatterySource {
     @Volatile
     private var lastChargingIconResId: Int? = null
 
-    internal data class VerifiedFont(
+    internal data class NumberFont(
         val host: View,
         val face: Typeface,
-        val axis: FontWeightAxis,
+        val axis: FontWeightAxis?,
     )
 
     @Volatile
-    private var verifiedFont: VerifiedFont? = null
+    private var numberFont: NumberFont? = null
 
-    fun currentNumberFont(): VerifiedFont? =
-        verifiedFont?.takeIf { it.host === SysUiHostRegistry.current() }
+    fun currentNumberFont(): NumberFont? =
+        numberFont?.takeIf { it.host === SysUiHostRegistry.current() }
 
-    fun setVerifiedNumberFont(host: View, face: Typeface?, axis: FontWeightAxis?) {
-        verifiedFont =
-            if (face != null && axis != null) VerifiedFont(host, face, axis) else null
+    fun setNumberFont(host: View, face: Typeface?, axis: FontWeightAxis?) {
+        numberFont = face?.let { NumberFont(host, it, axis) }
     }
 
     // All delivery and diagnostic callbacks belong to one installing generation.
@@ -309,9 +308,8 @@ internal object SysUiBatterySource {
     val failedInstallHookCount: Int
         get() = failedInstallHandles.size
 
-    // Verified against the exact SystemUI fingerprint: both native number
-    // routes must use the known file-backed faces, not mipro family fallbacks.
-    fun readHostNumberFont(host: View): Pair<Typeface, String>? =
+    // Capture the live number face independently of the optional OEM file witness.
+    fun readHostNumberFont(host: View): Pair<Typeface, String?>? =
         optionalNativeRead { SysUiBatteryEvidence.readNumberFontContract(host) }
 
     // Reconcile the transferred snapshot with the same authority and delivery receipt as hooks.
@@ -386,6 +384,6 @@ internal object SysUiBatterySource {
         lastDelivery = null
         nativeStateReader = null
         lastChargingIconResId = null
-        verifiedFont = null
+        numberFont = null
     }
 }
