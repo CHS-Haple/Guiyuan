@@ -141,9 +141,11 @@
     <string name="dynamic_color_on">Dynamic colors</string>
     <string name="dynamic_color_off">Default colors</string>
     <string name="theme_palette_source">Palette generation</string>
-    <string name="theme_palette_source_summary">Use native system colors or regenerate a palette from the system theme seed</string>
-    <string name="theme_palette_source_system">Native system palette</string>
+    <string name="theme_palette_source_summary">Follow system colors, use the system seed, or choose a preset color</string>
+    <string name="theme_palette_source_system">Follow system palette</string>
     <string name="theme_palette_source_custom">Generate from system seed</string>
+    <string name="theme_palette_source_preset">Use preset color</string>
+    <string name="theme_palette_preset_title">Common seed colors</string>
     <string name="theme_color_spec">Color specification</string>
     <string name="theme_color_spec_summary">Choose the color specification supported by this palette style</string>
     <string name="theme_palette_style">Palette style</string>
