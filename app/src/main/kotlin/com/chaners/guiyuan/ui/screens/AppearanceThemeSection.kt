@@ -63,7 +63,10 @@ private fun ColumnScope.appearanceDynamicColor(
         appearancePaletteSource(appearance, actions)
         AnimatedPreferenceGroup(visible = appearance.customPalette) {
             appearancePaletteStyle(appearance, actions)
-            appearanceColorSpec(appearance, actions)
+            // Unsupported styles have a fixed effective spec; the selected spec is retained.
+            AnimatedPreferenceGroup(visible = appearance.paletteStyle.supportsSpec2025()) {
+                appearanceColorSpec(appearance, actions)
+            }
         }
     }
 }
@@ -97,9 +100,11 @@ private fun ColumnScope.appearanceColorSpec(
 ) {
     val enabled = appearance.paletteStyle.supportsSpec2025()
     val options = when {
-        appearance.paletteStyle == ThemePaletteStyle.Cmf -> listOf("Spec2026")
-        !enabled -> listOf(ThemeColorSpec.Spec2021.name)
-        else -> ThemeColorSpec.entries.map { it.name }
+        appearance.paletteStyle == ThemePaletteStyle.Cmf -> listOf(stringResource(R.string.theme_spec_2026))
+        !enabled -> listOf(stringResource(R.string.theme_spec_2021))
+        else -> ThemeColorSpec.entries.map { spec ->
+            stringResource(if (spec == ThemeColorSpec.Spec2021) R.string.theme_spec_2021 else R.string.theme_spec_2025)
+        }
     }
     UiDropdownPreference(
         items = options,
@@ -140,11 +145,23 @@ private fun ColumnScope.appearancePaletteStyle(
             },
         )
     }
+    val description = when (appearance.paletteStyle) {
+        ThemePaletteStyle.TonalSpot -> R.string.theme_palette_tonal_spot_description
+        ThemePaletteStyle.Neutral -> R.string.theme_palette_neutral_description
+        ThemePaletteStyle.Vibrant -> R.string.theme_palette_vibrant_description
+        ThemePaletteStyle.Expressive -> R.string.theme_palette_expressive_description
+        ThemePaletteStyle.Rainbow -> R.string.theme_palette_rainbow_description
+        ThemePaletteStyle.FruitSalad -> R.string.theme_palette_fruit_salad_description
+        ThemePaletteStyle.Monochrome -> R.string.theme_palette_monochrome_description
+        ThemePaletteStyle.Fidelity -> R.string.theme_palette_fidelity_description
+        ThemePaletteStyle.Content -> R.string.theme_palette_content_description
+        ThemePaletteStyle.Cmf -> R.string.theme_palette_cmf_description
+    }
     UiDropdownPreference(
         items = paletteNames,
         selectedIndex = appearance.paletteStyle.ordinal,
         title = stringResource(R.string.theme_palette_style),
-        summary = stringResource(R.string.theme_palette_style_summary),
+        summary = stringResource(description),
         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_style) },
         onSelectedIndexChange = { index ->
             paletteStyles.getOrNull(index)?.let { style ->
