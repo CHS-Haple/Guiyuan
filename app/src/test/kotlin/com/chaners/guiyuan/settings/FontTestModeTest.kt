@@ -24,6 +24,19 @@ class FontTestModeTest {
     }
 
     @Test
+    fun backupTransactionKeepsExistingLabChoiceAndDoesNotExportIt() {
+        val prefs = VisualTestPreferences()
+        prefs.edit().putString(FONT_METHOD_LAB_KEY, FontTestMode.OVERRIDE.persistedValue).apply()
+        val before = prefs.all.toMap()
+        val snapshot = prefs.backupVisualSnapshot()
+        assertFalse(snapshot.containsKey(FONT_METHOD_LAB_KEY))
+        prefs.editBackupVisuals().putVisualCfg(VisualCfg(combinedScale = 0.95f)).apply()
+        assertEquals(FontTestMode.OVERRIDE.persistedValue, prefs.getString(FONT_METHOD_LAB_KEY, null))
+        assertTrue(prefs.rollbackBackupVisuals(snapshot))
+        assertEquals(before, prefs.all)
+    }
+
+    @Test
     fun invalidMethodFallsBackToAutomatic() {
         assertEquals(FontTestMode.AUTO, FontTestMode.fromStored(null))
         assertEquals(FontTestMode.AUTO, FontTestMode.fromStored("not-supported"))
