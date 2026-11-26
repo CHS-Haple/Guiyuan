@@ -12,7 +12,8 @@ internal enum class PaletteSeedPreset(val argb: Int) {
     GREEN(0xFF34C759.toInt()),
     PURPLE(0xFFAF52DE.toInt()),
     ORANGE(0xFFFF9500.toInt()),
-    PINK(0xFFFF2D55.toInt()),
+    RED(0xFFFF3B30.toInt()),
+    PINK(0xFFFF80AB.toInt()),
 }
 
 internal fun paletteSource(customPalette: Boolean, usePresetSeed: Boolean): PaletteSource =

@@ -145,7 +145,9 @@
     <string name="theme_palette_source_system">Follow system</string>
     <string name="theme_palette_source_custom">System theme color</string>
     <string name="theme_palette_source_preset">Preset colors</string>
-    <string name="theme_palette_preset_title">Common colors</string>
+    <string name="theme_palette_preset_title">Preset color</string>
+    <string name="theme_palette_preset_summary">Choose a color to generate the theme palette</string>
+    <string name="theme_palette_preset_cyan">Cyan</string>
     <string name="theme_color_spec">Color specification</string>
     <string name="theme_color_spec_summary">Choose the color specification supported by this palette style</string>
     <string name="theme_palette_style">Palette style</string>

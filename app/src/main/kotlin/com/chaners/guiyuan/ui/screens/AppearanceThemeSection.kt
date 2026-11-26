@@ -1,13 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
@@ -17,7 +10,6 @@ import com.chaners.guiyuan.settings.PaletteSeedPreset
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.supportsSpec2025
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
@@ -112,29 +104,34 @@ private fun ColumnScope.appearancePalettePresets(
     appearance: Appearance,
     actions: AppearanceThemeActions,
 ) {
-    BatterySheetSmallTitle(text = stringResource(R.string.theme_palette_preset_title))
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        insideMargin = PaddingValues(16.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PaletteSeedPreset.entries.forEach { preset ->
-                BatteryCommonColorButton(
-                    color = preset.argb,
-                    selected = appearance.paletteSeedPreset == preset,
-                    onClick = {
-                        if (preset != appearance.paletteSeedPreset) {
-                            actions.onPaletteSeedPresetChange(preset)
-                        }
-                    },
-                )
-            }
-        }
+    val presets = PaletteSeedPreset.entries
+    val names = presets.map { preset ->
+        stringResource(
+            when (preset) {
+                PaletteSeedPreset.BLUE -> R.string.battery_common_color_blue
+                PaletteSeedPreset.CYAN -> R.string.theme_palette_preset_cyan
+                PaletteSeedPreset.GREEN -> R.string.battery_common_color_green
+                PaletteSeedPreset.PURPLE -> R.string.battery_common_color_purple
+                PaletteSeedPreset.ORANGE -> R.string.battery_common_color_orange
+                PaletteSeedPreset.RED -> R.string.battery_common_color_red
+                PaletteSeedPreset.PINK -> R.string.battery_common_color_pink
+            },
+        )
     }
+    UiDropdownPreference(
+        items = names,
+        selectedIndex = presets.indexOf(appearance.paletteSeedPreset),
+        title = stringResource(R.string.theme_palette_preset_title),
+        summary = stringResource(R.string.theme_palette_preset_summary),
+        startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_gradient) },
+        onSelectedIndexChange = { index ->
+            presets.getOrNull(index)?.let { preset ->
+                if (preset != appearance.paletteSeedPreset) {
+                    actions.onPaletteSeedPresetChange(preset)
+                }
+            }
+        },
+    )
 }
 
 @Composable

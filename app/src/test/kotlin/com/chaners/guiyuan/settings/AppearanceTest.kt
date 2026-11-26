@@ -54,12 +54,15 @@ class AppearanceTest {
             PaletteSeedPreset.GREEN,
             PaletteSeedPreset.PURPLE,
             PaletteSeedPreset.ORANGE,
+            PaletteSeedPreset.RED,
             PaletteSeedPreset.PINK,
         )
         assertEquals(expected, PaletteSeedPreset.entries)
         assertEquals(expected.size, expected.map { it.argb }.distinct().size)
         assertEquals(PaletteSeedPreset.BLUE, decodePaletteSeedPreset(null))
         assertEquals(PaletteSeedPreset.BLUE, decodePaletteSeedPreset("unrecognized"))
+        assertEquals(0xFFFF3B30.toInt(), PaletteSeedPreset.RED.argb)
+        assertEquals(0xFFFF80AB.toInt(), PaletteSeedPreset.PINK.argb)
         for (preset in expected) {
             assertEquals(preset, decodePaletteSeedPreset(preset.name))
             assertEquals(0xFF, preset.argb ushr 24)

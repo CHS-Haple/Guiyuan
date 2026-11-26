@@ -144,7 +144,9 @@
     <string name="theme_palette_source_system">跟随系统</string>
     <string name="theme_palette_source_custom">系统主题色</string>
     <string name="theme_palette_source_preset">预设颜色</string>
-    <string name="theme_palette_preset_title">常用颜色</string>
+    <string name="theme_palette_preset_title">预设颜色</string>
+    <string name="theme_palette_preset_summary">选择用于生成主题配色的颜色</string>
+    <string name="theme_palette_preset_cyan">青色</string>
     <string name="theme_color_spec">色彩规范</string>
     <string name="theme_color_spec_summary">选择当前配色风格支持的色彩规范</string>
     <string name="theme_palette_style">配色风格</string>
