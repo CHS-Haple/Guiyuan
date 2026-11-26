@@ -52,19 +52,18 @@ internal object NativeMobileTypePresentation {
                 }
             }
 
-        NativeStatusSlots.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
-            ?.let { view ->
-                val textView = view as? TextView ?: return@let
-                val text = textView.text?.toString()?.trim().orEmpty()
-                if (text.isNotEmpty()) {
-                    return NetworkType(
-                        label = text,
-                        enhanced = false,
-                        source = NetworkTypeSource.MOBILE_TYPE_SINGLE,
-                        typeface = textView.typeface,
-                    )
-                }
+        val singleView = NativeStatusSlots.findResourceView(root, MOBILE_TYPE_SINGLE_RESOURCE_ENTRY)
+        if (singleView is TextView) {
+            val text = singleView.text?.toString()?.trim().orEmpty()
+            if (text.isNotEmpty()) {
+                return NetworkType(
+                    label = text,
+                    enhanced = false,
+                    source = NetworkTypeSource.MOBILE_TYPE_SINGLE,
+                    typeface = singleView.typeface,
+                )
             }
+        }
 
         return null
     }
@@ -77,12 +76,20 @@ internal object NativeMobileTypePresentation {
         val paint = Paint()
         clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
             .invoke(null, arrayOf(paint) as Any)
-        val face = paint.typeface ?: return@optionalNativeRead null
-        face to SysUiPresentationRuntime.optionalNativeRead pathCheck@{
-            val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
-            if (original !== face) return@pathCheck null
-            val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
-            config.getField("FONT_MIPRO_PATH").get(null) as? String
+        val face = paint.typeface
+        if (face == null) {
+            null
+        } else {
+            val path = SysUiPresentationRuntime.optionalNativeRead {
+                val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
+                if (original === face) {
+                    val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
+                    config.getField("FONT_MIPRO_PATH").get(null) as? String
+                } else {
+                    null
+                }
+            }
+            face to path
         }
     }
 

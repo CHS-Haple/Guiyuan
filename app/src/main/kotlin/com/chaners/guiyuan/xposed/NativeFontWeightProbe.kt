@@ -33,34 +33,43 @@ internal object NativeFontWeightProbe {
     fun battery(face: Typeface): NativeFontWeight? = probe(face, "0123456789", "0123456789")
 
     private fun probe(face: Typeface, coverage: String, sample: String): NativeFontWeight? =
-        SysUiPresentationRuntime.optionalNativeRead {
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                typeface = face
-                textSize = 32f
-                color = Color.BLACK
-            }
-            val original = shape(coverage, paint)
-            val axis = commonAxis(original) ?: return@optionalNativeRead null
-            val low = ceil(axis.min.toDouble()).toInt()
-            val high = floor(axis.max.toDouble()).toInt()
-            val middle = low + (high - low) / 2
-            if (middle <= low || middle >= high) return@optionalNativeRead null
-            val preferred = NativeWeightMethod.platformDefault
-            val methods = if (preferred == NativeWeightMethod.OVERRIDE) {
-                listOf(preferred, NativeWeightMethod.VARIATION_SETTINGS)
-            } else listOf(preferred)
-            methods.firstNotNullOfOrNull { method ->
-                SysUiPresentationRuntime.optionalNativeRead candidateCheck@{
-                    val candidates = listOf(low, middle, high).map { weight ->
-                        Paint(paint).takeIf { candidate ->
-                            method.apply(candidate, weight) &&
-                                matches(original, shape(coverage, candidate), weight)
-                        } ?: return@candidateCheck null
-                    }
-                    NativeFontWeight(axis, method).takeIf { distinctInk(candidates, sample) }
+        SysUiPresentationRuntime.optionalNativeRead { verifyWeightSupport(face, coverage, sample) }
+
+    // The outer read protects the font source; each candidate method retains its own failure boundary.
+    private fun verifyWeightSupport(face: Typeface, coverage: String, sample: String): NativeFontWeight? {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = face
+            textSize = 32f
+            color = Color.BLACK
+        }
+        val original = shape(coverage, paint)
+        val axis = commonAxis(original) ?: return null
+        val low = ceil(axis.min.toDouble()).toInt()
+        val high = floor(axis.max.toDouble()).toInt()
+        val middle = low + (high - low) / 2
+        if (middle <= low || middle >= high) return null
+        val preferred = NativeWeightMethod.platformDefault
+        val methods = if (preferred == NativeWeightMethod.OVERRIDE) {
+            listOf(preferred, NativeWeightMethod.VARIATION_SETTINGS)
+        } else listOf(preferred)
+        return methods.firstNotNullOfOrNull { method ->
+            SysUiPresentationRuntime.optionalNativeRead {
+                val candidates = ArrayList<Paint>(3)
+                for (weight in listOf(low, middle, high)) {
+                    val candidate = Paint(paint)
+                    if (!method.apply(candidate, weight) ||
+                        !matches(original, shape(coverage, candidate), weight)
+                    ) break
+                    candidates.add(candidate)
+                }
+                if (candidates.size == 3 && distinctInk(candidates, sample)) {
+                    NativeFontWeight(axis, method)
+                } else {
+                    null
                 }
             }
         }
+    }
 
     private fun shape(text: String, paint: Paint): PositionedGlyphs =
         TextRunShaper.shapeTextRun(text, 0, text.length, 0, text.length, 0f, 0f, false, paint)
