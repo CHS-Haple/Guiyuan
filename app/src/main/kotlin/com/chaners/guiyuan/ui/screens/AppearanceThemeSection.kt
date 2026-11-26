@@ -1,13 +1,22 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.PaletteSource
+import com.chaners.guiyuan.settings.PaletteSeedPreset
 import com.chaners.guiyuan.settings.ThemeMode
 import com.chaners.guiyuan.settings.supportsSpec2025
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
@@ -61,6 +70,9 @@ private fun ColumnScope.appearanceDynamicColor(
     )
     AnimatedPreferenceGroup(visible = appearance.dynamicColor) {
         appearancePaletteSource(appearance, actions)
+        AnimatedPreferenceGroup(visible = appearance.paletteSource == PaletteSource.PRESET) {
+            appearancePalettePresets(appearance, actions)
+        }
         AnimatedPreferenceGroup(visible = appearance.customPalette) {
             appearancePaletteStyle(appearance, actions)
             // Unsupported styles have a fixed effective spec; the selected spec is retained.
@@ -80,17 +92,42 @@ private fun ColumnScope.appearancePaletteSource(
         items = listOf(
             stringResource(R.string.theme_palette_source_system),
             stringResource(R.string.theme_palette_source_custom),
+            stringResource(R.string.theme_palette_source_preset),
         ),
-        selectedIndex = if (appearance.customPalette) 1 else 0,
+        selectedIndex = appearance.paletteSource.ordinal,
         title = stringResource(R.string.theme_palette_source),
         summary = stringResource(R.string.theme_palette_source_summary),
         startAction = { SemanticLeadingIcon(R.drawable.ic_material_symbol_colorize) },
         onSelectedIndexChange = { index ->
-            if (index in 0..1 && (index == 1) != appearance.customPalette) {
-                actions.onCustomPaletteChange(index == 1)
+            PaletteSource.entries.getOrNull(index)?.let { source ->
+                if (source != appearance.paletteSource) actions.onPaletteSourceChange(source)
             }
         },
     )
+}
+
+@Composable
+private fun ColumnScope.appearancePalettePresets(
+    appearance: Appearance,
+    actions: AppearanceThemeActions,
+) {
+    SmallTitle(text = stringResource(R.string.theme_palette_preset_title))
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        PaletteSeedPreset.entries.forEach { preset ->
+            BatteryCommonColorButton(
+                color = preset.argb,
+                selected = appearance.paletteSeedPreset == preset,
+                onClick = {
+                    if (preset != appearance.paletteSeedPreset) {
+                        actions.onPaletteSeedPresetChange(preset)
+                    }
+                },
+            )
+        }
+    }
 }
 
 @Composable
