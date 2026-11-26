@@ -55,7 +55,6 @@ import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
-import com.chaners.guiyuan.ui.layout.pageScrollBarTrackPadding
 import kotlin.math.roundToInt
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalDensity
@@ -257,7 +256,7 @@ internal fun HubPage(
             VerticalScrollBar(
                 adapter = if (filtering) resultsIndicator else browsingIndicator,
                 modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
+                trackPadding = contentPadding,
                 topAppBarScrollBehavior = scrollBehavior,
             )
         }
