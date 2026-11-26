@@ -21,9 +21,11 @@ internal object NativeFontWeightProbe {
     private const val MAX_FONT_BYTES = 64 * 1024 * 1024
     private const val MOBILE_GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-_"
 
-    fun mobile(face: Typeface, label: String): FontWeightAxis? =
-        if (label.length <= 24) probe(face, (MOBILE_GLYPHS + label).toSet().joinToString(""), "5GA")
-        else null
+    fun mobileCoverage(label: String): String? =
+        if (label.length <= 24) (MOBILE_GLYPHS + label).toSet().joinToString("") else null
+
+    fun mobile(face: Typeface, coverage: String): FontWeightAxis? =
+        probe(face, coverage, "5GA")
 
     fun battery(face: Typeface): FontWeightAxis? = probe(face, "0123456789", "0123456789")
 
@@ -80,8 +82,8 @@ internal object NativeFontWeightProbe {
                 original.getGlyphId(index) != candidate.getGlyphId(index) ||
                 original.getFakeBold(index) != candidate.getFakeBold(index)
             ) return false
-            val override = candidate.getWeightOverride(index)
-            val effective = if (override != PositionedGlyphs.NO_OVERRIDE) override
+            val overrideWeight = candidate.getWeightOverride(index)
+            val effective = if (overrideWeight != PositionedGlyphs.NO_OVERRIDE) overrideWeight
             else after.axes?.firstOrNull { it.tag == "wght" }?.styleValue ?: return false
             if (!effective.isFinite() || abs(effective - weight) > 0.5f) return false
         }
