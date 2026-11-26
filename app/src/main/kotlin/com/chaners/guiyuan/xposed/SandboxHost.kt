@@ -26,8 +26,6 @@ internal object SandboxHost {
     private var onChanged: ((PreviewSandboxUiState?) -> Unit)? = null
     @Volatile private var current: SandboxLease? = null
     private var resources: PreviewSysUiResources? = null
-    private var staticMobileFaceChecked = false
-    private var staticMobileFace: android.graphics.Typeface? = null
     private val expiry = Runnable { refresh() }
 
     fun bind(
@@ -72,8 +70,6 @@ internal object SandboxHost {
         listener = null
         onChanged = null
         resources = null
-        staticMobileFace = null
-        staticMobileFaceChecked = false
         try {
             listenerRetirement.unregister(prefs, observer)
         } finally {
@@ -98,8 +94,8 @@ internal object SandboxHost {
             val resolver = resources ?: PreviewSysUiResources(context.applicationContext).also {
                 resources = it
             }
-            val native = PresentationStore.snapshot().mobilePresentation?.networkType
-            val nativeFace = native?.typeface ?: staticMobileFace(context)
+            val native = PresentationStore.snapshot().mobilePresentation?.mobileFont
+            val nativeFace = native?.face
             if (lease.state.dataMobileNetwork ==
                 com.chaners.guiyuan.ui.screens.PreviewMobileNetwork.FIVE_GA &&
                 lease.state.previewCenterSource() ==
@@ -112,7 +108,7 @@ internal object SandboxHost {
                     resolver,
                     dualSignalEnabled = VisualPrefsOwner.current().dualSignal,
                     mobileTypeface = nativeFace,
-                    mobileWeightAxis = native?.weightAxis,
+                    mobileWeight = native?.weight,
                     lowBatteryThreshold = FeaturePrefsOwner.current().lowBatteryThreshold,
                     nativeLowColor = StatusStateStore.snapshot().battery?.lowSystemColor,
                 )
@@ -121,14 +117,6 @@ internal object SandboxHost {
             rethrowSandboxFatal(error)
             null
         }
-    }
-
-    private fun staticMobileFace(context: Context): android.graphics.Typeface? {
-        if (!staticMobileFaceChecked) {
-            staticMobileFaceChecked = true
-            staticMobileFace = NativeMobileTypePresentation.sandboxMobileTypeface(context)
-        }
-        return staticMobileFace
     }
 
     private fun refresh() {
