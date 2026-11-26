@@ -14,8 +14,12 @@ internal enum class NativeWeightMethod {
         val variation = "'wght' $weight"
         return when (this) {
             OVERRIDE -> {
-                paint.setFontVariationOverride(variation)
-                true
+                if (Build.VERSION.SDK_INT_FULL < Build.VERSION_CODES_FULL.BAKLAVA_1) {
+                    false
+                } else {
+                    paint.setFontVariationOverride(variation)
+                    true
+                }
             }
             VARIATION_SETTINGS -> paint.setFontVariationSettings(variation)
         }
