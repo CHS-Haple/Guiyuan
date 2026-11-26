@@ -133,6 +133,7 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
                 backdrop = miuixBackdrop,
                 interactive = false,
                 defaultWindowInsetsPadding = false,
+                previewLabel = { selected -> MiniNavLabelBar(selected) },
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 24.dp),
@@ -217,6 +218,7 @@ private fun MiniLiquidNavigationPreview(
                 icon = icons[index],
                 label = labels[index],
                 interactive = false,
+                previewLabel = { MiniNavLabelBar(index == 2) },
             )
         }
     }
@@ -252,6 +254,7 @@ private fun MiniFloatingNavigationPreview(
             icon = MiuixIcons.Normal.Home,
             label = stringResource(R.string.nav_home),
             interactive = false,
+            previewLabel = { MiniNavLabelBar(false) },
         )
         NavContentItem(
             content = content,
@@ -260,6 +263,7 @@ private fun MiniFloatingNavigationPreview(
             icon = MiuixIcons.Normal.Tune,
             label = stringResource(R.string.nav_features),
             interactive = false,
+            previewLabel = { MiniNavLabelBar(false) },
         )
         NavContentItem(
             content = content,
@@ -268,6 +272,7 @@ private fun MiniFloatingNavigationPreview(
             icon = MiuixIcons.Normal.Settings,
             label = stringResource(R.string.nav_settings),
             interactive = false,
+            previewLabel = { MiniNavLabelBar(true) },
         )
     }
 }
@@ -316,6 +321,14 @@ private fun MiniNavViewport(
 }
 
 @Composable
+private fun MiniNavLabelBar(selected: Boolean) {
+    MiniTextBar(
+        width = if (selected) 30.dp else 26.dp,
+        role = MiniTextRole.Body2,
+    )
+}
+
+@Composable
 private fun RowScope.MiniStandardNavigationItem(
     selected: Boolean,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -343,10 +356,7 @@ private fun RowScope.MiniStandardNavigationItem(
         )
         if (showLabel) {
             Spacer(modifier = Modifier.height(3.dp))
-            MiniTextBar(
-                width = if (selected) 30.dp else 26.dp,
-                role = MiniTextRole.Body2,
-            )
+            MiniNavLabelBar(selected)
         }
     }
 }
