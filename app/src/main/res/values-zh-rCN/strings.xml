@@ -667,4 +667,12 @@
     <string name="guide_read_terms_first">请先查看使用条款</string>
     <string name="guide_read_privacy_first">请先查看隐私政策</string>
     <string name="guide_open_required_document">查看待阅读文件</string>
+    <!-- 临时 B1977 字体方法诊断项；不能迁入正式版 -->
+    <string name="font_method_lab_title">字重渲染方案（仅测试）</string>
+    <string name="font_method_lab_summary">仅 B1977：同时影响电量数字和 5G 制式。强制模式可能无效或异常；正式版不保留。</string>
+    <string name="font_method_lab_auto">自动（Auto，B1976 方案）</string>
+    <string name="font_method_lab_override">原生轴覆盖（Override）</string>
+    <string name="font_method_lab_settings">传统字重设置（Variation Settings）</string>
+    <string name="font_method_lab_native">保持系统原样（Native）</string>
+    <string name="font_method_lab_unverified">字重轴未经验证，强制对比可能无效或异常</string>
 </resources>
