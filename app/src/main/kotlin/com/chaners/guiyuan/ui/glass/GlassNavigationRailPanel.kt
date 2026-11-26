@@ -148,6 +148,25 @@ internal class RailPanelColors(
     val labelStyle: TextStyle,
 )
 
+/** Retain the native tint/typography; only the selected lens substitutes Liquid optics. */
+private fun RailPanelColors.withLiquidIndicator(
+    liquidPaint: RailLiquidPaint?,
+    selectedBackdrop: Backdrop?,
+): RailPanelColors {
+    if (selectedBackdrop == null || liquidPaint == null) return this
+    return RailPanelColors(
+        selectedColor = selectedColor,
+        unselectedColor = unselectedColor,
+        indicator = GlassIndicatorAppearance(
+            color = indicator.color,
+            pressedColor = indicator.pressedColor,
+            scaleOnPress = indicator.scaleOnPress,
+            liquidPaint = { pressed -> liquidPaint.indicator(selectedBackdrop, pressed) },
+        ),
+        labelStyle = labelStyle,
+    )
+}
+
 /** One interaction/scroll owner retained throughout the rail morph. */
 private class RailPanelPointer(
     val interaction: NavigationRailInteraction,
@@ -206,19 +225,7 @@ internal fun GlassNavigationRailPanel(
     val selectedBackdrop = if (materialBackdrop != null && surface.backdrop != null) {
         rememberCombinedBackdrop(surface.backdrop, materialBackdrop)
     } else null
-    val paintColors = if (selectedBackdrop != null && liquidPaint != null) {
-        RailPanelColors(
-            selectedColor = colors.selectedColor,
-            unselectedColor = colors.unselectedColor,
-            indicator = GlassIndicatorAppearance(
-                color = colors.indicator.color,
-                pressedColor = colors.indicator.pressedColor,
-                scaleOnPress = colors.indicator.scaleOnPress,
-                liquidPaint = { pressed -> liquidPaint.indicator(selectedBackdrop, pressed) },
-            ),
-            labelStyle = colors.labelStyle,
-        )
-    } else colors
+    val paintColors = colors.withLiquidIndicator(liquidPaint, selectedBackdrop)
     Box(
         modifier = Modifier.railPanelSurfaceModifier(state, geometry, motion, surface, shape),
     ) {
