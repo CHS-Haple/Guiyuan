@@ -15,6 +15,14 @@ private const val FIXTURE_WIFI_SIZE_PINYIN = "Wi-Fi da xiao"
 
 class SearchTermTest {
     @Test
+    fun sharedMobileSignalOffsetSearchKeepsBothRetiredTerms() {
+        val aliases = searchAliases(R.string.mobile_signal_dot_vertical_offset)
+        assertTrue(aliases.contains("弧形信号点上下偏移"))
+        assertTrue(aliases.contains("横向信号点上下偏移"))
+        assertTrue(R.string.mobile_signal_dot_vertical_offset in FeatureSearchIds.layout)
+    }
+
+    @Test
     fun blankInputDoesNotEnterFilteredMode() {
         assertFalse(isSearchFiltering(false, ""))
         assertFalse(isSearchFiltering(true, ""))

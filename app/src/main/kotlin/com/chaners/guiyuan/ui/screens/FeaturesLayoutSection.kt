@@ -98,8 +98,7 @@ private fun ColumnScope.featureLayoutSelection(
         (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
             search.matches(R.string.top_info_vertical_offset)) ||
         (searching && visual.centeredMobileSignal &&
-            search.any(R.string.curved_signal_dot_vertical_offset,
-                R.string.horizontal_signal_dot_vertical_offset))) {
+            search.matches(R.string.mobile_signal_dot_vertical_offset))) {
         UiDropdownPreference(
             items = layoutChoices.map { it.second },
             selectedIndex = layoutChoices.indexOfFirst { it.first == visual.layout },
@@ -156,8 +155,7 @@ private fun ColumnScope.featureDualSignalToggle(
     if (search.matches(R.string.dual_signal_title) ||
         (searching && !visual.dualSignal &&
             (search.any(R.string.dual_row_signal_dot_arrangement_title,
-                R.string.curved_signal_dot_vertical_offset,
-                R.string.horizontal_signal_dot_vertical_offset) || bothSidesSearch))) {
+                R.string.mobile_signal_dot_vertical_offset) || bothSidesSearch))) {
         SwitchPreference(
             title = stringResource(R.string.dual_signal_title),
             startAction = {
@@ -258,37 +256,32 @@ private fun ColumnScope.featureDotOffsets(
     enabled: Boolean,
     activeDotArrangement: SignalDotArrangement,
 ) {
-    listOf(
-        SignalDotArrangement.CURVED to R.string.curved_signal_dot_vertical_offset,
-        SignalDotArrangement.HORIZONTAL to R.string.horizontal_signal_dot_vertical_offset,
-    ).forEach { (style, dotOffsetTitle) ->
-        AnimatedPreferenceGroup(visible = activeDotArrangement == style) {
-            if (search.matches(dotOffsetTitle)) {
-                SliderPreference(
-                    value = visual.activeSignalDotOffsetY,
-                    onValueChange = visualRepo::setSignalDotOffsetY,
-                    title = stringResource(dotOffsetTitle),
-                    summary = stringResource(R.string.outer_signal_dots_only_summary),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            R.drawable.ic_material_symbol_signal_cellular_alt,
-                            enabled,
-                            R.drawable.ic_material_symbol_height_w500,
-                        )
-                    },
-                    valueText = stringResource(
-                        R.string.battery_top_offset_value,
-                        visual.activeSignalDotOffsetY.roundToInt(),
-                    ),
-                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                    steps = 19,
-                    showKeyPoints = true,
-                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(0f),
-                    magnetThreshold = 0.035f,
-                    enabled = enabled,
-                )
-            }
+    AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.BOTH_SIDES) {
+        if (search.matches(R.string.mobile_signal_dot_vertical_offset)) {
+            SliderPreference(
+                value = visual.activeSignalDotOffsetY,
+                onValueChange = visualRepo::setSignalDotOffsetY,
+                title = stringResource(R.string.mobile_signal_dot_vertical_offset),
+                summary = stringResource(R.string.outer_signal_dots_only_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        R.drawable.ic_material_symbol_signal_cellular_alt,
+                        enabled,
+                        R.drawable.ic_material_symbol_height_w500,
+                    )
+                },
+                valueText = stringResource(
+                    R.string.battery_top_offset_value,
+                    visual.activeSignalDotOffsetY.roundToInt(),
+                ),
+                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                steps = 19,
+                showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                keyPoints = listOf(0f),
+                magnetThreshold = 0.035f,
+                enabled = enabled,
+            )
         }
     }
 }

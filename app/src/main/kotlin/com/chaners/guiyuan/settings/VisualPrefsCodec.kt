@@ -16,6 +16,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+        .putInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 1)
 }
 
 private fun SharedPreferences.Editor.putSignalVisuals(cfg: VisualCfg): SharedPreferences.Editor {
@@ -101,12 +102,19 @@ private fun SharedPreferences.Editor.putBatteryReadoutVisuals(cfg: VisualCfg): S
         visualProfileKey(layout, MOBILE_TYPE_VERTICAL_OFFSET_KEY),
         cfg.mobileTypeOffsetY,
     ).putFloat(
-        visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY),
-        cfg.curvedSignalDotOffsetY,
-    ).putFloat(
-        visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY),
-        cfg.horizontalSignalDotOffsetY,
-    ).putFloat(
+        visualProfileKey(layout, MOBILE_SIGNAL_DOT_OFFSET_Y_KEY),
+        // Released backups may contain distinct values; retain their selected style.
+        if ((if (cfg.dualSignal) cfg.dualRowDotArrangement else cfg.singleRowDotArrangement) == SignalDotArrangement.HORIZONTAL) {
+            cfg.horizontalSignalDotOffsetY
+        } else if (cfg.dualSignal && cfg.dualRowDotArrangement == SignalDotArrangement.BOTH_SIDES &&
+            cfg.singleRowDotArrangement == SignalDotArrangement.HORIZONTAL) {
+            cfg.horizontalSignalDotOffsetY
+        } else {
+            cfg.curvedSignalDotOffsetY
+        },
+    ).remove(visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY))
+        .remove(visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY))
+        .putFloat(
         visualProfileKey(layout, BOTH_SIDES_SIGNAL_DOT_OFFSET_Y_KEY),
         cfg.bothSidesSignalDotOffsetY,
     ).putFloat(

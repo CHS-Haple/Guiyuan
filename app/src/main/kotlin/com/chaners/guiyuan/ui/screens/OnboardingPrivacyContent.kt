@@ -212,6 +212,7 @@ internal fun GuidePolicyDocumentSheet(
         title = stringResource((document ?: AgreementDocument.Privacy).titleRes()),
         backgroundColor = MiuixTheme.colorScheme.background,
         insideMargin = DpSize(0.dp, 0.dp),
+        progressiveBlur = true,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
     ) { innerPadding ->

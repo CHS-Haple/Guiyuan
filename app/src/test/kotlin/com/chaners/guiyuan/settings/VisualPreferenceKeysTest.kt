@@ -21,6 +21,8 @@ class VisualPreferenceKeysTest {
         assertTrue(isVisualPreferenceKey(CONTENT_LAYOUT_KEY))
         assertTrue(isVisualPreferenceKey(DUAL_SIGNAL_ENABLED_KEY))
         assertTrue(isVisualPreferenceKey(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY))
+        assertTrue(isVisualPreferenceKey(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY))
+        assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.NETWORK_CENTER, MOBILE_SIGNAL_DOT_OFFSET_Y_KEY)))
         assertFalse(isVisualPreferenceKey("battery_avoidance_mode"))
         assertFalse(isVisualPreferenceKey("mobile_center.battery_avoidance_mode"))
         assertTrue(isVisualPreferenceKey(visualProfileKey(ContentLayout.MOBILE_CENTER, SINGLE_ROW_DOT_STYLE_KEY)))

@@ -7,13 +7,10 @@ internal fun visualModeKey(dual: Boolean, key: String): String =
 
 internal fun SharedPreferences.writeSignalDotOffsetY(offset: Float) {
     val visual = readVisualCfg()
-    val key = when (if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement) {
-        SignalDotArrangement.HORIZONTAL -> HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY
-        SignalDotArrangement.BOTH_SIDES -> return
-        SignalDotArrangement.CURVED -> CURVED_SIGNAL_DOT_OFFSET_Y_KEY
-    }
+    val style = if (visual.dualSignal) visual.dualRowDotArrangement else visual.singleRowDotArrangement
+    if (style == SignalDotArrangement.BOTH_SIDES) return
     edit().putFloat(
-        visualProfileKey(visual.layout, key),
+        visualProfileKey(visual.layout, MOBILE_SIGNAL_DOT_OFFSET_Y_KEY),
         offset.finiteIn(
             NETWORK_TOP_OFFSET_MIN,
             NETWORK_TOP_OFFSET_MAX,
