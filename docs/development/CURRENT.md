@@ -105,7 +105,8 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
-- The pinned MIUIX `bc1024d7` graph retains the verified native and Glass sheet motion,
+- The pinned MIUIX `bc1024d7` graph retains the verified native and Glass
+  sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
   navigation runtime through the matched dependency graph. Search uses
   the public `SearchClearButton`; transformed menus share one settled placement
