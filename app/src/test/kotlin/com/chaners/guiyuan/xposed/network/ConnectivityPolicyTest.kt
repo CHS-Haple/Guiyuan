@@ -1,6 +1,8 @@
 package com.chaners.guiyuan.xposed.network
 
 import com.chaners.guiyuan.settings.FontWeightAxis
+import com.chaners.guiyuan.xposed.NativeFontWeight
+import com.chaners.guiyuan.xposed.NativeWeightMethod
 import com.chaners.guiyuan.xposed.NativePresentationResolver
 import com.chaners.guiyuan.xposed.StatusStateStore
 import org.junit.Assert.assertEquals
@@ -179,7 +181,7 @@ class ConnectivityPolicyTest {
                 enhanced = true,
                 source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
                 fontPath = "/system/fonts/native-type.ttf",
-                weightAxis = FontWeightAxis(150f, 330f, 700f),
+                weight = NativeFontWeight(FontWeightAxis(150f, 330f, 700f), NativeWeightMethod.OVERRIDE),
             )
         val connected =
             SysUiConnectivitySource.State(
@@ -194,7 +196,7 @@ class ConnectivityPolicyTest {
                 label = "5GA",
                 enhanced = true,
                 internet = InternetState.VALIDATED,
-                weightAxis = FontWeightAxis(150f, 330f, 700f),
+                weight = NativeFontWeight(FontWeightAxis(150f, 330f, 700f), NativeWeightMethod.OVERRIDE),
             )
 
         for (transport in listOf(
