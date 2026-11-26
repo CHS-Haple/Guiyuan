@@ -124,6 +124,7 @@ class GyModule : XposedModule() {
     private var inSettings = false
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
+    private var reportedFontSource: NativePresentationResolver.NetworkTypeSource? = null
     private var reportedFontPath: String? = null
     private var reportedFontCoverage: String? = null
     private var reportedMobileFont: NativeMobileFont? = null
@@ -2048,6 +2049,7 @@ class GyModule : XposedModule() {
         val sameHost = !force && reportedFontHost === host &&
             reportedFontConfiguration == configuration
         val sameMobile = sameHost && reportedFont === face &&
+            reportedFontSource == networkType?.source &&
             reportedFontPath == networkType?.fontPath && reportedFontCoverage == coverage
         val sameBattery = sameHost && reportedBatteryFont === batteryFace &&
             reportedBatteryFontPath == batteryFont?.second
@@ -2056,7 +2058,10 @@ class GyModule : XposedModule() {
         val mobileSource = when {
             sameMobile -> null
             face != null -> face to networkType?.fontPath
-            else -> NativeMobileTypePresentation.systemMobileFont(host.context)
+            // No live mobile glyph exists on Wi-Fi; only then use SystemUI's setter.
+            // A present TextView/Drawable with no observed face cannot borrow its axis.
+            networkType == null -> NativeMobileTypePresentation.systemMobileFont(host.context)
+            else -> null
         }
 
         fun weightAxis(path: String?): FontWeightAxis? =
@@ -2102,6 +2107,7 @@ class GyModule : XposedModule() {
         SysUiBatterySource.setNumberFont(host, batteryFace, batteryWeight)
         // Cache the selected sources independently of broadcast delivery.
         reportedFont = face
+        reportedFontSource = networkType?.source
         reportedFontPath = networkType?.fontPath
         reportedFontCoverage = coverage
         reportedMobileFont = mobileFont
