@@ -47,6 +47,8 @@ internal data class Appearance(
     val topBarProgressiveBlur: Boolean = true,
     val dynamicColor: Boolean = false,
     val customPalette: Boolean = false,
+    val usePresetSeed: Boolean = false,
+    val paletteSeedPreset: PaletteSeedPreset = PaletteSeedPreset.BLUE,
     val colorSpec: ThemeColorSpec = ThemeColorSpec.Spec2021,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
     val navEnabled: Boolean = true,
@@ -56,7 +58,9 @@ internal data class Appearance(
     val liquidMode: LiquidMode = LiquidMode.Balanced,
     val swipeBack: Boolean = true,
     val uiScalePercent: Int = 100,
-)
+) {
+    val paletteSource: PaletteSource get() = paletteSource(customPalette, usePresetSeed)
+}
 
 internal data class ThemeChoice(
     val mode: ThemeMode,
@@ -173,6 +177,8 @@ internal class AppearanceRepo(context: Context) {
                 topBarProgressiveBlur = prefs[topBarProgressiveBlurKey] ?: true,
                 dynamicColor = theme.dynamicColor,
                 customPalette = decodeCustomPalette(prefs[customPaletteKey], colorSpec),
+                usePresetSeed = prefs[presetSeedEnabledKey] ?: false,
+                paletteSeedPreset = decodePaletteSeedPreset(prefs[paletteSeedKey]),
                 colorSpec = colorSpec ?: ThemeColorSpec.Spec2021,
                 paletteStyle = decodePalette(prefs[paletteStyleKey]),
                 navEnabled = prefs[navEnabledKey] ?: true,
@@ -204,8 +210,15 @@ internal class AppearanceRepo(context: Context) {
         }
     }
 
-    suspend fun setCustomPalette(enabled: Boolean) {
-        store.edit { prefs -> prefs[customPaletteKey] = enabled }
+    suspend fun setPaletteSource(source: PaletteSource) {
+        store.edit { prefs ->
+            prefs[customPaletteKey] = source != PaletteSource.SYSTEM
+            prefs[presetSeedEnabledKey] = source == PaletteSource.PRESET
+        }
+    }
+
+    suspend fun setPaletteSeedPreset(preset: PaletteSeedPreset) {
+        store.edit { prefs -> prefs[paletteSeedKey] = preset.name }
     }
 
     suspend fun setColorSpec(spec: ThemeColorSpec) {
@@ -261,6 +274,8 @@ internal class AppearanceRepo(context: Context) {
         val themeKey = stringPreferencesKey("theme_mode")
         val dynamicKey = booleanPreferencesKey("dynamic_color_enabled")
         val customPaletteKey = booleanPreferencesKey("custom_palette_enabled")
+        val presetSeedEnabledKey = booleanPreferencesKey("palette_preset_seed_enabled")
+        val paletteSeedKey = stringPreferencesKey("palette_preset_seed")
         val colorSpecKey = stringPreferencesKey("theme_color_spec")
         val paletteStyleKey = stringPreferencesKey("theme_palette_style")
         val legacyBlurKey = booleanPreferencesKey("blur_enabled")

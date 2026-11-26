@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.PaletteSource
+import com.chaners.guiyuan.settings.PaletteSeedPreset
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
@@ -19,7 +21,8 @@ import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 internal data class AppearanceThemeActions(
     val onThemeChange: (ThemeMode) -> Unit,
     val onDynamicChange: (Boolean) -> Unit,
-    val onCustomPaletteChange: (Boolean) -> Unit,
+    val onPaletteSourceChange: (PaletteSource) -> Unit,
+    val onPaletteSeedPresetChange: (PaletteSeedPreset) -> Unit,
     val onColorSpecChange: (ThemeColorSpec) -> Unit,
     val onPaletteStyleChange: (ThemePaletteStyle) -> Unit,
 )

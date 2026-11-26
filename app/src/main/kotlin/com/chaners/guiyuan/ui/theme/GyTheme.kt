@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import com.chaners.guiyuan.settings.ThemeMode
+import com.chaners.guiyuan.settings.PaletteSeedPreset
 import org.json.JSONObject
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -22,6 +23,7 @@ internal fun GyTheme(
     dynamicColorEnabled: Boolean,
     colorSpec: ThemeColorSpec? = null,
     paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
+    presetSeed: PaletteSeedPreset? = null,
     content: @Composable () -> Unit,
 ) {
     val colorSchemeMode =
@@ -41,8 +43,12 @@ internal fun GyTheme(
         }
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val seed = remember(context, configuration, dynamicColorEnabled, colorSpec) {
-        if (dynamicColorEnabled && colorSpec != null) systemPaletteSeed(context) else null
+    val seed = remember(context, configuration, dynamicColorEnabled, colorSpec, presetSeed) {
+        when {
+            !dynamicColorEnabled || colorSpec == null -> null
+            presetSeed != null -> Color(presetSeed.argb)
+            else -> systemPaletteSeed(context)
+        }
     }
     val controller = remember(colorSchemeMode, colorSpec, paletteStyle, seed) {
         ThemeController(
