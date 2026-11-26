@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable
 import android.telephony.SubscriptionManager
 import android.view.View
 import android.view.ViewGroup
-import com.chaners.guiyuan.settings.FontWeightAxis
 import com.chaners.guiyuan.xposed.network.SysUiDefaultDataSubSource
 import com.chaners.guiyuan.xposed.network.SysUiNetworkSource
 import com.chaners.guiyuan.xposed.network.SignalStrength
@@ -177,7 +176,7 @@ internal object NativePresentationResolver {
         val source: NetworkTypeSource,
         val typeface: Typeface? = null,
         val fontPath: String? = null,
-        val weightAxis: FontWeightAxis? = null,
+        val weight: NativeFontWeight? = null,
     )
 
 
@@ -209,6 +208,7 @@ internal object NativePresentationResolver {
         val effectiveDataSubscriptionId: Int?,
         val networkTypeSubscriptionId: Int?,
         val networkType: NetworkType?,
+        val mobileFont: NativeMobileFont? = null,
     ) {
         // Diagnostic values are stable; only the source fact controls rendering.
         val activeSubscriptionAuthority: String
