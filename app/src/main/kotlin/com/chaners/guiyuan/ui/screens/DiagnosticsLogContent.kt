@@ -138,13 +138,15 @@ private fun LazyListScope.diagnosticsEmptyItems(
         view.captureStatus.showRootGuide -> {
         item(key = "diagnostics-root-unavailable") {
             LogEmptyGuide(
-                title = stringResource(R.string.diagnostics_root_unavailable_title),
-                description = stringResource(R.string.diagnostics_root_unavailable_message),
-                note = listOfNotNull(
-                    stringResource(R.string.diagnostics_root_unavailable_export),
-                    view.captureStatus.integrityNotice.takeIf(String::isNotEmpty),
-                ).joinToString("\n"),
-                icon = MiuixIcons.Medium.Report,
+                content = LogEmptyGuideContent(
+                    title = stringResource(R.string.diagnostics_root_unavailable_title),
+                    description = stringResource(R.string.diagnostics_root_unavailable_message),
+                    note = listOfNotNull(
+                        stringResource(R.string.diagnostics_root_unavailable_export),
+                        view.captureStatus.integrityNotice.takeIf(String::isNotEmpty),
+                    ).joinToString("\n"),
+                    icon = MiuixIcons.Medium.Report,
+                ),
                 busy = view.loading,
                 onRetry = onRetry,
                 modifier = Modifier.fillParentMaxSize(),
@@ -159,16 +161,18 @@ private fun LazyListScope.diagnosticsEmptyItems(
         view.filteredLog.entries.isEmpty() -> {
         item(key = "diagnostics-no-events") {
             LogEmptyGuide(
-                title = stringResource(R.string.diagnostics_events_empty),
-                description = stringResource(
-                    if (view.snapshot?.log?.clearedAt != null) {
-                        R.string.diagnostics_history_empty
-                    } else {
-                        R.string.diagnostics_no_events_hint
-                    },
+                content = LogEmptyGuideContent(
+                    title = stringResource(R.string.diagnostics_events_empty),
+                    description = stringResource(
+                        if (view.snapshot?.log?.clearedAt != null) {
+                            R.string.diagnostics_history_empty
+                        } else {
+                            R.string.diagnostics_no_events_hint
+                        },
+                    ),
+                    note = null,
+                    icon = MiuixIcons.Info,
                 ),
-                note = null,
-                icon = MiuixIcons.Info,
                 busy = view.loading,
                 onRetry = onRetry,
                 modifier = Modifier.fillParentMaxSize(),
