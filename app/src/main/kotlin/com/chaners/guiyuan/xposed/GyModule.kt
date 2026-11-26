@@ -125,7 +125,7 @@ class GyModule : XposedModule() {
     private var settingsHookInstalled = false
     private var reportedFont: Typeface? = null
     private var reportedFontPath: String? = null
-    private var reportedFontLabel: String? = null
+    private var reportedFontCoverage: String? = null
     private var reportedMobileAxis: FontWeightAxis? = null
     private var reportedBatteryFont: Typeface? = null
     private var reportedBatteryFontPath: String? = null
@@ -2026,14 +2026,15 @@ class GyModule : XposedModule() {
     ): FontWeightAxis? {
         val host = SysUiHostRegistry.current() as? View ?: return null
         val face = networkType?.typeface
-        val label = networkType?.takeIf { it.fontPath == null }?.label
+        val coverage = networkType?.let { NativeFontWeightProbe.mobileCoverage(it.label) }
         val batteryFont = SysUiBatterySource.readHostNumberFont(host)
         val batteryFace = batteryFont?.first
-        if (!force && fontAxisReported && reportedFontHost === host &&
-            reportedFont === face && reportedFontPath == networkType?.fontPath &&
-            reportedFontLabel == label &&
-            reportedBatteryFont === batteryFace && reportedBatteryFontPath == batteryFont?.second
-        ) return reportedMobileAxis
+        val sameHost = !force && fontAxisReported && reportedFontHost === host
+        val sameMobile = sameHost && reportedFont === face &&
+            reportedFontPath == networkType?.fontPath && reportedFontCoverage == coverage
+        val sameBattery = sameHost && reportedBatteryFont === batteryFace &&
+            reportedBatteryFontPath == batteryFont?.second
+        if (sameMobile && sameBattery) return reportedMobileAxis
         // A live face without a verified file must not borrow the static font's axis.
         val mobileFont =
             if (face != null) {
@@ -2059,10 +2060,20 @@ class GyModule : XposedModule() {
                             kotlin.math.floor(axis.max.toDouble()).toInt()
                     }
             }
-        val mobileAxis = weightAxis(mobileFont?.second)
-            ?: face?.let { NativeFontWeightProbe.mobile(it, networkType?.label.orEmpty()) }
-        val batteryAxis = weightAxis(batteryFont?.second)
-            ?: batteryFace?.let(NativeFontWeightProbe::battery)
+        val mobileFileAxis = if (sameMobile) null else weightAxis(mobileFont?.second)
+        val mobileAxis = if (sameMobile) reportedMobileAxis else mobileFileAxis
+            ?: if (face != null && coverage != null) NativeFontWeightProbe.mobile(face, coverage) else null
+        val batteryPath = batteryFont?.second
+        val batteryAxis = if (sameBattery) {
+            SysUiBatterySource.currentNumberFont()?.axis
+        } else {
+            val fileAxis = if (!sameMobile && batteryPath != null && batteryPath == mobileFont?.second) {
+                mobileFileAxis
+            } else {
+                weightAxis(batteryPath)
+            }
+            fileAxis ?: batteryFace?.let(NativeFontWeightProbe::battery)
+        }
         SysUiBatterySource.setNumberFont(host, batteryFace, batteryAxis)
         val intent = Intent(NativeFontAxis.ACTION)
             .setClassName("com.chaners.guiyuan", NativeFontAxis.RECEIVER)
@@ -2082,7 +2093,7 @@ class GyModule : XposedModule() {
         }.onSuccess {
             reportedFont = face
             reportedFontPath = networkType?.fontPath
-            reportedFontLabel = label
+            reportedFontCoverage = coverage
             reportedMobileAxis = mobileAxis
             reportedBatteryFont = batteryFace
             reportedBatteryFontPath = batteryFont?.second
