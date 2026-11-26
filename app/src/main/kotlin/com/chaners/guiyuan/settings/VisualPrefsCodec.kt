@@ -10,6 +10,7 @@ internal fun SharedPreferences.Editor.putVisualCfg(
         putSignalVisuals(normalized)
             .putBatteryReadoutVisuals(normalized)
             .putScaleAndColorVisuals(normalized)
+            .putString(FONT_METHOD_LAB_KEY, normalized.fontTestMode.persistedValue)
     // One writer serves app-local settings and the SystemUI remote mirror.
     // Publish the schema with the values so stale dual banks cannot win later.
     return editor
