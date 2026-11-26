@@ -72,6 +72,59 @@ internal object SysUiBatterySource {
         val isDetailedDiagnosticsEnabled: () -> Boolean,
     )
 
+    // Resolve every exact-ROM method before attempting the first Hook, so a
+    // reflection mismatch cannot leave a partly installed battery generation.
+    private class BatteryMethods(
+        val levelMethod: Method,
+        val chargeMethod: Method,
+        val powerSaveMethod: Method,
+        val performanceMethod: Method,
+        val miuiOptimizationMethod: Method,
+        val updateChargeAndTextMethod: Method,
+    )
+
+    private fun resolveBatteryMethods(iconClass: Class<*>, meterClass: Class<*>): BatteryMethods {
+        val levelMethod =
+            meterClass.getDeclaredMethod(
+                BATTERY_LEVEL_METHOD_NAME,
+                Int::class.javaPrimitiveType,
+                Boolean::class.javaPrimitiveType,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val chargeMethod =
+            meterClass.getDeclaredMethod(
+                CHARGE_STATE_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val powerSaveMethod =
+            meterClass.getDeclaredMethod(
+                POWER_SAVE_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val performanceMethod =
+            meterClass.getDeclaredMethod(
+                PERFORMANCE_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val miuiOptimizationMethod =
+            iconClass.getDeclaredMethod(
+                MIUI_OPTIMIZATION_METHOD_NAME,
+                Boolean::class.javaPrimitiveType,
+            ).apply { isAccessible = true }
+        val updateChargeAndTextMethod =
+            meterClass.getDeclaredMethod(UPDATE_CHARGE_AND_TEXT_METHOD_NAME)
+                .apply { isAccessible = true }
+        return BatteryMethods(
+            levelMethod = levelMethod,
+            chargeMethod = chargeMethod,
+            powerSaveMethod = powerSaveMethod,
+            performanceMethod = performanceMethod,
+            miuiOptimizationMethod = miuiOptimizationMethod,
+            updateChargeAndTextMethod = updateChargeAndTextMethod,
+        )
+    }
+
     @Suppress("TooGenericExceptionCaught")
     fun install(
         module: XposedModule,
@@ -206,42 +259,12 @@ internal object SysUiBatterySource {
                     },
                 )
 
-        val levelMethod =
-            meterClass.getDeclaredMethod(
-                BATTERY_LEVEL_METHOD_NAME,
-                Int::class.javaPrimitiveType,
-                Boolean::class.javaPrimitiveType,
-                Boolean::class.javaPrimitiveType,
-            ).apply { isAccessible = true }
-        val chargeMethod =
-            meterClass.getDeclaredMethod(
-                CHARGE_STATE_METHOD_NAME,
-                Boolean::class.javaPrimitiveType,
-                Boolean::class.javaPrimitiveType,
-            ).apply { isAccessible = true }
-        val powerSaveMethod =
-            meterClass.getDeclaredMethod(
-                POWER_SAVE_METHOD_NAME,
-                Boolean::class.javaPrimitiveType,
-            ).apply { isAccessible = true }
-        val performanceMethod =
-            meterClass.getDeclaredMethod(
-                PERFORMANCE_METHOD_NAME,
-                Boolean::class.javaPrimitiveType,
-            ).apply { isAccessible = true }
-        val miuiOptimizationMethod =
-            iconClass.getDeclaredMethod(
-                MIUI_OPTIMIZATION_METHOD_NAME,
-                Boolean::class.javaPrimitiveType,
-            ).apply { isAccessible = true }
-        val updateChargeAndTextMethod =
-            meterClass.getDeclaredMethod(UPDATE_CHARGE_AND_TEXT_METHOD_NAME)
-                .apply { isAccessible = true }
+        val methods = resolveBatteryMethods(iconClass, meterClass)
         val handles = ArrayList<HookHandle>(HOOK_COUNT)
         try {
             handles +=
                 module
-                    .hook(updateChargeAndTextMethod)
+                    .hook(methods.updateChargeAndTextMethod)
                     .setId(CHARGING_GLYPH_HOOK_ID)
                     .intercept(
                         Hooker { chain ->
@@ -252,7 +275,7 @@ internal object SysUiBatterySource {
                                     try {
                                         publishChargingGlyph(
                                             meterView = meterView,
-                                            sourceMethod = updateChargeAndTextMethod.name,
+                                            sourceMethod = methods.updateChargeAndTextMethod.name,
                                         )
                                     } catch (error: Throwable) {
                                         fallback("charging-glyph", error)
@@ -262,11 +285,11 @@ internal object SysUiBatterySource {
                             result
                         },
                     )
-            handles += hook(levelMethod, LEVEL_HOOK_ID)
-            handles += hook(chargeMethod, CHARGE_HOOK_ID)
-            handles += hook(powerSaveMethod, POWER_SAVE_HOOK_ID)
-            handles += hook(performanceMethod, PERFORMANCE_HOOK_ID)
-            handles += hook(miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID)
+            handles += hook(methods.levelMethod, LEVEL_HOOK_ID)
+            handles += hook(methods.chargeMethod, CHARGE_HOOK_ID)
+            handles += hook(methods.powerSaveMethod, POWER_SAVE_HOOK_ID)
+            handles += hook(methods.performanceMethod, PERFORMANCE_HOOK_ID)
+            handles += hook(methods.miuiOptimizationMethod, MIUI_OPTIMIZATION_HOOK_ID)
             nativeStateReader = reader::readState
             hooksReady = true
             return handles

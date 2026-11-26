@@ -32,15 +32,20 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.AnimationVector1D
 
+/** Existing list-rise, pixel translation and placement share one animation lifecycle. */
+internal class DiagnosticsLogMotion(
+    val rise: Animatable<Float, AnimationVector1D>,
+    val risePx: Float,
+    val placementSpec: FiniteAnimationSpec<IntOffset>,
+)
+
 internal class DiagnosticsLogPresentation(
     val snapshot: DiagSnapshot?,
     val filteredLog: DiagnosticsFilteredLog,
     val captureStatus: DiagnosticsCaptureStatus,
     val loading: Boolean,
     val expandedKey: String?,
-    val rise: Animatable<Float, AnimationVector1D>,
-    val risePx: Float,
-    val placementSpec: FiniteAnimationSpec<IntOffset>,
+    val motion: DiagnosticsLogMotion,
 )
 
 internal fun LazyListScope.diagnosticsLogItems(
@@ -97,12 +102,12 @@ private fun LazyListScope.diagnosticsHistoryItems(
                 Modifier
                     .animateItem(
                         fadeInSpec = null,
-                        placementSpec = view.placementSpec,
+                        placementSpec = view.motion.placementSpec,
                         fadeOutSpec = null,
                     )
                     .graphicsLayer {
-                        val shown = logProgress(view.rise.value, index)
-                        translationY = view.risePx * (1f - shown)
+                        val shown = logProgress(view.motion.rise.value, index)
+                        translationY = view.motion.risePx * (1f - shown)
                         alpha = shown
                     },
         )
@@ -184,8 +189,8 @@ private fun LazyListScope.diagnosticsLogHeader(view: DiagnosticsLogPresentation)
         item(key = "diagnostics-header") {
             Column(
                 modifier = Modifier.graphicsLayer {
-                    val shown = logProgress(view.rise.value, 0)
-                    translationY = view.risePx * (1f - shown)
+                    val shown = logProgress(view.motion.rise.value, 0)
+                    translationY = view.motion.risePx * (1f - shown)
                     alpha = shown
                 },
             ) {

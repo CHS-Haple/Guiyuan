@@ -75,20 +75,34 @@ internal object NativeOpticalGeometry {
     )
 
     fun resolve(input: OpticalFitInput): Resolved? {
+        val drawableScale = referenceFitScale(input) ?: return null
+        val current = input.current
+        val viewport = input.viewport
+        val drawWidth = current.intrinsicWidth * drawableScale
+        val drawHeight = current.intrinsicHeight * drawableScale
+        val drawLeft = viewport.centerX - drawWidth / 2f
+        val drawTop = viewport.centerY - drawHeight / 2f
+        return Resolved(
+            drawWidth = drawWidth,
+            drawHeight = drawHeight,
+            opticalLeft = drawLeft + current.optical.left * drawWidth,
+            opticalTop = drawTop + current.optical.top * drawHeight,
+            opticalRight = drawLeft + current.optical.right * drawWidth,
+            opticalBottom = drawTop + current.optical.bottom * drawHeight,
+        )
+    }
+
+    // Reference geometry determines the common scale, while the displayed
+    // asset keeps its own optical ink bounds. Preserve the native fit checks.
+    private fun referenceFitScale(input: OpticalFitInput): Float? {
         val currentIntrinsicWidth = input.current.intrinsicWidth
         val currentIntrinsicHeight = input.current.intrinsicHeight
-        val currentOpticalLeft = input.current.optical.left
-        val currentOpticalTop = input.current.optical.top
-        val currentOpticalRight = input.current.optical.right
-        val currentOpticalBottom = input.current.optical.bottom
         val fitIntrinsicWidth = input.reference.intrinsicWidth
         val fitIntrinsicHeight = input.reference.intrinsicHeight
         val fitOpticalLeft = input.reference.optical.left
         val fitOpticalTop = input.reference.optical.top
         val fitOpticalRight = input.reference.optical.right
         val fitOpticalBottom = input.reference.optical.bottom
-        val centerX = input.viewport.centerX
-        val centerY = input.viewport.centerY
         val maxWidth = input.viewport.maxWidth
         val maxHeight = input.viewport.maxHeight
         if (
@@ -119,20 +133,7 @@ internal object NativeOpticalGeometry {
                 maxWidth / fitOpticalWidth,
                 maxHeight / fitOpticalHeight,
             )
-        if (!drawableScale.isFinite() || drawableScale <= 0f) return null
-
-        val drawWidth = currentIntrinsicWidth * drawableScale
-        val drawHeight = currentIntrinsicHeight * drawableScale
-        val drawLeft = centerX - drawWidth / 2f
-        val drawTop = centerY - drawHeight / 2f
-        return Resolved(
-            drawWidth = drawWidth,
-            drawHeight = drawHeight,
-            opticalLeft = drawLeft + currentOpticalLeft * drawWidth,
-            opticalTop = drawTop + currentOpticalTop * drawHeight,
-            opticalRight = drawLeft + currentOpticalRight * drawWidth,
-            opticalBottom = drawTop + currentOpticalBottom * drawHeight,
-        )
+        return drawableScale.takeIf { it.isFinite() && it > 0f }
     }
 
     // Offset viewport centers by native ink, rather than transparent padding,
@@ -310,7 +311,7 @@ internal object OuterGeometry {
                 // Horizontal row: same x reference and baseline as the paired horizontal layout.
                 sqrt(RING_RADIUS * RING_RADIUS -
                     (horizontalDotSpan / 6f) * (horizontalDotSpan / 6f)) - dualOpticalRise - offsetY
-            } else sin(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS
+            } else sin(bottomDotAngle(index)).toFloat() * MOBILE_ORBIT_RADIUS - offsetY
 
         fun horizontalDotX(index: Int): Float =
             (index - (DOT_COUNT - 1) / 2f) * (horizontalDotSpan / (DOT_COUNT - 1))

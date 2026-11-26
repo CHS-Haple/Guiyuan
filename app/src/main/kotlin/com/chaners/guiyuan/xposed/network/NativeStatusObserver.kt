@@ -9,6 +9,7 @@ import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
 import com.chaners.guiyuan.xposed.NativeStatusSlots
 import com.chaners.guiyuan.xposed.PresentationStore
+import com.chaners.guiyuan.xposed.HookDiagnostics
 import com.chaners.guiyuan.xposed.unhookFailed
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
@@ -179,12 +180,13 @@ internal object NativeStatusObserver {
     fun install(
         module: XposedModule,
         classLoader: ClassLoader,
-        onEvent: ((String) -> Unit)? = null,
-        isDetailedDiagnosticsEnabled: () -> Boolean = { false },
+        diagnostics: HookDiagnostics,
         onObservationAttached: ((String) -> Unit)? = null,
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
     ): String? {
+        val onEvent = diagnostics.onEvent
+        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         if (installIncomplete) return "partial-hook-state"
         if (installedHandles.isNotEmpty()) {
             bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
@@ -599,26 +601,12 @@ internal object NativeStatusObserver {
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
             if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
-            findAppliedTint(child)?.let { return it }
+            NativeStatusTintResolver.findAppliedTint(child)?.let { return it }
         }
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
             if (!NativeStatusTintResolver.isTintAuthorityCandidate(child)) continue
             resolveStaticDrawableColor(child)?.let { return it }
-        }
-        return null
-    }
-
-    private fun findAppliedTint(view: View): Int? {
-        if (view is ImageView) {
-            view.imageTintList
-                ?.defaultColor
-                ?.takeIf { color -> (color ushr 24) != 0 }
-                ?.let { return it }
-        }
-        val group = view as? ViewGroup ?: return null
-        for (index in 0 until group.childCount) {
-            findAppliedTint(group.getChildAt(index))?.let { return it }
         }
         return null
     }

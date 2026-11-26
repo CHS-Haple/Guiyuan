@@ -1,6 +1,10 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.foundation.background
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +47,7 @@ import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.OnboardingPrefs
+import com.chaners.guiyuan.settings.AgreementReadingRequirements
 import com.chaners.guiyuan.ui.navigation.appSwipeDismissDirection
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
@@ -102,6 +107,62 @@ private enum class PermissionWarningPhase {
 
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
+/** Transient onboarding agreement state. The screen still owns version checks and persistence. */
+private class GuideAgreementSession {
+    var termsViewed by mutableStateOf(false)
+        private set
+    var privacyViewed by mutableStateOf(false)
+        private set
+    var openDocument by mutableStateOf<AgreementDocument?>(null)
+        private set
+    var documentVisible by mutableStateOf(false)
+        private set
+    var documentDismissing by mutableStateOf(false)
+        private set
+    var policyAccepted by mutableStateOf(false)
+
+    fun show(document: AgreementDocument) {
+        if (documentVisible || documentDismissing) return
+        when (document) {
+            AgreementDocument.Terms -> termsViewed = true
+            AgreementDocument.Privacy -> privacyViewed = true
+        }
+        openDocument = document
+        documentVisible = true
+    }
+
+    fun acknowledge(checked: Boolean, required: AgreementReadingRequirements): Int? {
+        if (!checked) {
+            policyAccepted = false
+            return null
+        }
+        val termsPending = required.terms && !termsViewed
+        val privacyPending = required.privacy && !privacyViewed
+        if (required.canAcknowledge(termsViewed, privacyViewed)) {
+            policyAccepted = true
+            return null
+        }
+        return when {
+            termsPending && privacyPending -> R.string.guide_read_both_first
+            termsPending -> R.string.guide_read_terms_first
+            else -> R.string.guide_read_privacy_first
+        }
+    }
+
+    fun requestDismiss() {
+        if (documentVisible) {
+            documentDismissing = true
+            documentVisible = false
+        }
+    }
+
+    fun finishDismiss() {
+        // Keep the rendered document stable until MIUIX retires its popup host.
+        documentDismissing = false
+    }
+}
+
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun OnboardingFlow(
     config: OnboardingConfig,
@@ -153,46 +214,17 @@ internal fun OnboardingFlow(
         if (next !in pages) pages.add(next)
     }
     val requiredReading = remember(context) { OnboardingPrefs.readingRequirements(context) }
-    var termsViewed by remember { mutableStateOf(false) }
-    var privacyViewed by remember { mutableStateOf(false) }
-    var openDocument by remember { mutableStateOf<AgreementDocument?>(null) }
-    var documentVisible by remember { mutableStateOf(false) }
-    var documentDismissing by remember { mutableStateOf(false) }
-    var policyAccepted by remember { mutableStateOf(false) }
-
-    fun showAgreement(document: AgreementDocument) {
-        if (documentVisible || documentDismissing) return
-        when (document) {
-            AgreementDocument.Terms -> termsViewed = true
-            AgreementDocument.Privacy -> privacyViewed = true
-        }
-        openDocument = document
-        documentVisible = true
-    }
-
+    // One existing Compose lifetime owns the whole document/consent interaction.
+    val agreement = remember { GuideAgreementSession() }
+    fun showAgreement(document: AgreementDocument) = agreement.show(document)
     fun requestAcknowledgment(checked: Boolean) {
-        if (!checked) {
-            policyAccepted = false
-            return
-        }
-        val termsPending = requiredReading.terms && !termsViewed
-        val privacyPending = requiredReading.privacy && !privacyViewed
-        if (requiredReading.canAcknowledge(termsViewed, privacyViewed)) {
-            policyAccepted = true
-            return
-        }
-        val message = when {
-            termsPending && privacyPending -> R.string.guide_read_both_first
-            termsPending -> R.string.guide_read_terms_first
-            else -> R.string.guide_read_privacy_first
-        }
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        val requiredMessage = agreement.acknowledge(checked, requiredReading)
+        if (requiredMessage != null) Toast.makeText(context, requiredMessage, Toast.LENGTH_SHORT).show()
     }
 
-    // Returning to this page clears consent, not document views.
-    // NavDisplay retains the outgoing page through its transition.
+    // Returning to Privacy resets consent but preserves which agreements were viewed.
     LaunchedEffect(step) {
-        if (step == 2) policyAccepted = false
+        if (step == 2) agreement.policyAccepted = false
     }
     var scopeRequestFailed by remember { mutableStateOf(false) }
     var rootChecking by remember { mutableStateOf(false) }
@@ -201,7 +233,7 @@ internal fun OnboardingFlow(
     var expandedPermission by remember { mutableIntStateOf(0) }
     fun back() {
         // Let the active MIUIX overlay own Back until its dismissal finishes.
-        if (documentVisible || documentDismissing || permissionWarning != PermissionWarningPhase.Hidden) return
+        if (agreement.documentVisible || agreement.documentDismissing || permissionWarning != PermissionWarningPhase.Hidden) return
         if (pages.size > 1) pages.removeLastOrNull() else onExit?.invoke()
     }
     fun refreshPermissionStatus() {
@@ -267,7 +299,7 @@ internal fun OnboardingFlow(
             )
         }
         entry<GuidePage.Stage>(
-            swipeDismiss = if (documentVisible || documentDismissing) NavSwipeDirection.None else swipeBackDirection,
+            swipeDismiss = if (agreement.documentVisible || agreement.documentDismissing) NavSwipeDirection.None else swipeBackDirection,
         ) { page ->
         val step = page.number
         val scrollBehavior = MiuixScrollBehavior()
@@ -294,53 +326,62 @@ internal fun OnboardingFlow(
                     .padding(scaffoldPadding).padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f).fillMaxWidth().then(
-                        if (step == 2) Modifier
-                        else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
-                    ),
-                ) {
-                    GuideStageHeading(step)
-                    when (step) {
-                        1 -> GuidePermissionStage(
-                            status = GuideFrameworkSnapshot(
-                                framework, sysUiInScope, canRequestScope, scopeBusy, scopeRequestFailed,
-                            ),
-                            root = GuideRootSnapshot(rootChecking, rootAccess),
-                            actions = GuidePermissionActions(
-                                expandedPermission = expandedPermission,
-                                onToggleExpanded = { id ->
-                                    expandedPermission = if (expandedPermission == id) 0 else id
-                                },
-                                onRequestScope = {
-                                    scopeRequestFailed = false
-                                    if (!app.requestSysUiScope { approved ->
-                                            scopeRequestFailed = !approved
-                                        }) scopeRequestFailed = true
-                                },
-                            ),
-                        )
-                        2 -> GuidePrivacyStage(
-                            requirements = requiredReading,
-                            importantScroll = importantScroll,
-                            termsViewed = termsViewed,
-                            privacyViewed = privacyViewed,
-                            onOpen = ::showAgreement,
-                        )
-                        3 -> GuideAppSettingsStage(config, handlers, entryState)
+                Box(Modifier.weight(1f).fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().then(
+                            if (step == 2) Modifier
+                            else Modifier.nestedScroll(scrollBehavior.nestedScrollConnection).verticalScroll(scroll),
+                        ),
+                    ) {
+                        GuideStageHeading(step)
+                        when (step) {
+                            1 -> GuidePermissionStage(
+                                status = GuideFrameworkSnapshot(
+                                    framework, sysUiInScope, canRequestScope, scopeBusy, scopeRequestFailed,
+                                ),
+                                root = GuideRootSnapshot(rootChecking, rootAccess),
+                                actions = GuidePermissionActions(
+                                    expandedPermission = expandedPermission,
+                                    onToggleExpanded = { id ->
+                                        expandedPermission = if (expandedPermission == id) 0 else id
+                                    },
+                                    onRequestScope = {
+                                        scopeRequestFailed = false
+                                        if (!app.requestSysUiScope { approved ->
+                                                scopeRequestFailed = !approved
+                                            }) scopeRequestFailed = true
+                                    },
+                                ),
+                            )
+                            2 -> GuidePrivacyStage(
+                                requirements = requiredReading,
+                                importantScroll = importantScroll,
+                                termsViewed = agreement.termsViewed,
+                                privacyViewed = agreement.privacyViewed,
+                                onOpen = ::showAgreement,
+                            )
+                            3 -> GuideAppSettingsStage(config, handlers, entryState)
+                        }
+                        if (step != 2) Spacer(Modifier.height(24.dp))
                     }
-                    if (step != 2) Spacer(Modifier.height(24.dp))
+                    if (step != 2) {
+                        VerticalScrollBar(
+                            adapter = rememberScrollBarAdapter(scroll),
+                            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                            topAppBarScrollBehavior = scrollBehavior,
+                        )
+                    }
                 }
                 if (step == 2) {
                     GuidePrivacyAcknowledgment(
-                        accepted = policyAccepted,
+                        accepted = agreement.policyAccepted,
                         onCheckedChange = ::requestAcknowledgment,
                         onOpenDocument = ::showAgreement,
                     )
                 }
                 GuideStageContinueButton(
                     step = step,
-                    canContinue = step != 2 || policyAccepted,
+                    canContinue = step != 2 || agreement.policyAccepted,
                     showSecondary = step == 1 && !sysUiInScope,
                     onContinue = {
                         // A retained covered page cannot move the current top page.
@@ -378,18 +419,10 @@ internal fun OnboardingFlow(
                         },
                     )
                     2 -> GuidePolicyDocumentSheet(
-                        visible = documentVisible,
-                        document = openDocument,
-                        onDismissRequest = {
-                            if (documentVisible) {
-                                documentDismissing = true
-                                documentVisible = false
-                            }
-                        },
-                        onDismissFinished = {
-                            // Keep the rendered document stable while MIUIX retires its popup host.
-                            documentDismissing = false
-                        },
+                        visible = agreement.documentVisible,
+                        document = agreement.openDocument,
+                        onDismissRequest = agreement::requestDismiss,
+                        onDismissFinished = agreement::finishDismiss,
                     )
                     3 -> AppSettingsEntryDialogs(entryState)
                     else -> Unit

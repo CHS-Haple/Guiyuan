@@ -24,12 +24,14 @@ internal fun UiOverlayBottomSheet(
     onDismissFinished: (() -> Unit)? = null,
     headerBottomContent: @Composable () -> Unit = {},
     scrollOffset: (() -> Float)? = null,
+    progressiveBlur: Boolean = false,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     GlassBottomSheet(
         show = show,
         modifier = modifier,
         title = title,
+        progressiveBlur = progressiveBlur,
         containerColor = backgroundColor,
         insideMargin = insideMargin,
         startAction = startAction,

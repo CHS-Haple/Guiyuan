@@ -85,6 +85,15 @@ internal object CcRenderSession {
         }
     }
 
+    /** Fake CC host identity is transient; the Session holds only weak native View receipts. */
+    private class CcNativeViews(
+        val host: ViewGroup,
+        val statusBarArea: ViewGroup,
+        val statusIcons: ViewGroup,
+        val battery: ViewGroup,
+        val carrier: View,
+    )
+
     @Synchronized
     fun attach(
         host: ViewGroup,
@@ -114,16 +123,9 @@ internal object CcRenderSession {
                     "battery-core-carrier-missing",
                     retryAfterLayout = true,
                 )
+        val native = CcNativeViews(host, statusBarArea, statusIcons, battery, carrier)
         val existing = current
-        if (
-            existing?.matches(
-                host = host,
-                statusBarArea = statusBarArea,
-                statusIcons = statusIcons,
-                battery = battery,
-                carrier = carrier,
-            ) == true
-        ) {
+        if (existing?.matches(native) == true) {
             existing.setSceneEligible(sceneEligible)
             existing.refresh()
             return existing.prepareNativePresentation(reused = true)
@@ -139,11 +141,7 @@ internal object CcRenderSession {
 
         val session =
             Session(
-                host = host,
-                statusBarArea = statusBarArea,
-                statusIcons = statusIcons,
-                battery = battery,
-                carrier = carrier,
+                native = native,
                 sinks = sinks,
                 initialSceneEligible = sceneEligible,
                 initialSourceScene = sourceScene,
@@ -548,31 +546,23 @@ internal object CcRenderSession {
         hostAttached: Boolean,
         nativePresentationReady: Boolean,
     ): Boolean =
-        featureEnabled &&
-            sceneEligible &&
-            modelReady &&
-            tintReady &&
-            layoutReady &&
-            hostAttached &&
-            nativePresentationReady
+        ProjectionReadinessPolicy.structuralReady(
+            featureEnabled, modelReady, tintReady, layoutReady, hostAttached,
+        ) && sceneEligible && nativePresentationReady
 
     private class Session(
-        host: ViewGroup,
-        statusBarArea: ViewGroup,
-        statusIcons: ViewGroup,
-        battery: ViewGroup,
-        carrier: View,
+        native: CcNativeViews,
         private val sinks: Sinks,
         initialSceneEligible: Boolean,
         initialSourceScene: SourceScene,
         initialPanelVisualOwner: Boolean,
     ) : View.OnAttachStateChangeListener {
-        private val host = WeakReference(host)
-        private val statusBarArea = WeakReference(statusBarArea)
-        private val statusIcons = WeakReference(statusIcons)
-        private val battery = WeakReference(battery)
-        private val carrier = WeakReference(carrier)
-        private val renderView = RenderView(host.context)
+        private val host = WeakReference(native.host)
+        private val statusBarArea = WeakReference(native.statusBarArea)
+        private val statusIcons = WeakReference(native.statusIcons)
+        private val battery = WeakReference(native.battery)
+        private val carrier = WeakReference(native.carrier)
+        private val renderView = RenderView(native.host.context)
         private val renderController = RenderController(renderView)
         private val anchorRect = Rect()
         private val hostLocationScratch = IntArray(2)
@@ -612,19 +602,13 @@ internal object CcRenderSession {
                 }
             }
 
-        fun matches(
-            host: ViewGroup,
-            statusBarArea: ViewGroup,
-            statusIcons: ViewGroup,
-            battery: ViewGroup,
-            carrier: View,
-        ): Boolean =
+        fun matches(native: CcNativeViews): Boolean =
             !retired &&
-                this.host.get() === host &&
-                this.statusBarArea.get() === statusBarArea &&
-                this.statusIcons.get() === statusIcons &&
-                this.battery.get() === battery &&
-                this.carrier.get() === carrier
+                this.host.get() === native.host &&
+                this.statusBarArea.get() === native.statusBarArea &&
+                this.statusIcons.get() === native.statusIcons &&
+                this.battery.get() === native.battery &&
+                this.carrier.get() === native.carrier
 
         fun attachedHost(): ViewGroup? =
             host.get()?.takeIf { candidate -> !retired && candidate.isAttachedToWindow }
@@ -752,27 +736,31 @@ internal object CcRenderSession {
 
             val result =
                     SysUiPresentationOwner.activateCc(
-                        host = statusArea,
-                        statusIcons = statusIconGroup,
-                        batteryContainer = statusArea,
-                        battery = batteryView,
-                        batteryCarrier = carrierView,
-                        onEvent = sinks.onEvent,
-                        isDetailedDiagnosticsEnabled = sinks.isDetailedDiagnosticsEnabled,
-                        onFailNative = { reason ->
-                            setNativePresentationReady(
-                                ready = false,
-                                maskedViews = 0,
-                                source = "fail-native:" + reason,
-                            )
-                        },
-                        onReady = { active ->
-                            setNativePresentationReady(
-                                ready = true,
-                                maskedViews = active.maskedViews,
-                                source = "native-layout",
-                            )
-                        },
+                        target = SysUiPresentationOwner.CcPresentationTarget(
+                            host = statusArea,
+                            statusIcons = statusIconGroup,
+                            batteryContainer = statusArea,
+                            battery = batteryView,
+                            batteryCarrier = carrierView,
+                        ),
+                        handlers = SysUiPresentationOwner.CcPresentationHandlers(
+                            onEvent = sinks.onEvent,
+                            isDetailedDiagnosticsEnabled = sinks.isDetailedDiagnosticsEnabled,
+                            onFailNative = { reason ->
+                                setNativePresentationReady(
+                                    ready = false,
+                                    maskedViews = 0,
+                                    source = "fail-native:" + reason,
+                                )
+                            },
+                            onReady = { active ->
+                                setNativePresentationReady(
+                                    ready = true,
+                                    maskedViews = active.maskedViews,
+                                    source = "native-layout",
+                                )
+                            },
+                        ),
                     )
             return handleActivationResult(result, reused)
         }

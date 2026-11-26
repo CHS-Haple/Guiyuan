@@ -31,12 +31,38 @@ internal fun LazyListScope.featureLayoutSection(
         R.string.both_sides_activity_vertical_offset,
     )
     val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
-    Section(R.string.section_layout_size) {
-        featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
-        featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
-        featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
-        featureLayoutOffsetsAndScale(search, visual, visualRepo, enabled)
+    if (searching) {
+        Section(R.string.section_layout_size, key = "features-layout-choices") {
+            featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
+            featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
+            featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
+            featureLayoutOffsetsAndSize(search, visual, visualRepo, enabled)
+            featureOuterWeight(search, visual, visualRepo, enabled)
+        }
+        return
     }
+
+    GroupedPreferenceSection(R.string.section_layout_size, "features-layout", listOf(
+        PreferenceCardItem("layout-selection") {
+            featureLayoutSelection(search, visual, visualRepo, enabled)
+        },
+        PreferenceCardItem("dual-signal") {
+            featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
+        },
+        PreferenceCardItem("signal-rows") {
+            featureSignalRowChoices(search, visual, visualRepo, enabled, bothSidesSearch)
+            featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
+        },
+        PreferenceCardItem("both-sides") {
+            featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
+        },
+        PreferenceCardItem("geometry") {
+            featureLayoutOffsetsAndSize(search, visual, visualRepo, enabled)
+        },
+        PreferenceCardItem("outer-weight") {
+            featureOuterWeight(search, visual, visualRepo, enabled)
+        },
+    ))
 }
 
 @Composable
@@ -48,6 +74,7 @@ private fun ColumnScope.featureLayoutChoices(
     bothSidesSearch: Boolean,
 ) {
     featureLayoutSelection(search, visual, visualRepo, enabled)
+    featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
     featureSignalRowChoices(search, visual, visualRepo, enabled, bothSidesSearch)
 }
 
@@ -71,8 +98,7 @@ private fun ColumnScope.featureLayoutSelection(
         (searching && visual.layout == ContentLayout.BATTERY_CENTER &&
             search.matches(R.string.top_info_vertical_offset)) ||
         (searching && visual.centeredMobileSignal &&
-            search.any(R.string.curved_signal_dot_vertical_offset,
-                R.string.horizontal_signal_dot_vertical_offset))) {
+            search.matches(R.string.mobile_signal_dot_vertical_offset))) {
         UiDropdownPreference(
             items = layoutChoices.map { it.second },
             selectedIndex = layoutChoices.indexOfFirst { it.first == visual.layout },
@@ -110,7 +136,6 @@ private fun ColumnScope.featureSignalRowChoices(
     )
     val dualSignalDotArrangements = signalDotArrangements +
         stringResource(R.string.signal_dot_arrangement_both_sides)
-    featureDualSignalToggle(search, visual, visualRepo, enabled, bothSidesSearch)
     featureSingleRowSignalDots(search, visual, visualRepo, enabled, signalDotArrangements)
     featureDualRowSignalDots(
         search, visual, visualRepo, enabled,
@@ -130,8 +155,7 @@ private fun ColumnScope.featureDualSignalToggle(
     if (search.matches(R.string.dual_signal_title) ||
         (searching && !visual.dualSignal &&
             (search.any(R.string.dual_row_signal_dot_arrangement_title,
-                R.string.curved_signal_dot_vertical_offset,
-                R.string.horizontal_signal_dot_vertical_offset) || bothSidesSearch))) {
+                R.string.mobile_signal_dot_vertical_offset) || bothSidesSearch))) {
         SwitchPreference(
             title = stringResource(R.string.dual_signal_title),
             startAction = {
@@ -232,37 +256,32 @@ private fun ColumnScope.featureDotOffsets(
     enabled: Boolean,
     activeDotArrangement: SignalDotArrangement,
 ) {
-    listOf(
-        SignalDotArrangement.CURVED to R.string.curved_signal_dot_vertical_offset,
-        SignalDotArrangement.HORIZONTAL to R.string.horizontal_signal_dot_vertical_offset,
-    ).forEach { (style, dotOffsetTitle) ->
-        AnimatedPreferenceGroup(visible = activeDotArrangement == style) {
-            if (search.matches(dotOffsetTitle)) {
-                SliderPreference(
-                    value = visual.activeSignalDotOffsetY,
-                    onValueChange = visualRepo::setSignalDotOffsetY,
-                    title = stringResource(dotOffsetTitle),
-                    summary = stringResource(R.string.outer_signal_dots_only_summary),
-                    startAction = {
-                        SemanticLeadingIcon(
-                            R.drawable.ic_material_symbol_signal_cellular_alt,
-                            enabled,
-                            R.drawable.ic_material_symbol_height_w500,
-                        )
-                    },
-                    valueText = stringResource(
-                        R.string.battery_top_offset_value,
-                        visual.activeSignalDotOffsetY.roundToInt(),
-                    ),
-                    valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
-                    steps = 19,
-                    showKeyPoints = true,
-                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                    keyPoints = listOf(0f),
-                    magnetThreshold = 0.035f,
-                    enabled = enabled,
-                )
-            }
+    AnimatedPreferenceGroup(visible = activeDotArrangement != SignalDotArrangement.BOTH_SIDES) {
+        if (search.matches(R.string.mobile_signal_dot_vertical_offset)) {
+            SliderPreference(
+                value = visual.activeSignalDotOffsetY,
+                onValueChange = visualRepo::setSignalDotOffsetY,
+                title = stringResource(R.string.mobile_signal_dot_vertical_offset),
+                summary = stringResource(R.string.outer_signal_dots_only_summary),
+                startAction = {
+                    SemanticLeadingIcon(
+                        R.drawable.ic_material_symbol_signal_cellular_alt,
+                        enabled,
+                        R.drawable.ic_material_symbol_height_w500,
+                    )
+                },
+                valueText = stringResource(
+                    R.string.battery_top_offset_value,
+                    visual.activeSignalDotOffsetY.roundToInt(),
+                ),
+                valueRange = NETWORK_TOP_OFFSET_MIN..NETWORK_TOP_OFFSET_MAX,
+                steps = 19,
+                showKeyPoints = true,
+                hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                keyPoints = listOf(0f),
+                magnetThreshold = 0.035f,
+                enabled = enabled,
+            )
         }
     }
 }

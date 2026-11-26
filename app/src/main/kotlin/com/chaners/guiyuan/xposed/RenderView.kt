@@ -355,6 +355,21 @@ internal class RenderView(
             colorPrefs = BatteryColorPolicy.preferencesFor(currentVisual)
             colorPrefsSource = currentVisual
         }
+
+        drawCurrentModel(canvas, current, tint, currentVisual)
+        onModelDrawn?.invoke(current)
+        onDrawn?.invoke(this)
+        reportDrawLatency()
+    }
+
+    // Only canvas presentation belongs here; callbacks and latency reporting
+    // remain with onDraw so the post-render lifecycle and event order do not move.
+    private fun drawCurrentModel(
+        canvas: Canvas,
+        current: RenderModel,
+        tint: TintState,
+        currentVisual: VisualCfg,
+    ) {
         val transitionFraction =
             centerTransitionFraction.coerceIn(0f, 1f)
         val logicalWidth = currentLogicalViewportWidthPx()
@@ -398,10 +413,6 @@ internal class RenderView(
             scaleMobileTypeWithCanvas = scaleMobileTypeWithCanvas,
         )
         canvas.restoreToCount(viewportSave)
-        onModelDrawn?.invoke(current)
-        onDrawn?.invoke(this)
-
-        reportDrawLatency()
     }
 
     private fun resolveRenderColors(

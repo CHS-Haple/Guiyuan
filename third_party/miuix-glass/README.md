@@ -7,19 +7,18 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The source and Maven graph target MIUIX snapshot
-  `0.9.5-a09d4f32-SNAPSHOT` at full revision
-  `a09d4f3268ece3fc262d0bba433a3941a312bb9a`.
-  [Upstream publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910324)
-  succeeded; the exact-source
-  [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45434910306)
-  passed all four jobs. This is a pre-release snapshot, not stable v0.9.5.
-  Keep source and Maven revisions identical; Guiyuan source/Maven builds
-  and focused device validation remain required. The prior `07d48590`
-  baseline passed focused maintainer acceptance in signed B1952
-  ([#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866)).
-  Guiyuan-specific Back, long-press, touch-extension and title
-  clip boundaries remain locally owned.
+- The candidate source and Maven graph target
+  `0.9.5-588d029f-SNAPSHOT` at
+  `588d029f2b0747a0a8710db0858ed0957d78b122`. The matching
+  [publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501062)
+  and [test matrix](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501001)
+  succeeded. Exact-Maven resolution and source-matched Guiyuan CI are still
+  required; this is a pre-release snapshot, not stable v0.9.5. B1972 accepted
+  the previous `542463a0` graph in [#1923](https://github.com/CHS-Haple/Guiyuan/pull/1923).
+  The new revision includes the previously unpublished Sheet default and
+  one-pass top-bar fade, scrolling pill tabs, and dropdown scroll indicators.
+  Guiyuan-specific Back, long-press, touch-extension and title clip boundaries
+  remain locally owned.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
@@ -94,6 +93,17 @@ The published MIUIX Glass module is now linked directly. The app uses its
 and `glassPanel` APIs instead of maintaining corresponding component copies.
 Its published material, edge and shader APIs also remain authoritative.
 The preview sandbox's segmented Glass tabs use the published upstream `GlassSegmentedTabRow` and defaults; the app-local `GlassTabRow.kt` source copy is retired.
+The scroll-safe segmented tab adapter in `ui/glass/ScrollAwareGlassSegmentedTabRow.kt` now
+owns only the X/Y gesture arbitration needed for scrollable containers. In the pinned
+upstream `a09d4f32`, `GlassTabRow.kt` claims a drag by X touch-slop without first
+excluding a dominant vertical swipe; current upstream main has the same recognizer.
+Guiyuan still delegates all material, indicator motion, selection and accessibility
+to the published native Glass tab. The screen-only gesture duplicate is removed.
+On each MIUIX revision update, check this recognizer and exercise vertical,
+horizontal, diagonal and RTL gestures; when the upstream component fixes axis
+arbitration, delete the adapter's pointer overlay without modifying its callers.
+The standard basic contour TabRow, intentional 2D color picker, and the pager
+header indicator are different gesture owners and are not patched speculatively.
 Navigation destinations and `GlassNavigationBarDefaults` now also use the upstream public types; local navigation/rail still owns only Guiyuan-specific gestures, geometry and hit-area extension.
 The identical `GlassNavigationRailDefaults` object is likewise taken from upstream; app-specific rail state remains local because it uses a private morph clock and supports a trailing action absent from the public upstream Rail API.
 The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.
@@ -263,10 +273,35 @@ entrypoint.
   GlassDialogButton defaults come from the dependency. Predictive Back
   reset and upward overscroll surface fixes are upstream-owned.
 
-### Final local-boundary review
+- **Align later top-bar and Sheet behavior:** the local GlassTopAppBar follows the
+  upstream one-pass fixed-fade shader (removing the split draw and
+  translation), bounded collapse offset and progressive scrim. Retain
+  measured native title/compact slots and existing backdrop ownership.
+  The shared GlassBottomSheet wrapper explicitly selects a
+  non-overlay default, now matching the pinned upstream default. The battery overview and long-form Terms/Privacy
+  readers explicitly opt into progressive blur and apply header padding
+  to their scroll content and native scrollbar. The battery detail editor
+  uses the normal non-overlay header and its supplied zero header padding.
+  No additional local Sheet effect is needed. The new GlassScrollableTabRow
+  is an independent scrolling pill row, not a replacement for fixed
+  segmented tabs. No current caller warrants migration; the segmented
+  recognizer still checks X touch slop alone, so its axis adapter remains.
+  Library baseline profiles are now supplied by the pinned MIUIX graph;
+  do not copy generated example profiles into Guiyuan.
 
-The remaining 29 app-local Glass Kotlin files include implementation fragments
-that match this upstream revision apart from package/import adaptation (popup
+- **Dropdown scroll indicators:** upstream `588d029f` provides a non-interactive,
+  non-fading indicator for scrollable menus. The local shared
+  `GlassPopupSurface` mirrors its 16 dp vertical track padding, using the
+  same ScrollState for the indicator and scrolling. Both transformed and
+  secondary popups inherit this surface. Published GlassDropdownPreference,
+  ListPopupColumn and overlay/window dropdown dialogs inherit their native
+  indicators directly; no second indicator is added. Page scrollbars retain
+  their interactive defaults and existing lazy-list stability policy.
+
+### Prior a09d4f32 local-boundary review
+
+The remaining 29 app-local Glass Kotlin files at a09d4f32 included implementation fragments
+that matched that upstream revision apart from package/import adaptation (popup
 Back progress, popup column, shader, drag target and secondary popup). Their
 internal entrypoints are not callable through the published dependency. Do not
 replace them with reflection or a second implementation. Top-app-bar public

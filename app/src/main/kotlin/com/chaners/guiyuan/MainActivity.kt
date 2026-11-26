@@ -42,6 +42,7 @@ import com.chaners.guiyuan.ui.screens.AppearanceNavigationActions
 import com.chaners.guiyuan.ui.screens.AppearanceVisualActions
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -111,99 +112,19 @@ class MainActivity : ComponentActivity() {
             onDispose { }
         }
 
-        val systemDensity = LocalDensity.current
-        val uiDensity = remember(systemDensity, appearance.uiScalePercent) {
-            Density(
-                systemDensity.density * appearance.uiScalePercent / 100f,
-                systemDensity.fontScale,
-            )
-        }
-        // Match window DP dimensions to the same density used by the UI.
-        // MIUIX sheets cap their height against WindowInfo.containerDpSize.
-        val nativeWindow = LocalWindowInfo.current
-        val uiWindow = remember(nativeWindow, uiDensity) {
-            object : WindowInfo by nativeWindow {
-                override val containerDpSize: DpSize
-                    get() {
-                        val size = nativeWindow.containerSize
-                        return DpSize(
-                            (size.width / uiDensity.density).dp,
-                            (size.height / uiDensity.density).dp,
-                        )
-                    }
-            }
-        }
-        CompositionLocalProvider(
-            LocalDensity provides uiDensity,
-            LocalWindowInfo provides uiWindow,
-            LocalTopBarProgressiveBlur provides appearance.topBarProgressiveBlur,
+        ScaledAppEnvironment(
+            uiScalePercent = appearance.uiScalePercent,
+            progressiveBlur = appearance.topBarProgressiveBlur,
         ) {
             GyApp(
                 appearance = appearance,
                 dark = dark,
                 lang = lang,
                 iconHidden = iconHidden,
-                sandbox = AppSandbox(
-                    onPreviewThemeChange = { previewBarDark = it },
-                    sandboxActive = sandboxActive,
-                    onSandboxToggle = { enabled, state ->
-                        val app = application as GyApplication
-                        if (enabled) app.startSandbox(state) else app.stopSandbox()
-                    },
-                    onSandboxUpdate = { (application as GyApplication).updateSandbox(it) },
-                    onSandboxStop = { (application as GyApplication).stopSandbox() },
-                ),
-                actions = AppSettingsActions(
-                    onHotReload = {
-                        (application as GyApplication).hotReloadSysUi()
-                    },
-                    themeActions = AppearanceThemeActions(
-                        onThemeChange = { mode ->
-                            scope.launch { repo.setTheme(mode) }
-                        },
-                        onDynamicChange = { enabled ->
-                            scope.launch { repo.setDynamicColor(enabled) }
-                        },
-                        onCustomPaletteChange = { enabled ->
-                            scope.launch { repo.setCustomPalette(enabled) }
-                        },
-                        onColorSpecChange = { spec: ThemeColorSpec ->
-                            scope.launch { repo.setColorSpec(spec) }
-                        },
-                        onPaletteStyleChange = { style: ThemePaletteStyle ->
-                            scope.launch { repo.setPaletteStyle(style) }
-                        },
-                    ),
-                    visualActions = AppearanceVisualActions(
-                        style = AppearanceStyleActions(
-                            onTopBarProgressiveBlurChange = { enabled ->
-                                scope.launch { repo.setTopBarProgressiveBlur(enabled) }
-                            },
-                            onUiScaleChange = { percent ->
-                                scope.launch { repo.setUiScalePercent(percent) }
-                            },
-                        ),
-                        navigation = AppearanceNavigationActions(
-                            onNavEnabledChange = { enabled ->
-                                scope.launch { repo.setNavEnabled(enabled) }
-                            },
-                            onNavStyleChange = { style: NavStyle ->
-                                scope.launch { repo.setNavStyle(style) }
-                            },
-                            onNavTouchExtensionChange = { enabled ->
-                                scope.launch { repo.setNavTouchExtension(enabled) }
-                            },
-                            onNavContentChange = { content: NavContent ->
-                                scope.launch { repo.setNavContent(content) }
-                            },
-                            onLiquidModeChange = { mode: LiquidMode ->
-                                scope.launch { repo.setLiquidMode(mode) }
-                            },
-                        ),
-                    ),
-                    onSwipeBackChange = { enabled ->
-                        scope.launch { repo.setSwipeBack(enabled) }
-                    },
+                sandbox = sandboxActions(sandboxActive) { previewBarDark = it },
+                actions = appSettingsActions(
+                    repo = repo,
+                    scope = scope,
                     onLangChange = { language ->
                         if (language != lang) {
                             lang = language
@@ -219,6 +140,36 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Keep the application as the sole sandbox-lease writer. */
+    private fun sandboxActions(
+        active: Boolean,
+        onPreviewThemeChange: (Boolean?) -> Unit,
+    ): AppSandbox = AppSandbox(
+        onPreviewThemeChange = onPreviewThemeChange,
+        sandboxActive = active,
+        onSandboxToggle = { enabled, state ->
+            val app = application as GyApplication
+            if (enabled) app.startSandbox(state) else app.stopSandbox()
+        },
+        onSandboxUpdate = { (application as GyApplication).updateSandbox(it) },
+        onSandboxStop = { (application as GyApplication).stopSandbox() },
+    )
+
+    /** Appearance settings and platform state retain their existing writers. */
+    private fun appSettingsActions(
+        repo: AppearanceRepo,
+        scope: CoroutineScope,
+        onLangChange: (AppLang) -> Unit,
+        onIconHiddenChange: (Boolean) -> Unit,
+    ): AppSettingsActions = AppSettingsActions(
+        onHotReload = { (application as GyApplication).hotReloadSysUi() },
+        themeActions = appearanceThemeActions(repo, scope),
+        visualActions = appearanceVisualActions(repo, scope),
+        onSwipeBackChange = { enabled -> scope.launch { repo.setSwipeBack(enabled) } },
+        onLangChange = onLangChange,
+        onIconHiddenChange = onIconHiddenChange,
+    )
+
     private fun updateBarIcons(dark: Boolean) {
         val lightBarsMask =
             WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
@@ -229,3 +180,88 @@ class MainActivity : ComponentActivity() {
         )
     }
 }
+
+@Composable
+private fun ScaledAppEnvironment(
+    uiScalePercent: Int,
+    progressiveBlur: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val systemDensity = LocalDensity.current
+    val uiDensity = remember(systemDensity, uiScalePercent) {
+        Density(
+            systemDensity.density * uiScalePercent / 100f,
+            systemDensity.fontScale,
+        )
+    }
+    // Match window DP dimensions to the same density used by the UI.
+    // MIUIX sheets cap their height against WindowInfo.containerDpSize.
+    val nativeWindow = LocalWindowInfo.current
+    val uiWindow = remember(nativeWindow, uiDensity) {
+        object : WindowInfo by nativeWindow {
+            override val containerDpSize: DpSize
+                get() {
+                    val size = nativeWindow.containerSize
+                    return DpSize(
+                        (size.width / uiDensity.density).dp,
+                        (size.height / uiDensity.density).dp,
+                    )
+                }
+        }
+    }
+    CompositionLocalProvider(
+        LocalDensity provides uiDensity,
+        LocalWindowInfo provides uiWindow,
+        LocalTopBarProgressiveBlur provides progressiveBlur,
+    ) {
+        content()
+    }
+}
+
+private fun appearanceThemeActions(repo: AppearanceRepo, scope: CoroutineScope): AppearanceThemeActions =
+    AppearanceThemeActions(
+        onThemeChange = { mode ->
+            scope.launch { repo.setTheme(mode) }
+        },
+        onDynamicChange = { enabled ->
+            scope.launch { repo.setDynamicColor(enabled) }
+        },
+        onCustomPaletteChange = { enabled ->
+            scope.launch { repo.setCustomPalette(enabled) }
+        },
+        onColorSpecChange = { spec: ThemeColorSpec ->
+            scope.launch { repo.setColorSpec(spec) }
+        },
+        onPaletteStyleChange = { style: ThemePaletteStyle ->
+            scope.launch { repo.setPaletteStyle(style) }
+        },
+    )
+
+private fun appearanceVisualActions(repo: AppearanceRepo, scope: CoroutineScope): AppearanceVisualActions =
+    AppearanceVisualActions(
+        style = AppearanceStyleActions(
+            onTopBarProgressiveBlurChange = { enabled ->
+                scope.launch { repo.setTopBarProgressiveBlur(enabled) }
+            },
+            onUiScaleChange = { percent ->
+                scope.launch { repo.setUiScalePercent(percent) }
+            },
+        ),
+        navigation = AppearanceNavigationActions(
+            onNavEnabledChange = { enabled ->
+                scope.launch { repo.setNavEnabled(enabled) }
+            },
+            onNavStyleChange = { style: NavStyle ->
+                scope.launch { repo.setNavStyle(style) }
+            },
+            onNavTouchExtensionChange = { enabled ->
+                scope.launch { repo.setNavTouchExtension(enabled) }
+            },
+            onNavContentChange = { content: NavContent ->
+                scope.launch { repo.setNavContent(content) }
+            },
+            onLiquidModeChange = { mode: LiquidMode ->
+                scope.launch { repo.setLiquidMode(mode) }
+            },
+        ),
+    )

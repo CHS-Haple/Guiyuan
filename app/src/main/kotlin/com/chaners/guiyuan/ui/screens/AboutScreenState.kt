@@ -1,7 +1,7 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -22,8 +22,7 @@ internal class AboutHeroLayout {
 
     val spacerHeight: Dp get() = height + 218.dp
 
-    fun atRest(list: LazyListState): Boolean =
-        list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset == 0
+    fun atRest(scroll: ScrollState): Boolean = scroll.value == 0
 
     fun collapse(index: Int, offsetPx: Int): Triple<Float, Float, Float> {
         val offset = offsetPx.toFloat()
@@ -46,9 +45,8 @@ internal class AboutHeroLayout {
 }
 
 internal data class AboutScrollState(
-    val list: LazyListState,
+    val scroll: ScrollState,
     val layout: AboutHeroLayout,
-    val contentMinHeight: Dp,
     val progress: Float,
     val visible: Boolean,
     val collapse: Triple<Float, Float, Float>,
@@ -56,28 +54,22 @@ internal data class AboutScrollState(
 
 @Composable
 internal fun rememberAboutScrollState(): AboutScrollState {
-    val list = rememberLazyListState()
+    val scroll = rememberScrollState()
     val density = LocalDensity.current
     val layout = remember { AboutHeroLayout() }
-    val contentMinHeight by remember(density, list) {
+    val progress by remember(density, scroll) {
         derivedStateOf {
-            val info = list.layoutInfo
-            val available = (
-                info.viewportSize.height - info.beforeContentPadding - info.afterContentPadding
-            ).coerceAtLeast(0)
-            with(density) { available.toDp() }
+            (scroll.value / with(density) { layout.spacerHeight.toPx() }).coerceIn(0f, 1f)
         }
     }
-    val progress by remember(density) {
+    val visible by remember(density, scroll) {
+        derivedStateOf { scroll.value < with(density) { layout.spacerHeight.toPx() } }
+    }
+    val collapse by remember(density, scroll) {
         derivedStateOf {
-            if (list.firstVisibleItemIndex > 0) 1f
-            else (list.firstVisibleItemScrollOffset /
-                with(density) { layout.spacerHeight.toPx() }).coerceIn(0f, 1f)
+            val index = if (scroll.value < with(density) { layout.spacerHeight.toPx() }) 0 else 1
+            layout.collapse(index, scroll.value)
         }
     }
-    val visible by remember { derivedStateOf { list.firstVisibleItemIndex == 0 } }
-    val collapse by remember {
-        derivedStateOf { layout.collapse(list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset) }
-    }
-    return AboutScrollState(list, layout, contentMinHeight, progress, visible, collapse)
+    return AboutScrollState(scroll, layout, progress, visible, collapse)
 }

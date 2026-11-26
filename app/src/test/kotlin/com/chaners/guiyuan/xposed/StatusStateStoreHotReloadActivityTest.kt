@@ -20,7 +20,7 @@ class StatusStateStoreHotReloadActivityTest {
             mobileActivityResIds = mapOf(1 to 221),
             mobileActivityObservedIds = setOf(1),
         )
-        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        val merged = HotReloadSnapshotMergePolicy.merge(saved, fresh)
         assertEquals(221, merged.mobileActivityResIds[1])
         assertTrue(1 in merged.mobileActivityVisibilityObservedIds)
         assertTrue(1 !in merged.mobileActivityShownIds)
@@ -38,12 +38,12 @@ class StatusStateStoreHotReloadActivityTest {
             mobileActivityShownIds = setOf(1),
             mobileActivityVisibilityObservedIds = setOf(1),
         )
-        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        val merged = HotReloadSnapshotMergePolicy.merge(saved, fresh)
         assertEquals(221, merged.mobileActivityResIds[1])
         assertTrue(1 in merged.mobileActivityShownIds)
         assertTrue(1 in merged.mobileActivityVisibilityObservedIds)
 
-        val airplane = StatusStateStore.mergeHotReloadSnapshots(
+        val airplane = HotReloadSnapshotMergePolicy.merge(
             merged,
             StatusStateStore.Snapshot(airplaneMode = true),
         )
@@ -70,7 +70,7 @@ class StatusStateStoreHotReloadActivityTest {
         assertNull(StatusStateStore.updateWifiActivity(null))
         assertNull(StatusStateStore.updateMobileActivity(1, null))
         StatusStateStore.updateMobileActivity(2, 240)
-        val merged = StatusStateStore.mergeHotReloadSnapshots(previous, StatusStateStore.snapshot())
+        val merged = HotReloadSnapshotMergePolicy.merge(previous, StatusStateStore.snapshot())
         assertNull(merged.wifiActivityResId)
         assertNull(merged.mobileActivityResIds[1])
         assertEquals(240, merged.mobileActivityResIds[2])
@@ -89,7 +89,7 @@ class StatusStateStoreHotReloadActivityTest {
         val previous = StatusStateStore.snapshot()
 
         StatusStateStore.restoreHotReloadState(null)
-        val restored = StatusStateStore.mergeHotReloadSnapshots(previous, StatusStateStore.snapshot())
+        val restored = HotReloadSnapshotMergePolicy.merge(previous, StatusStateStore.snapshot())
         assertEquals(120, restored.wifiActivityResId)
         assertEquals(220, restored.mobileActivityResIds[1])
         StatusStateStore.restoreHotReloadState(null)
@@ -155,12 +155,12 @@ class StatusStateStoreHotReloadActivityTest {
             wifiActivityResId = 220,
             wifiActivityObserved = true,
         )
-        val merged = StatusStateStore.mergeHotReloadSnapshots(saved, fresh)
+        val merged = HotReloadSnapshotMergePolicy.merge(saved, fresh)
         assertEquals(StatusStateStore.WifiState.Hidden, merged.wifi)
         assertEquals(220, merged.wifiActivityResId)
         // A fresh native absence is equally authoritative: it must not
         // resurrect the outgoing generation's activity drawable.
-        assertNull(StatusStateStore.mergeHotReloadSnapshots(
+        assertNull(HotReloadSnapshotMergePolicy.merge(
             saved, fresh.copy(wifiActivityResId = null),
         ).wifiActivityResId)
     }

@@ -99,6 +99,7 @@ class VisualPersistenceTest {
         resetVisualPreferences(prefs, BatteryColorSchemeLibrary())
         assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
         assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 0))
         assertTrue(prefs.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false))
 
         prefs.edit()
@@ -113,21 +114,22 @@ class VisualPersistenceTest {
     }
 
     @Test
-    fun dualOffsetsStayIndependentAcrossStylesAndLayouts() {
+    fun sharedMobileSignalOffsetPersistsAcrossStylesSimModesAndLayouts() {
         val prefs = VisualTestPreferences()
-        val dual = VisualCfg(
+        val network = VisualCfg(
             dualSignal = true,
             dualRowDotArrangement = SignalDotArrangement.CURVED,
             curvedSignalDotOffsetY = 4f,
             horizontalSignalDotOffsetY = -7f,
         )
-        prefs.edit().putVisualCfg(dual).apply()
-        val network = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, network.activeSignalDotOffsetY, 0f)
-        assertEquals(-7f, network.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
+        prefs.edit().putVisualCfg(network).apply()
+        val current = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
+        assertEquals(4f, current.activeSignalDotOffsetY, 0f)
+        assertEquals(4f, current.copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
+        assertEquals(4f, prefs.readVisualCfg(dual = false).singleRowDotOffsetY, 0f)
 
         prefs.edit().putVisualCfg(
-            dual.copy(
+            network.copy(
                 layout = ContentLayout.BATTERY_CENTER,
                 dualRowDotArrangement = SignalDotArrangement.HORIZONTAL,
                 curvedSignalDotOffsetY = -2f,
@@ -136,11 +138,38 @@ class VisualPersistenceTest {
         ).apply()
         val battery = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.BATTERY_CENTER)
         assertEquals(5f, battery.activeSignalDotOffsetY, 0f)
-        assertEquals(-2f, battery.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).activeSignalDotOffsetY, 0f)
-        val original = prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER)
-        assertEquals(4f, original.curvedSignalDotOffsetY, 0f)
-        assertEquals(-7f, original.horizontalSignalDotOffsetY, 0f)
-        assertEquals(-2f, prefs.readVisualCfg(dual = false).activeSignalDotOffsetY, 0f)
+        assertEquals(5f, battery.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).activeSignalDotOffsetY, 0f)
+        assertEquals(5f, prefs.readVisualCfg(dual = false, layoutOverride = ContentLayout.BATTERY_CENTER).activeSignalDotOffsetY, 0f)
+        assertEquals(4f, prefs.readVisualCfg(dual = true, layoutOverride = ContentLayout.NETWORK_CENTER).activeSignalDotOffsetY, 0f)
+    }
+
+    @Test
+    fun oldStyleOffsetsMigrateCurrentSelectionOnceWithoutLosingLayouts() {
+        val prefs = VisualTestPreferences()
+        prefs.edit().putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
+            .putString(
+                visualProfileKey(ContentLayout.NETWORK_CENTER, SINGLE_ROW_DOT_STYLE_KEY),
+                SignalDotArrangement.HORIZONTAL.persistedValue,
+            )
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, CURVED_SIGNAL_DOT_OFFSET_Y_KEY), 3f)
+            .putFloat(visualProfileKey(ContentLayout.NETWORK_CENTER, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY), -5f)
+            .putFloat(visualProfileKey(ContentLayout.BATTERY_CENTER, CURVED_SIGNAL_DOT_OFFSET_Y_KEY), 6f)
+            .apply()
+
+        migrateMobileSignalDotOffsetIfNeeded(prefs)
+        assertEquals(1, prefs.getInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 0))
+        val network = prefs.readVisualCfg(layoutOverride = ContentLayout.NETWORK_CENTER)
+        assertEquals(-5f, network.activeSignalDotOffsetY, 0f)
+        assertEquals(-5f, network.copy(singleRowDotArrangement = SignalDotArrangement.CURVED).activeSignalDotOffsetY, 0f)
+        assertEquals(-5f, prefs.readVisualCfg(dual = true).copy(dualRowDotArrangement = SignalDotArrangement.HORIZONTAL).activeSignalDotOffsetY, 0f)
+        assertEquals(6f, prefs.readVisualCfg(layoutOverride = ContentLayout.BATTERY_CENTER).activeSignalDotOffsetY, 0f)
+        assertFalse(prefs.contains(visualProfileKey(ContentLayout.NETWORK_CENTER, CURVED_SIGNAL_DOT_OFFSET_Y_KEY)))
+        assertFalse(prefs.contains(visualProfileKey(ContentLayout.NETWORK_CENTER, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY)))
+        val after = prefs.all.toMap()
+        migrateMobileSignalDotOffsetIfNeeded(prefs)
+        assertEquals(after, prefs.all)
     }
 
     @Test
@@ -173,7 +202,7 @@ class VisualPersistenceTest {
         val batteryDual = prefs.readVisualCfg()
         assertEquals(-6f, batteryDual.activeSignalDotOffsetY, 0f)
         assertEquals(-6f, batteryDual.horizontalSignalDotOffsetY, 0f)
-        assertEquals(1f, batteryDual.curvedSignalDotOffsetY, 0f)
+        assertEquals(-6f, batteryDual.curvedSignalDotOffsetY, 0f)
         assertEquals(2f, prefs.readVisualCfg(
             dual = true,
             layoutOverride = ContentLayout.NETWORK_CENTER,
@@ -183,7 +212,7 @@ class VisualPersistenceTest {
             layoutOverride = ContentLayout.BATTERY_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
 
-        // The single-row arrangement controls the single-mode slider's offset bank.
+        // Both SIM modes and both arrangements now share one offset within this layout.
         prefs.edit().putBoolean(DUAL_SIGNAL_ENABLED_KEY, false)
             .putString(
                 visualProfileKey(ContentLayout.BATTERY_CENTER, SINGLE_ROW_DOT_STYLE_KEY),
@@ -192,8 +221,8 @@ class VisualPersistenceTest {
         prefs.writeSignalDotOffsetY(4f)
         val batterySingle = prefs.readVisualCfg()
         assertEquals(4f, batterySingle.activeSignalDotOffsetY, 0f)
-        assertEquals(-6f, batterySingle.horizontalSignalDotOffsetY, 0f)
-        assertEquals(-6f, prefs.readVisualCfg(dual = true).horizontalSignalDotOffsetY, 0f)
+        assertEquals(4f, batterySingle.horizontalSignalDotOffsetY, 0f)
+        assertEquals(4f, prefs.readVisualCfg(dual = true).horizontalSignalDotOffsetY, 0f)
 
         // Switching back to the other layout cannot overwrite the battery bank.
         prefs.edit()
@@ -202,10 +231,29 @@ class VisualPersistenceTest {
             .apply()
         prefs.writeSignalDotOffsetY(7f)
         assertEquals(7f, prefs.readVisualCfg().activeSignalDotOffsetY, 0f)
-        assertEquals(-6f, prefs.readVisualCfg(
+        assertEquals(4f, prefs.readVisualCfg(
             dual = true,
             layoutOverride = ContentLayout.BATTERY_CENTER,
         ).horizontalSignalDotOffsetY, 0f)
+    }
+
+    @Test
+    fun bothSidesMigratesTheSingleRowOffsetWithoutMovingFixedDualDots() {
+        val prefs = VisualTestPreferences()
+        val layout = ContentLayout.NETWORK_CENTER
+        prefs.edit().putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
+            .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+            .putBoolean(DUAL_SIGNAL_ENABLED_KEY, true)
+            .putString(visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY), SignalDotArrangement.BOTH_SIDES.persistedValue)
+            .putString(visualProfileKey(layout, SINGLE_ROW_DOT_STYLE_KEY), SignalDotArrangement.HORIZONTAL.persistedValue)
+            .putFloat(visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY), 3f)
+            .putFloat(visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY), -4f)
+            .apply()
+        migrateMobileSignalDotOffsetIfNeeded(prefs)
+        val visual = prefs.readVisualCfg(dual = true)
+        assertEquals(0f, visual.activeSignalDotOffsetY, 0f)
+        assertEquals(-4f, visual.singleRowDotOffsetY, 0f)
+        assertEquals(-4f, visual.copy(dualRowDotArrangement = SignalDotArrangement.CURVED).activeSignalDotOffsetY, 0f)
     }
 
     @Test

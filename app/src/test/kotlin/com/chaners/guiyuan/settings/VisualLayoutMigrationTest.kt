@@ -151,6 +151,8 @@ class VisualLayoutMigrationTest {
                 visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY)),
                 0.91f,
             )
+            .putFloat(visualModeKey(true, visualProfileKey(layout, CURVED_SIGNAL_DOT_OFFSET_Y_KEY)), 3f)
+            .putFloat(visualModeKey(true, visualProfileKey(layout, HORIZONTAL_SIGNAL_DOT_OFFSET_Y_KEY)), -4f)
             .apply()
         val priorWrites = prefs.writeCount
 
@@ -160,11 +162,13 @@ class VisualLayoutMigrationTest {
         assertEquals(priorWrites + 1, prefs.writeCount)
         assertEquals(4, prefs.getInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 0))
         assertEquals(1, prefs.getInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 0))
+        assertEquals(1, prefs.getInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 0))
         for (dual in listOf(false, true)) {
             val cfg = prefs.readVisualCfg(dual, layout)
             assertEquals(SignalDotArrangement.HORIZONTAL, cfg.dualRowDotArrangement)
             assertEquals(SignalDotArrangement.HORIZONTAL, cfg.singleRowDotArrangement)
             assertEquals(0.91f, cfg.wifiScale, 0f)
+            assertEquals(-4f, cfg.activeSignalDotOffsetY, 0f)
         }
         assertFalse(prefs.contains(visualModeKey(true, visualProfileKey(layout, WIFI_SIZE_SCALE_KEY))))
         val migrated = prefs.all.toMap()

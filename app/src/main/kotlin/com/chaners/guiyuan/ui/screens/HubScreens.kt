@@ -1,6 +1,9 @@
 package com.chaners.guiyuan.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -39,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -78,6 +82,7 @@ internal fun AnimatedPreferenceGroup(
     }
 }
 
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun HubPage(
     title: String,
@@ -90,6 +95,10 @@ internal fun HubPage(
     // Browsing and filtered results must not overwrite each other's scroll position.
     val browsingState = rememberLazyListState()
     val resultsState = rememberLazyListState()
+    // A rotation invalidates row heights; search has separate list and cache owners.
+    val orientation = LocalConfiguration.current.orientation
+    val browsingIndicator = rememberStableLazyListScrollBarAdapter(browsingState, orientation)
+    val resultsIndicator = rememberStableLazyListScrollBarAdapter(resultsState, search?.query to orientation)
     val filtering = search?.filtering == true
     val listState = if (filtering) resultsState else browsingState
     val canScroll = listState.canScrollBackward || listState.canScrollForward
@@ -227,6 +236,11 @@ internal fun HubPage(
                     .fillMaxSize()
                     .topBarBackdropSource(topBarBackdrop),
         ) {
+            val contentPadding = pageContentPadding(
+                innerPadding = paddingValues,
+                outerBottomPadding = bottomContentPadding,
+                extraBottom = 12.dp,
+            )
             LazyColumn(
                 state = listState,
                 overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect(),
@@ -236,12 +250,14 @@ internal fun HubPage(
                         .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
                         .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = pageContentPadding(
-                    innerPadding = paddingValues,
-                    outerBottomPadding = bottomContentPadding,
-                    extraBottom = 12.dp,
-                ),
+                contentPadding = contentPadding,
                 content = content,
+            )
+            VerticalScrollBar(
+                adapter = if (filtering) resultsIndicator else browsingIndicator,
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                trackPadding = contentPadding,
+                topAppBarScrollBehavior = scrollBehavior,
             )
         }
 

@@ -12,6 +12,7 @@ import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 private const val TEST_UI_STYLE_KEY = "ui_style"
+private const val TEST_NAV_STYLE_KEY = "floating_navigation_style"
 private const val TEST_NAV_CONTENT_KEY = "floating_navigation_content"
 private const val TEST_UNKNOWN_INPUT = "Unknown"
 
@@ -105,7 +106,7 @@ class AppearanceCompatibilityTest {
     @Test
     fun retiringStylePreservesExistingNavigation() {
         val uiStyle = stringPreferencesKey(TEST_UI_STYLE_KEY)
-        val navStyle = stringPreferencesKey("floating_navigation_style")
+        val navStyle = stringPreferencesKey(TEST_NAV_STYLE_KEY)
         val navContent = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val navEnabled = booleanPreferencesKey("floating_navigation_bar_enabled")
         val prefs = mutablePreferencesOf(
@@ -145,11 +146,15 @@ class AppearanceCompatibilityTest {
         )
     }
 
+}
+
+// Persistence migration rules are independent from fresh-install UI defaults.
+class AppearanceMigrationTest {
     @Test
     fun migrationUsesActiveStyleLabelChoiceAndRetiresSeparateKey() {
         val regularKey = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
         val liquidKey = stringPreferencesKey("floating_navigation_liquid_content")
-        val navStyle = stringPreferencesKey("floating_navigation_style")
+        val navStyle = stringPreferencesKey(TEST_NAV_STYLE_KEY)
         val liquidMode = stringPreferencesKey("floating_navigation_liquid_mode")
         for (style in NavStyle.entries) {
             for (regular in NavContent.entries) {
@@ -213,7 +218,7 @@ class AppearanceCompatibilityTest {
     @Test
     fun migrationPreservesImplicitLiquidLabelDefault() {
         val content = stringPreferencesKey(TEST_NAV_CONTENT_KEY)
-        val nav = stringPreferencesKey("floating_navigation_style")
+        val nav = stringPreferencesKey(TEST_NAV_STYLE_KEY)
         val prefs = mutablePreferencesOf(
             stringPreferencesKey(TEST_UI_STYLE_KEY) to "OS3",
             nav to NavStyle.Liquid.name,

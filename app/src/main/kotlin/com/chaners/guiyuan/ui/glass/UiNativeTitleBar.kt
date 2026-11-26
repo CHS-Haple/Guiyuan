@@ -13,9 +13,6 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.TopAppBarLayout
 
-// PR423 clips title layers locally; action controls stay in their native measured slots.
-internal const val NativeTitleLocalClip = true
-
 @Composable
 internal fun UiNativeTitleBar(
     title: String,

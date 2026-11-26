@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.settings
 
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -59,6 +60,18 @@ class ConfigBackupValidationTest {
         }
     }
 
+    @Test fun malformedJsonContainerPairingAndDepthRemainRejected() {
+        for (invalid in listOf("{]", "[}", "{", "[".repeat(17) + "]".repeat(17))) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ConfigBackupGuards.checkJsonStructure(invalid, Json)
+            }
+        }
+        ConfigBackupGuards.checkJsonStructure("""{"items":[{"name":"ok"}]}""", Json)
+    }
+}
+
+// Archive content and import ownership are separate from JSON structure validation.
+class ConfigBackupImportBoundaryTest {
     @Test fun invalidUtf8AndNoncanonicalSchemeKeysAreRejected() {
         assertThrows(Exception::class.java) {
             ConfigBackupFormat.decode(byteArrayOf(0xC3.toByte(), 0x28))

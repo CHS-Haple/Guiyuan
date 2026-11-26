@@ -230,49 +230,12 @@ internal object StatusStateStore {
 
         // New hooks can report state before the saved snapshot is restored.
         val observed = current
-        current = mergeHotReloadSnapshots(
+        current = HotReloadSnapshotMergePolicy.merge(
             saved = HotReloadSnapshotCodec.restore(bundle),
             fresh = observed,
         )
         observed.battery?.let(::updateBattery)
         return current
-    }
-
-    // Reconcile two generations without involving Android Bundle serialization.
-    internal fun mergeHotReloadSnapshots(saved: Snapshot, fresh: Snapshot): Snapshot {
-        val wifi = fresh.wifi.takeUnless { it == WifiState.Unknown } ?: saved.wifi
-        val airplaneMode = fresh.airplaneMode ?: saved.airplaneMode
-        // Fresh recovery must survive handoff; an active airplane mode cancels it.
-        val mobileRecoveryPending =
-            airplaneMode != true && (saved.mobileRecoveryPending || fresh.mobileRecoveryPending)
-        return saved.copy(
-            wifi = wifi,
-            // A fresh native resource can predate WifiIcon.Visible. Honor
-            // that observation even if the semantic icon is still Hidden;
-            // never resurrect an older saved drawable without a new receipt.
-            wifiActivityResId = if (fresh.wifiActivityObserved) {
-                fresh.wifiActivityResId
-            } else if (wifi is WifiState.Visible) {
-                saved.wifiActivityResId
-            } else null,
-            wifiActivityObserved = fresh.wifiActivityObserved,
-            mobile = saved.mobile.toSortedMap().apply { putAll(fresh.mobile) },
-            mobileActivityResIds = buildMap {
-                if (airplaneMode != true) putAll(saved.mobileActivityResIds)
-                fresh.mobileActivityObservedIds.forEach { remove(it) }
-                if (airplaneMode != true) putAll(fresh.mobileActivityResIds)
-            },
-            mobileActivityObservedIds = fresh.mobileActivityObservedIds,
-            mobileActivityShownIds = if (airplaneMode == true) emptySet() else {
-                (saved.mobileActivityShownIds - fresh.mobileActivityVisibilityObservedIds) +
-                    fresh.mobileActivityShownIds
-            },
-            mobileActivityVisibilityObservedIds =
-                saved.mobileActivityVisibilityObservedIds +
-                    fresh.mobileActivityVisibilityObservedIds,
-            mobileRecoveryPending = mobileRecoveryPending,
-            airplaneMode = airplaneMode,
-        )
     }
 
     internal data class Snapshot(

@@ -301,6 +301,7 @@ internal class VisualRepo(context: Context) {
         editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
         editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         editor.putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
+        editor.putInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 1)
         // Restored physical charging scales use the current reference.
         return editor.commit()
     }
