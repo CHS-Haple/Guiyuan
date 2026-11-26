@@ -38,6 +38,7 @@ internal object FeatureSearchIds {
         R.string.no_sim_size,
         R.string.mobile_type_size,
         R.string.mobile_type_weight,
+        R.string.font_method_lab_title,
         R.string.mobile_follow_battery_color,
         R.string.center_follow_battery_color,
     )
@@ -109,6 +110,7 @@ internal fun searchAliases(@StringRes title: Int): List<String> = when (title) {
     R.string.no_sim_size -> listOf("无卡图标", "无卡大小", "SIM")
     R.string.mobile_type_size -> cellularTerms + listOf("网络制式", "5G 大小", "5GA 大小", "网络文字大小", "蜂窝制式大小")
     R.string.mobile_type_weight -> cellularTerms + listOf("网络制式", "5G 字重", "5GA 字重", "5G 粗细", "字体粗细", "数字粗细", "蜂窝制式粗细")
+    R.string.font_method_lab_title -> listOf("字体方式", "字重模式", "字体测试", "渲染实验", "Font method", "Override", "Variation Settings")
     R.string.mobile_follow_battery_color -> cellularTerms + listOf("移动信号颜色", "蜂窝信号颜色", "信号点颜色", "蜂窝信号", "流量信号")
     R.string.center_follow_battery_color -> listOf("网络图标颜色", "WiFi 颜色", "5G 颜色", "蜂窝制式颜色", "飞行模式颜色")
     R.string.battery_colors -> listOf("电池颜色", "电量环配色", "电池配色", "配色方案", "电量配色")
