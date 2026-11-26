@@ -2423,9 +2423,13 @@ internal class StatusPainter(
             batteryTextSource = source
             batteryTextSamples.clear()
         }
-        val sampledWeight = nativeFont?.axis?.let { axis ->
-            weight.coerceIn(ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt())
-        } ?: weight.coerceIn(200, 1000)
+        val sampledWeight = if (nativeFont == null) {
+            weight.coerceIn(200, 1000)
+        } else {
+            nativeFont.axis?.let { axis ->
+                weight.coerceIn(ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt())
+            }
+        }
         batteryTextPaint.set(
             weightedPaint(source, sampledWeight, batteryTextSamples, step = if (nativeFont == null) 10 else 1),
         )
