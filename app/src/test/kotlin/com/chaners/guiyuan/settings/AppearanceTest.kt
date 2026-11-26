@@ -30,6 +30,43 @@ class AppearanceTest {
     }
 
     @Test
+    fun presetSourceRetainsLegacySystemAndGeneratedModes() {
+        assertEquals(PaletteSource.SYSTEM, Appearance().paletteSource)
+        assertEquals(PaletteSource.SYSTEM_SEED, Appearance(customPalette = true).paletteSource)
+        assertEquals(
+            PaletteSource.PRESET,
+            Appearance(customPalette = true, usePresetSeed = true).paletteSource,
+        )
+        assertEquals(
+            PaletteSource.SYSTEM,
+            Appearance(customPalette = false, usePresetSeed = true).paletteSource,
+        )
+        assertEquals(PaletteSource.SYSTEM_SEED, paletteSource(true, false))
+        assertEquals(PaletteSource.PRESET, paletteSource(true, true))
+        assertEquals(PaletteSource.SYSTEM, paletteSource(false, true))
+    }
+
+    @Test
+    fun commonSeedChoicesAreStableDistinctAndBounded() {
+        val expected = listOf(
+            PaletteSeedPreset.BLUE,
+            PaletteSeedPreset.CYAN,
+            PaletteSeedPreset.GREEN,
+            PaletteSeedPreset.PURPLE,
+            PaletteSeedPreset.ORANGE,
+            PaletteSeedPreset.PINK,
+        )
+        assertEquals(expected, PaletteSeedPreset.entries)
+        assertEquals(expected.size, expected.map { it.argb }.distinct().size)
+        assertEquals(PaletteSeedPreset.BLUE, decodePaletteSeedPreset(null))
+        assertEquals(PaletteSeedPreset.BLUE, decodePaletteSeedPreset("unrecognized"))
+        for (preset in expected) {
+            assertEquals(preset, decodePaletteSeedPreset(preset.name))
+            assertEquals(0xFF, preset.argb ushr 24)
+        }
+    }
+
+    @Test
     fun legacySourceIsInferredOnlyWithoutAnExplicitChoice() {
         for (stored in listOf(null, "FutureSpec", "Spec2021", "Spec2025", "Spec2026")) {
             val spec = decodeColorSpec(stored)
