@@ -40,7 +40,6 @@ import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
-import com.chaners.guiyuan.ui.layout.pageScrollBarTrackPadding
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -192,7 +191,7 @@ internal fun SettingsPage(
                 VerticalScrollBar(
                     adapter = rememberScrollBarAdapter(indicatorState),
                     modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                    trackPadding = pageScrollBarTrackPadding(contentPadding, scrollBehavior),
+                    trackPadding = contentPadding,
                     topAppBarScrollBehavior = scrollBehavior,
                 )
             }
