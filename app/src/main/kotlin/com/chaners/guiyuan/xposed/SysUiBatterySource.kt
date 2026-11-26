@@ -2,7 +2,6 @@ package com.chaners.guiyuan.xposed
 
 import android.graphics.Typeface
 import android.view.View
-import com.chaners.guiyuan.settings.FontWeightAxis
 import android.view.ViewGroup
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.SysUiPresentationRuntime.optionalNativeRead
@@ -49,7 +48,7 @@ internal object SysUiBatterySource {
     internal data class NumberFont(
         val host: View,
         val face: Typeface,
-        val axis: FontWeightAxis?,
+        val weight: NativeFontWeight?,
     )
 
     @Volatile
@@ -58,8 +57,8 @@ internal object SysUiBatterySource {
     fun currentNumberFont(): NumberFont? =
         numberFont?.takeIf { it.host === SysUiHostRegistry.current() }
 
-    fun setNumberFont(host: View, face: Typeface?, axis: FontWeightAxis?) {
-        numberFont = face?.let { NumberFont(host, it, axis) }
+    fun setNumberFont(host: View, face: Typeface?, weight: NativeFontWeight?) {
+        numberFont = face?.let { NumberFont(host, it, weight) }
     }
 
     // All delivery and diagnostic callbacks belong to one installing generation.
