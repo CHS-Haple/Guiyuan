@@ -50,12 +50,12 @@ internal object NativeFontWeightProbe {
                 listOf(preferred, NativeWeightMethod.VARIATION_SETTINGS)
             } else listOf(preferred)
             methods.firstNotNullOfOrNull { method ->
-                SysUiPresentationRuntime.optionalNativeRead {
+                SysUiPresentationRuntime.optionalNativeRead candidateCheck@{
                     val candidates = listOf(low, middle, high).map { weight ->
                         Paint(paint).takeIf { candidate ->
                             method.apply(candidate, weight) &&
                                 matches(original, shape(coverage, candidate), weight)
-                        } ?: return@optionalNativeRead null
+                        } ?: return@candidateCheck null
                     }
                     NativeFontWeight(axis, method).takeIf { distinctInk(candidates, sample) }
                 }
