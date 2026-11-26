@@ -1,14 +1,15 @@
-// Guiyuan's data-only compatibility layer for MIUIX's native scrollbar.
-// AndroidX LazyListState.scrollIndicatorState estimates total length from
-// currently visible item heights. Unequal heights can make the thumb reverse
-// direction while content continues scrolling forward.
+// Guiyuan's measurement-only adapter for MIUIX's native scrollbar.
+// LazyColumn cannot know the exact total pixel extent of uncomposed items.
+// Seen item heights are real measurements; unseen items use a fixed average
+// of the first viewport's measured heights until those items are composed.
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import kotlin.math.abs
 import top.yukonga.miuix.kmp.basic.ScrollBarAdapter
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 
 internal data class StableListIndicatorRange(
@@ -17,77 +18,171 @@ internal data class StableListIndicatorRange(
     val offset: Double,
 )
 
-// Count item ordinal + visible fraction at the *bottom* of the viewport.
-// Unlike AndroidX's visible-item-average pixel offset, this is continuous
-// across differently sized item boundaries.
-internal fun itemEndOrdinal(index: Int, offset: Int, size: Int, viewportEnd: Int): Double =
-    index + ((viewportEnd.toDouble() - offset) / size.coerceAtLeast(1))
-        .coerceIn(0.0, 1.0)
+internal fun observedItemPixels(sizes: IntArray, index: Int, unseenPixels: Double): Double =
+    sizes[index].takeIf { it > 0 }?.toDouble() ?: unseenPixels.coerceAtLeast(1.0)
 
-internal fun stableListIndicatorRange(
-    itemCount: Int,
-    initialViewportOrdinal: Double,
-    bottomOrdinal: Double,
-): StableListIndicatorRange {
-    if (itemCount <= 0) return StableListIndicatorRange(0.0, 0.0, 0.0)
-    val content = itemCount.toDouble()
-    val viewport = initialViewportOrdinal.coerceIn(0.0, content)
-    val offset = (bottomOrdinal - viewport).coerceIn(0.0, content - viewport)
-    return StableListIndicatorRange(content, viewport, offset)
+// A physical scroll delta remains the same number of pixels in short/long items.
+// The ordinal approach instead changed speed by the inverse of item height.
+internal fun observedPixelOffset(
+    sizes: IntArray,
+    index: Int,
+    itemOffset: Int,
+    unseenPixels: Double,
+    spacing: Int,
+): Double {
+    val count = index.coerceIn(0, sizes.size)
+    var pixels = itemOffset.coerceAtLeast(0).toDouble()
+    for (i in 0 until count) pixels += observedItemPixels(sizes, i, unseenPixels) + spacing
+    return pixels
 }
 
-/** Keep MIUIX's drawing, touch capture, drag and scroll-to logic unchanged. */
+internal fun observedPixelContentSize(sizes: IntArray, unseenPixels: Double, spacing: Int): Double =
+    (observedPixelOffset(sizes, sizes.size, 0, unseenPixels, spacing) -
+        if (sizes.isEmpty()) 0 else spacing).coerceAtLeast(0.0)
+
+internal fun observedPixelTarget(
+    sizes: IntArray,
+    offset: Double,
+    unseenPixels: Double,
+    spacing: Int,
+): Pair<Int, Int> {
+    if (sizes.isEmpty()) return 0 to 0
+    var remaining = offset.coerceAtLeast(0.0)
+    for (i in sizes.indices) {
+        val size = observedItemPixels(sizes, i, unseenPixels)
+        if (remaining < size + spacing || i == sizes.lastIndex) {
+            val lastGap = if (i == sizes.lastIndex) 0 else spacing
+            return i to remaining.coerceIn(0.0, size + lastGap).toInt()
+        }
+        remaining -= size + spacing
+    }
+    return sizes.lastIndex to 0
+}
+
+/**
+ * Monotone, endpoint-fixed projection for revisions to the *estimated* total.
+ * Preserve the thumb's normalized location at the current measured anchor when
+ * a newly composed row discloses its real height. No timers or easing are used.
+ * Endpoints remain exact even after unknown rows are encountered.
+ */
+internal data class PixelScrollProjection(
+    val anchor: Double,
+    val fraction: Double,
+    val maximum: Double,
+) {
+    fun toFraction(pixelOffset: Double): Double {
+        if (maximum <= 0.0) return 0.0
+        val p = pixelOffset.coerceIn(0.0, maximum)
+        val a = anchor.coerceIn(0.0, maximum)
+        val f = fraction.coerceIn(0.0, 1.0)
+        return if (p <= a && a > 0.0) {
+            f * p / a
+        } else if (a < maximum) {
+            f + (1.0 - f) * (p - a) / (maximum - a)
+        } else {
+            f
+        }
+    }
+
+    fun toPixel(fraction: Double): Double {
+        if (maximum <= 0.0) return 0.0
+        val f = this.fraction.coerceIn(0.0, 1.0)
+        val target = fraction.coerceIn(0.0, 1.0)
+        val a = anchor.coerceIn(0.0, maximum)
+        return if (target <= f && f > 0.0) {
+            a * target / f
+        } else if (f < 1.0) {
+            a + (maximum - a) * (target - f) / (1.0 - f)
+        } else {
+            a
+        }
+    }
+}
+
+/** Keep the upstream scrollbar's drawing, pointer handling and animations. */
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
 internal fun rememberStableLazyListScrollBarAdapter(
     state: LazyListState,
     contentKey: Any? = null,
-): ScrollBarAdapter {
-    val native = rememberScrollBarAdapter(state)
-    return remember(state, native, contentKey) {
-        StableLazyListScrollBarAdapter(state, native)
-    }
+): ScrollBarAdapter = remember(state, contentKey) {
+    ObservedPixelLazyListScrollBarAdapter(state)
 }
 
 @OptIn(ExperimentalScrollBarApi::class)
-private class StableLazyListScrollBarAdapter(
+private class ObservedPixelLazyListScrollBarAdapter(
     private val list: LazyListState,
-    private val native: ScrollBarAdapter,
 ) : ScrollBarAdapter {
-    private var observedCount = -1
-    private var initialViewportOrdinal: Double? = null
+    private var count = -1
+    private var itemPixels = IntArray(0)
+    private var itemKeys = arrayOfNulls<Any>(0)
+    private var unseenPixels = 0.0
+    private var cacheGeneration = 0
+    private var measurementRevision = 0
+    private var projection: PixelScrollProjection? = null
+
+    private fun reset(itemCount: Int) {
+        count = itemCount
+        itemPixels = IntArray(itemCount)
+        itemKeys = arrayOfNulls(itemCount)
+        unseenPixels = 0.0
+        cacheGeneration++
+    }
+
+    private fun observe() {
+        val info = list.layoutInfo
+        if (info.totalItemsCount != count) reset(info.totalItemsCount)
+        val visible = info.visibleItemsInfo.filter { it.index in itemPixels.indices && it.size > 0 }
+        if (visible.any { itemKeys[it.index] != null && itemKeys[it.index] != it.key }) {
+            // Equal count can also represent a new result set or a reordered row.
+            reset(info.totalItemsCount)
+        }
+        if (unseenPixels <= 0.0 && visible.isNotEmpty()) {
+            unseenPixels = visible.map { it.size.toDouble() }.average()
+            measurementRevision++
+        }
+        for (item in visible) {
+            if (itemPixels[item.index] != item.size) {
+                itemPixels[item.index] = item.size
+                measurementRevision++
+            }
+            itemKeys[item.index] = item.key
+        }
+    }
+
+    private fun physicalPosition(): Double = observedPixelOffset(
+        itemPixels, list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset,
+        unseenPixels, list.layoutInfo.mainAxisItemSpacing,
+    )
 
     private fun range(): StableListIndicatorRange {
+        val previous = projection
+        val beforePosition = if (previous != null && unseenPixels > 0.0) physicalPosition() else 0.0
+        val generation = cacheGeneration
+        val revision = measurementRevision
+        observe()
         val info = list.layoutInfo
-        val count = info.totalItemsCount
-        if (count <= 0 || (!list.canScrollBackward && !list.canScrollForward)) {
-            // No active scroll range: a later expansion may have the same item count
-            // but a different viewport span. Do not revive its previous thumb length.
-            observedCount = -1
-            initialViewportOrdinal = null
-            return stableListIndicatorRange(count, count.toDouble(), count.toDouble())
+        if (count <= 0 || (!list.canScrollForward && !list.canScrollBackward) || unseenPixels <= 0.0) {
+            projection = null
+            return StableListIndicatorRange(0.0, 0.0, 0.0)
         }
-        val last = info.visibleItemsInfo
-            .filter { it.size > 0 && it.offset < info.viewportEndOffset &&
-                it.offset + it.size > info.viewportStartOffset }
-            .maxByOrNull { it.index }
-            ?: return stableListIndicatorRange(0, 0.0, 0.0)
-        val bottom = itemEndOrdinal(last.index, last.offset, last.size, info.viewportEndOffset)
-        if (count != observedCount) {
-            observedCount = count
-            initialViewportOrdinal = null
+        val viewport = info.viewportSize.height.toDouble().coerceAtLeast(0.0)
+        val measured = observedPixelContentSize(itemPixels, unseenPixels, info.mainAxisItemSpacing)
+        val content = (measured + info.beforeContentPadding + info.afterContentPadding).coerceAtLeast(viewport)
+        val max = (content - viewport).coerceAtLeast(0.0)
+        val position = physicalPosition().coerceIn(0.0, max)
+        projection = when {
+            previous == null || generation != cacheGeneration -> PixelScrollProjection(0.0, 0.0, max)
+            revision != measurementRevision || previous.maximum != max ->
+                PixelScrollProjection(position, previous.toFraction(beforePosition), max)
+            else -> previous
         }
-        // Keep the initial viewport span while the same list is scrolled:
-        // reanchoring at the top after restoring a mid-list position changes thumb length.
-        if (initialViewportOrdinal == null) {
-            val firstIndex = list.firstVisibleItemIndex
-            val firstSize = info.visibleItemsInfo.firstOrNull { it.index == firstIndex }?.size ?: 1
-            val top = firstIndex +
-                (list.firstVisibleItemScrollOffset.toDouble() / firstSize.coerceAtLeast(1))
-                    .coerceIn(0.0, 1.0)
-            initialViewportOrdinal = (bottom - top).coerceAtLeast(0.0)
+        val offset = when {
+            !list.canScrollBackward -> 0.0
+            !list.canScrollForward -> max
+            else -> (projection?.toFraction(position) ?: 0.0) * max
         }
-        return stableListIndicatorRange(count, initialViewportOrdinal ?: 0.0, bottom)
+        return StableListIndicatorRange(content, viewport, offset)
     }
 
     override val contentSize: Double get() = range().content
@@ -97,11 +192,25 @@ private class StableLazyListScrollBarAdapter(
     override suspend fun scrollTo(scrollOffset: Double) {
         val current = range()
         val max = current.content - current.viewport
-        if (max <= 0.0) return
-        val upstreamMax = (native.contentSize - native.viewportSize).coerceAtLeast(0.0)
-        if (upstreamMax <= 0.0) return
-        // The upstream adapter retains the sole actual scroll writer. Only the
-        // displayed thumb uses item ordinals instead of volatile pixel estimates.
-        native.scrollTo((scrollOffset / max).coerceIn(0.0, 1.0) * upstreamMax)
+        if (max <= 0.0 || count <= 0) return
+        val target = scrollOffset.coerceIn(0.0, max)
+        if (target <= 0.5) {
+            list.scrollToItem(0)
+        } else if (target >= max - 0.5) {
+            list.scrollToItem(count - 1)
+            val last = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == count - 1 }
+            if (last != null && list.canScrollForward) list.scrollBy(last.size.toFloat())
+        } else {
+            val rawTarget = projection?.toPixel(target / max) ?: return
+            val rawDelta = rawTarget - physicalPosition()
+            if (abs(rawDelta) <= current.viewport) {
+                list.scrollBy(rawDelta.toFloat())
+            } else {
+                val (index, itemOffset) = observedPixelTarget(
+                    itemPixels, rawTarget, unseenPixels, list.layoutInfo.mainAxisItemSpacing,
+                )
+                list.scrollToItem(index, itemOffset)
+            }
+        }
     }
 }
