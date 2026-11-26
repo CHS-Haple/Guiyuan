@@ -9,7 +9,6 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
-import android.os.Build
 import com.chaners.guiyuan.settings.BATTERY_TOP_VERTICAL_OFFSET_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_DEFAULT
 import com.chaners.guiyuan.settings.COMBINED_SCALE_MAX
@@ -43,7 +42,6 @@ internal class StatusPainter(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     // Keep 5G font axes separate from other Canvas text.
     private val mobileTypePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val hasFontOverride = Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
     private var mobileTextSource: Typeface? = null
     private var mobileWeightMethod = NativeWeightMethod.platformDefault
     private val mobileTextSamples = BoundedAccessCache<Int, Paint>(128)
@@ -2404,7 +2402,9 @@ internal class StatusPainter(
                             false
                         }
                     if (!applied) {
-                        set(Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = source })
+                        reset()
+                        isAntiAlias = true
+                        typeface = source
                     }
                 }
             }
@@ -2425,7 +2425,8 @@ internal class StatusPainter(
             batteryWeightMethod = method
             batteryTextSamples.clear()
         }
-        val sampledWeight = if (nativeFont == null) {
+        val native = progress >= 1f && targetStyle?.typeface != null
+        val sampledWeight = if (native) null else if (nativeFont == null) {
             weight.coerceIn(200, 1000)
         } else {
             nativeFont.weight?.axis?.let { axis ->
@@ -2446,11 +2447,9 @@ internal class StatusPainter(
         batteryTextPaint.letterSpacing =
             lerp(0f, targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f, styleProgress)
         batteryTextPaint.textSize = textSize
-        val native = progress >= 1f && targetStyle?.typeface != null
         batteryTextPaint.style = if (native) targetStyle.paintStyle else Paint.Style.FILL
         batteryTextPaint.strokeWidth = if (native) targetStyle.strokeWidth else 0f
         if (native) {
-            method.apply(batteryTextPaint, null)
             batteryTextPaint.typeface = targetStyle.typeface
         }
     }
@@ -3448,7 +3447,7 @@ internal class StatusPainter(
             MobileInkKey(
                 face = mobileTypePaint.typeface,
                 variation =
-                    if (hasFontOverride) mobileTypePaint.fontVariationOverride ?: mobileTypePaint.fontVariationSettings
+                    if (mobileWeightMethod == NativeWeightMethod.OVERRIDE) mobileTypePaint.fontVariationOverride
                     else mobileTypePaint.fontVariationSettings,
                 text = text,
                 size = mobileTypePaint.textSize,
@@ -3488,7 +3487,8 @@ internal class StatusPainter(
             mobileTextSamples.clear()
             mobileInkSamples.clear()
         }
-        mobileTypePaint.set(weightedPaint(source, weight, mobileTextSamples, step = 1, method = method))
+        val native = progress >= 1f && targetStyle?.typeface != null
+        mobileTypePaint.set(weightedPaint(source, weight.takeUnless { native }, mobileTextSamples, step = 1, method = method))
         val styleProgress =
             targetStyle?.let { TransitionTypographyPolicy.styleProgress(progress) } ?: 0f
         mobileTypePaint.isFakeBoldText =
@@ -3499,11 +3499,9 @@ internal class StatusPainter(
             (targetStyle?.textSkewX?.takeIf(Float::isFinite) ?: 0f) * styleProgress
         mobileTypePaint.letterSpacing =
             (targetStyle?.letterSpacing?.takeIf(Float::isFinite) ?: 0f) * styleProgress
-        val native = progress >= 1f && targetStyle?.typeface != null
         mobileTypePaint.style = if (native) targetStyle.paintStyle else Paint.Style.FILL
         mobileTypePaint.strokeWidth = if (native) targetStyle.strokeWidth else 0f
         if (native) {
-            method.apply(mobileTypePaint, null)
             mobileTypePaint.typeface = targetStyle.typeface
         }
         mobileTypePaint.textSize = textSize
