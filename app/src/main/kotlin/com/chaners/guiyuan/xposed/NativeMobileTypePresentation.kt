@@ -78,9 +78,9 @@ internal object NativeMobileTypePresentation {
         clazz.getMethod("setMiuiStatusBarTypeface", Array<Paint>::class.java)
             .invoke(null, arrayOf(paint) as Any)
         val face = paint.typeface ?: return@optionalNativeRead null
-        face to SysUiPresentationRuntime.optionalNativeRead {
+        face to SysUiPresentationRuntime.optionalNativeRead pathCheck@{
             val original = clazz.getField("sMiproTypeface").get(null) as? Typeface
-            if (original !== face) return@optionalNativeRead null
+            if (original !== face) return@pathCheck null
             val config = loader.loadClass("com.miui.utils.configs.MiuiConfigs")
             config.getField("FONT_MIPRO_PATH").get(null) as? String
         }
