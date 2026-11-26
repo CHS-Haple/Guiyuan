@@ -31,7 +31,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -286,18 +285,6 @@ fun GlassTopAppBar(
     val resolvedMaterial = remember(material, buttonUnderlay) { material.withUnderlayBlur(buttonUnderlay) }
     val buttonBackdrop = progressiveBackdrop ?: rawBackdrop
 
-    // The app-local title layout retains unclipped action slots, but the blur ramp
-    // follows upstream's measured bottomContent/startFraction contract.
-    var measuredBottomContentHeight by remember { mutableIntStateOf(0) }
-    var progressiveStartFraction by remember { mutableFloatStateOf(0f) }
-    val progressiveGradient = remember(progressiveStartFraction) {
-        if (progressiveStartFraction > 0f) {
-            ProgressiveBlur.Top.copy(startFraction = progressiveStartFraction)
-        } else {
-            ProgressiveBlur.Top
-        }
-    }
-
     var barOrigin by remember { mutableStateOf(Offset.Zero) }
     var navigationBounds by remember { mutableStateOf<Rect?>(null) }
     var actionBounds by remember { mutableStateOf<Rect?>(null) }
@@ -350,11 +337,9 @@ fun GlassTopAppBar(
                     .layout { measurable, constraints ->
                         // Track the actual native title layout, including compact and bottom-content rows.
                         // The upstream blur band uses the measured height plus its gradient overhang.
-                        val collapsedCoverage = TopAppBarDefaults.CollapsedHeight.toPx() +
-                            measuredBottomContentHeight
                         val fallbackCoveredHeight = maxOf(
                             constraints.maxHeight.toFloat(),
-                            topInsets.getTop(this) + collapsedCoverage,
+                            topInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx(),
                         )
                         val coveredHeight = if (useCollapseProgress && scrollBehavior != null) {
                             val state = scrollBehavior.state
@@ -363,7 +348,7 @@ fun GlassTopAppBar(
                                 val offset = state.heightOffset
                                 val boundedOffset = if (offset.isNaN()) 0f else offset.coerceIn(limit, 0f)
                                 (constraints.maxHeight.toFloat() + limit - boundedOffset)
-                                    .coerceAtLeast(collapsedCoverage)
+                                    .coerceAtLeast(TopAppBarDefaults.CollapsedHeight.toPx())
                             } else {
                                 fallbackCoveredHeight
                             }
@@ -371,14 +356,6 @@ fun GlassTopAppBar(
                             fallbackCoveredHeight
                         }
                         val height = (coveredHeight + bandOverhang.toPx().coerceAtLeast(0f)).fastRoundToInt()
-                        val nextStartFraction = if (height > 0 && measuredBottomContentHeight > 0) {
-                            (measuredBottomContentHeight.toFloat() / height.toFloat()).coerceIn(0f, 0.95f)
-                        } else {
-                            0f
-                        }
-                        if (progressiveStartFraction != nextStartFraction) {
-                            progressiveStartFraction = nextStartFraction
-                        }
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
                     }
@@ -389,7 +366,7 @@ fun GlassTopAppBar(
                     .progressiveTextureBlur(
                         backdrop = rawBackdrop,
                         shape = RectangleShape,
-                        gradient = progressiveGradient,
+                        gradient = ProgressiveBlur.Top,
                         blurRadius = GlassTopAppBarDefaults.ProgressiveBlurRadius.value,
                         colors = blurColors,
                         enabled = bandActive,
@@ -502,19 +479,7 @@ fun GlassTopAppBar(
                         actions()
                     }
                 },
-                bottomContent = {
-                    Box(
-                        modifier = Modifier.layout { measurable, constraints ->
-                            val placeable = measurable.measure(constraints)
-                            if (measuredBottomContentHeight != placeable.height) {
-                                measuredBottomContentHeight = placeable.height
-                            }
-                            layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
-                        },
-                    ) {
-                        bottomContent()
-                    }
-                },
+                bottomContent = bottomContent,
             )
             // Published TopAppBar clips its whole layout. Retain native slot measurement,
             // but draw each interactive glass button once above that outdated clip.
