@@ -70,6 +70,7 @@ internal fun SharedPreferences.readVisualCfg(
         noSimScale = size(NO_SIM_SIZE_SCALE_KEY, NO_SIM_SIZE_SCALE_DEFAULT),
         mobileTypeScale = size(MOBILE_TYPE_SIZE_SCALE_KEY, mobileTypeScaleDefault(layout)),
         mobileTypeWeight = weight(MOBILE_TYPE_WEIGHT_KEY, MOBILE_TYPE_WEIGHT_DEFAULT),
+        fontTestMode = FontTestMode.fromStored(getString(FONT_METHOD_LAB_KEY, null)),
         batteryColorPreset = readBatteryColorPreset(),
         batteryColorModes = readBatteryColorModes(),
         batteryColorOverrides = readBatteryColorOverrides(),
