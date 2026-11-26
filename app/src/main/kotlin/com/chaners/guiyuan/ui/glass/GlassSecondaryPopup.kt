@@ -97,17 +97,7 @@ fun BoxScope.GlassSecondaryPopup(
             }
         }
     }
-    val onFinished by rememberUpdatedState(onDismissFinished)
-    var hasOpened by remember { mutableStateOf(false) }
-    LaunchedEffect(show) {
-        if (show) {
-            hasOpened = true
-        } else if (hasOpened) {
-            snapshotFlow { state.isIdle }.first { it }
-            hasOpened = false
-            onFinished?.invoke()
-        }
-    }
+    ObserveSecondaryPopupFinish(show, state, onDismissFinished)
     if (!active) return
     val direction = LocalLayoutDirection.current
     val source = materialAnchor?.surface
@@ -139,6 +129,26 @@ fun BoxScope.GlassSecondaryPopup(
         scrollable = true,
         content = content,
     )
+}
+
+// One effect owner for completion; the panel may remain composed during its exit.
+@Composable
+private fun ObserveSecondaryPopupFinish(
+    show: Boolean,
+    state: MutableTransitionState<Boolean>,
+    onDismissFinished: (() -> Unit)?,
+) {
+    val onFinished by rememberUpdatedState(onDismissFinished)
+    var hasOpened by remember { mutableStateOf(false) }
+    LaunchedEffect(show) {
+    if (show) {
+    hasOpened = true
+    } else if (hasOpened) {
+    snapshotFlow { state.isIdle }.first { it }
+    hasOpened = false
+    onFinished?.invoke()
+    }
+    }
 }
 
 /** Start-edge alignment, then a shift upward to fit the window's safe area. */
