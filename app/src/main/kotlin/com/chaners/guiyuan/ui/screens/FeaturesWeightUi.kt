@@ -21,10 +21,11 @@ internal data class FeatureWeightUi(
     val points: List<Float>?,
     val rangeText: String?,
     val pending: Boolean,
+    val allowUnverified: Boolean = false,
 )
 
 @Composable
-internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange, row: NativeWeightRow, enabled: Boolean): FeatureWeightUi {
+internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange, row: NativeWeightRow, enabled: Boolean, allowUnverified: Boolean = false): FeatureWeightUi {
     val verified = axis.verifiedWeightRange()
     val valueRange = (verified?.first ?: fallbackRange.first).toFloat()..
         (verified?.last ?: fallbackRange.last).toFloat()
@@ -40,6 +41,7 @@ internal fun featureWeightUi(axis: NativeFontAxis.State, fallbackRange: IntRange
         points = points,
         rangeText = rangeText,
         pending = axis == NativeFontAxis.State.Pending,
+        allowUnverified = allowUnverified,
     )
 }
 
@@ -81,7 +83,8 @@ internal fun NativeWeightSlider(
         onValueChange = { onValueChange(it.roundToInt()) },
         title = stringResource(weight.row.titleRes),
         summary = weight.rangeText ?: stringResource(
-            if (weight.pending) R.string.font_weight_pending else R.string.font_weight_unverified,
+            if (weight.allowUnverified) R.string.font_method_lab_unverified
+            else if (weight.pending) R.string.font_weight_pending else R.string.font_weight_unverified,
         ),
         startAction = {
             SemanticLeadingIcon(weight.row.iconRes, weight.enabled, R.drawable.ic_material_symbol_line_weight)
@@ -99,7 +102,7 @@ internal fun NativeWeightSlider(
         magnetThreshold = weight.verifiedRange?.let(::weightSnapThreshold) ?: 0f,
         hapticEffect = SliderDefaults.SliderHapticEffect.Step,
         holdDownState = dialogOpen,
-        enabled = weight.enabled && weight.verifiedRange != null,
+        enabled = weight.enabled && (weight.verifiedRange != null || weight.allowUnverified),
         onClick = onOpenDialog,
     )
 }
