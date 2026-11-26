@@ -17,7 +17,8 @@ class FontTestModeTest {
         assertFalse(isBackupVisualKey(FONT_METHOD_LAB_KEY))
         val visual = local.readVisualCfg()
         assertEquals(FontTestMode.SETTINGS, visual.fontTestMode)
-        remote.edit().putVisualCfg(visual).apply()
+        remote.edit().putVisualCfg(visual)
+            .putString(FONT_METHOD_LAB_KEY, visual.fontTestMode.persistedValue).apply()
         assertEquals(FontTestMode.SETTINGS, remote.readVisualCfg().fontTestMode)
         assertFalse(Json.encodeToString(VisualCfg.serializer(), visual).contains("fontTestMode"))
     }
