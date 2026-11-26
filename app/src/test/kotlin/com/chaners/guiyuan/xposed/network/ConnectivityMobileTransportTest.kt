@@ -10,13 +10,12 @@ import org.junit.Test
 class ConnectivityMobileTransportTest {
 
     @Test
-    fun mobileTypeKeepsVerifiedNativeFontPathWithItsFace() {
+    fun mobileTypeKeepsVerifiedWeightCapabilityWithoutOemPath() {
         val source =
             NativePresentationResolver.NetworkType(
                 label = "5G",
                 enhanced = false,
                 source = NativePresentationResolver.NetworkTypeSource.MOBILE_TYPE_DRAWABLE,
-                fontPath = "/system/fonts/verified-variable.ttf",
                 weightAxis = FontWeightAxis(150f, 330f, 700f),
             )
         val result =
@@ -27,7 +26,6 @@ class ConnectivityMobileTransportTest {
                 mobileType = source,
             ) as CenterIndicator.MobileType
 
-        assertEquals(source.fontPath, result.fontPath)
         assertEquals(source.typeface, result.typeface)
         assertEquals(source.weightAxis, result.weightAxis)
     }
