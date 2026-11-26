@@ -26,4 +26,3 @@ internal fun pageContentPadding(
             (outerBottomPadding ?: innerPadding.calculateBottomPadding()) + extraBottom
     }
 }
-
