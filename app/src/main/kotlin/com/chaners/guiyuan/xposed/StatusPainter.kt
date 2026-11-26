@@ -3289,8 +3289,11 @@ internal class StatusPainter(
         configureMobileTypeTextStyle(
             nativeFace = indicator.typeface ?: previewFace,
             weight =
-                geometry.mobileTypeWeight.takeIf {
-                    indicator.typeface == null || indicator.fontPath != null
+                if (indicator.typeface == null) geometry.mobileTypeWeight
+                else indicator.weightAxis?.let { axis ->
+                    geometry.mobileTypeWeight.coerceIn(
+                        ceil(axis.min.toDouble()).toInt(), floor(axis.max.toDouble()).toInt(),
+                    )
                 },
             targetStyle = targetStyle,
             progress = transitionProgress,
