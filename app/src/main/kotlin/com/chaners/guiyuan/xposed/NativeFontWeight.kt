@@ -4,6 +4,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import com.chaners.guiyuan.settings.FontWeightAxis
+import com.chaners.guiyuan.settings.FontTestMode
 
 internal enum class NativeWeightMethod {
     OVERRIDE,
@@ -38,3 +39,32 @@ internal data class NativeMobileFont(
     val face: Typeface,
     val weight: NativeFontWeight?,
 )
+
+
+// Lab-only projection. Never changes native font ownership or the automatic evidence gate.
+internal data class FontLabSelection(
+    val method: NativeWeightMethod,
+    val weight: Int?,
+)
+
+internal fun FontTestMode.selectWeight(
+    observedFace: Boolean,
+    detected: NativeFontWeight?,
+    automaticWeight: Int?,
+    requestedWeight: Int,
+): FontLabSelection {
+    val automatic = FontLabSelection(
+        method = detected?.method ?: NativeWeightMethod.platformDefault,
+        weight = automaticWeight,
+    )
+    return when (this) {
+        FontTestMode.AUTO -> automatic
+        FontTestMode.NATIVE -> automatic.copy(weight = null)
+        FontTestMode.OVERRIDE ->
+            if (observedFace) FontLabSelection(NativeWeightMethod.OVERRIDE, requestedWeight.coerceIn(1, 1000))
+            else automatic
+        FontTestMode.SETTINGS ->
+            if (observedFace) FontLabSelection(NativeWeightMethod.VARIATION_SETTINGS, requestedWeight.coerceIn(1, 1000))
+            else automatic
+    }
+}
