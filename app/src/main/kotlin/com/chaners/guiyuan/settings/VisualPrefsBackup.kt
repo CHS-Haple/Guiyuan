@@ -19,7 +19,7 @@ private val visualPreferenceKeys = buildSet {
 }
 
 internal fun isVisualPreferenceKey(key: String?): Boolean =
-    key == null || key in visualPreferenceKeys
+    key == null || key == FONT_METHOD_LAB_KEY || key in visualPreferenceKeys
 
 // A backup owns feature visuals and scheme entries, not the whole preference file.
 internal fun isBackupVisualKey(key: String): Boolean =
