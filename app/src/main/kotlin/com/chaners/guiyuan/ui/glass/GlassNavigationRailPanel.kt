@@ -176,6 +176,31 @@ private class RailPanelPointer(
     val scrollEnabled: Boolean,
 )
 
+/** Owns the existing rail interaction, width reconciliation and spring settling. */
+@Composable
+private fun rememberRailPanelInteraction(
+    geometry: RailPanelGeometry,
+    selection: RailPanelSelection,
+): NavigationRailInteraction {
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val widths = remember(geometry.tabWidths, density) {
+        with(density) { geometry.tabWidths.map { it.roundToPx().toFloat() } }
+    }
+    val startPx = with(density) { geometry.contentStart.roundToPx().toFloat() }
+    val endPx = with(density) { RailCollapsedEndPadding.toPx() }
+    val interaction = remember(widths.size, startPx, endPx, scope) {
+        NavigationRailInteraction(widths, startPx, endPx, selection.selectedIndex, scope)
+    }
+    val selectedIndex = selection.selectedIndex
+    val pressed = interaction.pressedIndex >= 0
+    LaunchedEffect(interaction, widths, selectedIndex, pressed, interaction.releaseGeneration) {
+        interaction.updateWidths(widths)
+        if (!pressed) interaction.settle(selectedIndex)
+    }
+    return interaction
+}
+
 /** One permanent surface; layout and gesture children are composables with distinct ownership. */
 @Composable
 internal fun GlassNavigationRailPanel(
@@ -191,24 +216,9 @@ internal fun GlassNavigationRailPanel(
         GlassShape(corner, corner, corner, corner)
     }
     val liquidPaint = surface.material.replacement
-    // One native interaction state serves both the panel's press expansion and
-    // the selected lens. Do not create a second pointer or feedback writer.
-    val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
-    val widths = remember(geometry.tabWidths, density) {
-        with(density) { geometry.tabWidths.map { it.roundToPx().toFloat() } }
-    }
-    val startPx = with(density) { geometry.contentStart.roundToPx().toFloat() }
-    val endPx = with(density) { RailCollapsedEndPadding.toPx() }
-    val interaction = remember(widths.size, startPx, endPx, scope) {
-        NavigationRailInteraction(widths, startPx, endPx, context.selection.selectedIndex, scope)
-    }
-    val selectedIndex = context.selection.selectedIndex
+    // The existing rail state and its springs retain one lifecycle owner.
+    val interaction = rememberRailPanelInteraction(geometry, context.selection)
     val pressed = interaction.pressedIndex >= 0
-    LaunchedEffect(interaction, widths, selectedIndex, pressed, interaction.releaseGeneration) {
-        interaction.updateWidths(widths)
-        if (!pressed) interaction.settle(selectedIndex)
-    }
     // The panel is the sole writer of this press animation. The sibling search
     // action reads its value to match the scaled panel's physical edge.
     LaunchedEffect(motion.liquid.press, liquidPaint != null, pressed) {
