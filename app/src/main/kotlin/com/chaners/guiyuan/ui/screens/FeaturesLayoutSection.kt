@@ -24,18 +24,13 @@ internal fun LazyListScope.featureLayoutSection(
     bothSidesChargingSearch: Boolean,
 ) {
     val searching = search.filtering
-    val bothSidesActivitySearch = searching && search.any(
-        R.string.both_sides_activity_title,
-        R.string.both_sides_idle_activity_title,
-        R.string.both_sides_activity_size,
-        R.string.both_sides_activity_vertical_offset,
-    )
+    val bothSidesActivitySearch = search.matchesBothSidesActivity()
     val bothSidesSearch = bothSidesActivitySearch || bothSidesChargingSearch
     if (searching) {
         Section(R.string.section_layout_size, key = "features-layout-choices") {
             featureLayoutChoices(search, visual, visualRepo, enabled, bothSidesSearch)
             featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
-            featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
+            featureLayoutBothSides(search, visual, visualRepo, enabled)
             featureLayoutOffsetsAndSize(search, visual, visualRepo, enabled)
             featureOuterWeight(search, visual, visualRepo, enabled)
         }
@@ -54,7 +49,7 @@ internal fun LazyListScope.featureLayoutSection(
             featureLayoutSignalAdjustments(search, visual, visualRepo, enabled)
         },
         PreferenceCardItem("both-sides") {
-            featureLayoutBothSides(search, visual, visualRepo, enabled, bothSidesActivitySearch, bothSidesChargingSearch)
+            featureLayoutBothSides(search, visual, visualRepo, enabled)
         },
         PreferenceCardItem("geometry") {
             featureLayoutOffsetsAndSize(search, visual, visualRepo, enabled)
