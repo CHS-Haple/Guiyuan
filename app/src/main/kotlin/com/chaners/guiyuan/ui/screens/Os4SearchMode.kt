@@ -129,14 +129,12 @@ internal fun rememberOs4TitleReveal(
 @Composable
 internal fun Os4SearchMode(
     motion: Os4SearchMotion,
-    expanded: Boolean,
-    query: String,
+    search: PageSearch,
     backdrop: Backdrop?,
     materialProgress: State<Float>,
-    onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit,
     onClose: () -> Unit,
 ) {
+    val expanded = search.active
     NavigationBackHandler(
         state = rememberNavigationEventState(currentInfo = NavigationEventInfo.None),
         isBackEnabled = expanded,
@@ -175,10 +173,7 @@ internal fun Os4SearchMode(
         ) {
             Box(Modifier.weight(1f)) {
                 Os4SearchField(
-                    query = query,
-                    onQueryChange = onQueryChange,
-                    onSearch = onSearch,
-                    active = expanded,
+                    search = search,
                     backdrop = backdrop,
                     materialProgress = materialProgress,
                 )

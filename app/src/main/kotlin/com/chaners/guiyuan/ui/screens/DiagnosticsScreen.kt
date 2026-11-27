@@ -231,7 +231,6 @@ internal fun DiagnosticsScreen(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
         keepCompactTitle = captureStatus.showRootGuide,
-        glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
             LogFilterMenu(
@@ -309,7 +308,6 @@ internal fun DiagnosticsScreen(
         listState = listState,
         // Use MIUIX's auto-fading scrollbar for the potentially long diagnostic log.
         // Keep the Root failure guide non-scrollable and free of decorative controls.
-        showLazyScrollbar = true,
         userScrollEnabled = !captureStatus.showRootGuide,
         // The Root failure guide has a retry action; no pull gesture in this state.
         pullToRefresh =

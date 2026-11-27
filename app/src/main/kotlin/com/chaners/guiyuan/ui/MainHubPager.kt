@@ -199,8 +199,7 @@ private fun TopLevelPagerContent(
             bottomContentPadding = bottom,
             visible = scope.selectedPage == 1,
             snackbarState = scope.snackbar,
-            search = scope.search.state,
-            searchInNavigationBar = scope.search.inNavigationBar,
+            pageSearch = scope.search,
         )
         2 -> SettingsHubScreen(
             bottomContentPadding = bottom,

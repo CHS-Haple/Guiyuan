@@ -64,8 +64,7 @@ internal fun SettingsPage(
     onBack: () -> Unit,
     snackbarHost: @Composable () -> Unit = {},
     navigationActions: @Composable RowScope.() -> Unit = {},
-    actions: @Composable RowScope.() -> Unit = {},
-    glassActions: Boolean = false,
+    actions: (@Composable RowScope.() -> Unit)? = null,
     titleAlpha: Float = 1f,
     keepCompactTitle: Boolean = false,
     userScrollEnabled: Boolean = true,
@@ -74,7 +73,6 @@ internal fun SettingsPage(
     background: @Composable BoxScope.(PaddingValues) -> Unit = {},
     foreground: @Composable BoxScope.(PaddingValues) -> Unit = {},
     overlay: @Composable () -> Unit = {},
-    showLazyScrollbar: Boolean = false,
     columnState: ScrollState? = null,
     scrollContent: (@Composable ColumnScope.(PaddingValues) -> Unit)? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit = {},
@@ -106,19 +104,17 @@ internal fun SettingsPage(
                 titlePadding = TopAppBarDefaults.TitlePadding,
                 navigationIcon = navigationIcon,
                 actions = {
-                    if (glassActions) {
+                    if (actions != null) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             actions()
                         }
-                    } else {
-                        actions()
                     }
                 },
                 unclippedNavigationIcon = true,
-                unclippedActions = glassActions,
+                unclippedActions = actions != null,
             )
         },
     ) { paddingValues ->
@@ -184,7 +180,7 @@ internal fun SettingsPage(
                 SettingsList()
             }
             foreground(contentPadding)
-            val indicatorState: ScrollableState? = scrollState ?: resolvedListState?.takeIf { showLazyScrollbar }
+            val indicatorState: ScrollableState? = scrollState ?: resolvedListState
             if (userScrollEnabled && indicatorState != null) {
                 VerticalScrollBar(
                     adapter = rememberScrollBarAdapter(indicatorState),
