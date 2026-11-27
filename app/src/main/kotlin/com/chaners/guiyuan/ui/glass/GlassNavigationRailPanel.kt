@@ -168,7 +168,7 @@ private fun RailPanelColors.withLiquidIndicator(
 }
 
 /** One interaction/scroll owner retained throughout the rail morph. */
-private class RailPanelPointer(
+internal class RailPanelPointer(
     val interaction: NavigationRailInteraction,
     val expanded: androidx.compose.runtime.State<Boolean>,
     val headerBottom: androidx.compose.runtime.State<() -> Float>,
@@ -317,11 +317,8 @@ private fun RailPanelScroll(
                 .height(contentHeight)
                 .selectableGroup()
                 .navigationRailGestures(
-                    interaction = pointer.interaction,
+                    pointer = pointer,
                     layoutDirection = LocalLayoutDirection.current,
-                    expanded = pointer.expanded,
-                    headerBottom = pointer.headerBottom,
-                    onSelect = pointer.onSelect,
                     liquid = colors.indicator.liquidPaint != null,
                     verticalScrollAvailable = verticalScrollAvailable,
                 ),

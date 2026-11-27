@@ -184,14 +184,13 @@ private fun ColumnScope.BrandGuideIdentity(
     motion: BrandGuideMotion,
     materials: BrandGuideMaterials,
 ) {
-    val diameter = with(LocalDensity.current) { 100.dp.toPx() }
+    val diameter = with(LocalDensity.current) { IdentityMarkSize.toPx() }
     Box(
         modifier = Modifier.weight(1f).fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             GuiyuanAnimatedIdentityMark(
-                markSize = 100.dp,
                 wave = motion.wave,
                 wavePhase = motion.phase,
                 onWaveRelease = { motion.phase = it },

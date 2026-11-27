@@ -63,7 +63,6 @@ internal fun rememberBrandLogoBlend(): List<BlendColorEntry> {
 }
 
 
-private val AboutHeroMarkSize = 100.dp
 private val AboutHeroTopGap = 92.dp
 
 internal class AboutHeroWave(val pressMotion: MarkPressMotion) {
@@ -124,11 +123,10 @@ internal fun AboutHeroRipple(
     Box(
         modifier = Modifier.fillMaxWidth()
             .padding(top = topPadding + AboutHeroTopGap)
-            .height(AboutHeroMarkSize),
+            .height(IdentityMarkSize),
         contentAlignment = Alignment.Center,
     ) {
         IdentityMarkWave(
-            markSize = AboutHeroMarkSize,
             wave = ripple.animation,
             wavePhase = ripple.phase,
             effectModifier = blur,
@@ -151,7 +149,7 @@ internal fun AboutHero(
     measurements: AboutHeroMeasurements,
 ) {
     val density = LocalDensity.current
-    val markSize = AboutHeroMarkSize
+    val markSize = IdentityMarkSize
     val diameter = with(density) { markSize.toPx() }
     val accent = MiuixTheme.colorScheme.primary
     val glint = brandWaveGlintColor(MiuixTheme.colorScheme.surface, accent)
@@ -184,7 +182,7 @@ private fun AboutHeroMark(
     onRelease: (Float) -> Unit,
     onBottom: (Float) -> Unit,
 ) {
-    val size = AboutHeroMarkSize
+    val size = IdentityMarkSize
     val active = motion.active && motion.iconProgress < 1f
     Box(
         modifier = Modifier
@@ -200,7 +198,6 @@ private fun AboutHeroMark(
         contentAlignment = Alignment.Center,
     ) {
         GuiyuanAnimatedIdentityMark(
-            markSize = size,
             wave = wave.animation,
             wavePhase = wave.phase,
             onWaveRelease = onRelease,
