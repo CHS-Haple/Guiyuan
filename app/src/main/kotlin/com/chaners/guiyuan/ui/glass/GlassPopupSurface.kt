@@ -76,6 +76,7 @@ import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShadow
+import top.yukonga.miuix.kmp.material.GlassShadows
 
 /** Final popup bounds and vertical anchor alignment. */
 @Immutable
@@ -168,9 +169,10 @@ internal fun GlassPopupSurface(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
-    // The primary and secondary both use MIUIX popup defaults for the panel shadow.
-    // Each caller still owns its live background material and anchor crossfade.
-    val panelVisuals = GlassPopupDefaults.visuals()
+    // MIUIX bc1024d7 GlassPopupDefaults.visuals() defaults to this fixed
+    // shadow and full opacity. Do not resolve a second popup glass material
+    // just to draw its panel shadow; backgrounds remain caller-owned.
+    val panelShadow = GlassShadows.Regular
     val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
     val windowBounds = rememberGlassWindowBounds()
     val windowRect = remember(windowBounds) {
@@ -206,8 +208,8 @@ internal fun GlassPopupSurface(
     )
 
     val density = LocalDensity.current
-    val shadowOutsets = remember(panelVisuals.shadow, density) {
-        with(density) { popupShadowOutsets(panelVisuals.shadow) }
+    val shadowOutsets = remember(panelShadow, density) {
+        with(density) { popupShadowOutsets(panelShadow) }
     }
     val measured = remember { MeasuredPanel() }
     // Intrinsics depend on popup content and constraints, not the current animation frame.
@@ -236,7 +238,7 @@ internal fun GlassPopupSurface(
                 // Include shadow pixels in the offscreen buffer used when alpha is below one.
                 outsets = shadowOutsets
             }
-            .glassShadow(shape, panelVisuals.shadow) { panelVisuals.alpha }
+            .glassShadow(shape, panelShadow) { 1f }
             .clip(shape)
             .drawWithContent {
                 drawContent()
