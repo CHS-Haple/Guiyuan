@@ -146,7 +146,6 @@ internal fun rememberGlassWindowBounds(): IntRect {
  * @param sizing Panel size limits and window margin.
  * @param visuals Panel surface appearance.
  * @param surface Optional background layers, drawn behind the rows inside the panel silhouette.
- * @param contentPadding Padding around the rows.
  * @param panelLayer Layer properties applied to the whole panel.
  * @param overlay Drawn over the panel and its rows, inside the silhouette.
  * @param frame Current panel bounds and corner radius, given the final panel size and the window
@@ -164,7 +163,6 @@ internal fun GlassPopupSurface(
     backdrop: Backdrop?,
     sizing: GlassPopupSizing,
     visuals: GlassPopupVisuals,
-    contentPadding: PaddingValues,
     panelLayer: GraphicsLayerScope.() -> Unit,
     overlay: DrawScope.() -> Unit,
     frame: Density.(end: Size, windowBounds: Rect) -> GlassPopupFrame,
@@ -175,6 +173,7 @@ internal fun GlassPopupSurface(
     interactive: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
     val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
     val windowBounds = rememberGlassWindowBounds()
     val windowRect = remember(windowBounds) {
