@@ -62,15 +62,19 @@ internal fun liquidRailGestureDecision(
 }
 
 /** The indicator travels continuously between the existing measured rows. */
-internal fun liquidRailPreviewAt(y: Float, centres: List<Float>): Float {
-    if (centres.isEmpty() || y <= centres.first()) return 0f
-    for (i in 0 until centres.lastIndex) {
-        if (y <= centres[i + 1]) {
-            val distance = (centres[i + 1] - centres[i]).coerceAtLeast(1f)
-            return i + ((y - centres[i]) / distance).coerceIn(0f, 1f)
+internal inline fun liquidRailPreviewAt(y: Float, count: Int, centreAt: (Int) -> Float): Float {
+    if (count == 0) return 0f
+    var left = centreAt(0)
+    if (y <= left) return 0f
+    for (i in 0 until count - 1) {
+        val right = centreAt(i + 1)
+        if (y <= right) {
+            val distance = (right - left).coerceAtLeast(1f)
+            return i + ((y - left) / distance).coerceIn(0f, 1f)
         }
+        left = right
     }
-    return centres.lastIndex.toFloat()
+    return (count - 1).toFloat()
 }
 
 /** Pointer deltas must map through the active slot's logical width, including RTL. */
@@ -161,8 +165,10 @@ internal class NavigationRailInteraction(
     /** Smooth Y-axis destination preview inside the existing rail pointer state. */
     fun dragExpanded(y: Float) {
         if (slots.any { it.height <= 0f }) return
-        val centres = slots.map { it.top + it.height / 2f }
-        val destination = liquidRailPreviewAt(y, centres)
+        val destination = liquidRailPreviewAt(y, slots.size) { index ->
+            val slot = slots[index]
+            slot.top + slot.height / 2f
+        }
         previewRow = destination
         pressedIndex = destination.roundToInt().coerceIn(slots.indices)
     }

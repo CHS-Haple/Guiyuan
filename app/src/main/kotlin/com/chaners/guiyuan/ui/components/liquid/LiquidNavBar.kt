@@ -496,10 +496,10 @@ internal fun LiquidNavBar(
                         backdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop),
                         shape = { pillShape },
                         effects = {
-                            val progress = motion.pressProgress
+                            val optics = liquidSelectionOptics(motion.pressProgress)
                             lens(
-                                liquidSelectionOptics(progress).lensHeight.toPx(),
-                                liquidSelectionOptics(progress).lensAmount.toPx(),
+                                optics.lensHeight.toPx(),
+                                optics.lensAmount.toPx(),
                                 depthEffect = true,
                                 chromaticAberration = 0.5f,
                             )
@@ -519,25 +519,26 @@ internal fun LiquidNavBar(
                             scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                         },
                         onDrawSurface = {
-                            val progress = motion.pressProgress
+                            val optics = liquidSelectionOptics(motion.pressProgress)
                             drawRect(
                                 if (dark) {
                                     Color.White.copy(alpha = 0.10f)
                                 } else {
                                     Color.Black.copy(alpha = 0.10f)
                                 },
-                                alpha = liquidSelectionOptics(progress).restAlpha,
+                                alpha = optics.restAlpha,
                             )
                             drawRect(
-                                Color.Black.copy(alpha = liquidSelectionOptics(progress).pressedTintAlpha),
+                                Color.Black.copy(alpha = optics.pressedTintAlpha),
                             )
                         },
                     )
                     .innerShadow(shape = pillShape) {
+                        val optics = liquidSelectionOptics(motion.pressProgress)
                         InnerShadow(
-                            radius = liquidSelectionOptics(motion.pressProgress).shadowRadius,
+                            radius = optics.shadowRadius,
                             color = Color.Black.copy(alpha = 0.15f),
-                            alpha = liquidSelectionOptics(motion.pressProgress).shadowAlpha,
+                            alpha = optics.shadowAlpha,
                         )
                     }
                     .height(56.dp)

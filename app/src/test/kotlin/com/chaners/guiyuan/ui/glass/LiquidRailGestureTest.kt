@@ -28,9 +28,17 @@ class LiquidRailGestureTest {
 
     @Test fun rowPreviewContinuouslyInterpolatesAndClamps() {
         val centres = listOf(50f, 130f, 210f)
-        assertEquals(0f, liquidRailPreviewAt(10f, centres), 0.001f)
-        assertEquals(0.5f, liquidRailPreviewAt(90f, centres), 0.001f)
-        assertEquals(1.5f, liquidRailPreviewAt(170f, centres), 0.001f)
-        assertEquals(2f, liquidRailPreviewAt(300f, centres), 0.001f)
+        assertEquals(0f, liquidRailPreviewAt(10f, centres.size, centres::get), 0.001f)
+        assertEquals(0.5f, liquidRailPreviewAt(90f, centres.size, centres::get), 0.001f)
+        assertEquals(1.5f, liquidRailPreviewAt(170f, centres.size, centres::get), 0.001f)
+        assertEquals(2f, liquidRailPreviewAt(300f, centres.size, centres::get), 0.001f)
+    }
+
+    @Test fun rowPreviewHandlesEmptySingleAndCoincidentCentres() {
+        assertEquals(0f, liquidRailPreviewAt(10f, 0) { error("No centre") }, 0.001f)
+        assertEquals(0f, liquidRailPreviewAt(100f, 1) { 50f }, 0.001f)
+        val centres = listOf(50f, 50f, 130f)
+        assertEquals(0f, liquidRailPreviewAt(50f, centres.size, centres::get), 0.001f)
+        assertEquals(1.5f, liquidRailPreviewAt(90f, centres.size, centres::get), 0.001f)
     }
 }
