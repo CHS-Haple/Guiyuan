@@ -40,7 +40,6 @@ import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SnackbarHost
-import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
 import top.yukonga.miuix.kmp.nav.transition.NavRole
@@ -228,7 +227,6 @@ internal fun DiagnosticsScreen(
         title = stringResource(R.string.diagnostics_title),
         onBack = onBack,
         keepCompactTitle = captureStatus.showRootGuide,
-        titlePadding = TopAppBarDefaults.TitlePadding,
         glassActions = true,
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         navigationActions = {
