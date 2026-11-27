@@ -162,20 +162,24 @@ internal fun DiagnosticsScreen(
         if (clearingHistory || loading) return
         scope.launch {
             clearingHistory = true
-            val cleared = runCatching {
-                DiagLogReader.clearHistory(context.applicationContext)
-            }.getOrDefault(false)
-            clearConfirmOpen = false
-            val feedback =
+            val feedback = try {
+                val cleared = runCatchingUiOperation {
+                    DiagLogReader.clearHistory(context.applicationContext)
+                }.getOrDefault(false)
+                clearConfirmOpen = false
                 if (cleared) {
                     loading = true
-                    val refreshed = runCatching { captureSnapshot() }.isSuccess
+                    val refreshed = runCatchingUiOperation { captureSnapshot() }.isSuccess
                     listState.scrollToItem(0)
                     if (refreshed) clearedMsg else refreshFailedMsg
                 } else {
                     clearFailedMsg
                 }
-            clearingHistory = false
+            } finally {
+                // Always release the local operation owner, including on cancellation.
+                clearingHistory = false
+            }
+            // Preserve the original order: dismiss the busy state before Snackbar suspends.
             snackbarHostState.showSnackbar(feedback)
         }
     }
