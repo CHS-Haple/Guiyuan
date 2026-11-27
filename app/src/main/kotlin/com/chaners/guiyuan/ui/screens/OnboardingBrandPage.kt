@@ -170,11 +170,7 @@ private fun rememberBrandGuideMaterials(): BrandGuideMaterials {
         colors = BlurColors(blendColors = blend),
         contentBlendMode = BlendMode.DstIn,
     )
-    val glint = if (surface.luminance() < 0.5f) {
-        lerp(accent, Color.Black, 0.35f)
-    } else {
-        lerp(accent, Color.White, 0.70f)
-    }
+    val glint = brandWaveGlintColor(surface, accent)
     return BrandGuideMaterials(
         colors = BrandGuideColors(fallback, palette, glint, accent),
         glass = BrandGuideGlass(enabled, backdrop, mark, action),
