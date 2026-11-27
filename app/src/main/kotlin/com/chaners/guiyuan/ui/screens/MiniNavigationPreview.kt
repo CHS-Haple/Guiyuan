@@ -26,6 +26,7 @@ import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
+import com.chaners.guiyuan.ui.MainNavItem
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavBlur
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -122,11 +123,9 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
         Column(modifier = Modifier.fillMaxWidth()) {
             Spacer(modifier = Modifier.height(20.dp))
             GlassNavigationBar(
-                items = listOf(
-                    GlassNavigationItem(MiuixIcons.Normal.Home, stringResource(R.string.nav_home).takeIf { content == NavContent.IconAndText }),
-                    GlassNavigationItem(MiuixIcons.Normal.Tune, stringResource(R.string.nav_features).takeIf { content == NavContent.IconAndText }),
-                    GlassNavigationItem(MiuixIcons.Normal.Settings, stringResource(R.string.nav_settings).takeIf { content == NavContent.IconAndText }),
-                ),
+                items = miniNavItems().map { item ->
+                    GlassNavigationItem(item.icon, item.label.takeIf { content == NavContent.IconAndText })
+                },
                 selectedIndex = 2,
                 onSelect = {},
                 backdrop = miuixBackdrop,
@@ -184,36 +183,23 @@ private fun MiniLiquidNavigationPreview(
     dark: Boolean,
     liquidBackdrop: LayerBackdrop,
 ) {
-    val labels =
-        listOf(
-            stringResource(R.string.nav_home),
-            stringResource(R.string.nav_features),
-            stringResource(R.string.nav_settings),
-        )
-    val icons =
-        listOf(
-            MiuixIcons.Normal.Home,
-            MiuixIcons.Normal.Tune,
-            MiuixIcons.Normal.Settings,
-        )
+    val items = miniNavItems()
     LiquidNavBar(
         selectedIndex = { 2 },
         onSelected = {},
         backdrop = liquidBackdrop,
-        tabsCount = labels.size,
+        tabsCount = items.size,
         dark = dark,
         mode = liquidMode,
         interactive = false,
         modifier = Modifier.padding(horizontal = LiquidNavSpec.sidePadding),
     ) {
-        labels.indices.forEach { index ->
+        items.forEachIndexed { index, item ->
             LiquidNavEntry(
                 contentMode = content,
                 selected = index == 2,
-                onClick = {},
-                icon = icons[index],
-                label = labels[index],
-                interactive = false,
+                onClick = null,
+                item = item,
                 previewLabel = { MiniNavLabelBar(index == 2) },
             )
         }
@@ -243,33 +229,15 @@ private fun MiniFloatingNavigationPreview(
             },
         defaultWindowInsetsPadding = true,
     ) {
-        NavContentItem(
-            content = content,
-            selected = false,
-            onClick = {},
-            icon = MiuixIcons.Normal.Home,
-            label = stringResource(R.string.nav_home),
-            interactive = false,
-            previewLabel = { MiniNavLabelBar(false) },
-        )
-        NavContentItem(
-            content = content,
-            selected = false,
-            onClick = {},
-            icon = MiuixIcons.Normal.Tune,
-            label = stringResource(R.string.nav_features),
-            interactive = false,
-            previewLabel = { MiniNavLabelBar(false) },
-        )
-        NavContentItem(
-            content = content,
-            selected = true,
-            onClick = {},
-            icon = MiuixIcons.Normal.Settings,
-            label = stringResource(R.string.nav_settings),
-            interactive = false,
-            previewLabel = { MiniNavLabelBar(true) },
-        )
+        miniNavItems().forEachIndexed { index, item ->
+            NavContentItem(
+                content = content,
+                selected = index == 2,
+                onClick = null,
+                item = item,
+                previewLabel = { MiniNavLabelBar(index == 2) },
+            )
+        }
     }
 }
 
@@ -316,6 +284,13 @@ private fun MiniNavViewport(
         }
     }
 }
+
+@Composable
+private fun miniNavItems(): List<MainNavItem> = listOf(
+    MainNavItem(stringResource(R.string.nav_home), MiuixIcons.Normal.Home),
+    MainNavItem(stringResource(R.string.nav_features), MiuixIcons.Normal.Tune),
+    MainNavItem(stringResource(R.string.nav_settings), MiuixIcons.Normal.Settings),
+)
 
 @Composable
 private fun MiniNavLabelBar(selected: Boolean) {

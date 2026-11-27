@@ -44,7 +44,6 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
@@ -59,6 +58,7 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.ui.MainNavItem
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
@@ -583,17 +583,15 @@ internal fun RowScope.LiquidNavItem(
 internal fun RowScope.LiquidNavEntry(
     contentMode: NavContent,
     selected: Boolean,
-    onClick: () -> Unit,
-    icon: ImageVector,
-    label: String,
-    interactive: Boolean = true,
+    onClick: (() -> Unit)?,
+    item: MainNavItem,
     previewLabel: (@Composable () -> Unit)? = null,
 ) {
-    LiquidNavItem(onClick = onClick, selected = selected, interactive = interactive) {
+    LiquidNavItem(onClick = onClick ?: {}, selected = selected, interactive = onClick != null) {
         Icon(
-            imageVector = icon,
+            imageVector = item.icon,
             contentDescription =
-                if (contentMode == NavContent.IconOnly) label else null,
+                if (contentMode == NavContent.IconOnly) item.label else null,
             modifier = Modifier.size(28.dp),
         )
         if (contentMode == NavContent.IconAndText) {
@@ -603,7 +601,7 @@ internal fun RowScope.LiquidNavEntry(
                 }
             } else {
                 Text(
-                    text = label,
+                    text = item.label,
                     fontSize = 12.sp,
                 )
             }

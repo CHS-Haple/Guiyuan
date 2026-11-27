@@ -191,8 +191,7 @@ private fun HubLiquidNavItems(
                 contentMode = appearance.navContent,
                 selected = pageSelection.selectedPage == index,
                 onClick = { pageSelection.select(index) },
-                icon = item.icon,
-                label = item.label,
+                item = item,
             )
         }
     }
@@ -301,8 +300,7 @@ private fun HubFloatingNavItems(
             content = appearance.navContent,
             selected = selected,
             onClick = { pageSelection.select(index) },
-            icon = item.icon,
-            label = item.label,
+            item = item,
             modifier = if (appearance.navTouchExtension) {
                 Modifier.onGloballyPositioned { coordinates ->
                     val bounds = coordinates.boundsInRoot()
