@@ -89,8 +89,11 @@ private suspend fun exportBackup(
     messages: FeaturesBackupMessages,
     state: FeaturesBackupState,
 ) {
-    val result = runCatching { files.export(uri) }
-    state.busy = false
+    val result = try {
+        runCatchingUiOperation { files.export(uri) }
+    } finally {
+        state.busy = false
+    }
     snackbar.showSnackbar(if (result.isSuccess) messages.saved else messages.saveError)
 }
 
@@ -101,8 +104,11 @@ private suspend fun readBackup(
     messages: FeaturesBackupMessages,
     state: FeaturesBackupState,
 ) {
-    val result = runCatching { files.read(uri) }
-    state.busy = false
+    val result = try {
+        runCatchingUiOperation { files.read(uri) }
+    } finally {
+        state.busy = false
+    }
     if (result.isSuccess) {
         state.pendingImport = result.getOrThrow()
     } else {
@@ -117,8 +123,12 @@ private suspend fun restoreBackup(
     messages: FeaturesBackupMessages,
     state: FeaturesBackupState,
 ) {
-    val result = runCatching { files.restore(selected) }
+    val result = try {
+        runCatchingUiOperation { files.restore(selected) }
+    } finally {
+        state.busy = false
+    }
+    // A cancelled restore retains the pending import instead of treating it as a failed commit.
     state.pendingImport = null
-    state.busy = false
     snackbar.showSnackbar(if (result.getOrNull() == true) messages.restored else messages.restoreError)
 }
