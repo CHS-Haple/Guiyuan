@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.icons.Os4GlassFilter
 import com.chaners.guiyuan.ui.icons.Os4GlassMore
+import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.settings.DiagLevel
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.Button
@@ -330,6 +331,28 @@ internal fun DiagMenu(
         )
     }
     DiagToolbarMenu(title = title, entries = entries, content = icon)
+}
+
+/** Rendering only; the screen owns report capture, export and share lifecycles. */
+@Composable
+internal fun DiagnosticsReportAction(
+    enabled: Boolean,
+    shareTitle: String,
+    onExport: () -> Unit,
+    onShare: () -> Unit,
+) {
+    DiagActionButton(
+        onClick = onExport,
+        onLongClick = onShare,
+        longClickLabel = shareTitle,
+        enabled = enabled,
+    ) {
+        Icon(
+            imageVector = Os4GlassShare,
+            contentDescription = stringResource(R.string.export_diagnostic_report),
+            modifier = Modifier.size(28.dp),
+        )
+    }
 }
 
 /** Content selected by the diagnostics state; retry behavior remains screen-owned. */
