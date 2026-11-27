@@ -4,11 +4,8 @@
 
 package com.chaners.guiyuan.ui.glass
 
-import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.glass.glass
 
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
@@ -21,8 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -121,7 +116,7 @@ fun GlassIconButton(
     }
     GlassButtonSurface(
         backdrop = materialContext?.buttonBackdrop ?: backdrop ?: topBarContext?.buttonBackdrop,
-        floating = topBarContext?.floating ?: true,
+        topBarContext = topBarContext,
         surfaceAlpha = resolvedSurfaceAlpha,
         shadowAlpha = shadowAlpha,
         style = style,
@@ -134,8 +129,6 @@ fun GlassIconButton(
         fill = fill,
         stroke = stroke,
         shadow = shadow,
-        sharedProgress = topBarContext?.materialProgress,
-        sharedKeepMaterial = topBarContext?.keepMaterial,
         interactionSource = interactionSource,
         modifier = modifier.glassButtonClick(
             onClick = onClick,
@@ -154,7 +147,7 @@ fun GlassIconButton(
 @Suppress("ktlint:compose:modifier-reused-check", "ktlint:compose:state-param-check")
 private fun GlassButtonSurface(
     backdrop: Backdrop?,
-    floating: Boolean,
+    topBarContext: GlassTopAppBarContext?,
     surfaceAlpha: Float,
     shadowAlpha: () -> Float,
     style: GlassStyle,
@@ -165,11 +158,8 @@ private fun GlassButtonSurface(
     size: Dp,
     stroke: EdgeStroke?,
     shadow: GlassShadow?,
-    modifier: Modifier = Modifier,
-    interactionSource: InteractionSource? = null,
-    // Retain State for draw-phase reads; the bar owns the shared animation clock.
-    sharedProgress: State<Float>? = null,
-    sharedKeepMaterial: Boolean? = null,
+    modifier: Modifier,
+    interactionSource: InteractionSource,
     content: @Composable () -> Unit,
 ) {
     val popupAnchor = modifier.foldIn<GlassPopupAnchor?>(null) { found, element ->
@@ -178,18 +168,10 @@ private fun GlassButtonSurface(
     DisposableEffect(popupAnchor) {
         onDispose { popupAnchor?.surface = null }
     }
-    val progress = sharedProgress ?: run {
-        val floatingTransition = updateTransition(targetState = floating, label = "glassTopBarButtonFloat")
-        floatingTransition.animateFloat(
-            transitionSpec = { GlassMotion.topBarButtonFloat() },
-            label = "glassTopBarButtonMaterial",
-        ) { active ->
-            if (active) 1f else 0f
-        }
-    }
-    val keepMaterial = sharedKeepMaterial ?: remember(floating, progress) {
-        derivedStateOf { floating || progress.value > 0f }
-    }.value
+    // Standalone buttons are fully floating; the header is the only changing material clock.
+    val floating = topBarContext?.floating ?: true
+    val progress = topBarContext?.materialProgress
+    val keepMaterial = topBarContext?.keepMaterial ?: true
     val opacity = surfaceAlpha.coerceIn(0f, 1f)
     val effectiveBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
     val anchorSurface = if (popupAnchor != null) {
@@ -218,7 +200,7 @@ private fun GlassButtonSurface(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .graphicsLayer { alpha = progress.value }
+                .graphicsLayer { alpha = progress?.value ?: 1f }
                 .then(
                     if (effectiveBackdrop != null) {
                         if (underlayMaterial != null) {
@@ -264,21 +246,19 @@ private fun GlassButtonSurface(
                     },
                 ),
         )
-        if (interactionSource != null) {
-            val indication = remember(pressedOverlay) {
-                MiuixIndication(
-                    color = pressedOverlay.copy(alpha = 1f),
-                    pressAlpha = pressedOverlay.alpha,
-                    hoverAlpha = 0f,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(shape)
-                    .indication(interactionSource, indication),
+        val indication = remember(pressedOverlay) {
+            MiuixIndication(
+                color = pressedOverlay.copy(alpha = 1f),
+                pressAlpha = pressedOverlay.alpha,
+                hoverAlpha = 0f,
             )
         }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(shape)
+                .indication(interactionSource, indication),
+        )
         content()
     }
 }
