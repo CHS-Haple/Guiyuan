@@ -2,8 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Typeface
-import com.chaners.guiyuan.xposed.NativeFontWeight
+import com.chaners.guiyuan.xposed.NativeMobileFont
 import com.chaners.guiyuan.xposed.network.CenterIndicator
 import com.chaners.guiyuan.xposed.battery.BatterySemanticState
 import com.chaners.guiyuan.settings.LOW_BATTERY_THRESHOLD_DEFAULT
@@ -207,9 +206,6 @@ internal class PreviewSysUiResources(
                     .firstOrNull()
             }
 
-    private companion object {
-        const val SYSTEM_UI_PACKAGE = "com.android.systemui"
-    }
 }
 
 internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
@@ -223,10 +219,9 @@ internal fun PreviewSandboxUiState.previewCenterSource(): PreviewCenterSource =
     }
 
 // Sandbox-only center glyph selection; native SystemUI observations are not changed.
-internal fun PreviewSandboxUiState.previewCenterIndicator(
+private fun PreviewSandboxUiState.previewCenterIndicator(
     resources: PreviewSysUiResources,
-    mobileTypeface: Typeface? = null,
-    mobileWeight: NativeFontWeight? = null,
+    mobileFont: NativeMobileFont?,
 ): CenterIndicator {
     val wifiLevel = wifiSignalLevel.coerceIn(0, 3)
     return when (previewCenterSource()) {
@@ -240,11 +235,7 @@ internal fun PreviewSandboxUiState.previewCenterIndicator(
                         InternetState.VALIDATED
                     },
                 nativeResourceId =
-                    previewWifiResourceId(
-                        resources = resources,
-                        state = wifiState,
-                        level = wifiLevel,
-                    ),
+                    resources.drawableId(previewWifiResourceNames(wifiState, wifiLevel)),
             )
 
         PreviewCenterSource.AIRPLANE -> CenterIndicator.Airplane
@@ -269,8 +260,8 @@ internal fun PreviewSandboxUiState.previewCenterIndicator(
                 label = dataMobileNetwork.systemLabel,
                 enhanced = false,
                 internet = InternetState.VALIDATED,
-                typeface = mobileTypeface,
-                weight = mobileWeight,
+                typeface = mobileFont?.face,
+                weight = mobileFont?.weight,
             )
     }
 }
@@ -302,10 +293,9 @@ internal fun PreviewSandboxUiState.previewBatterySemanticState(
 internal fun PreviewSandboxUiState.toRenderModel(
     resources: PreviewSysUiResources,
     dualSignalEnabled: Boolean,
-    mobileTypeface: Typeface? = null,
+    mobileFont: NativeMobileFont? = null,
     lowBatteryThreshold: Int = LOW_BATTERY_THRESHOLD_DEFAULT,
     nativeLowColor: Int? = null,
-    mobileWeight: NativeFontWeight? = null,
 ): RenderModel {
     val mobileLevel =
         if (mobileControlsEnabled) {
@@ -314,7 +304,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
             null
         }
     val charging = chargingState != PreviewChargingState.NOT_CHARGING
-    val center = previewCenterIndicator(resources, mobileTypeface, mobileWeight)
+    val center = previewCenterIndicator(resources, mobileFont)
     val semanticState = previewBatterySemanticState(lowBatteryThreshold)
 
     return RenderModel(
@@ -322,10 +312,7 @@ internal fun PreviewSandboxUiState.toRenderModel(
         charging = charging,
         centerIndicator = center,
         chargingIconResId =
-            previewChargingResourceId(
-                resources = resources,
-                state = chargingState,
-            ),
+            resources.drawableId(previewChargingResourceNames(chargingState)),
         networkActivityResId =
             resources.drawableId(
                 previewNetworkActivityResourceNames(
@@ -365,18 +352,6 @@ internal fun previewWifiResourceNames(
         PreviewWifiState.DUAL_WIFI ->
             listOf("stat_sys_slave_wifi_signal_$level")
     }
-
-private fun previewWifiResourceId(
-    resources: PreviewSysUiResources,
-    state: PreviewWifiState,
-    level: Int,
-): Int? =
-    resources.drawableId(
-        previewWifiResourceNames(
-            state = state,
-            level = level.coerceIn(0, 3),
-        ),
-    )
 
 // All IDs are resolved against the installed SystemUI. Never substitute an
 // app-owned approximation when a requested native variant is unavailable.
@@ -420,15 +395,6 @@ internal fun previewChargingResourceNames(
                 "tiny_battery_quick_charging",
             )
     }
-
-private fun previewChargingResourceId(
-    resources: PreviewSysUiResources,
-    state: PreviewChargingState,
-): Int? {
-    val names = previewChargingResourceNames(state)
-    if (names.isEmpty()) return null
-    return resources.drawableId(names)
-}
 
 private fun previewBatterySemanticColor(
     resources: PreviewSysUiResources,
