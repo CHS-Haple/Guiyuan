@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BadgeDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShadows
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.ceil
@@ -356,14 +355,7 @@ private fun RailWindowPanel(
         motion = placement.motion,
         surface = RailPanelSurface(
             backdrop = request.backdrop,
-            style = GlassDefaults.Style,
-            alpha = 1f,
-            material = RailPanelMaterial(
-                glass = GlassNavigationRailDefaults.material(),
-                replacement = request.materialOverride,
-            ),
-            stroke = GlassNavigationRailDefaults.stroke(),
-            shadow = GlassShadows.Float,
+            replacement = request.materialOverride,
         ),
         colors = RailPanelColors(
             // Liquid shares the portrait navigation's selected primary tint while
