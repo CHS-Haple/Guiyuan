@@ -387,10 +387,8 @@ internal fun GlassNavigationBar(
                             position = position,
                             selected = position == index,
                             pressedIndexProvider = pressedIndexProvider,
-                            selectedColor = selectedColor,
-                            unselectedColor = unselectedColor,
+                            targetTint = if (position == index) selectedColor else unselectedColor,
                             labelSize = labelSize,
-                            height = height,
                             interactionEnabled = interactive,
                             onSelect = onSelectState,
                             previewLabel = previewLabel,
@@ -408,16 +406,14 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
     position: Int,
     selected: Boolean,
     pressedIndexProvider: () -> Int,
-    selectedColor: Color,
-    unselectedColor: Color,
+    targetTint: Color,
     labelSize: androidx.compose.ui.unit.TextUnit,
-    height: Dp,
     interactionEnabled: Boolean,
     onSelect: (Int) -> Unit,
     previewLabel: (@Composable (Boolean) -> Unit)?,
 ) {
     val tintState = animateColorAsState(
-        targetValue = if (selected) selectedColor else unselectedColor,
+        targetValue = targetTint,
         animationSpec = GlassMotion.navContent(),
         label = "glassNavigationTint",
     )
@@ -437,7 +433,7 @@ private fun androidx.compose.foundation.layout.RowScope.GlassNavigationBarItemCo
     Box(
         modifier = Modifier
             .weight(1f)
-            .heightIn(min = height)
+            .heightIn(min = GlassNavigationBarDefaults.Height)
             .graphicsLayer { this.alpha = pressAlpha.value }
             .padding(
                 horizontal = GlassNavigationBarDefaults.IndicatorOverhang,

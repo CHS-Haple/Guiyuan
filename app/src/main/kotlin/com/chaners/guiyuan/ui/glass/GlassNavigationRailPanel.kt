@@ -51,11 +51,7 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.chaners.guiyuan.ui.components.liquid.rememberCombinedBackdrop
-import top.yukonga.miuix.kmp.material.EdgeStroke
-import top.yukonga.miuix.kmp.material.GlassMaterial
-import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShape
-import top.yukonga.miuix.kmp.material.GlassStyle
 import androidx.compose.ui.util.fastRoundToInt
 
 /** Single selected-page owner and the interaction contract, independent of surface animation. */
@@ -124,19 +120,10 @@ internal class RailLiquidPaint(
     val indicator: @Composable (Backdrop?, Boolean) -> Modifier,
 )
 
-internal class RailPanelMaterial(
-    val glass: GlassMaterial?,
-    val replacement: RailLiquidPaint?,
-)
-
-/** A single glass surface body and its physical appearance. */
+/** The native rail samples this backdrop; Liquid may substitute its paint. */
 internal class RailPanelSurface(
     val backdrop: Backdrop?,
-    val style: GlassStyle,
-    val alpha: Float,
-    val material: RailPanelMaterial,
-    val stroke: EdgeStroke?,
-    val shadow: GlassShadow?,
+    val replacement: RailLiquidPaint?,
 )
 
 /** Colors and typography shared between rail rows and their indicator. */
@@ -214,7 +201,7 @@ internal fun GlassNavigationRailPanel(
         val corner = RailMorphCorner { state.progress }
         GlassShape(corner, corner, corner, corner)
     }
-    val liquidPaint = surface.material.replacement
+    val liquidPaint = surface.replacement
     // The existing rail state and its springs retain one lifecycle owner.
     val interaction = rememberRailPanelInteraction(geometry, context.selection)
     val pressed = interaction.pressedIndex >= 0

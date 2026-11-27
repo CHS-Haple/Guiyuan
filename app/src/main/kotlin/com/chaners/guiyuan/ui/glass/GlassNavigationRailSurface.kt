@@ -16,9 +16,12 @@ import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.lerp
 import com.chaners.guiyuan.ui.components.liquid.liquidPanelPressScale
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.glassPanel
 import top.yukonga.miuix.kmp.glass.glassShadow
+import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassShadows
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -33,22 +36,22 @@ internal fun Modifier.railPanelSurfaceModifier(
 ): Modifier {
     // Do not replace the MIUIX rail's layout, morph, input or lifecycle owner.
     // Only the surface paint differs; the default Glass material path is unchanged.
-    val override = surface.material.replacement?.panel
+    val override = surface.replacement?.panel
     val surfacePaint = if (override != null && surface.backdrop != null) {
         // The visible panel material is a sibling child, recorded before the selected lens.
         // Keep its original MIUIX Float shadow here, without double-painting the surface.
-        Modifier.glassShadow(shape, surface.shadow, alpha = 1f)
+        Modifier.glassShadow(shape, GlassShadows.Float, alpha = 1f)
     } else if (override != null) {
-        Modifier.glassShadow(shape, surface.shadow, alpha = 1f).then(override(surface.backdrop, shape))
+        Modifier.glassShadow(shape, GlassShadows.Float, alpha = 1f).then(override(surface.backdrop, shape))
     } else {
         Modifier.glassPanel(
             backdrop = surface.backdrop,
             shape = shape,
-            style = surface.style,
-            alpha = surface.alpha,
-            material = surface.material.glass,
-            stroke = surface.stroke,
-            shadow = surface.shadow,
+            style = GlassDefaults.Style,
+            alpha = 1f,
+            material = GlassNavigationRailDefaults.material(),
+            stroke = GlassNavigationRailDefaults.stroke(),
+            shadow = GlassShadows.Float,
             shading = false,
             fallback = if (surface.backdrop == null || !isRuntimeShaderSupported()) {
                 Modifier.clip(shape).background(MiuixTheme.colorScheme.surfaceContainer)
