@@ -43,8 +43,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import androidx.compose.ui.util.fastRoundToInt
 
@@ -73,18 +71,11 @@ private fun guiyuanPopupMaskSpring(expanding: Boolean): SpringSpec<Float> = folm
  * @param backdrop Scene sampled by the expanded menu, including bars but excluding the popup.
  *   `null` falls back to the button's backdrop. The collapsed endpoint uses the button's surface.
  * @param anchorContent Copy of the control, or the portion identified by [glassPopupAnchorContent].
- * @param modifier The modifier applied to the panel.
- * @param simplified Whether to omit the anchor content from the opening transition. It still
- *   appears during the closing transition.
  * @param stacked Whether a secondary menu is open. Scales down this panel and applies [maskColor].
  * @param maskColor Overlay color while [stacked].
  * @param sizing Panel size limits and window margin.
  * @param horizontalAlignment Horizontal alignment of the expanded panel relative to [anchor].
  * @param visuals Expanded panel appearance, blended from a [GlassIconButton] anchor's surface.
- * @param anchorAlpha Background opacity for anchors without a shared button surface.
- * @param cornerRadius Expanded panel corner radius.
- * @param gap Gap between the control and the panel.
- * @param contentPadding Padding around the items.
  * @param onMeasured Called with the final panel size. Use its width as the submenu's minimum width.
  * @param content The items.
  */
@@ -95,20 +86,15 @@ fun BoxScope.GlassTransformPopup(
     anchor: GlassPopupAnchor,
     backdrop: Backdrop?,
     anchorContent: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    simplified: Boolean = false,
     stacked: Boolean = false,
     sizing: GlassPopupSizing = GlassPopupSizing(),
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
-    anchorAlpha: Float = 1f,
     maskColor: Color = GlassPopupDefaults.maskColor(),
-    cornerRadius: Dp = GlassPopupDefaults.CornerRadius,
-    gap: Dp = 0.dp,
-    contentPadding: PaddingValues = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical),
     onMeasured: ((Size) -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
     val transition = updateTransition(show, label = "glassTransformPopup")
     val bounds = transition.animateFloat(
         transitionSpec = { GlassMotion.transformBounds(targetState) },
@@ -192,7 +178,7 @@ fun BoxScope.GlassTransformPopup(
         anchorAlpha = if (anchorSurface != null) {
             anchor.surfaceVisibility
         } else {
-            anchorAlpha
+            1f
         },
         geometryProgress = geometryProgress(),
         iconMaterial = iconProgress(),
@@ -234,7 +220,7 @@ fun BoxScope.GlassTransformPopup(
         frame = { end, windowBounds ->
             val rect = startRect
             val settled = placeGlassPopup(
-                rect.translate(0f, gap.toPx()),
+                rect,
                 end,
                 sizing.safeMargin.toPx(),
                 windowBounds,
@@ -252,7 +238,7 @@ fun BoxScope.GlassTransformPopup(
                 sizeFraction = geometryProgress(),
                 positionFraction = centerProgress(),
                 startRadius = startRadius,
-                endRadius = cornerRadius,
+                endRadius = GlassPopupDefaults.CornerRadius,
             )
         },
         contentLayer = { end, _ ->
@@ -265,7 +251,6 @@ fun BoxScope.GlassTransformPopup(
             val blur = GlassMotion.TRANSFORM_BLUR_PX * (1f - fraction)
             renderEffect = if (blur > 0.5f) BlurEffect(blur, blur, TileMode.Decal) else null
         },
-        modifier = modifier,
         surface = { shape ->
             if (drawAnchorSurface && anchorSurface != null && anchorVisuals != null) {
                 GlassPopupBackground(
@@ -291,10 +276,9 @@ fun BoxScope.GlassTransformPopup(
         content = content,
     )
 
-    val renderAnchorContent by remember(simplified, show, iconMaterial, backProgress) {
+    val renderAnchorContent by remember(iconMaterial, backProgress) {
         derivedStateOf {
-            shouldRenderAnchorContent(simplified, show && backProgress.value == 0f) &&
-                popupFractionWithBack(iconMaterial.value, backProgress.value) < 0.999f
+            popupFractionWithBack(iconMaterial.value, backProgress.value) < 0.999f
         }
     }
     if (renderAnchorContent) {

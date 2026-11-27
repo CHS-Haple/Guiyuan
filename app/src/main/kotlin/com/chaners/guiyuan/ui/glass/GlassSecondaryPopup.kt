@@ -26,11 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.first
@@ -48,13 +46,9 @@ import top.yukonga.miuix.kmp.blur.Backdrop
  *   Freeze them before setting the primary [GlassTransformPopup]'s `stacked` flag.
  * @param backdrop Background sampled by the menu. Include the primary popup but exclude this
  *   submenu. `null` uses the anchor's backdrop.
- * @param modifier Modifier applied to the panel.
- * @param materialAnchor The primary popup's button anchor. Passing the same anchor shares its
- *   expanded popup appearance across both levels.
+ * @param materialAnchor The primary popup's button anchor, shared across both levels.
  * @param sizing Panel limits. Set `minWidth` to the primary panel's measured width.
  * @param visuals Surface appearance, used when no primary popup appearance is available.
- * @param cornerRadius Rounded clip radius throughout the transition.
- * @param contentPadding Insets around the menu rows, also included around the collapsed row.
  * @param onDismissFinished Called when the collapse animation has finished.
  * @param content Header row followed by secondary choices. The header should request collapse.
  */
@@ -64,15 +58,13 @@ fun BoxScope.GlassSecondaryPopup(
     onDismissRequest: () -> Unit,
     anchorBounds: Rect,
     backdrop: Backdrop?,
-    modifier: Modifier = Modifier,
-    materialAnchor: GlassPopupAnchor? = null,
+    materialAnchor: GlassPopupAnchor,
     sizing: GlassPopupSizing = GlassPopupSizing(),
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
-    cornerRadius: Dp = GlassPopupDefaults.CornerRadius,
-    contentPadding: PaddingValues = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical),
     onDismissFinished: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
     val state = remember { MutableTransitionState(false) }
     state.targetState = show
     val transition = rememberTransition(state, label = "glassSecondaryPopup")
@@ -85,8 +77,8 @@ fun BoxScope.GlassSecondaryPopup(
     ObserveSecondaryPopupFinish(show, state, onDismissFinished)
     if (!active) return
     val direction = LocalLayoutDirection.current
-    val source = materialAnchor?.surface
-    val resolvedVisuals = materialAnchor?.popupVisuals ?: visuals
+    val source = materialAnchor.surface
+    val resolvedVisuals = materialAnchor.popupVisuals ?: visuals
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         backdrop = backdrop ?: source?.backdrop,
@@ -105,11 +97,10 @@ fun BoxScope.GlassSecondaryPopup(
                     contentPadding.calculateBottomPadding().toPx(),
                     popupFractionWithBack(progress.value, backProgress.value),
                 ),
-                cornerRadius,
+                GlassPopupDefaults.CornerRadius,
             )
         },
         contentLayer = { _, _ -> },
-        modifier = modifier,
         interactive = show,
         content = content,
     )
@@ -121,7 +112,7 @@ private fun rememberSecondaryPopupBackProgress(
     show: Boolean,
     active: Boolean,
     onDismissRequest: () -> Unit,
-    materialAnchor: GlassPopupAnchor?,
+    materialAnchor: GlassPopupAnchor,
 ): androidx.compose.runtime.State<Float> {
     val backProgress = rememberGlassPopupBackProgress(
         show = show,
@@ -131,9 +122,9 @@ private fun rememberSecondaryPopupBackProgress(
         onDismissRequest = onDismissRequest,
     )
     DisposableEffect(materialAnchor, backProgress) {
-        materialAnchor?.secondaryBackProgressState = backProgress
+        materialAnchor.secondaryBackProgressState = backProgress
         onDispose {
-            if (materialAnchor?.secondaryBackProgressState === backProgress) {
+            if (materialAnchor.secondaryBackProgressState === backProgress) {
                 materialAnchor.secondaryBackProgressState = null
             }
         }
