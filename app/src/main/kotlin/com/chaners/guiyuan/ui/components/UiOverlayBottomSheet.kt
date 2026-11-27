@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
@@ -15,7 +16,6 @@ internal fun UiOverlayBottomSheet(
     modifier: Modifier,
     title: String?,
     backgroundColor: Color,
-    insideMargin: DpSize,
     startAction: @Composable (() -> Unit)? = null,
     enableWindowDim: Boolean = true,
     allowDismiss: Boolean = true,
@@ -33,7 +33,7 @@ internal fun UiOverlayBottomSheet(
         title = title,
         progressiveBlur = progressiveBlur,
         containerColor = backgroundColor,
-        insideMargin = insideMargin,
+        insideMargin = DpSize(0.dp, 0.dp),
         startAction = startAction,
         enableWindowDim = enableWindowDim,
         allowDismiss = allowDismiss,
