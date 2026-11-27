@@ -25,8 +25,6 @@ internal object FullAodTransitionSource {
         onRuntimeFailure: (String, Throwable) -> Unit,
         diagnostics: HookDiagnostics,
     ): List<HookHandle> {
-        val onEvent = diagnostics.onEvent
-        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         val controllerClass = Class.forName(CONTROLLER_CLASS, false, classLoader)
         val method =
             SysUiPresentationRuntime.requireUniqueHookMethod(
@@ -88,7 +86,7 @@ internal object FullAodTransitionSource {
                             }
                         }
                         reportOptionalDiagnostic(
-                            chain, onEvent, isDetailedDiagnosticsEnabled, warned,
+                            chain, diagnostics, warned,
                         )
                         result
                     },
@@ -99,12 +97,12 @@ internal object FullAodTransitionSource {
     // A Chain is used synchronously within the current hook callback, never retained.
     private fun reportOptionalDiagnostic(
         chain: Chain,
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
         warned: AtomicBoolean,
     ) {
         SysUiPresentationRuntime.emitPassiveDiagnostic(warned, "Guiyuan[FullAod]") {
-            if (onEvent != null && isDetailedDiagnosticsEnabled()) {
+            val onEvent = diagnostics.onEvent
+            if (onEvent != null && diagnostics.isDetailedDiagnosticsEnabled()) {
                 val rawArg0 = chain.getArg(0) as? Boolean
                 val rawArg1 = chain.getArg(1) as? Boolean
                 onEvent(

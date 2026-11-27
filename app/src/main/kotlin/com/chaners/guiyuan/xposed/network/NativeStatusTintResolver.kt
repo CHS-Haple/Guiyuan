@@ -95,14 +95,7 @@ internal object NativeStatusTintResolver {
     fun resolveTintAnchorView(group: ViewGroup): View? {
         for (index in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(index)
-            if (
-                isTintAuthorityCandidate(
-                    slot = NativeStatusSlots.slotOf(child),
-                    visible = child.visibility == View.VISIBLE,
-                    width = child.width,
-                    height = child.height,
-                )
-            ) {
+            if (isTintAuthorityCandidate(child)) {
                 return child
             }
         }
