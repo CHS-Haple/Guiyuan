@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.foundation.background
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
@@ -11,10 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import android.widget.Toast
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -35,23 +32,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.fastRoundToInt
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.GyApplication
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.settings.AppLang
 import com.chaners.guiyuan.settings.OnboardingPrefs
 import com.chaners.guiyuan.settings.AgreementReadingRequirements
 import com.chaners.guiyuan.ui.navigation.appSwipeDismissDirection
-import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import kotlinx.serialization.Serializable
@@ -68,13 +55,7 @@ import com.chaners.guiyuan.system.XposedStatus
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // Guide steps are peers, not push-overlay destinations. Share MIUIX's motion and
@@ -105,6 +86,10 @@ private enum class PermissionWarningPhase {
     Hidden, Visible, Dismissing, Advancing,
 }
 
+private enum class AgreementDocumentPhase {
+    Hidden, Visible, Dismissing,
+}
+
 // The guide owns only temporary navigation state; existing preferences and
 // framework services remain the authoritative writers for settings and scope.
 /** Transient onboarding agreement state. The screen still owns version checks and persistence. */
@@ -115,10 +100,9 @@ private class GuideAgreementSession {
         private set
     var openDocument by mutableStateOf<AgreementDocument?>(null)
         private set
-    var documentVisible by mutableStateOf(false)
-        private set
-    var documentDismissing by mutableStateOf(false)
-        private set
+    private var documentPhase by mutableStateOf(AgreementDocumentPhase.Hidden)
+    val documentVisible: Boolean get() = documentPhase == AgreementDocumentPhase.Visible
+    val documentDismissing: Boolean get() = documentPhase == AgreementDocumentPhase.Dismissing
     var policyAccepted by mutableStateOf(false)
 
     fun show(document: AgreementDocument) {
@@ -128,7 +112,7 @@ private class GuideAgreementSession {
             AgreementDocument.Privacy -> privacyViewed = true
         }
         openDocument = document
-        documentVisible = true
+        documentPhase = AgreementDocumentPhase.Visible
     }
 
     fun acknowledge(checked: Boolean, required: AgreementReadingRequirements): Int? {
@@ -151,14 +135,13 @@ private class GuideAgreementSession {
 
     fun requestDismiss() {
         if (documentVisible) {
-            documentDismissing = true
-            documentVisible = false
+            documentPhase = AgreementDocumentPhase.Dismissing
         }
     }
 
     fun finishDismiss() {
         // Keep the rendered document stable until MIUIX retires its popup host.
-        documentDismissing = false
+        if (documentDismissing) documentPhase = AgreementDocumentPhase.Hidden
     }
 }
 
@@ -168,8 +151,10 @@ internal fun OnboardingFlow(
     config: OnboardingConfig,
     handlers: OnboardingHandlers,
 ) {
-    val (lang, iconHidden, swipeBackEnabled, agreementReviewOnly) = config
-    val (onLangChange, onIconHiddenChange, onComplete, onExit) = handlers
+    val swipeBackEnabled = config.swipeBackEnabled
+    val agreementReviewOnly = config.agreementReviewOnly
+    val onComplete = handlers.onComplete
+    val onExit = handlers.onExit
     val context = LocalContext.current.applicationContext
     val app = remember(context) { context as GyApplication }
     val framework by app.xposedStatus.collectAsState()
