@@ -14,15 +14,11 @@ internal object SceneAodOverridePolicy {
         if (home.homeNativeAodFallbackActive && feature.keyguardEnabled && !feature.aodEnabled) {
             return KeyguardAodProjection.NATIVE
         }
-        if (home.homeAodTransitionOrigin &&
-            input.signal.nativeToLockScreenTarget == false &&
-            input.scene.lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN
-        ) {
+        if (input.scene.lastStableFamilyScene != StableKeyguardAodScene.UNKNOWN) return null
+        if (home.homeAodTransitionOrigin && input.signal.nativeToLockScreenTarget == false) {
             return if (feature.aodEnabled) KeyguardAodProjection.AOD else KeyguardAodProjection.NATIVE
         }
-        if (home.homeAodTargetPrearm && feature.aodEnabled &&
-            input.scene.lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN
-        ) {
+        if (home.homeAodTargetPrearm && feature.aodEnabled) {
             // Native target latch may span transient KEYGUARD ancestry until AOD catches up.
             return KeyguardAodProjection.AOD
         }
