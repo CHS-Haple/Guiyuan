@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filter
@@ -17,33 +16,32 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
+private const val SelectionVisibilityThreshold = 0.001f
+
 // Adapted from AndroidLiquidGlass catalog's DampedDragAnimation (Apache-2.0).
 internal class LiquidDragMotion(
     private val scope: CoroutineScope,
     initialValue: Float,
     private val range: ClosedRange<Float>,
-    visibilityThreshold: Float,
-    private val initialScale: Float,
-    private val pressedScale: Float,
     private val canDrag: (Offset) -> Boolean,
     private val onStarted: LiquidDragMotion.(Offset) -> Unit,
     private val onStopped: LiquidDragMotion.() -> Unit,
     private val onCancelled: LiquidDragMotion.() -> Unit,
-    private val onDrag: LiquidDragMotion.(IntSize, Offset) -> Unit,
+    private val onDrag: LiquidDragMotion.(Offset) -> Unit,
 ) {
-    private val valueSpec = spring(1f, 1000f, visibilityThreshold)
-    private val velocitySpec = spring(0.5f, 300f, visibilityThreshold * 10f)
+    private val valueSpec = spring(1f, 1000f, SelectionVisibilityThreshold)
+    private val velocitySpec = spring(0.5f, 300f, SelectionVisibilityThreshold * 10f)
     private val pressSpec = spring(1f, 1000f, 0.001f)
     private val scaleXSpec = spring(0.6f, 250f, 0.001f)
     private val scaleYSpec = spring(0.7f, 250f, 0.001f)
 
     // The UI gesture's requested destination is synchronous; Animatable schedules frames later.
     private var requestedValue = initialValue.coerceIn(range)
-    private val valueAnim = Animatable(initialValue, visibilityThreshold)
+    private val valueAnim = Animatable(initialValue, SelectionVisibilityThreshold)
     private val velocityAnim = Animatable(0f, 5f)
     private val pressAnim = Animatable(0f, 0.001f)
-    private val scaleXAnim = Animatable(initialScale, 0.001f)
-    private val scaleYAnim = Animatable(initialScale, 0.001f)
+    private val scaleXAnim = Animatable(1f, 0.001f)
+    private val scaleYAnim = Animatable(1f, 0.001f)
     private val mutex = MutatorMutex()
     private val velocityTracker = VelocityTracker()
     private var pressJob: Job? = null
@@ -73,7 +71,7 @@ internal class LiquidDragMotion(
                 },
             ) { change, dragAmount ->
                 if (canDrag(change.position) && canDrag(change.previousPosition)) {
-                    onDrag(size, dragAmount)
+                    onDrag(dragAmount)
                 }
             }
         }
@@ -84,8 +82,8 @@ internal class LiquidDragMotion(
         velocityTracker.resetTracking()
         pressJob = scope.launch {
             launch { pressAnim.animateTo(1f, pressSpec) }
-            launch { scaleXAnim.animateTo(pressedScale, scaleXSpec) }
-            launch { scaleYAnim.animateTo(pressedScale, scaleYSpec) }
+            launch { scaleXAnim.animateTo(LiquidFeedbackSpec.PressedLensScale, scaleXSpec) }
+            launch { scaleYAnim.animateTo(LiquidFeedbackSpec.PressedLensScale, scaleYSpec) }
         }
     }
 
@@ -100,8 +98,8 @@ internal class LiquidDragMotion(
                     .first()
             }
             launch { pressAnim.animateTo(0f, pressSpec) }
-            launch { scaleXAnim.animateTo(initialScale, scaleXSpec) }
-            launch { scaleYAnim.animateTo(initialScale, scaleYSpec) }
+            launch { scaleXAnim.animateTo(1f, scaleXSpec) }
+            launch { scaleYAnim.animateTo(1f, scaleYSpec) }
         }
     }
 

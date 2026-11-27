@@ -299,9 +299,6 @@ internal fun LiquidNavBar(
                     scope = scope,
                     initialValue = selectedIndex().toFloat(),
                     range = 0f..(tabsCount - 1).toFloat(),
-                    visibilityThreshold = 0.001f,
-                    initialScale = 1f,
-                    pressedScale = LiquidFeedbackSpec.PressedLensScale,
                     canDrag = { position -> position.x in 0f..widthPx.value.toFloat() },
                     onStarted = { position ->
                         val tabWidth = tabWidthPx.value
@@ -328,7 +325,7 @@ internal fun LiquidNavBar(
                         updateValue(currentIndex.toFloat())
                         scope.launch { offsetAnim.animateTo(0f, spring(1f, 300f, 0.5f)) }
                     },
-                    onDrag = { _, dragAmount ->
+                    onDrag = { dragAmount ->
                         val tabWidth = tabWidthPx.value
                         if (tabWidth > 0f && dragAmount.x != 0f) {
                             updateValue(
