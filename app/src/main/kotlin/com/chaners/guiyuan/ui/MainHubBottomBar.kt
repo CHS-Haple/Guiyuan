@@ -82,13 +82,13 @@ internal fun HubGlassBottomBar(
         backdrop = navBackdrop,
         touchExtension = appearance.navTouchExtension,
         // Exclude the measured 54dp action and 12dp native MIUIX gap.
-        trailingActionTouchExclusion = if (navigationAction != null) {
-            GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing
-        } else 0.dp,
-        trailingActionTouchSize = if (navigationAction != null) {
-            GlassNavigationBarDefaults.Height
-        } else 0.dp,
-        onTrailingActionTouch = navigationAction?.let { action -> actionControls.callbackFor(action) },
+        trailingTouch = navigationAction?.let { action ->
+            NavTouchTrailingAction(
+                width = GlassNavigationBarDefaults.Height + GlassNavigationBarDefaults.ActionSpacing,
+                size = GlassNavigationBarDefaults.Height,
+                onTap = actionControls.callbackFor(action),
+            )
+        } ?: NavTouchTrailingAction(),
         trailingAction = navigationAction?.let { action ->
             {
                 NavigationTrailingAction(

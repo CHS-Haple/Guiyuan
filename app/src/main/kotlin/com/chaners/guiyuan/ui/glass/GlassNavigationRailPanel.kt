@@ -68,7 +68,6 @@ internal class RailPanelSelection(
 internal class RailPanelContext(
     val selection: RailPanelSelection,
     val state: GlassNavigationRailState,
-    val showToggle: Boolean,
     val toggleContentDescription: String,
     val scrollState: ScrollState,
 )
@@ -254,11 +253,11 @@ internal fun GlassNavigationRailPanel(
             RailLiquidIndicator(context, geometry, motion, paintColors, interaction)
             Box(Modifier.matchParentSize().clip(shape)) {
                 RailPanelContents(context, geometry, motion, paintColors, interaction)
-                if (context.showToggle) RailPanelToggle(context, paintColors)
+                RailPanelToggle(context, paintColors)
             }
         } else {
             RailPanelContents(context, geometry, motion, paintColors, interaction)
-            if (context.showToggle) RailPanelToggle(context, paintColors)
+            RailPanelToggle(context, paintColors)
         }
     }
 }

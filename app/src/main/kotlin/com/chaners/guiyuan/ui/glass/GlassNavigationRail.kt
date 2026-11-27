@@ -105,7 +105,6 @@ private class RailWindowRequest(
     val destinations: GlassRailDestinations,
     val state: GlassNavigationRailState,
     val backdrop: Backdrop?,
-    val showToggle: Boolean,
     val materialOverride: RailLiquidPaint?,
     val trailingAction: (@Composable () -> Unit)?,
 )
@@ -128,7 +127,6 @@ internal fun GlassNavigationRail(
     backdrop: Backdrop?,
     modifier: Modifier = Modifier,
     state: GlassNavigationRailState = rememberGlassNavigationRailState(),
-    showToggle: Boolean = true,
     materialOverride: RailLiquidPaint? = null,
     trailingAction: (@Composable () -> Unit)? = null,
 ) {
@@ -166,7 +164,7 @@ internal fun GlassNavigationRail(
         }
     }
     RailNavigationWindow(
-        request = RailWindowRequest(destinations, state, backdrop, showToggle, materialOverride, trailingAction),
+        request = RailWindowRequest(destinations, state, backdrop, materialOverride, trailingAction),
         widths = RailSourceWidths(labelWidths, sourceWidths),
         animation = RailAnimationState(rowProgress, iconAlpha, liquid),
         modifier = modifier,
@@ -238,7 +236,7 @@ private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.rememberR
     actionProgress: State<Float>,
 ): RailPlacement {
     val expanded = request.state.expanded
-    val capsule = railCapsuleGeometry(maxWidth, widths.slots, request.showToggle)
+    val capsule = railCapsuleGeometry(maxWidth, widths.slots, showToggle = true)
     val tabWidths = remember(widths.slots, capsule.widthRatio) {
         widths.slots.map { it * capsule.widthRatio }
     }
@@ -347,7 +345,6 @@ private fun RailWindowPanel(
                 request.destinations.onSelect,
             ),
             state = request.state,
-            showToggle = request.showToggle,
             toggleContentDescription = if (request.state.expanded) {
                 GlassNavigationRailDefaults.CollapseContentDescription
             } else {
