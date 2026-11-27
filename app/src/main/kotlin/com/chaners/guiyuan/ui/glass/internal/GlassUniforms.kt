@@ -75,48 +75,8 @@ internal fun BackdropEffectScope.glassEffect(
             style.inner.colorPow,
         )
         setFloatUniform("in_tint", tintColor.red, tintColor.green, tintColor.blue, tintStrength)
-        setFloatUniform(
-            "in_whiteMixBg",
-            style.inner.colorWhite,
-            style.inner.colorMix,
-            style.background.saturation,
-            style.background.brightness,
-        )
-        setFloatUniform(
-            "in_darker",
-            style.blend.darkerStart,
-            style.blend.darkerEnd,
-            style.blend.darker,
-            style.inner.bottom,
-        )
-        setFloatUniform(
-            "in_lightDir",
-            style.light.directionX,
-            style.light.directionY,
-            style.light.directionZ,
-            style.light.angleRange * PI.toFloat(),
-        )
-        setFloatUniform(
-            "in_lightAmt",
-            style.light.intensity,
-            style.light.oppositeIntensity,
-            style.blend.amount,
-            GlassDefaults.Overspill * density / scale,
-        )
-        setFloatUniform(
-            "in_lumCurve",
-            style.blend.curveA,
-            style.blend.curveB,
-            style.blend.curveC,
-            style.blend.curveD,
-        )
-        setFloatUniform(
-            "in_satBri",
-            style.blend.saturation,
-            style.blend.brightness,
-            style.background.burn,
-            style.background.unShade.coerceIn(0f, 1f),
-        )
+        setGlassSurfaceUniforms(style)
+        setGlassLightingUniforms(style, density, scale)
         setFloatUniform(
             "in_edgePow",
             style.edge.pow.coerceAtLeast(0.01f),
@@ -125,6 +85,60 @@ internal fun BackdropEffectScope.glassEffect(
             wideCollapse,
         )
     }
+}
+
+/** The native material surface-mix uniforms remain in the original AGSL order. */
+private fun RuntimeShader.setGlassSurfaceUniforms(style: GlassStyle) {
+    setFloatUniform(
+        "in_whiteMixBg",
+        style.inner.colorWhite,
+        style.inner.colorMix,
+        style.background.saturation,
+        style.background.brightness,
+    )
+    setFloatUniform(
+        "in_darker",
+        style.blend.darkerStart,
+        style.blend.darkerEnd,
+        style.blend.darker,
+        style.inner.bottom,
+    )
+}
+
+/** Lighting and saturation are one stable, dimension-aware uniform group. */
+private fun RuntimeShader.setGlassLightingUniforms(
+    style: GlassStyle,
+    density: Float,
+    scale: Float,
+) {
+    setFloatUniform(
+        "in_lightDir",
+        style.light.directionX,
+        style.light.directionY,
+        style.light.directionZ,
+        style.light.angleRange * PI.toFloat(),
+    )
+    setFloatUniform(
+        "in_lightAmt",
+        style.light.intensity,
+        style.light.oppositeIntensity,
+        style.blend.amount,
+        GlassDefaults.Overspill * density / scale,
+    )
+    setFloatUniform(
+        "in_lumCurve",
+        style.blend.curveA,
+        style.blend.curveB,
+        style.blend.curveC,
+        style.blend.curveD,
+    )
+    setFloatUniform(
+        "in_satBri",
+        style.blend.saturation,
+        style.blend.brightness,
+        style.background.burn,
+        style.background.unShade.coerceIn(0f, 1f),
+    )
 }
 
 /** Creates a reusable colour-blend effect independent of surface dimensions. */
