@@ -79,12 +79,8 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import androidx.compose.ui.util.fastRoundToInt
-import top.yukonga.miuix.kmp.material.EdgeStroke
-import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShape
-import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
-import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShadows
 
 /**
@@ -93,29 +89,15 @@ import top.yukonga.miuix.kmp.material.GlassShadows
  * The indicator follows the pointer while dragging and settles from its current position and
  * velocity on release, without ever overshooting past the outermost destinations.
  *
+ * The material, dimensions and palette use the pinned MIUIX defaults.
+ *
  * @param items The destinations, in order.
  * @param selectedIndex The index of the current destination.
  * @param onSelect Commits on normal pointer release; keyboard/accessibility activates immediately.
  * @param backdrop The [Backdrop] supplying the content behind the glass.
  * @param modifier The modifier applied to the bar.
- * @param style The glass material.
- * @param shape The bar's silhouette. Defaults to a capsule of [height].
- * @param alpha Opacity multiplier for the material.
- * @param stroke Optional bloom stroke along the rim.
- * @param shadow The shadow the floating capsule casts. `null` removes it.
- * @param height Minimum bar height. Content can grow for two-line or large-font captions.
- * @param material The bar's own body — the blur radius and the colour layers over it. `null`
- *   leaves the bar transparent.
- * @param indicatorPressedColor Fill of the capsule while a finger is on it.
- * @param indicatorColor Fill of the capsule behind the selected destination.
- * @param selectedColor Tint of the selected icon and label.
- * @param unselectedColor Tint of the others. They are not dimmed; the indicator alone says which
- *   one is current.
  * @param touchExtension Whether safe bottom whitespace also accepts destination taps.
- * @param trailingActionTouchExclusion Reserved action width plus gap, supplied by a caller
- *   that knows its action size. Without it, action-bearing bars keep the hit strip disabled.
- * @param trailingActionTouchSize Actual action button width, excluding its gap.
- * @param onTrailingActionTouch The original action callback for short taps in its safe bottom strip.
+ * @param trailingTouch The independent action's reserved hit width, button size and tap callback.
  * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
  *   Noninteractive is for a visual preview, not for the real bottom navigation.
  * @param trailingAction Optional independent action outside the glass capsule. It owns its size
@@ -123,31 +105,26 @@ import top.yukonga.miuix.kmp.material.GlassShadows
  *   size, opacity and reserved space. Use [GlassIconButton] for a round action.
  */
 @Composable
-fun GlassNavigationBar(
+internal fun GlassNavigationBar(
     items: List<GlassNavigationItem>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
-    style: GlassStyle = GlassDefaults.Style,
-    shape: GlassShape = GlassShape(CornerSize(50), CornerSize(50), CornerSize(50), CornerSize(50)),
-    alpha: Float = 1f,
-    stroke: EdgeStroke? = GlassNavigationBarDefaults.stroke(),
-    shadow: GlassShadow? = GlassShadows.Float,
-    height: Dp = GlassNavigationBarDefaults.Height,
-    material: GlassMaterial? = GlassNavigationBarDefaults.material(),
-    indicatorColor: Color = GlassNavigationBarDefaults.indicatorColor(),
-    indicatorPressedColor: Color = GlassNavigationBarDefaults.indicatorPressedColor(),
-    selectedColor: Color = if (MiuixTheme.isDynamicColor) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
-    unselectedColor: Color = MiuixTheme.colorScheme.onBackground,
     interactive: Boolean = true,
     touchExtension: Boolean = false,
     trailingAction: (@Composable () -> Unit)? = null,
-    trailingActionTouchExclusion: Dp = 0.dp,
-    trailingActionTouchSize: Dp = 0.dp,
-    onTrailingActionTouch: (() -> Unit)? = null,
+    trailingTouch: NavTouchTrailingAction = NavTouchTrailingAction(),
     previewLabel: (@Composable (Boolean) -> Unit)? = null,
 ) {
+    val shape = GlassShape(CornerSize(50), CornerSize(50), CornerSize(50), CornerSize(50))
+    val stroke = GlassNavigationBarDefaults.stroke()
+    val height = GlassNavigationBarDefaults.Height
+    val material = GlassNavigationBarDefaults.material()
+    val indicatorColor = GlassNavigationBarDefaults.indicatorColor()
+    val indicatorPressedColor = GlassNavigationBarDefaults.indicatorPressedColor()
+    val selectedColor = if (MiuixTheme.isDynamicColor) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground
+    val unselectedColor = MiuixTheme.colorScheme.onBackground
     if (items.isEmpty()) return
     val index = selectedIndex.coerceIn(0, items.lastIndex)
     val density = LocalDensity.current
@@ -245,7 +222,7 @@ fun GlassNavigationBar(
             .fillMaxWidth()
             .then(
                 if (touchExtension && interactive &&
-                    (trailingAction == null || trailingActionTouchExclusion > 0.dp)
+                    (trailingAction == null || trailingTouch.width > 0.dp)
                 ) {
                     Modifier.navTouchExtension(
                         geometry = NavTouchStripGeometry(
@@ -256,17 +233,7 @@ fun GlassNavigationBar(
                             rtl = layoutDirection == LayoutDirection.Rtl,
                         ),
                         onSelect = onSelect,
-                        trailing = NavTouchTrailingAction(
-                            width = if (trailingAction != null) {
-                                trailingActionTouchExclusion
-                            } else 0.dp,
-                            size = if (trailingAction != null) {
-                                trailingActionTouchSize
-                            } else 0.dp,
-                            onTap = if (trailingAction != null) {
-                                onTrailingActionTouch
-                            } else null,
-                        ),
+                        trailing = if (trailingAction != null) trailingTouch else NavTouchTrailingAction(),
                     )
                 } else {
                     Modifier
@@ -282,11 +249,11 @@ fun GlassNavigationBar(
                 .glassPanel(
                     backdrop = backdrop,
                     shape = shape,
-                    style = style,
-                    alpha = alpha,
+                    style = GlassDefaults.Style,
+                    alpha = 1f,
                     material = material,
                     stroke = stroke,
-                    shadow = shadow,
+                    shadow = GlassShadows.Float,
                     shading = false,
                 )
                 .onSizeChanged { barWidthState.intValue = it.width }

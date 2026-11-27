@@ -19,7 +19,6 @@ import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
 import top.yukonga.miuix.kmp.material.GlassShadows
@@ -27,20 +26,18 @@ import top.yukonga.miuix.kmp.material.GlassShadows
 /**
  * Lays out a glass navigation capsule and an independent trailing action.
  *
- * The action's measured width and [spacing] are reserved before measuring [content], so both fit
+ * The action's measured width and native spacing are reserved before measuring [content], so both fit
  * within the same constraints and are centered as a group. A null [trailingAction] reserves no
  * space after its exit animation completes. Width, spacing, scale and opacity animate together.
  * Placement follows the current layout direction.
  *
  * @param modifier Modifier applied to the combined layout.
- * @param spacing Space between the capsule and the action.
  * @param trailingAction Optional independent action, such as an icon button.
  * @param content Navigation capsule, excluding outer margins and system bar insets.
  */
 @Composable
 internal fun GlassNavigationBarLayout(
     modifier: Modifier = Modifier,
-    spacing: Dp = GlassNavigationBarDefaults.ActionSpacing,
     trailingAction: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
@@ -76,7 +73,7 @@ internal fun GlassNavigationBarLayout(
             }
         },
     ) { measurables, constraints ->
-        measureGlassNavigationGroup(measurables, constraints, spacing, actionProgress.value.coerceIn(0f, 1f))
+        measureGlassNavigationGroup(measurables, constraints, actionProgress.value.coerceIn(0f, 1f))
     }
 }
 
@@ -84,13 +81,12 @@ internal fun GlassNavigationBarLayout(
 private fun MeasureScope.measureGlassNavigationGroup(
     measurables: List<Measurable>,
     constraints: Constraints,
-    spacing: Dp,
     fraction: Float,
 ): MeasureResult {
     val action = measurables.getOrNull(1)?.measure(constraints.copy(minWidth = 0, minHeight = 0))
     val actionWidth = ((action?.width ?: 0) * fraction).toInt()
     val gap = if (action != null) {
-        (spacing.toPx() * fraction).toInt().coerceIn(0, (constraints.maxWidth - actionWidth).coerceAtLeast(0))
+        (GlassNavigationBarDefaults.ActionSpacing.toPx() * fraction).toInt().coerceIn(0, (constraints.maxWidth - actionWidth).coerceAtLeast(0))
     } else {
         0
     }

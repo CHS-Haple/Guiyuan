@@ -125,7 +125,6 @@ internal fun HubGlassRail(
         ),
         backdrop = backdrop,
         state = state,
-        showToggle = true,
         trailingAction = if (actionInRail) navigationAction?.let { action ->
             {
                 backdrop?.let { railSource ->
