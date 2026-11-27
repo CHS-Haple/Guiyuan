@@ -141,11 +141,9 @@ internal fun rememberGlassWindowBounds(): IntRect {
  * Shared scrollable glass popup surface with outside-tap dismissal and fixed-size content during transitions.
  *
  * @param onDismissRequest Called when a tap outside should close the menu.
- * @param backdrop The [Backdrop] behind the glass. `null` uses [GlassPopupVisuals.containerColor]
- *   while retaining the configured bloom stroke and shadow.
  * @param sizing Panel size limits and window margin.
  * @param visuals Panel surface appearance.
- * @param surface Optional background layers, drawn behind the rows inside the panel silhouette.
+ * @param surface Background layers, drawn behind the rows inside the panel silhouette.
  * @param panelLayer Layer properties applied to the whole panel.
  * @param overlay Drawn over the panel and its rows, inside the silhouette.
  * @param frame Current panel bounds and corner radius, given the final panel size and the window
@@ -160,14 +158,13 @@ internal fun rememberGlassWindowBounds(): IntRect {
 @Composable
 internal fun GlassPopupSurface(
     onDismissRequest: () -> Unit,
-    backdrop: Backdrop?,
     sizing: GlassPopupSizing,
     visuals: GlassPopupVisuals,
     panelLayer: GraphicsLayerScope.() -> Unit,
     overlay: DrawScope.() -> Unit,
     frame: Density.(end: Size, windowBounds: Rect) -> GlassPopupFrame,
     contentLayer: GraphicsLayerScope.(end: Size) -> Unit,
-    surface: (@Composable BoxScope.(GlassShape) -> Unit)? = null,
+    surface: @Composable BoxScope.(GlassShape) -> Unit,
     onMeasured: ((Size) -> Unit)? = null,
     interactive: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
@@ -253,11 +250,7 @@ internal fun GlassPopupSurface(
             ),
         content = {
             Box {
-                if (surface != null) {
-                    surface(shape)
-                } else {
-                    GlassPopupBackground(backdrop, shape, visuals)
-                }
+                surface(shape)
             }
             val scrollState = rememberScrollState()
             GlassPopupColumn(
