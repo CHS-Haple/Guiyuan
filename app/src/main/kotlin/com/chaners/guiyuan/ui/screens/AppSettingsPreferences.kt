@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -75,6 +74,26 @@ internal fun rememberAppSettingsEntryState(runtimeBusy: Boolean): AppSettingsEnt
         if (!SettingsEntryPrefs.setIcon(context, value)) failed = true
     }
 
+    fun confirmPending() {
+        val selected = pending
+        pending = null
+        if (selected == null || busy) return
+        val previous = SettingsEntryPrefs.get(context)
+        applying = selected
+        val accepted = app.requestSettingsScope { approved ->
+            if (applying == selected) {
+                applying = null
+                // A newer setting takes precedence over a delayed scope grant.
+                if (!approved) failed = true
+                else if (SettingsEntryPrefs.get(context) == previous) saveEntry(selected)
+            }
+        }
+        if (!accepted) {
+            applying = null
+            failed = true
+        }
+    }
+
     return AppSettingsEntryState(
         config = config,
         busy = busy,
@@ -92,29 +111,7 @@ internal fun rememberAppSettingsEntryState(runtimeBusy: Boolean): AppSettingsEnt
             },
             selectIcon = { icon -> if (!busy) saveIcon(icon) },
             dismissPending = { pending = null },
-            confirmPending = {
-                val selected = pending
-                pending = null
-                if (selected != null && !busy) {
-                    val previous = SettingsEntryPrefs.get(context)
-                    applying = selected
-                    val accepted = app.requestSettingsScope { approved ->
-                        if (applying == selected) {
-                            applying = null
-                            if (approved) {
-                                // A newer setting takes precedence over a delayed scope grant.
-                                if (SettingsEntryPrefs.get(context) == previous) saveEntry(selected)
-                            } else {
-                                failed = true
-                            }
-                        }
-                    }
-                    if (!accepted) {
-                        applying = null
-                        failed = true
-                    }
-                }
-            },
+            confirmPending = ::confirmPending,
             dismissFailed = { failed = false },
         ),
     )

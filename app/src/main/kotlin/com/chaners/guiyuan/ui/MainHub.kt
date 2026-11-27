@@ -2,7 +2,6 @@ package com.chaners.guiyuan.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
@@ -37,18 +36,12 @@ import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.NavStyle
 import com.chaners.guiyuan.system.ScopeRestart
 import com.chaners.guiyuan.ui.components.floatingNavBlur
-import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
-import com.chaners.guiyuan.ui.components.liquid.liquidRailSelectedSurface
 import com.chaners.guiyuan.ui.components.liquid.liquidNavBottomPadding
 import com.chaners.guiyuan.ui.components.liquid.rememberLiquidNavBackdrop
 import com.chaners.guiyuan.ui.components.requiresTextureBackdrop
 import com.chaners.guiyuan.ui.screens.rememberPageSearch
-import com.chaners.guiyuan.ui.glass.GlassNavigationRail
-import com.chaners.guiyuan.ui.glass.GlassRailDestinations
-import com.chaners.guiyuan.ui.glass.RailLiquidPaint
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.rememberGlassNavigationRailState
-import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
@@ -92,25 +85,24 @@ internal fun MainHub(
     val app = context.applicationContext as GyApplication
     val scopeBusy by app.scopeRequestInFlight.collectAsState(initial = app.scopeRequestActive)
     val hotReloadInProgress by app.hotReloadInFlight.collectAsState(initial = app.hotReloadActive)
+    fun runtimeBusy() = restartInProgress || hotReloadInProgress || scopeRequestInProgress || scopeBusy
     val onRestart = {
-        restartDialog.openIfAllowed(
-            app = app,
-            blocked = restartInProgress || hotReloadInProgress || scopeRequestInProgress || scopeBusy,
-        )
+        restartDialog.openIfAllowed(app = app, blocked = runtimeBusy())
     }
+    val shaderSupported = isRuntimeShaderSupported()
     val glassNavigation = appearance.navEnabled && appearance.navStyle == NavStyle.Glass
     val miuixMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle.requiresTextureBackdrop &&
-            isRuntimeShaderSupported()
+            shaderSupported
     val liquidMaterialActive =
         appearance.navEnabled &&
             appearance.navStyle == NavStyle.Liquid &&
-            isRuntimeShaderSupported()
+            shaderSupported
     val surfaceColor = MiuixTheme.colorScheme.surface
     // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
-        if (isRuntimeShaderSupported()) {
+        if (shaderSupported) {
             rememberLayerBackdrop {
                 drawRect(surfaceColor)
                 drawContent()
@@ -207,7 +199,7 @@ internal fun MainHub(
             Modifier
         }
     val liquidBottomPadding = liquidNavBottomPadding()
-    val bottomNavigation = HubBottomNavigation(
+    val navigation = HubNavigation(
         appearance, dark, items, pageSelection, navigationAction, actionControls,
     )
     Scaffold(
@@ -216,13 +208,13 @@ internal fun MainHub(
         bottomBar = {
             when {
                 useGlassRail || useNativeRail -> Unit
-                glassNavigation && navBackdrop != null -> HubGlassBottomBar(bottomNavigation, navBackdrop)
+                glassNavigation && navBackdrop != null -> HubGlassBottomBar(navigation, navBackdrop)
                 // Glass without a usable shader falls back to native MIUIX.
-                (glassNavigation && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(bottomNavigation, glassNavigation)
+                (glassNavigation && navBackdrop == null) || !appearance.navEnabled -> HubNativeBottomBar(navigation, glassNavigation)
 
-                liquidBackdrop != null -> HubLiquidBottomBar(bottomNavigation, liquidBackdrop, liquidBottomPadding)
+                liquidBackdrop != null -> HubLiquidBottomBar(navigation, liquidBackdrop, liquidBottomPadding)
 
-                else -> HubFloatingBottomBar(bottomNavigation, navigationBarModifier, navBackdrop)
+                else -> HubFloatingBottomBar(navigation, navigationBarModifier, navBackdrop)
             }
         },
     ) { innerPadding ->
@@ -284,15 +276,12 @@ internal fun MainHub(
                     runtimeActions = TopLevelPagerRuntimeActions(
                         restart = onRestart,
                         requestScope = {
-                            if (!scopeRequestInProgress && !restartInProgress && !hotReloadInProgress &&
-                                !scopeBusy
-                            ) {
+                            if (!runtimeBusy()) {
                                 scopeRequestInProgress = true
-                                val accepted =
-                                    (context.applicationContext as? GyApplication)?.requestSysUiScope { granted ->
-                                        scopeRequestInProgress = false
-                                        if (!granted) scopeRequestFailed = true
-                                    } ?: false
+                                val accepted = app.requestSysUiScope { granted ->
+                                    scopeRequestInProgress = false
+                                    if (!granted) scopeRequestFailed = true
+                                }
                                 if (!accepted) {
                                     scopeRequestInProgress = false
                                     scopeRequestFailed = true
@@ -312,60 +301,7 @@ internal fun MainHub(
         }
         // The rail is not recorded into the backdrop it samples.
         if (useGlassRail) {
-            // Wide rails use labeled destinations, independent of compact bottom-bar preference.
-            val railItems = remember(items) {
-                items.map { item ->
-                    GlassNavigationItem(
-                        icon = item.icon,
-                        label = item.label,
-                        contentDescription = item.label,
-                    )
-                }
-            }
-            GlassNavigationRail(
-                destinations = GlassRailDestinations(
-                    items = railItems,
-                    selectedIndex = pageSelection.selectedPage,
-                    onSelect = pageSelection::select,
-                ),
-                backdrop = railBackdrop,
-                state = railState,
-                showToggle = true,
-                trailingAction = if (actionInRail) navigationAction?.let { action ->
-                    {
-                        railBackdrop?.let { backdrop ->
-                            NavigationTrailingAction(
-                                action = action,
-                                surface = NavigationActionSurface(
-                                    backdrop,
-                                    appearance.liquidMode.takeIf {
-                                        appearance.navStyle == NavStyle.Liquid
-                                    },
-                                    dark,
-                                    GlassNavigationRailDefaults.CollapsedHeight,
-                                ),
-                                controls = actionControls,
-                            )
-                        }
-                    }
-                } else null,
-                // Keep upstream OS4 rail motion and indicator; substitute only the panel surface.
-                materialOverride = if (appearance.navStyle == NavStyle.Liquid) {
-                    RailLiquidPaint(
-                        panel = { backdrop, shape ->
-                            Modifier.liquidRailSurface(backdrop, shape, appearance.liquidMode)
-                        },
-                        indicator = { selectedBackdrop, pressed ->
-                            Modifier.liquidRailSelectedSurface(
-                                backdrop = selectedBackdrop,
-                                shape = RoundedCornerShape(percent = 50),
-                                pressed = pressed,
-                            )
-                        },
-                    )
-                } else null,
-                modifier = Modifier.fillMaxSize(),
-            )
+            HubGlassRail(navigation, railBackdrop, railState, actionInRail)
         }
             }
         }

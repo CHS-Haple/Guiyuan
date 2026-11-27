@@ -47,8 +47,8 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** Shared destination and action ownership for all bottom navigation surfaces. */
-internal data class HubBottomNavigation(
+/** Shared destination and action ownership for bottom navigation and rails. */
+internal data class HubNavigation(
     val appearance: Appearance,
     val dark: Boolean,
     val items: List<MainNavItem>,
@@ -60,7 +60,7 @@ internal data class HubBottomNavigation(
 // App-owned bottom-bar routing. Each surface keeps its native/MIUIX component and gesture owner.
 @Composable
 internal fun HubGlassBottomBar(
-    bar: HubBottomNavigation,
+    bar: HubNavigation,
     navBackdrop: Backdrop,
 ) {
     val (appearance, dark, items, pageSelection, navigationAction, actionControls) = bar
@@ -107,7 +107,7 @@ internal fun HubGlassBottomBar(
 
 @Composable
 internal fun HubNativeBottomBar(
-    bar: HubBottomNavigation,
+    bar: HubNavigation,
     glassNavigation: Boolean,
 ) {
     val (appearance, _, items, pageSelection) = bar
@@ -132,7 +132,7 @@ internal fun HubNativeBottomBar(
 
 @Composable
 internal fun HubLiquidBottomBar(
-    bar: HubBottomNavigation,
+    bar: HubNavigation,
     liquidBackdrop: Backdrop,
     liquidBottomPadding: Dp,
 ) {
@@ -172,7 +172,7 @@ internal fun HubLiquidBottomBar(
 /** The liquid bar alone owns the MIUIX tab/press interaction subtree. */
 @Composable
 private fun HubLiquidNavItems(
-    bar: HubBottomNavigation,
+    bar: HubNavigation,
     liquidBackdrop: Backdrop,
     liquidPressLink: LiquidNavPressLink,
 ) {
@@ -199,7 +199,7 @@ private fun HubLiquidNavItems(
 
 /** The optional extended hit strip stays separate from MIUIX's visual/press owner. */
 @Composable
-private fun liquidTouchExtension(bar: HubBottomNavigation, bottomPadding: Dp): Modifier {
+private fun liquidTouchExtension(bar: HubNavigation, bottomPadding: Dp): Modifier {
     if (!bar.appearance.navTouchExtension) return Modifier
     val action = bar.navigationAction
     val actionSize = LiquidNavSpec.height
@@ -222,7 +222,7 @@ private fun liquidTouchExtension(bar: HubBottomNavigation, bottomPadding: Dp): M
 
 @Composable
 internal fun HubFloatingBottomBar(
-    bar: HubBottomNavigation,
+    bar: HubNavigation,
     navigationBarModifier: Modifier,
     navBackdrop: Backdrop?,
 ) {
@@ -290,7 +290,7 @@ private fun Modifier.recordFloatingNavBounds(
 /** Measure each rendered tab using its actual MIUIX bounds, not a guessed hit width. */
 @Composable
 private fun HubFloatingNavItems(
-    bar: HubBottomNavigation,
+    bar: HubNavigation,
     itemBounds: androidx.compose.runtime.snapshots.SnapshotStateList<Rect?>,
 ) {
     val (appearance, _, items, pageSelection) = bar

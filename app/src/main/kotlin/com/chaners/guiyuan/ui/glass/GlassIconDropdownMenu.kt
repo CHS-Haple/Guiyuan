@@ -50,12 +50,10 @@ import top.yukonga.miuix.kmp.layout.CascadingPopupDefaults
  * Place this component in the same root [BoxScope] as the anchor. Entries with children open a
  * submenu with a back header and divider. Selection is caller-controlled; entry updates also
  * apply to an open submenu.
- * The secondary backdrop combines [secondaryBackdrop] with a recording of the primary popup,
+ * The secondary backdrop combines the scene backdrop with a recording of the primary popup,
  * excluding the secondary itself. Keep the supplied scene backdrop outside both popup layers.
  * [onDismissFinished] fires when both primary and secondary exit transitions have completed.
  */
-// The caller modifier belongs to the primary panel, not its full-page recording layer.
-@Suppress("ktlint:compose:modifier-not-used-at-root")
 @Composable
 fun BoxScope.GlassIconDropdownMenu(
     show: Boolean,
@@ -68,8 +66,6 @@ fun BoxScope.GlassIconDropdownMenu(
     collapseOnSelection: Boolean = entries.size <= 1,
     onDismissFinished: (() -> Unit)? = null,
 ) {
-    val modifier = Modifier // All existing menu callers use the unmodified primary surface.
-    val secondaryBackdrop = backdrop // The menu has no separate scene source.
     val sizing = GlassPopupSizing()
     val visuals = GlassPopupDefaults.visuals()
     val density = LocalDensity.current
@@ -119,8 +115,8 @@ fun BoxScope.GlassIconDropdownMenu(
     }
 
     val primaryBackdrop = rememberLayerBackdrop()
-    val layeredBackdrop = remember(secondaryBackdrop, primaryBackdrop) {
-        secondaryBackdrop?.let { scene ->
+    val layeredBackdrop = remember(backdrop, primaryBackdrop) {
+        backdrop?.let { scene ->
             object : Backdrop {
                 override val isCoordinatesDependent = true
                 override val offsetResidualX: Float get() = scene.offsetResidualX
@@ -156,7 +152,6 @@ fun BoxScope.GlassIconDropdownMenu(
             anchor = anchor,
             backdrop = backdrop,
             anchorContent = anchorContent,
-            modifier = modifier,
             stacked = submenuShown,
             sizing = sizing,
             horizontalAlignment = horizontalAlignment,
