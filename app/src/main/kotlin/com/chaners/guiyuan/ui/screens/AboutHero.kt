@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -155,8 +154,7 @@ internal fun AboutHero(
     val markSize = AboutHeroMarkSize
     val diameter = with(density) { markSize.toPx() }
     val accent = MiuixTheme.colorScheme.primary
-    val dark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
-    val glint = if (dark) lerp(accent, Color.Black, 0.35f) else lerp(accent, Color.White, 0.70f)
+    val glint = brandWaveGlintColor(MiuixTheme.colorScheme.surface, accent)
     val wave = HeroWave(ripple.animation, ripple.phase, diameter, diameter / 2f, ripple.pressMotion)
     val material = HeroMaterial(glint, accent, blur)
     Column(
