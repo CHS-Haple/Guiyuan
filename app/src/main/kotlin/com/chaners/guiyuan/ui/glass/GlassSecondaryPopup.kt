@@ -111,7 +111,6 @@ fun BoxScope.GlassSecondaryPopup(
         contentLayer = { _, _ -> },
         modifier = modifier,
         interactive = show,
-        scrollable = true,
         content = content,
     )
 }
@@ -128,7 +127,6 @@ private fun rememberSecondaryPopupBackProgress(
         show = show,
         active = active,
         enabled = show,
-        retainWhenInactive = false,
         resetSpec = GlassMotion.secondaryPopup(true),
         onDismissRequest = onDismissRequest,
     )

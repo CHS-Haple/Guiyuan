@@ -138,7 +138,7 @@ internal fun rememberGlassWindowBounds(): IntRect {
 }
 
 /**
- * Shared glass popup surface with outside-tap dismissal and fixed-size content during transitions.
+ * Shared scrollable glass popup surface with outside-tap dismissal and fixed-size content during transitions.
  *
  * @param onDismissRequest Called when a tap outside should close the menu.
  * @param backdrop The [Backdrop] behind the glass. `null` uses [GlassPopupVisuals.containerColor]
@@ -153,10 +153,8 @@ internal fun rememberGlassWindowBounds(): IntRect {
  * @param frame Current panel bounds and corner radius, given the final panel size and the window
  *   safe area. Bounds use window coordinates; the surface maps them into its own host.
  * @param contentLayer Row layer properties, given the final panel size and current window bounds.
- * @param reveal Optional opening clip, such as [popupClipReveal].
  * @param onMeasured Called with the final panel size on each measurement.
  * @param interactive Whether the panel's rows can receive input and accessibility actions.
- * @param scrollable Whether rows scroll within the safe-area-constrained viewport.
  * @param content The rows.
  */
 // The full-page dismiss layer and positioned panel must be siblings in the popup host.
@@ -173,12 +171,10 @@ internal fun GlassPopupSurface(
     frame: Density.(end: Size, windowBounds: Rect) -> GlassPopupFrame,
     contentLayer: GraphicsLayerScope.(end: Size, rect: Rect) -> Unit,
     modifier: Modifier = Modifier,
-    reveal: Modifier = Modifier,
     shadowAlpha: () -> Float = { visuals.alpha },
     surface: (@Composable BoxScope.(GlassShape) -> Unit)? = null,
     onMeasured: ((Size) -> Unit)? = null,
     interactive: Boolean = true,
-    scrollable: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
@@ -246,7 +242,6 @@ internal fun GlassPopupSurface(
                 // Include shadow pixels in the offscreen buffer used when alpha is below one.
                 outsets = shadowOutsets
             }
-            .then(reveal)
             .glassShadow(shape, visuals.shadow, shadowAlpha)
             .clip(shape)
             .drawWithContent {
@@ -268,42 +263,31 @@ internal fun GlassPopupSurface(
                     GlassPopupBackground(backdrop, shape, visuals)
                 }
             }
+            val scrollState = rememberScrollState()
             GlassPopupColumn(
                 modifier = Modifier
-                    .then(
-                        if (scrollable) {
-                            val scrollState = rememberScrollState()
-                            Modifier
-                                .verticalScrollBar(
-                                    state = scrollState,
-                                    trackPadding = PaddingValues(vertical = 16.dp),
-                                    isFadeEnabled = false,
-                                    interactive = false,
-                                )
-                                .verticalScroll(scrollState)
-                        } else {
-                            Modifier
-                        },
+                    .verticalScrollBar(
+                        state = scrollState,
+                        trackPadding = PaddingValues(vertical = 16.dp),
+                        isFadeEnabled = false,
+                        interactive = false,
                     )
+                    .verticalScroll(scrollState)
                     .padding(contentPadding),
                 content = content,
             )
         },
     ) { measurables, constraints ->
-        val safeInset = if (scrollable) sizing.safeMargin.roundToPx() * 2 else 0
+        val safeInset = sizing.safeMargin.roundToPx() * 2
         val widest = sizing.maxWidth.roundToPx().coerceAtMost((constraints.maxWidth - safeInset).coerceAtLeast(0))
         val narrowest = sizing.minWidth.roundToPx().coerceAtMost(widest)
         val tallest = sizing.maxHeight.roundToPx().coerceAtMost((constraints.maxHeight - safeInset).coerceAtLeast(0))
         val width = intrinsics.width(contentToken, widest, tallest, measurables.size) {
             measurables[1].maxIntrinsicWidth(tallest)
         }.coerceIn(narrowest, widest)
-        val viewportHeight = if (scrollable) {
-            intrinsics.height(contentToken, width, tallest, measurables.size) {
-                measurables[1].minIntrinsicHeight(width)
-            }.coerceAtMost(tallest)
-        } else {
-            tallest
-        }
+        val viewportHeight = intrinsics.height(contentToken, width, tallest, measurables.size) {
+            measurables[1].minIntrinsicHeight(width)
+        }.coerceAtMost(tallest)
         val foreground = measurables[1].measure(
             Constraints(minWidth = width, maxWidth = width, minHeight = 0, maxHeight = viewportHeight),
         )

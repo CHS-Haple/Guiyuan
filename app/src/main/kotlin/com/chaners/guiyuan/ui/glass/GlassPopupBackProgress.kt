@@ -20,21 +20,20 @@ import kotlinx.coroutines.launch
 
 /**
  * Predictive-back progress with independent cancellation recovery. Completed gestures retain
- * their final fraction through exit, or until the next opening when requested.
+ * their final fraction through exit; the local menu clears it when no longer active.
  */
 @Composable
 internal fun rememberGlassPopupBackProgress(
     show: Boolean,
     active: Boolean,
     enabled: Boolean,
-    retainWhenInactive: Boolean,
     resetSpec: AnimationSpec<Float>,
     onDismissRequest: () -> Unit,
 ): State<Float> {
     val progress = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(show, active, retainWhenInactive) {
-        if (show || (!active && !retainWhenInactive)) progress.snapTo(0f)
+    LaunchedEffect(show, active) {
+        if (show || !active) progress.snapTo(0f)
     }
 
     // Standalone Box hosts may have no navigation dispatcher.
