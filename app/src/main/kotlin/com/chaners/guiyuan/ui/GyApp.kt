@@ -81,7 +81,6 @@ internal fun GyApp(
     sandbox: AppSandbox,
     actions: AppSettingsActions,
 ) {
-    val (sandboxActive, onPreviewThemeChange, onSandboxToggle, onSandboxUpdate, onSandboxStop) = sandbox
     val (onHotReload, themeActions, visualActions, onSwipeBackChange, onLangChange, onIconHiddenChange) = actions
     GyTheme(appearance) {
         val hostActivity = LocalContext.current as? android.app.Activity
@@ -114,14 +113,14 @@ internal fun GyApp(
 
         // Only a changed preview updates an active lease; start() owns its first snapshot.
         LaunchedEffect(previewState) {
-            if (sandboxActive) onSandboxUpdate(previewState)
+            if (sandbox.sandboxActive) sandbox.onSandboxUpdate(previewState)
         }
 
         val backStack = rememberNavBackStack<AppRoute>(AppRoute.Home)
         val currentRoute = backStack.lastOrNull()
         DisposableEffect(currentRoute) {
             onDispose {
-                if (currentRoute == AppRoute.PreviewSandbox) onSandboxStop()
+                if (currentRoute == AppRoute.PreviewSandbox) sandbox.onSandboxStop()
             }
         }
         val swipeBackDirection = appSwipeDismissDirection(appearance.swipeBack, LocalLayoutDirection.current)
@@ -175,33 +174,13 @@ internal fun GyApp(
                 transition = NavTransitions.Expansion,
                 swipeDismiss = swipeBackDirection,
             ) {
-                var sandboxDark by remember { mutableStateOf<Boolean?>(null) }
-                val previewDark = sandboxDark ?: dark
-                DisposableEffect(previewDark) {
-                    onPreviewThemeChange(previewDark)
-                    onDispose { onPreviewThemeChange(null) }
-                }
-                GyTheme(
+                PreviewSandboxRoute(
                     appearance = appearance,
-                    themeMode = if (previewDark) ThemeMode.Dark else ThemeMode.Light,
-                ) {
-                    PreviewSandboxScreen(
-                        display = PreviewSandboxDisplay(previewState, sandboxActive, previewDark),
-                        actions = previewSandboxActions(
-                            ui = PreviewSandboxUiActions(
-                                onParasiteChange = { enabled, snapshot ->
-                                    onSandboxToggle(enabled, snapshot)
-                                },
-                                onToggleTheme = { sandboxDark = !previewDark },
-                                onBack = {
-                                    onSandboxStop()
-                                    navigateBack()
-                                },
-                            ),
-                            selection = previewSelection,
-                        ),
-                    )
-                }
+                    display = PreviewSandboxDisplay(previewState, sandbox.sandboxActive, dark),
+                    sandbox = sandbox,
+                    selection = previewSelection,
+                    onBack = ::navigateBack,
+                )
             }
             entry<AppRoute.About>(swipeDismiss = swipeBackDirection) {
                 AboutScreen(
@@ -243,6 +222,42 @@ internal fun GyApp(
                 )
             }
         }
+    }
+}
+
+/** The navigation entry owns its temporary theme override; the activity owns the live lease. */
+@Composable
+private fun PreviewSandboxRoute(
+    appearance: Appearance,
+    display: PreviewSandboxDisplay,
+    sandbox: AppSandbox,
+    selection: MutableState<PreviewSandboxUiState>,
+    onBack: () -> Unit,
+) {
+    var sandboxDark by remember { mutableStateOf<Boolean?>(null) }
+    val previewDark = sandboxDark ?: display.dark
+    DisposableEffect(previewDark) {
+        sandbox.onPreviewThemeChange(previewDark)
+        onDispose { sandbox.onPreviewThemeChange(null) }
+    }
+    GyTheme(
+        appearance = appearance,
+        themeMode = if (previewDark) ThemeMode.Dark else ThemeMode.Light,
+    ) {
+        PreviewSandboxScreen(
+            display = display.copy(dark = previewDark),
+            actions = previewSandboxActions(
+                ui = PreviewSandboxUiActions(
+                    onParasiteChange = sandbox.onSandboxToggle,
+                    onToggleTheme = { sandboxDark = !previewDark },
+                    onBack = {
+                        sandbox.onSandboxStop()
+                        onBack()
+                    },
+                ),
+                selection = selection,
+            ),
+        )
     }
 }
 

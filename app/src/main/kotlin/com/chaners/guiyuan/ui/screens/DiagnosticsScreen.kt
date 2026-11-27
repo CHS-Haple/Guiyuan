@@ -3,8 +3,6 @@ package com.chaners.guiyuan.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,15 +16,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.ui.icons.Os4GlassShare
-import com.chaners.guiyuan.settings.DiagLevel
 import com.chaners.guiyuan.settings.DiagSettings
 import com.chaners.guiyuan.settings.DiagRepo
 import com.chaners.guiyuan.system.DiagLogReader
@@ -38,7 +33,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.anim.folmeSpring
-import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.nav.core.LocalNavTransitionScope
@@ -98,7 +92,6 @@ internal fun DiagnosticsScreen(
     val clearedMsg = stringResource(R.string.diagnostics_history_cleared)
     val clearFailedMsg = stringResource(R.string.diagnostics_history_clear_failed)
     val refreshFailedMsg = stringResource(R.string.diagnostics_history_refresh_failed)
-    val exportTitle = stringResource(R.string.export_diagnostic_report)
     val menuTitle = stringResource(R.string.diagnostics_more_actions)
     val filterTitle = stringResource(R.string.diagnostics_filter)
     val refreshTexts =
@@ -113,13 +106,18 @@ internal fun DiagnosticsScreen(
         snapshotFlow { navScope.role == NavRole.Top && !navScope.isRunning }.first { it }
     }
 
+    // One publication path for both screen refresh and an explicit fresh report.
+    fun publishSnapshot(captured: DiagSnapshot) {
+        snapshot = captured
+        onSnapshot(captured)
+        expandedKey = null
+    }
+
     suspend fun captureSnapshot() {
         try {
             val captured = DiagSnapshot.capture(context.applicationContext)
             awaitNavIdle()
-            snapshot = captured
-            onSnapshot(captured)
-            expandedKey = null
+            publishSnapshot(captured)
         } finally {
             loading = false
             refreshing = false
@@ -141,9 +139,7 @@ internal fun DiagnosticsScreen(
                 // Share/export must capture the current SystemUI session, not the
                 // screen snapshot taken when Diagnostics was opened.
                 val captured = DiagSnapshot.capture(context.applicationContext)
-                snapshot = captured
-                onSnapshot(captured)
-                expandedKey = null
+                publishSnapshot(captured)
                 val report = withContext(Dispatchers.Default) {
                     DiagReport.build(captured)
                 }
@@ -254,27 +250,21 @@ internal fun DiagnosticsScreen(
             )
         },
         actions = {
-            DiagActionButton(
-                onClick = {
+            DiagnosticsReportAction(
+                onExport = {
                     exportOpen = true
                     exportLauncher.launch(DiagFiles.fileName())
                 },
-                onLongClick = {
+                onShare = {
                     withReport { report ->
                         if (!shareDiagnosticReport(context, report, shareTitle)) {
                             snackbarHostState.showSnackbar(shareFailMsg)
                         }
                     }
                 },
-                longClickLabel = shareTitle,
+                shareTitle = shareTitle,
                 enabled = reportEnabled,
-            ) {
-                Icon(
-                    imageVector = Os4GlassShare,
-                    contentDescription = exportTitle,
-                    modifier = Modifier.size(28.dp),
-                )
-            }
+            )
             DiagMenu(
                 title = menuTitle,
                 status = DiagMenuStatus(
