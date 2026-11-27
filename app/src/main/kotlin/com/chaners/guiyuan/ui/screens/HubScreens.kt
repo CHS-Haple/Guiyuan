@@ -43,11 +43,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.TopLevelPageSearch
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
@@ -87,11 +87,12 @@ internal fun AnimatedPreferenceGroup(
 internal fun HubPage(
     title: String,
     bottomContentPadding: Dp,
-    search: PageSearch? = null,
-    searchInNavigationBar: Boolean = false,
+    pageSearch: TopLevelPageSearch? = null,
     overlay: @Composable () -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
+    val search = pageSearch?.state
+    val searchInNavigationBar = pageSearch?.inNavigationBar == true
     // Browsing and filtered results must not overwrite each other's scroll position.
     val browsingState = rememberLazyListState()
     val resultsState = rememberLazyListState()
@@ -112,7 +113,6 @@ internal fun HubPage(
         { offset -> scrollBehavior.state.overscrollOffset = offset }
     }
     val topBarBackdrop = rememberTopBarBackdrop()
-    val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(filtering, search?.query) {
         if (filtering) {
             resultsState.requestScrollToItem(0)
@@ -165,23 +165,18 @@ internal fun HubPage(
         }
     }
     val searchContent: @Composable () -> Unit = {
-        if (search != null) {
-            if (searchMotion.mounted) {
-                Os4SearchMode(
-                    motion = searchMotion,
-                    expanded = search.active,
-                    query = search.query,
-                    backdrop = topBarBackdrop,
-                    materialProgress = searchMaterial,
-                    onQueryChange = search::update,
-                    onSearch = { keyboardController?.hide() },
-                    onClose = {
-                        // close() clears the query immediately; record which title was covered.
-                        revealTitleOnExit = search.filtering || browsingScroll.state.collapsedFraction >= 1f
-                        search.close()
-                    },
-                )
-            }
+        if (search != null && searchMotion.mounted) {
+            Os4SearchMode(
+                motion = searchMotion,
+                search = search,
+                backdrop = topBarBackdrop,
+                materialProgress = searchMaterial,
+                onClose = {
+                    // close() clears the query immediately; record which title was covered.
+                    revealTitleOnExit = search.filtering || browsingScroll.state.collapsedFraction >= 1f
+                    search.close()
+                },
+            )
         }
     }
     CompositionLocalProvider(LocalGlassBackdrop provides topBarBackdrop) {

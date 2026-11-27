@@ -36,13 +36,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /** Search field geometry follows PR #423's GlassSearchOverlay; surface belongs to the parent bar. */
 @Composable
 internal fun Os4SearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit,
-    active: Boolean,
+    search: PageSearch,
     backdrop: Backdrop?,
     materialProgress: State<Float>,
 ) {
+    val query = search.query
+    val active = search.active
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -60,13 +59,13 @@ internal fun Os4SearchField(
 
     BasicTextField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = search::update,
         enabled = active,
         singleLine = true,
         textStyle = MiuixTheme.textStyles.body1.copy(color = colors.onSurface),
         cursorBrush = SolidColor(colors.primary),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+        keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
@@ -80,7 +79,7 @@ internal fun Os4SearchField(
                 SearchDecoration(
                     query = query,
                     onClear = {
-                        onQueryChange("")
+                        search.update("")
                         focusRequester.requestFocus()
                     },
                     field = field,

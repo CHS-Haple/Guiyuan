@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.chaners.guiyuan.R
+import com.chaners.guiyuan.ui.TopLevelPageSearch
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
 @Composable
@@ -12,9 +13,9 @@ internal fun FeaturesScreen(
     bottomContentPadding: Dp,
     visible: Boolean,
     snackbarState: SnackbarHostState,
-    search: PageSearch,
-    searchInNavigationBar: Boolean,
+    pageSearch: TopLevelPageSearch,
 ) {
+    val search = pageSearch.state
     val resources = rememberFeaturesScreenResources()
     val backup = rememberFeaturesBackupController(snackbarState)
     val toggles = rememberFeaturesOverlayToggles()
@@ -24,8 +25,7 @@ internal fun FeaturesScreen(
     HubPage(
         title = stringResource(R.string.features_title),
         bottomContentPadding = bottomContentPadding,
-        search = search,
-        searchInNavigationBar = searchInNavigationBar,
+        pageSearch = pageSearch,
         overlay = { FeaturesScreenOverlays(resources, backup, toggles) },
     ) {
         featureScreenSections(
