@@ -2425,12 +2425,13 @@ internal object SysUiPresentationOwner {
                     baseCarrierWidthPx = stableCarrierWidthPx,
                     isRtl = hostView.layoutDirection == View.LAYOUT_DIRECTION_RTL,
                 ) ?: run { onFailNative(surfaceName + "-layout-unavailable"); return false }
+            val visualScale = VisualPrefsOwner.current().combinedScale
             val compactSlotWidthPx =
                 CompactReservationPolicy.resolveCenteredVisualWidth(
                     baseSlotWidthPx = resolved.visualWidth,
-                    userScale = VisualPrefsOwner.current().combinedScale,
+                    userScale = visualScale,
                 )
-            val requestedReservationDelta =
+            val reservationDelta =
                 EndReservationPolicy.resolvePaddingEndDelta(
                     nativeHide = nativeHide || homePrivacyOccupiesEnd,
                     actualBatteryWidthPx = actualBatteryWidthPx,
@@ -2438,7 +2439,6 @@ internal object SysUiPresentationOwner {
                 )
             // Native status-icon onMeasure/onLayout owns peer underflow.
             // Lease only the current projected occupancy via paddingEnd.
-            val reservationDelta = requestedReservationDelta
             val target =
                 PaddingState(
                     baseline.start,
@@ -2465,9 +2465,9 @@ internal object SysUiPresentationOwner {
                             " stableCarrierWidth=" + stableCarrierWidthPx +
                             " actualBatteryWidth=" + actualBatteryWidthPx +
                             " compactSlotWidth=" + compactSlotWidthPx +
-                            " visualScale=" + VisualPrefsOwner.current().combinedScale +
+                            " visualScale=" + visualScale +
                             " requestedSlotWidth=" + compactSlotWidthPx +
-                            " requestedPaddingEndDelta=" + requestedReservationDelta +
+                            " requestedPaddingEndDelta=" + reservationDelta +
                             " paddingEndDelta=" + reservationDelta +
                             " basePaddingEnd=" + baseline.end +
                             LOG_APPLIED_PADDING_END + target.end +
