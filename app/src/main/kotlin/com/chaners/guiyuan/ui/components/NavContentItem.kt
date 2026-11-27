@@ -13,12 +13,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.settings.NavContent
+import com.chaners.guiyuan.ui.MainNavItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarDefaults
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -30,19 +30,19 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun NavContentItem(
     content: NavContent,
     selected: Boolean,
-    onClick: () -> Unit,
-    icon: ImageVector,
-    label: String,
+    onClick: (() -> Unit)?,
+    item: MainNavItem,
     modifier: Modifier = Modifier,
-    interactive: Boolean = true,
     previewLabel: (@Composable () -> Unit)? = null,
 ) {
+    val click = onClick ?: {}
+    val interactive = onClick != null
     if (content == NavContent.IconOnly) {
         FloatingNavigationBarItem(
             selected = selected,
-            onClick = onClick,
-            icon = icon,
-            label = label,
+            onClick = click,
+            icon = item.icon,
+            label = item.label,
             modifier = modifier,
             enabled = interactive,
         )
@@ -65,7 +65,7 @@ internal fun NavContentItem(
         modifier =
             modifier.selectable(
                 selected = selected,
-                onClick = onClick,
+                onClick = click,
                 enabled = interactive,
                 role = Role.Tab,
                 interactionSource = interactionSource,
@@ -74,7 +74,7 @@ internal fun NavContentItem(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
-            imageVector = icon,
+            imageVector = item.icon,
             contentDescription = null,
             modifier =
                 Modifier
@@ -82,17 +82,16 @@ internal fun NavContentItem(
                     .size(FloatingNavigationBarDefaults.IconSize),
             tint = contentColor,
         )
+        val labelModifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
         if (previewLabel != null) {
             Box(
-                modifier = Modifier
-                    .padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
-                    .height(14.dp),
+                modifier = labelModifier.height(14.dp),
                 contentAlignment = Alignment.Center,
             ) { previewLabel() }
         } else {
             Text(
-                text = label,
-                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
+                text = item.label,
+                modifier = labelModifier,
                 color = contentColor,
                 textAlign = TextAlign.Center,
                 fontSize = NavigationBarDefaults.LabelFontSize,

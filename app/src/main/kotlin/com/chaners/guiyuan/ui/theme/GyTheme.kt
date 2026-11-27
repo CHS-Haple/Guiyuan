@@ -9,7 +9,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import com.chaners.guiyuan.settings.ThemeMode
-import com.chaners.guiyuan.settings.PaletteSeedPreset
+import com.chaners.guiyuan.settings.Appearance
+import com.chaners.guiyuan.settings.PaletteSource
 import org.json.JSONObject
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -19,13 +20,14 @@ import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 @Composable
 internal fun GyTheme(
-    themeMode: ThemeMode,
-    dynamicColorEnabled: Boolean,
-    colorSpec: ThemeColorSpec? = null,
-    paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
-    presetSeed: PaletteSeedPreset? = null,
+    appearance: Appearance,
+    themeMode: ThemeMode = appearance.theme,
     content: @Composable () -> Unit,
 ) {
+    val dynamicColorEnabled = appearance.dynamicColor
+    val colorSpec = appearance.colorSpec.takeIf { appearance.customPalette }
+    val paletteStyle = appearance.paletteStyle
+    val presetSeed = appearance.paletteSeedPreset.takeIf { appearance.paletteSource == PaletteSource.PRESET }
     val colorSchemeMode =
         when {
             dynamicColorEnabled && themeMode == ThemeMode.System ->
