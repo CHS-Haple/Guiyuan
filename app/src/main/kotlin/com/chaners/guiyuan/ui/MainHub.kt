@@ -53,10 +53,6 @@ import com.chaners.guiyuan.ui.components.UiOverlayDialog
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Home
-import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val TopLevelPageCount = 3
@@ -173,16 +169,7 @@ internal fun MainHub(
         { if (useGlassRail) railState.progress else 1f }
     }
 
-    val homeLabel = stringResource(R.string.nav_home)
-    val featuresLabel = stringResource(R.string.nav_features)
-    val settingsLabel = stringResource(R.string.nav_settings)
-    val items = remember(homeLabel, featuresLabel, settingsLabel) {
-        listOf(
-            MainNavItem(homeLabel, MiuixIcons.Normal.Home),
-            MainNavItem(featuresLabel, MiuixIcons.Normal.Tune),
-            MainNavItem(settingsLabel, MiuixIcons.Normal.Settings),
-        )
-    }
+    val items = rememberMainNavItems()
 
 
     TopLevelBackHandler(
