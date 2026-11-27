@@ -130,7 +130,6 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
                 onSelect = {},
                 backdrop = miuixBackdrop,
                 interactive = false,
-                defaultWindowInsetsPadding = true,
                 previewLabel = { selected -> MiniNavLabelBar(selected) },
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
