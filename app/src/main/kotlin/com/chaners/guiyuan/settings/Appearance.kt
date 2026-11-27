@@ -46,8 +46,7 @@ internal data class Appearance(
     val theme: ThemeMode = ThemeMode.System,
     val topBarProgressiveBlur: Boolean = true,
     val dynamicColor: Boolean = false,
-    val customPalette: Boolean = false,
-    val usePresetSeed: Boolean = false,
+    val paletteSource: PaletteSource = PaletteSource.SYSTEM,
     val paletteSeedPreset: PaletteSeedPreset = PaletteSeedPreset.BLUE,
     val colorSpec: ThemeColorSpec = ThemeColorSpec.Spec2021,
     val paletteStyle: ThemePaletteStyle = ThemePaletteStyle.TonalSpot,
@@ -59,7 +58,7 @@ internal data class Appearance(
     val swipeBack: Boolean = true,
     val uiScalePercent: Int = 100,
 ) {
-    val paletteSource: PaletteSource get() = paletteSource(customPalette, usePresetSeed)
+    val customPalette: Boolean get() = paletteSource != PaletteSource.SYSTEM
 }
 
 internal data class ThemeChoice(
@@ -176,8 +175,10 @@ internal class AppearanceRepo(context: Context) {
                 theme = theme.mode,
                 topBarProgressiveBlur = prefs[topBarProgressiveBlurKey] ?: true,
                 dynamicColor = theme.dynamicColor,
-                customPalette = decodeCustomPalette(prefs[customPaletteKey], colorSpec),
-                usePresetSeed = prefs[presetSeedEnabledKey] ?: false,
+                paletteSource = paletteSource(
+                    decodeCustomPalette(prefs[customPaletteKey], colorSpec),
+                    prefs[presetSeedEnabledKey] ?: false,
+                ),
                 paletteSeedPreset = decodePaletteSeedPreset(prefs[paletteSeedKey]),
                 colorSpec = colorSpec ?: ThemeColorSpec.Spec2021,
                 paletteStyle = decodePalette(prefs[paletteStyleKey]),

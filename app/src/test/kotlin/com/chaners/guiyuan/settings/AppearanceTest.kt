@@ -32,18 +32,16 @@ class AppearanceTest {
     @Test
     fun presetSourceRetainsLegacySystemAndGeneratedModes() {
         assertEquals(PaletteSource.SYSTEM, Appearance().paletteSource)
-        assertEquals(PaletteSource.SYSTEM_SEED, Appearance(customPalette = true).paletteSource)
-        assertEquals(
-            PaletteSource.PRESET,
-            Appearance(customPalette = true, usePresetSeed = true).paletteSource,
-        )
-        assertEquals(
-            PaletteSource.SYSTEM,
-            Appearance(customPalette = false, usePresetSeed = true).paletteSource,
-        )
+        for (source in PaletteSource.entries) {
+            val appearance = Appearance(paletteSource = source)
+            assertEquals(source, appearance.paletteSource)
+            assertEquals(source != PaletteSource.SYSTEM, appearance.customPalette)
+            assertEquals(source, appearance.copy(dynamicColor = true).paletteSource)
+        }
         assertEquals(PaletteSource.SYSTEM_SEED, paletteSource(true, false))
         assertEquals(PaletteSource.PRESET, paletteSource(true, true))
         assertEquals(PaletteSource.SYSTEM, paletteSource(false, true))
+        assertEquals(PaletteSource.SYSTEM, paletteSource(false, false))
     }
 
     @Test
