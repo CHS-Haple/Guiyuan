@@ -87,7 +87,6 @@ fun BoxScope.GlassTransformPopup(
 ) {
     val sizing = GlassPopupSizing()
     val visuals = GlassPopupDefaults.visuals()
-    val maskColor = GlassPopupDefaults.maskColor()
     val transition = updateTransition(show, label = "glassTransformPopup")
     val bounds = transition.animateFloat(
         transitionSpec = { GlassMotion.transformBounds(targetState) },
@@ -137,6 +136,7 @@ fun BoxScope.GlassTransformPopup(
     }
     if (!active) return
 
+    val maskColor = GlassPopupDefaults.maskColor()
     val anchorSurface = anchor.surface
     val anchorVisuals = anchorSurface?.let {
         visuals.copy(
