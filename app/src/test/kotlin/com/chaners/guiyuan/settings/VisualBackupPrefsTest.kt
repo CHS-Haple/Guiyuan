@@ -75,28 +75,44 @@ class VisualBackupPrefsTest {
 
     @Test
     fun backupRestorationUsesArchivedActiveColorsForBothModes() {
-        val prefs = VisualTestPreferences()
-        val editor = prefs.edit()
-        editor.putVisualCfg(VisualCfg(
-            dualSignal = false,
-            combinedScale = 0.8f,
-            batteryColorPreset = BatteryColorPreset.RECOMMENDED,
-        ))
-        editor.putVisualCfg(VisualCfg(
-            dualSignal = true,
-            combinedScale = 1f,
-            batteryColorPreset = BatteryColorPreset.IOS_STYLE,
-        ))
-        editor.putBatteryColors(VisualCfg(
-            dualSignal = false,
-            batteryColorPreset = BatteryColorPreset.RECOMMENDED,
-        ))
-        editor.apply()
-
-        assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = false).batteryColorPreset)
-        assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = true).batteryColorPreset)
-        assertEquals(1f, prefs.readVisualCfg(dual = false).combinedScale, 0.001f)
-        assertEquals(1f, prefs.readVisualCfg(dual = true).combinedScale, 0.001f)
+        for (dual in listOf(false, true)) {
+            val prefs = VisualTestPreferences()
+            val repo = VisualRepo(prefs)
+            prefs.edit().putString("unrelated", "keep").apply()
+            val original = prefs.all.toMap()
+            val snapshot = repo.backupSnapshot()
+            val fixture = sampleBackup()
+            val backup = fixture.visual.copy(
+                dualEnabled = dual,
+                profiles = fixture.visual.profiles.map { profile ->
+                    profile.copy(
+                        combinedScale = if (profile.dualSignal) 0.95f else 0.85f,
+                        batteryColorPreset = if (profile.dualSignal) {
+                            BatteryColorPreset.IOS_STYLE
+                        } else BatteryColorPreset.HYPEROS,
+                    )
+                },
+            )
+            val writes = prefs.writeCount
+            assertTrue(repo.restore(backup, fixture.batterySchemes))
+            assertEquals(writes + 1, prefs.writeCount)
+            assertEquals(if (dual) backup.dualLayout else backup.singleLayout, repo.current().layout)
+            assertEquals(dual, repo.current().dualSignal)
+            assertEquals("keep", prefs.getString("unrelated", null))
+            for (profile in repo.backup().profiles) {
+                assertEquals(if (dual) 0.95f else 0.85f, profile.combinedScale, 0.001f)
+                assertEquals(
+                    if (dual) BatteryColorPreset.IOS_STYLE else BatteryColorPreset.HYPEROS,
+                    profile.batteryColorPreset,
+                )
+            }
+            assertEquals(
+                if (dual) BATTERY_COLOR_SCHEME_IOS_KEY else BATTERY_COLOR_SCHEME_HYPEROS_KEY,
+                BatterySchemeRepo(prefs).current().activeSchemeKey,
+            )
+            assertTrue(repo.rollbackBackup(snapshot))
+            assertEquals(original, prefs.all)
+        }
     }
 
     @Test
