@@ -81,7 +81,7 @@ internal fun rememberAppSettingsEntryState(runtimeBusy: Boolean): AppSettingsEnt
         pending = pending,
         failed = failed,
         actions = AppSettingsEntryActions(
-                selectEntry = { selected ->
+            selectEntry = { selected ->
                 if (!busy && selected != config.entry) {
                     if (selected == SettingsEntry.Disabled || app.settingsInScope()) {
                         saveEntry(selected)
@@ -115,7 +115,7 @@ internal fun rememberAppSettingsEntryState(runtimeBusy: Boolean): AppSettingsEnt
                     }
                 }
             },
-                dismissFailed = { failed = false },
+            dismissFailed = { failed = false },
         ),
     )
 }
