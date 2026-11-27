@@ -6,28 +6,37 @@ internal fun SharedPreferences.Editor.putVisualCfg(
     settings: VisualCfg,
 ): SharedPreferences.Editor {
     val normalized = settings.normalized()
-    val editor =
-        putSignalVisuals(normalized)
-            .putBatteryReadoutVisuals(normalized)
-            .putScaleAndColorVisuals(normalized)
-    // One writer serves app-local settings and the SystemUI remote mirror.
-    // Publish the schema with the values so stale dual banks cannot win later.
-    return editor
-        .putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
+    return putNormalizedVisualLayout(normalized).putSharedVisuals(normalized, normalized.layout)
+}
+
+// Only layout-owned fields: both backup restore and remote mirroring use these encoders.
+internal fun SharedPreferences.Editor.putNormalizedVisualLayout(cfg: VisualCfg): SharedPreferences.Editor =
+    putSignalVisuals(cfg)
+        .putBatteryReadoutVisuals(cfg)
+        .putSymbolDimensions(cfg)
+
+// Publish the active selection and shared colors once per editor transaction.
+internal fun SharedPreferences.Editor.putSharedVisuals(
+    cfg: VisualCfg,
+    activeLayout: ContentLayout,
+): SharedPreferences.Editor =
+    putBoolean(DUAL_SIGNAL_ENABLED_KEY, cfg.dualSignal)
+        .putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
+        .putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, cfg.fillFollowsRetract)
+        .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, cfg.ccTintTransition)
+        .putBatteryColors(cfg)
+        .putCurrentVisualSchema()
+
+// Publish the schema with the values so stale dual banks cannot win later.
+internal fun SharedPreferences.Editor.putCurrentVisualSchema(): SharedPreferences.Editor =
+    putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
         .putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
         .putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
         .putInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 1)
-}
 
 private fun SharedPreferences.Editor.putSignalVisuals(cfg: VisualCfg): SharedPreferences.Editor {
     val layout = cfg.layout
-    return putBoolean(
-        DUAL_SIGNAL_ENABLED_KEY,
-        cfg.dualSignal,
-    ).putString(
-        CONTENT_LAYOUT_KEY,
-        layout.persistedValue,
-    ).putString(
+    return putString(
         visualProfileKey(layout, DUAL_ROW_DOT_ARRANGEMENT_KEY),
         cfg.dualRowDotArrangement.persistedValue,
     ).putString(
@@ -80,12 +89,6 @@ private fun SharedPreferences.Editor.putBatteryReadoutVisuals(cfg: VisualCfg): S
     ).putBoolean(
         visualProfileKey(layout, BATTERY_TOP_CHARGING_ICON_FOLLOWS_BATTERY_COLOR_KEY),
         cfg.topChargingIconFollowsBatteryColor,
-    ).putBoolean(
-        BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY,
-        cfg.fillFollowsRetract,
-    ).putBoolean(
-        CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY,
-        cfg.ccTintTransition,
     ).putFloat(
         visualProfileKey(layout, BATTERY_TOP_TEXT_SCALE_KEY),
         cfg.topTextScale,
@@ -123,7 +126,7 @@ private fun SharedPreferences.Editor.putBatteryReadoutVisuals(cfg: VisualCfg): S
     )
 }
 
-private fun SharedPreferences.Editor.putScaleAndColorVisuals(cfg: VisualCfg): SharedPreferences.Editor {
+private fun SharedPreferences.Editor.putSymbolDimensions(cfg: VisualCfg): SharedPreferences.Editor {
     val layout = cfg.layout
     return putFloat(
         visualProfileKey(layout, COMBINED_SCALE_KEY),
@@ -152,5 +155,5 @@ private fun SharedPreferences.Editor.putScaleAndColorVisuals(cfg: VisualCfg): Sh
     ).putInt(
         visualProfileKey(layout, MOBILE_TYPE_WEIGHT_KEY),
         cfg.mobileTypeWeight,
-    ).putBatteryColors(cfg)
+    )
 }

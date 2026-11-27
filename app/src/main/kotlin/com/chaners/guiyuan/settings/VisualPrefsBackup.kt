@@ -51,3 +51,36 @@ internal fun SharedPreferences.rollbackBackupVisuals(snapshot: Map<String, Any?>
     }
     return editor.commit()
 }
+
+// Preserve the released backup shape even though the live layouts are shared.
+internal fun SharedPreferences.readVisualBackup(): VisualBackup {
+    val layout = readLayout()
+    return VisualBackup(
+        singleLayout = layout,
+        dualLayout = layout,
+        dualEnabled = dualSignalEnabled(),
+        dualInitialized = getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false),
+        profiles = listOf(false, true).flatMap { dual ->
+            ContentLayout.entries.map { profileLayout ->
+                readVisualCfg(dual = dual, layoutOverride = profileLayout)
+            }
+        },
+    )
+}
+
+// The caller validates the archive before restoring either preference store.
+internal fun SharedPreferences.restoreVisualBackup(
+    backup: VisualBackup,
+    library: BatteryColorSchemeLibrary,
+): Boolean {
+    val editor = editBackupVisuals()
+    val activeProfiles = backup.profiles.filter { it.dualSignal == backup.dualEnabled }
+    val active = activeProfiles.first()
+    activeProfiles.forEach { editor.putNormalizedVisualLayout(it.normalized()) }
+    val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
+    // Even a legacy uninitialized single bank must become a current shared store.
+    editor.putSharedVisuals(active, activeLayout)
+    val applied = library.matchingKey(active) ?: library.activeSchemeKey
+    writeBatterySchemeLibrary(editor, library.copy(activeSchemeKey = applied))
+    return editor.commit()
+}

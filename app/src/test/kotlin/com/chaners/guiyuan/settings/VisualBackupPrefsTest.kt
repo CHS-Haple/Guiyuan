@@ -75,28 +75,39 @@ class VisualBackupPrefsTest {
 
     @Test
     fun backupRestorationUsesArchivedActiveColorsForBothModes() {
-        val prefs = VisualTestPreferences()
-        val editor = prefs.edit()
-        editor.putVisualCfg(VisualCfg(
-            dualSignal = false,
-            combinedScale = 0.8f,
-            batteryColorPreset = BatteryColorPreset.RECOMMENDED,
-        ))
-        editor.putVisualCfg(VisualCfg(
-            dualSignal = true,
-            combinedScale = 1f,
-            batteryColorPreset = BatteryColorPreset.IOS_STYLE,
-        ))
-        editor.putBatteryColors(VisualCfg(
-            dualSignal = false,
-            batteryColorPreset = BatteryColorPreset.RECOMMENDED,
-        ))
-        editor.apply()
-
-        assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = false).batteryColorPreset)
-        assertEquals(BatteryColorPreset.RECOMMENDED, prefs.readVisualCfg(dual = true).batteryColorPreset)
-        assertEquals(1f, prefs.readVisualCfg(dual = false).combinedScale, 0.001f)
-        assertEquals(1f, prefs.readVisualCfg(dual = true).combinedScale, 0.001f)
+        val fixture = sampleBackup()
+        val cases = archivedVisualCases(fixture.visual)
+        val profiles = fixture.visual.profiles.map { profile ->
+            val expected = cases.getValue(profile.dualSignal).first
+            profile.copy(
+                combinedScale = expected.combinedScale - profile.layout.ordinal * 0.02f,
+                batteryColorPreset = expected.batteryColorPreset,
+                fillFollowsRetract = expected.fillFollowsRetract,
+                ccTintTransition = expected.ccTintTransition,
+            )
+        }
+        for ((dual, case) in cases) {
+            val (expected, schemeKey) = case
+            val prefs = VisualTestPreferences()
+            prefs.edit().putString("unrelated", "keep").apply()
+            val original = prefs.all.toMap()
+            val snapshot = prefs.backupVisualSnapshot()
+            val writes = prefs.writeCount
+            val backup = fixture.visual.copy(dualEnabled = dual, profiles = profiles)
+            assertTrue(prefs.restoreVisualBackup(backup, fixture.batterySchemes))
+            assertEquals(writes + 1, prefs.writeCount)
+            assertEquals(expected.layout, prefs.readLayout())
+            assertEquals(dual, prefs.dualSignalEnabled())
+            assertEquals("keep", prefs.getString("unrelated", null))
+            val expectedLayouts = profiles.filter { it.dualSignal == dual }.associateBy { it.layout }
+            for (profile in prefs.readVisualBackup().profiles) {
+                val archived = expectedLayouts.getValue(profile.layout)
+                assertEquals(archived.normalized().copy(dualSignal = profile.dualSignal), profile)
+            }
+            assertEquals(schemeKey, BatterySchemeRepo(prefs).current().activeSchemeKey)
+            assertTrue(prefs.rollbackBackupVisuals(snapshot))
+            assertEquals(original, prefs.all)
+        }
     }
 
     @Test
@@ -148,3 +159,21 @@ class VisualBackupPrefsTest {
         assertEquals(null, schemes.matchingKey(unmatched))
     }
 }
+
+/** Legacy archives may keep different values in each SIM bank. */
+private fun archivedVisualCases(visual: VisualBackup) = mapOf(
+    false to (VisualCfg(
+        layout = visual.singleLayout,
+        dualSignal = false,
+        combinedScale = 0.85f,
+        batteryColorPreset = BatteryColorPreset.HYPEROS,
+    ) to BATTERY_COLOR_SCHEME_HYPEROS_KEY),
+    true to (VisualCfg(
+        layout = visual.dualLayout,
+        dualSignal = true,
+        combinedScale = 0.95f,
+        batteryColorPreset = BatteryColorPreset.IOS_STYLE,
+        fillFollowsRetract = false,
+        ccTintTransition = false,
+    ) to BATTERY_COLOR_SCHEME_IOS_KEY),
+)
