@@ -40,7 +40,6 @@ private fun ColumnScope.appearanceThemeMode(
         title = stringResource(R.string.theme_mode),
         summary = stringResource(R.string.theme_mode_summary),
         startAction = { SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_contrast) },
-        showValue = true,
         onSelectedIndexChange = { index ->
             ThemeMode.entries.getOrNull(index)?.let { mode ->
                 if (mode != appearance.theme) actions.onThemeChange(mode)
