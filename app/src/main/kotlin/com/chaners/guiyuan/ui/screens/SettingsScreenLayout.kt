@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
@@ -67,7 +66,6 @@ internal fun SettingsPage(
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     glassActions: Boolean = false,
-    titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
     keepCompactTitle: Boolean = false,
     userScrollEnabled: Boolean = true,
@@ -105,7 +103,7 @@ internal fun SettingsPage(
                 backdrop = topBarBackdrop,
                 scrollBehavior = scrollBehavior,
                 titleAlpha = { titleAlpha * railProgress() },
-                titlePadding = titlePadding,
+                titlePadding = TopAppBarDefaults.TitlePadding,
                 navigationIcon = navigationIcon,
                 actions = {
                     if (glassActions) {

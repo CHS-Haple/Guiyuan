@@ -1,7 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 
@@ -162,7 +161,6 @@ internal fun BatteryColorDetailSheet(
                 )
             },
         backgroundColor = MiuixTheme.colorScheme.surface,
-        insideMargin = DpSize(0.dp, 0.dp),
         enableWindowDim = false,
         startAction = {
             Box(Modifier.padding(start = BottomSheetDefaults.insideMargin.width)) {
