@@ -117,7 +117,6 @@ internal fun RailToggle(
     onClick: () -> Unit,
     expanded: Boolean,
     size: Dp,
-    iconSize: Dp,
     tint: Color,
     contentDescription: String,
 ) {
@@ -147,7 +146,6 @@ internal fun RailToggle(
             shadow = null,
         ) {
             RailToggleGlyph(
-                iconSize = iconSize,
                 tint = tint,
                 topBarAlpha = { topBarAlpha.value },
                 sideBarAlpha = { sideBarAlpha.value },
@@ -168,7 +166,6 @@ internal fun RailToggle(
             contentAlignment = Alignment.Center,
         ) {
             RailToggleGlyph(
-                iconSize = iconSize,
                 tint = tint,
                 topBarAlpha = { topBarAlpha.value },
                 sideBarAlpha = { sideBarAlpha.value },
@@ -181,7 +178,6 @@ internal fun RailToggle(
 
 @Composable
 private fun RailToggleGlyph(
-    iconSize: Dp,
     tint: Color,
     topBarAlpha: () -> Float,
     sideBarAlpha: () -> Float,
@@ -193,7 +189,7 @@ private fun RailToggleGlyph(
             imageVector = RailTopBarIcon,
             contentDescription = contentDescription,
             modifier = Modifier
-                .size(iconSize)
+                .size(RailIconSize)
                 .graphicsLayer { alpha = topBarAlpha() * contentAlpha() },
             tint = tint,
         )
@@ -201,7 +197,7 @@ private fun RailToggleGlyph(
             imageVector = RailSideBarIcon,
             contentDescription = null,
             modifier = Modifier
-                .size(iconSize)
+                .size(RailIconSize)
                 .graphicsLayer { alpha = sideBarAlpha() * contentAlpha() },
             tint = tint,
         )

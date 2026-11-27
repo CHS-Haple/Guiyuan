@@ -106,7 +106,6 @@ private fun ColumnScope.featureLayoutSelection(
                     ContentLayout.MOBILE_CENTER -> R.string.content_layout_mobile_center_summary
                 },
             ),
-            showValue = true,
             enabled = enabled,
             onSelectedIndexChange = { index ->
                 layoutChoices.getOrNull(index)?.first?.let(visualRepo::setLayout)
@@ -181,7 +180,6 @@ private fun ColumnScope.featureSingleRowSignalDots(
             summary = stringResource(R.string.outer_signal_dots_only_summary),
             items = signalDotArrangements,
             selectedIndex = visual.singleRowDotArrangement.ordinal,
-            showValue = true,
             enabled = enabled,
             startAction = {
                 SemanticLeadingIcon(
@@ -213,7 +211,6 @@ private fun ColumnScope.featureDualRowSignalDots(
                 summary = stringResource(R.string.outer_signal_dots_only_summary),
                 items = options.labels,
                 selectedIndex = visual.dualRowDotArrangement.ordinal,
-                showValue = true,
                 enabled = enabled,
                 startAction = {
                     SemanticLeadingIcon(
@@ -300,7 +297,6 @@ private fun ColumnScope.featureLowerOpening(
                 summary = stringResource(R.string.battery_lower_opening_summary),
                 items = lowerOpeningOptions,
                 selectedIndex = if (visual.fixedLowerOpening) 1 else 0,
-                showValue = true,
                 enabled = enabled,
                 startAction = {
                     SemanticLeadingIcon(

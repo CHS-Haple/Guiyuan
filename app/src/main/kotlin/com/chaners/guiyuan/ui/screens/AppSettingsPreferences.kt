@@ -140,7 +140,6 @@ internal fun AppLanguageRow(lang: AppLang, onLangChange: (AppLang) -> Unit) {
             SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_language)
         },
         summary = stringResource(R.string.language_summary),
-        showValue = true,
         onSelectedIndexChange = { index ->
             AppLang.entries.getOrNull(index)?.let(onLangChange)
         },
@@ -182,7 +181,6 @@ internal fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
             if (entryState.config.entry == SettingsEntry.Disabled) R.string.settings_entry_summary
             else R.string.settings_entry_restart_hint,
         ),
-        showValue = true,
         onSelectedIndexChange = { index ->
             SettingsEntry.entries.getOrNull(index)?.let(entryState.selectEntry)
         },
@@ -200,7 +198,6 @@ internal fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
             },
             enabled = !entryState.busy,
             summary = stringResource(R.string.settings_entry_icon_summary),
-            showValue = true,
             onSelectedIndexChange = { index ->
                 SettingsEntryIcon.entries.getOrNull(index)?.let(entryState.selectIcon)
             },

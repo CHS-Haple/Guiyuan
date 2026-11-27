@@ -424,7 +424,6 @@ private fun RailPanelToggle(
             onClick = { state.expanded = !expanded },
             expanded = expanded,
             size = if (expanded) RailToggleBoxSize else RailCollapsedRowHeight,
-            iconSize = RailIconSize,
             tint = colors.unselectedColor,
             contentDescription = context.toggleContentDescription,
         )

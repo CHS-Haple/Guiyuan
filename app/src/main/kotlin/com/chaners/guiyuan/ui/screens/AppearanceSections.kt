@@ -106,7 +106,6 @@ private fun ColumnScope.appearanceNavigationStyle(
         title = stringResource(R.string.floating_navigation_style),
         summary = stringResource(R.string.floating_navigation_style_summary),
         startAction = { SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_style) },
-        showValue = true,
         onSelectedIndexChange = { index ->
             NavStyle.entries.getOrNull(index)?.let { style ->
                 if (style != appearance.navStyle) actions.onNavStyleChange(style)
@@ -131,7 +130,6 @@ private fun ColumnScope.appearanceLiquidMode(
         title = stringResource(R.string.floating_navigation_liquid_mode),
         summary = stringResource(R.string.floating_navigation_liquid_mode_summary),
         startAction = { SemanticLeadingIcon(iconRes = R.drawable.ic_material_symbol_blur_circular) },
-        showValue = true,
         onSelectedIndexChange = { index ->
             LiquidMode.entries.getOrNull(index)?.let { mode ->
                 if (mode != appearance.liquidMode) actions.onLiquidModeChange(mode)

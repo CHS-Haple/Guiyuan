@@ -465,8 +465,6 @@ fun GlassTopAppBar(
                 scrollBehavior = scrollBehavior,
                 defaultWindowInsetsPadding = defaultWindowInsetsPadding,
                 titlePadding = titlePadding,
-                navigationIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
-                actionIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
                 navigationIcon = {
                     if (overlayNavigation) {
                         Box(Modifier.width(navigationWidth).height(navigationHeight).onGloballyPositioned { navigationBounds = it.boundsInRoot() })
