@@ -1,15 +1,16 @@
 package com.chaners.guiyuan.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import kotlinx.coroutines.flow.Flow
 
-internal class VisualRepo(context: Context) {
-    private val context = context.applicationContext
-    private val preferences =
+internal class VisualRepo(private val preferences: SharedPreferences) {
+    constructor(context: Context) : this(
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
             Context.MODE_PRIVATE,
-        )
+        ),
+    )
 
     init {
         migrateVisualPrefsIfNeeded(preferences)
@@ -291,9 +292,9 @@ internal class VisualRepo(context: Context) {
 
     fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean {
         val editor = preferences.editBackupVisuals()
-        backup.profiles.filter { it.dualSignal == backup.dualEnabled }
-            .forEach { editor.putVisualCfg(it) }
-        val active = backup.profiles.first { it.dualSignal == backup.dualEnabled }
+        val activeProfiles = backup.profiles.filter { it.dualSignal == backup.dualEnabled }
+        activeProfiles.forEach { editor.putVisualCfg(it) }
+        val active = activeProfiles.first()
         editor.putBatteryColors(active)
         editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
             .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
@@ -314,7 +315,7 @@ internal class VisualRepo(context: Context) {
     }
 
     fun resetToDefaults() {
-        resetVisualPreferences(preferences, BatterySchemeRepo(context).current())
+        resetVisualPreferences(preferences, BatterySchemeRepo(preferences).current())
     }
 
     fun setTopChargingIconScale(scale: Float) {
