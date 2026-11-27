@@ -42,12 +42,9 @@ internal object HotReloadTransfer {
         host: Any?,
         state: Bundle,
         bindings: Any,
-        notificationShadeHomeEligible: Boolean?,
         controlCenterHomeEligible: Boolean?,
-        appliedTint: Int?,
-        statusIconTint: Int?,
+        tint: TintState?,
         controlCenterFakeHost: ViewGroup?,
-        controlCenterCompactReady: Boolean,
     ): Any? {
         val hostView = host as? View ?: return null
         if (hostView.javaClass.name != StatusBarHostCapture.HOST_CLASS_NAME) {
@@ -61,12 +58,13 @@ internal object HotReloadTransfer {
             hostView,
             state,
             bindings,
-            notificationShadeHomeEligible,
+            // Preserve the retired notification-shade slot and neutral V10 layout handoff.
+            null,
             controlCenterHomeEligible,
-            appliedTint,
-            statusIconTint,
+            tint?.appliedTint,
+            tint?.statusIconTint,
             fakeHost,
-            controlCenterCompactReady,
+            false,
         )
     }
 

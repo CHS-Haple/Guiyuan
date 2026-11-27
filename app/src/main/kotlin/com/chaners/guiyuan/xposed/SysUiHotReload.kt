@@ -66,24 +66,16 @@ internal object SysUiHotReload {
             )
         }
 
-        // V10 retires native CC layout before the new module can adopt it.
-        val controlCenterCompactReady = false
-
         val transfer =
             HotReloadTransfer.capture(
                 host = host,
                 state = StatusStateStore.exportHotReloadState(),
                 bindings = SysUiNetworkSource.exportHotReloadBindings(),
-                // Legacy transfer slot remains null for compatibility. Notification
-                // Shade now follows the native system_icons carrier lifecycle.
-                notificationShadeHomeEligible = null,
                 controlCenterHomeEligible =
                     SysUiCcSource.currentHomeEligibility(),
-                appliedTint = stableTint?.appliedTint,
-                statusIconTint = stableTint?.statusIconTint,
+                tint = stableTint,
                 controlCenterFakeHost =
                     CcRenderSession.hotReloadHost(),
-                controlCenterCompactReady = controlCenterCompactReady,
             ) ?: return PrepareResult.Unavailable(
                 reason = "state-transfer-capture-failed",
                 wifiRoots = bindingCounts.first,
@@ -106,7 +98,8 @@ internal object SysUiHotReload {
             wifiRoots = bindingCounts.first,
             mobileRoots = bindingCounts.second,
             tintTransferred = stableTint != null,
-            controlCenterCompactReady = controlCenterCompactReady,
+            // V10 retires native CC layout before the new module can adopt it.
+            controlCenterCompactReady = false,
         )
     }
 
