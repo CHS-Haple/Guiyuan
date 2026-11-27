@@ -20,7 +20,7 @@ internal fun UiDropdownPreference(
     enabled: Boolean = true,
     insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
     maxHeight: Dp? = null,
-    onSelectedIndexChange: ((Int) -> Unit)? = null,
+    onSelectedIndexChange: (Int) -> Unit,
 ) {
     GlassDropdownPreference(
         items = items,
@@ -34,6 +34,6 @@ internal fun UiDropdownPreference(
         showValue = true,
         insideMargin = insideMargin,
         sizing = GlassPopupSizing(maxHeight = maxHeight ?: GlassPopupSizing().maxHeight),
-        onSelectedIndexChange = { onSelectedIndexChange?.invoke(it) },
+        onSelectedIndexChange = onSelectedIndexChange,
     )
 }
