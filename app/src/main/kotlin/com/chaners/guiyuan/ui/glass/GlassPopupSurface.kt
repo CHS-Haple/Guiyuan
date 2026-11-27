@@ -143,7 +143,6 @@ internal fun rememberGlassWindowBounds(): IntRect {
  * @param onDismissRequest Called when a tap outside should close the menu.
  * @param backdrop The [Backdrop] behind the glass. `null` uses [GlassPopupVisuals.containerColor]
  *   while retaining the configured bloom stroke and shadow.
- * @param modifier The modifier applied to the panel.
  * @param sizing Panel size limits and window margin.
  * @param visuals Panel surface appearance.
  * @param surface Optional background layers, drawn behind the rows inside the panel silhouette.
@@ -170,7 +169,6 @@ internal fun GlassPopupSurface(
     overlay: DrawScope.() -> Unit,
     frame: Density.(end: Size, windowBounds: Rect) -> GlassPopupFrame,
     contentLayer: GraphicsLayerScope.(end: Size, rect: Rect) -> Unit,
-    modifier: Modifier = Modifier,
     shadowAlpha: () -> Float = { visuals.alpha },
     surface: (@Composable BoxScope.(GlassShape) -> Unit)? = null,
     onMeasured: ((Size) -> Unit)? = null,
@@ -226,7 +224,7 @@ internal fun GlassPopupSurface(
 
     Layout(
         // Outside the placement modifier so it reports the host origin, not the panel offset.
-        modifier = modifier
+        modifier = Modifier
             .onGloballyPositioned { hostOrigin.value = it.positionInWindow() }
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)

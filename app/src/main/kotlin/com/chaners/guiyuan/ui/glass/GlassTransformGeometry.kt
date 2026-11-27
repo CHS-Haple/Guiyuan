@@ -10,9 +10,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.lerp
 
-/** Simplified anchors omit the opening copy but retain it during exit. */
-internal fun shouldRenderAnchorContent(simplified: Boolean, show: Boolean): Boolean = !simplified || !show
-
 /** Retained exit content is visual only, even before the transition starts its first exit frame. */
 internal fun isTransformPopupInteractive(show: Boolean, stacked: Boolean): Boolean = show && !stacked
 
