@@ -6,29 +6,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.TopAppBarLayout
+import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 
 @Composable
 internal fun UiNativeTitleBar(
     title: String,
     largeTitle: String,
-    subtitle: String,
     modifier: Modifier,
     scrollBehavior: ScrollBehavior?,
-    titlePadding: Dp,
-    defaultWindowInsetsPadding: Boolean,
-    titleBlurRadius: Dp,
     titleAlpha: () -> Float,
     compact: Boolean,
     expandable: Boolean,
     navigationIcon: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
-    bottomContent: @Composable () -> Unit,
 ) {
     if (compact) {
         SmallTopAppBar(
@@ -37,13 +32,13 @@ internal fun UiNativeTitleBar(
             color = Color.Transparent,
             titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = titleAlpha()),
             scrollBehavior = scrollBehavior,
-            defaultWindowInsetsPadding = defaultWindowInsetsPadding,
-            titlePadding = titlePadding,
+            defaultWindowInsetsPadding = true,
+            titlePadding = TopAppBarDefaults.TitlePadding,
             navigationIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
             actionIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
             navigationIcon = navigationIcon,
             actions = actions,
-            bottomContent = bottomContent,
+            bottomContent = {},
         )
         return
     }
@@ -51,15 +46,15 @@ internal fun UiNativeTitleBar(
         title = title,
         expandable = expandable,
         largeTitle = largeTitle,
-        subtitle = subtitle,
+        subtitle = "",
         modifier = modifier,
         color = Color.Transparent,
         titleColor = MiuixTheme.colorScheme.onSurface,
         largeTitleColor = MiuixTheme.colorScheme.onSurface,
         subtitleColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         scrollBehavior = scrollBehavior,
-        defaultWindowInsetsPadding = defaultWindowInsetsPadding,
-        titlePadding = titlePadding,
+        defaultWindowInsetsPadding = true,
+        titlePadding = TopAppBarDefaults.TitlePadding,
         navigationIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
         actionIconPadding = GlassTopAppBarDefaults.HorizontalPadding,
         navigationIcon = navigationIcon,
@@ -70,8 +65,8 @@ internal fun UiNativeTitleBar(
                 content = actions,
             )
         },
-        bottomContent = bottomContent,
-        titleBlurRadius = titleBlurRadius,
+        bottomContent = {},
+        titleBlurRadius = GlassTopAppBarDefaults.TitleBlurRadius,
         titleAlpha = titleAlpha,
     )
 }

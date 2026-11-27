@@ -46,7 +46,6 @@ import top.yukonga.miuix.kmp.basic.RefreshState
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
 
 internal data class SettingsPullToRefresh(
     val refreshing: Boolean,
@@ -96,7 +95,6 @@ internal fun SettingsPage(
                 backdrop = topBarBackdrop,
                 scrollBehavior = scrollBehavior,
                 titleAlpha = { titleAlpha * railProgress() },
-                titlePadding = TopAppBarDefaults.TitlePadding,
                 navigationIcon = navigationIcon,
                 actions = {
                     if (actions != null) {
