@@ -39,7 +39,7 @@ internal object DiagFiles {
             output.bufferedWriter(Charsets.UTF_8).use { writer ->
                 writer.write(report)
             }
-        }.isSuccess
+        }.onFailure(::rethrowUserOperationFatal).isSuccess
     }
 
     suspend fun prepare(
@@ -58,14 +58,18 @@ internal object DiagFiles {
         }.onFailure { error ->
             inserted?.let { uri ->
                 runCatching { resolver.delete(uri, null, null) }
+                    .onFailure(::rethrowUserOperationFatal)
             }
             if (BuildConfig.DEBUG) DiagShareDiagnostics.logPrepareFailure(error)
+            // Cancelled exports still clean their pending MediaStore entry, then propagate.
+            rethrowUserOperationFatal(error)
         }.getOrNull()
     }
 
     // Pruning is best-effort; it must never block a new user-requested export.
     private fun pruneBeforeExport(context: Context) {
         runCatching { prune(context) }.onFailure { error ->
+            rethrowUserOperationFatal(error)
             if (BuildConfig.DEBUG) DiagShareDiagnostics.logCleanupFailure(error)
         }
     }
@@ -101,7 +105,7 @@ internal object DiagFiles {
     ) {
         runCatching {
             context.contentResolver.delete(file.uri, null, null)
-        }
+        }.onFailure(::rethrowUserOperationFatal)
     }
 
     private fun prune(context: Context) {
@@ -151,6 +155,7 @@ internal object DiagFiles {
                     nowMillis - addedMs > MAX_AGE_MS
             if (expired) {
                 runCatching { resolver.delete(report.uri, null, null) }
+                    .onFailure(::rethrowUserOperationFatal)
             }
             !expired
         }
@@ -159,6 +164,7 @@ internal object DiagFiles {
             .drop(MAX_FILES - 1)
             .forEach { report ->
                 runCatching { resolver.delete(report.uri, null, null) }
+                    .onFailure(::rethrowUserOperationFatal)
             }
     }
 
