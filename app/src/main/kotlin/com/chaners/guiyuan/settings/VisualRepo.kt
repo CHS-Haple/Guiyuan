@@ -28,8 +28,12 @@ internal class VisualRepo(context: Context) {
         preferences.edit().putBoolean(activeProfileKey(key), enabled).apply()
     }
 
-    private fun writeProfileFloat(key: String, value: Float) {
-        preferences.edit().putFloat(activeProfileKey(key), value).apply()
+    private fun writeProfileFloat(
+        key: String,
+        value: Float,
+        layout: ContentLayout = preferences.readLayout(),
+    ) {
+        preferences.edit().putFloat(visualProfileKey(layout, key), value).apply()
     }
 
     private fun writeProfileInt(key: String, value: Int) {
@@ -91,15 +95,16 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setMobileTypeBottomOffsetY(offset: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY),
-                offset.finiteIn(
-                    NETWORK_TOP_OFFSET_MIN,
-                    NETWORK_TOP_OFFSET_MAX,
-                    mobileTypeBottomOffsetDefault(preferences.readLayout()),
-                ),
-            ).apply()
+        val layout = preferences.readLayout()
+        writeProfileFloat(
+            MOBILE_TYPE_BOTTOM_OFFSET_Y_KEY,
+            offset.finiteIn(
+                NETWORK_TOP_OFFSET_MIN,
+                NETWORK_TOP_OFFSET_MAX,
+                mobileTypeBottomOffsetDefault(layout),
+            ),
+            layout,
+        )
     }
 
     fun setLayout(layout: ContentLayout) {
@@ -162,16 +167,18 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setTopTextScale(scale: Float) {
+        val layout = preferences.readLayout()
         val uiScale =
             scale.finiteIn(
                 BATTERY_TOP_TEXT_UI_SCALE_MIN,
                 BATTERY_TOP_TEXT_UI_SCALE_MAX,
-                topTextUiScaleDefault(preferences.readLayout()),
+                topTextUiScaleDefault(layout),
             )
         writeProfileFloat(
             BATTERY_TOP_TEXT_SCALE_KEY,
             (uiScale * BATTERY_TOP_TEXT_UI_SCALE_REFERENCE)
                 .coerceIn(BATTERY_TOP_TEXT_SCALE_MIN, BATTERY_TOP_TEXT_SCALE_MAX),
+            layout,
         )
     }
 
@@ -243,16 +250,16 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setMobileTypeScale(scale: Float) {
-        preferences.edit()
-            .putFloat(
-                activeProfileKey(MOBILE_TYPE_SIZE_SCALE_KEY),
-                scale.finiteIn(
-                    MOBILE_TYPE_SIZE_SCALE_MIN,
-                    MOBILE_TYPE_SIZE_SCALE_MAX,
-                    mobileTypeScaleDefault(preferences.readLayout()),
-                ),
-            )
-            .apply()
+        val layout = preferences.readLayout()
+        writeProfileFloat(
+            MOBILE_TYPE_SIZE_SCALE_KEY,
+            scale.finiteIn(
+                MOBILE_TYPE_SIZE_SCALE_MIN,
+                MOBILE_TYPE_SIZE_SCALE_MAX,
+                mobileTypeScaleDefault(layout),
+            ),
+            layout,
+        )
     }
 
     fun setMobileTypeWeight(weight: Int) {
@@ -311,11 +318,12 @@ internal class VisualRepo(context: Context) {
     }
 
     fun setTopChargingIconScale(scale: Float) {
+        val layout = preferences.readLayout()
         val uiScale =
             scale.finiteIn(
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MIN,
                 BATTERY_TOP_CHARGING_ICON_UI_SCALE_MAX,
-                topChargingIconUiScaleDefault(preferences.readLayout()),
+                topChargingIconUiScaleDefault(layout),
             )
         writeProfileFloat(
             BATTERY_TOP_CHARGING_ICON_SCALE_KEY,
@@ -324,6 +332,7 @@ internal class VisualRepo(context: Context) {
                     BATTERY_TOP_CHARGING_ICON_SCALE_MIN,
                     BATTERY_TOP_CHARGING_ICON_SCALE_MAX,
                 ),
+            layout,
         )
     }
 }
