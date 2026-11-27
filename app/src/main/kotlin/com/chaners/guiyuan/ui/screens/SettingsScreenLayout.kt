@@ -67,7 +67,6 @@ internal fun SettingsPage(
     navigationActions: @Composable RowScope.() -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     glassActions: Boolean = false,
-    titlePadding: Dp = TopAppBarDefaults.TitlePadding,
     titleAlpha: Float = 1f,
     keepCompactTitle: Boolean = false,
     userScrollEnabled: Boolean = true,
@@ -105,7 +104,7 @@ internal fun SettingsPage(
                 backdrop = topBarBackdrop,
                 scrollBehavior = scrollBehavior,
                 titleAlpha = { titleAlpha * railProgress() },
-                titlePadding = titlePadding,
+                titlePadding = TopAppBarDefaults.TitlePadding,
                 navigationIcon = navigationIcon,
                 actions = {
                     if (glassActions) {
