@@ -31,6 +31,118 @@ import top.yukonga.miuix.kmp.blur.BackdropEffectScope
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.colorControls
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import top.yukonga.miuix.kmp.material.EdgeLightSource
+import top.yukonga.miuix.kmp.material.EdgePeak
+import top.yukonga.miuix.kmp.material.EdgeStroke
+import top.yukonga.miuix.kmp.material.sensor.rememberDeviceTilt
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.abs
+
+// Liquid optics adapted from the MIUIX Liquid Glass example (Apache-2.0).
+// Guiyuan retains navigation content, gestures and fallback ownership.
+private val glassHighlight = EdgeStroke(
+    width = 1.dp,
+    bevel = 2.dp,
+    color = Color.White.copy(alpha = 0.12f),
+    primary = EdgeLightSource(0.5f, -0.3f, -0.05f, intensity = 1f),
+    secondary = EdgeLightSource(0.5f, 0.8f, -0.5f, intensity = 0.4f),
+    peak = EdgePeak.Dual,
+)
+
+private const val GRAVITY_THRESHOLD_SQ = 0.01f
+private val GRAVITY_STEP = (3.0 * PI / 180.0).toFloat()
+private const val TILT_LIGHT_SENSITIVITY = 0.12f
+private const val PITCH_SWEEP_PER_RAD = 2f / 3f
+private val PITCH_NEUTRAL = (PI / 4).toFloat()
+private val PITCH_SWEEP_LIMIT = (30.0 * PI / 180.0).toFloat()
+
+internal data class GlassTilt(val angle: Float, val pitch: Float, val roll: Float)
+
+@Composable
+internal fun rememberGlassTilt(interactive: Boolean): State<GlassTilt> {
+    if (!interactive) {
+        return remember { mutableStateOf(GlassTilt((-PI / 2).toFloat(), PITCH_NEUTRAL, 0f)) }
+    }
+    // Reuse MIUIX's smoothed, lifecycle-owned sensor state; previews stay static.
+    val tilt = rememberDeviceTilt()
+    return remember(tilt) {
+        derivedStateOf {
+            val pose = tilt.value
+            val validGravity =
+                pose.gravityX * pose.gravityX + pose.gravityY * pose.gravityY > GRAVITY_THRESHOLD_SQ
+            GlassTilt(
+                if (validGravity) {
+                    (atan2(pose.gravityY, pose.gravityX) / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    (-PI / 2).toFloat()
+                },
+                if (validGravity) {
+                    (pose.pitch / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    PITCH_NEUTRAL
+                },
+                if (validGravity) {
+                    (pose.roll / GRAVITY_STEP).roundToInt() * GRAVITY_STEP
+                } else {
+                    0f
+                },
+            )
+        }
+    }
+}
+
+internal fun litHighlight(tilt: GlassTilt, offsetDegrees: Float): EdgeStroke {
+    // Pitch spans ±90°; center the light sweep at 45° to avoid saturating normal upright use.
+    val pitchSweep =
+        ((abs(tilt.pitch) - PITCH_NEUTRAL) * PITCH_SWEEP_PER_RAD)
+            .coerceIn(-PITCH_SWEEP_LIMIT, PITCH_SWEEP_LIMIT)
+    val rad = tilt.angle + (offsetDegrees * PI / 180.0).toFloat() + pitchSweep
+    val dx = (tilt.roll * TILT_LIGHT_SENSITIVITY).coerceIn(-0.12f, 0.12f)
+    return glassHighlight.copy(
+        primary = glassHighlight.primary.copy(
+            x = 0.5f + cos(rad) + dx,
+            y = 0.7f + sin(rad),
+        ),
+    )
+}
+
+internal data class LiquidParams(
+    val blur: Dp,
+    val refractionHeight: Dp,
+    val refractionAmount: Dp,
+    val surfaceAlpha: Float,
+)
+
+internal fun LiquidMode.params(): LiquidParams =
+    when (this) {
+        LiquidMode.Blur ->
+            LiquidParams(
+                blur = 8.dp,
+                refractionHeight = 24.dp,
+                refractionAmount = 24.dp,
+                surfaceAlpha = 0.40f,
+            )
+        LiquidMode.Balanced ->
+            LiquidParams(
+                blur = 4.dp,
+                refractionHeight = 24.dp,
+                refractionAmount = 24.dp,
+                surfaceAlpha = 0.40f,
+            )
+        LiquidMode.Clear ->
+            LiquidParams(
+                blur = 2.dp,
+                refractionHeight = 24.dp,
+                refractionAmount = 24.dp,
+                surfaceAlpha = 0.30f,
+            )
+    }
 
 @Composable
 internal fun rememberLiquidNavBackdrop(surfaceColor: Color): LayerBackdrop =
