@@ -308,20 +308,14 @@ internal fun GlassTopAppBar(
                             constraints.maxHeight.toFloat(),
                             topInsets.getTop(this) + TopAppBarDefaults.CollapsedHeight.toPx(),
                         )
-                        val coveredHeight = if (useCollapseProgress && scrollBehavior != null) {
-                            val state = scrollBehavior.state
-                            val limit = state.heightOffsetLimit
-                            if (limit <= 0f && limit >= -constraints.maxHeight.toFloat()) {
-                                val offset = state.heightOffset
-                                val boundedOffset = if (offset.isNaN()) 0f else offset.fastCoerceIn(limit, 0f)
-                                (constraints.maxHeight.toFloat() + limit - boundedOffset)
-                                    .fastCoerceAtLeast(TopAppBarDefaults.CollapsedHeight.toPx())
-                            } else {
-                                fallbackCoveredHeight
-                            }
-                        } else {
-                            fallbackCoveredHeight
-                        }
+                        val state = if (useCollapseProgress) scrollBehavior?.state else null
+                        val coveredHeight = topBarCoveredHeight(
+                            measuredHeight = constraints.maxHeight.toFloat(),
+                            fallbackHeight = fallbackCoveredHeight,
+                            collapsedHeight = TopAppBarDefaults.CollapsedHeight.toPx(),
+                            offsetLimit = state?.heightOffsetLimit,
+                            offset = { state?.heightOffset ?: 0f },
+                        )
                         val height = (coveredHeight + bandOverhang.toPx().fastCoerceAtLeast(0f)).fastRoundToInt()
                         val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
@@ -447,4 +441,18 @@ internal fun GlassTopAppBar(
             }
         }
     }
+}
+
+/** Measured native title coverage; a provisional collapse limit must not shrink the band. */
+internal inline fun topBarCoveredHeight(
+    measuredHeight: Float,
+    fallbackHeight: Float,
+    collapsedHeight: Float,
+    offsetLimit: Float?,
+    offset: () -> Float,
+): Float {
+    if (offsetLimit == null || !(offsetLimit <= 0f && offsetLimit >= -measuredHeight)) return fallbackHeight
+    val current = offset()
+    val bounded = if (current.isNaN()) 0f else current.fastCoerceIn(offsetLimit, 0f)
+    return (measuredHeight + offsetLimit - bounded).fastCoerceAtLeast(collapsedHeight)
 }
