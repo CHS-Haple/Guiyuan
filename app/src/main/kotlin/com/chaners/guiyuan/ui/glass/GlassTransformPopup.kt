@@ -5,7 +5,6 @@ package com.chaners.guiyuan.ui.glass
 
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupSizing
-import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.material.GlassDefaults
@@ -72,7 +71,6 @@ private fun guiyuanPopupMaskSpring(expanding: Boolean): SpringSpec<Float> = folm
  * @param anchorContent Copy of the control, or the portion identified by [glassPopupAnchorContent].
  * @param stacked Whether a secondary menu is open. Scales down this panel and applies the native mask.
  * @param horizontalAlignment Horizontal alignment of the expanded panel relative to [anchor].
- * @param visuals Expanded panel appearance, blended from a [GlassIconButton] anchor's surface.
  * @param onMeasured Called with the final panel size. Use its width as the submenu's minimum width.
  * @param content The items.
  */
@@ -85,11 +83,11 @@ fun BoxScope.GlassTransformPopup(
     anchorContent: @Composable () -> Unit,
     stacked: Boolean = false,
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
-    visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
     onMeasured: ((Size) -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val sizing = GlassPopupSizing()
+    val visuals = GlassPopupDefaults.visuals()
     val maskColor = GlassPopupDefaults.maskColor()
     val transition = updateTransition(show, label = "glassTransformPopup")
     val bounds = transition.animateFloat(
@@ -183,7 +181,6 @@ fun BoxScope.GlassTransformPopup(
 
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
-        backdrop = menuBackdrop,
         sizing = sizing,
         visuals = visuals,
         panelLayer = {

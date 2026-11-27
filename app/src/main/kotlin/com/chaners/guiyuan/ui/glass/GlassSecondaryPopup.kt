@@ -7,7 +7,6 @@ import top.yukonga.miuix.kmp.glass.GlassPopupFrame
 
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupSizing
-import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
 
@@ -48,7 +47,6 @@ import top.yukonga.miuix.kmp.blur.Backdrop
  *   submenu. `null` uses the anchor's backdrop.
  * @param materialAnchor The primary popup's button anchor, shared across both levels.
  * @param sizing Panel limits. Set `minWidth` to the primary panel's measured width.
- * @param visuals Surface appearance, used when no primary popup appearance is available.
  * @param onDismissFinished Called when the collapse animation has finished.
  * @param content Header row followed by secondary choices. The header should request collapse.
  */
@@ -60,11 +58,11 @@ fun BoxScope.GlassSecondaryPopup(
     backdrop: Backdrop?,
     materialAnchor: GlassPopupAnchor,
     sizing: GlassPopupSizing = GlassPopupSizing(),
-    visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
     onDismissFinished: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
+    val visuals = GlassPopupDefaults.visuals()
     val state = remember { MutableTransitionState(false) }
     state.targetState = show
     val transition = rememberTransition(state, label = "glassSecondaryPopup")
@@ -81,7 +79,6 @@ fun BoxScope.GlassSecondaryPopup(
     val resolvedVisuals = materialAnchor.popupVisuals ?: visuals
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
-        backdrop = backdrop ?: source?.backdrop,
         sizing = sizing,
         visuals = resolvedVisuals,
         panelLayer = {},
@@ -100,6 +97,7 @@ fun BoxScope.GlassSecondaryPopup(
             )
         },
         contentLayer = {},
+        surface = { shape -> GlassPopupBackground(backdrop ?: source?.backdrop, shape, resolvedVisuals) },
         interactive = show,
         content = content,
     )

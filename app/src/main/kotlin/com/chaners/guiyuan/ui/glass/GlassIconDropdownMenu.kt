@@ -67,7 +67,6 @@ fun BoxScope.GlassIconDropdownMenu(
     onDismissFinished: (() -> Unit)? = null,
 ) {
     val sizing = GlassPopupSizing()
-    val visuals = GlassPopupDefaults.visuals()
     val density = LocalDensity.current
     var submenu by remember { mutableStateOf(false) }
     // Primary leaf rows and submenu leaves share the same commit/dismiss order.
@@ -154,7 +153,6 @@ fun BoxScope.GlassIconDropdownMenu(
             anchorContent = anchorContent,
             stacked = submenuShown,
             horizontalAlignment = horizontalAlignment,
-            visuals = visuals,
             onMeasured = { primaryWidth = with(density) { it.width.toDp() } },
         ) {
             groups.forEachIndexed { groupIndex, entry ->
@@ -240,7 +238,6 @@ fun BoxScope.GlassIconDropdownMenu(
                 backdrop = layeredBackdrop,
                 materialAnchor = anchor,
                 sizing = sizing.copy(minWidth = primaryWidth),
-                visuals = visuals,
                 onDismissFinished = {
                     submenuPresent = false
                     submenuPathState.value = null
