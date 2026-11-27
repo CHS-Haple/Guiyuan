@@ -74,43 +74,34 @@ internal fun Modifier.waveGlint(
     accent: Color,
 ): Modifier = drawWithContent {
     drawContent()
+    fun drawGlint(progress: Float, strength: Float) {
+        if (progress <= 0f || progress >= 1f) return
+        val radius = waveRadius(progress, diameter)
+        val feather = waveFeather(progress, diameter)
+        val edge = radius + feather
+        // Use the ripple's moving circle, not an unrelated diagonal sweep.
+        val drift = waveDrift(progress, diameter, phase)
+        val front = Offset(size.width / 2f + drift.x, size.height / 2f - distance + drift.y)
+        val intensity = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
+        drawRect(
+            brush = Brush.radialGradient(
+                0f to Color.Transparent,
+                ((radius - feather) / edge) to Color.Transparent,
+                ((radius - 0.55f * feather) / edge) to accent.copy(alpha = intensity * 0.22f),
+                (radius / edge) to glint.copy(alpha = intensity),
+                ((radius + 0.55f * feather) / edge) to accent.copy(alpha = intensity * 0.32f),
+                1f to Color.Transparent,
+                center = front,
+                radius = edge,
+            ),
+            blendMode = BlendMode.SrcAtop,
+        )
+    }
     if (wave.isRunning && distance > 0f) {
         val progress = wave.value
-        drawGlint(progress, distance, diameter, phase, glint, accent, 0.95f)
-        drawGlint((progress - 0.2f) / 0.8f, distance, diameter, phase, glint, accent, 0.50f)
+        drawGlint(progress, 0.95f)
+        drawGlint((progress - 0.2f) / 0.8f, 0.50f)
     }
-}
-
-private fun DrawScope.drawGlint(
-    progress: Float,
-    distance: Float,
-    diameter: Float,
-    phase: Float,
-    glint: Color,
-    accent: Color,
-    strength: Float,
-) {
-    if (progress <= 0f || progress >= 1f) return
-    val radius = waveRadius(progress, diameter)
-    val feather = waveFeather(progress, diameter)
-    val edge = radius + feather
-    // Use the ripple's moving circle, not an unrelated diagonal sweep.
-    val drift = waveDrift(progress, diameter, phase)
-    val front = Offset(size.width / 2f + drift.x, size.height / 2f - distance + drift.y)
-    val intensity = strength * sin((PI * progress).toFloat()).coerceAtLeast(0f)
-    drawRect(
-        brush = Brush.radialGradient(
-            0f to Color.Transparent,
-            ((radius - feather) / edge) to Color.Transparent,
-            ((radius - 0.55f * feather) / edge) to accent.copy(alpha = intensity * 0.22f),
-            (radius / edge) to glint.copy(alpha = intensity),
-            ((radius + 0.55f * feather) / edge) to accent.copy(alpha = intensity * 0.32f),
-            1f to Color.Transparent,
-            center = front,
-            radius = edge,
-        ),
-        blendMode = BlendMode.SrcAtop,
-    )
 }
 
 internal fun waveLift(progress: Float, distance: Float, diameter: Float, phase: Float): Float {
