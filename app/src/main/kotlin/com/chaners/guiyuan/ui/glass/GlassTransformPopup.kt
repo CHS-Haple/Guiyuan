@@ -180,7 +180,6 @@ fun BoxScope.GlassTransformPopup(
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         sizing = sizing,
-        visuals = visuals,
         panelLayer = {
             alpha = panelAlpha()
             transformOrigin = TransformOrigin(
