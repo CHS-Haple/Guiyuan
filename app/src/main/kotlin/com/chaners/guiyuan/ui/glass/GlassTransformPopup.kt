@@ -149,7 +149,6 @@ fun BoxScope.GlassTransformPopup(
         show = show,
         active = active,
         enabled = show && !stacked,
-        retainWhenInactive = false,
         resetSpec = GlassMotion.transformBounds(true),
         onDismissRequest = onDismissRequest,
     )
@@ -289,7 +288,6 @@ fun BoxScope.GlassTransformPopup(
         },
         onMeasured = onMeasured,
         interactive = isTransformPopupInteractive(show, stacked),
-        scrollable = true,
         content = content,
     )
 
