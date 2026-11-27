@@ -153,7 +153,6 @@ fun BoxScope.GlassIconDropdownMenu(
             backdrop = backdrop,
             anchorContent = anchorContent,
             stacked = submenuShown,
-            sizing = sizing,
             horizontalAlignment = horizontalAlignment,
             visuals = visuals,
             onMeasured = { primaryWidth = with(density) { it.width.toDp() } },

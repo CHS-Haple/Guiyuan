@@ -84,7 +84,6 @@ fun BoxScope.GlassSecondaryPopup(
         backdrop = backdrop ?: source?.backdrop,
         sizing = sizing,
         visuals = resolvedVisuals,
-        contentPadding = contentPadding,
         panelLayer = {},
         overlay = {},
         frame = { end, windowBounds ->

@@ -17,7 +17,6 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
@@ -34,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -71,9 +69,7 @@ private fun guiyuanPopupMaskSpring(expanding: Boolean): SpringSpec<Float> = folm
  * @param backdrop Scene sampled by the expanded menu, including bars but excluding the popup.
  *   `null` falls back to the button's backdrop. The collapsed endpoint uses the button's surface.
  * @param anchorContent Copy of the control, or the portion identified by [glassPopupAnchorContent].
- * @param stacked Whether a secondary menu is open. Scales down this panel and applies [maskColor].
- * @param maskColor Overlay color while [stacked].
- * @param sizing Panel size limits and window margin.
+ * @param stacked Whether a secondary menu is open. Scales down this panel and applies the native mask.
  * @param horizontalAlignment Horizontal alignment of the expanded panel relative to [anchor].
  * @param visuals Expanded panel appearance, blended from a [GlassIconButton] anchor's surface.
  * @param onMeasured Called with the final panel size. Use its width as the submenu's minimum width.
@@ -87,14 +83,13 @@ fun BoxScope.GlassTransformPopup(
     backdrop: Backdrop?,
     anchorContent: @Composable () -> Unit,
     stacked: Boolean = false,
-    sizing: GlassPopupSizing = GlassPopupSizing(),
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
     visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
-    maskColor: Color = GlassPopupDefaults.maskColor(),
     onMeasured: ((Size) -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
+    val sizing = GlassPopupSizing()
+    val maskColor = GlassPopupDefaults.maskColor()
     val transition = updateTransition(show, label = "glassTransformPopup")
     val bounds = transition.animateFloat(
         transitionSpec = { GlassMotion.transformBounds(targetState) },
@@ -200,7 +195,6 @@ fun BoxScope.GlassTransformPopup(
         sizing = sizing,
         visuals = visuals,
         shadowAlpha = shadowAlpha,
-        contentPadding = contentPadding,
         panelLayer = {
             alpha = panelAlpha()
             transformOrigin = TransformOrigin(
