@@ -1,6 +1,5 @@
 package com.chaners.guiyuan.ui.screens
 
-import androidx.compose.ui.unit.DpSize
 import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -211,7 +210,6 @@ internal fun GuidePolicyDocumentSheet(
         modifier = Modifier.fillMaxHeight(0.85f),
         title = stringResource((document ?: AgreementDocument.Privacy).titleRes()),
         backgroundColor = MiuixTheme.colorScheme.background,
-        insideMargin = DpSize(0.dp, 0.dp),
         progressiveBlur = true,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
