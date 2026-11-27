@@ -150,7 +150,7 @@ internal fun rememberGlassWindowBounds(): IntRect {
  * @param overlay Drawn over the panel and its rows, inside the silhouette.
  * @param frame Current panel bounds and corner radius, given the final panel size and the window
  *   safe area. Bounds use window coordinates; the surface maps them into its own host.
- * @param contentLayer Row layer properties, given the final panel size and current window bounds.
+ * @param contentLayer Row layer properties, given the final panel size.
  * @param onMeasured Called with the final panel size on each measurement.
  * @param interactive Whether the panel's rows can receive input and accessibility actions.
  * @param content The rows.
@@ -166,8 +166,7 @@ internal fun GlassPopupSurface(
     panelLayer: GraphicsLayerScope.() -> Unit,
     overlay: DrawScope.() -> Unit,
     frame: Density.(end: Size, windowBounds: Rect) -> GlassPopupFrame,
-    contentLayer: GraphicsLayerScope.(end: Size, rect: Rect) -> Unit,
-    shadowAlpha: () -> Float = { visuals.alpha },
+    contentLayer: GraphicsLayerScope.(end: Size) -> Unit,
     surface: (@Composable BoxScope.(GlassShape) -> Unit)? = null,
     onMeasured: ((Size) -> Unit)? = null,
     interactive: Boolean = true,
@@ -239,7 +238,7 @@ internal fun GlassPopupSurface(
                 // Include shadow pixels in the offscreen buffer used when alpha is below one.
                 outsets = shadowOutsets
             }
-            .glassShadow(shape, visuals.shadow, shadowAlpha)
+            .glassShadow(shape, visuals.shadow) { visuals.alpha }
             .clip(shape)
             .drawWithContent {
                 drawContent()
@@ -313,7 +312,7 @@ internal fun GlassPopupSurface(
             background.place(0, 0)
             foreground.placeWithLayer(0, 0) {
                 transformOrigin = TransformOrigin(0f, 0f)
-                contentLayer(measured.end, measured.rect)
+                contentLayer(measured.end)
                 // Use this frame's bounds, including the scroll viewport, without rounding its motion.
                 translationX = localLeft - localLeft.fastRoundToInt()
                 translationY = localTop - localTop.fastRoundToInt()

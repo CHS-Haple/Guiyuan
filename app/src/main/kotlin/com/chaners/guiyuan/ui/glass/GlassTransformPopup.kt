@@ -8,6 +8,7 @@ import top.yukonga.miuix.kmp.glass.GlassPopupSizing
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
+import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import androidx.compose.animation.core.SpringSpec
 
@@ -142,7 +143,7 @@ fun BoxScope.GlassTransformPopup(
     val anchorSurface = anchor.surface
     val anchorVisuals = anchorSurface?.let {
         visuals.copy(
-            style = it.style,
+            style = GlassDefaults.Style,
             material = it.material,
             stroke = it.stroke,
             containerColor = it.fill.copy(alpha = it.fill.alpha * anchor.surfaceMaterialAlpha),
@@ -179,22 +180,12 @@ fun BoxScope.GlassTransformPopup(
         iconMaterial = iconProgress(),
     )
     val hostOrigin = remember { mutableStateOf(Offset.Zero) }
-    val shadowAlpha = remember(anchorSurface, visuals.alpha, materialProgress) {
-        {
-            if (anchorSurface != null && anchorSurface.shadow == null) {
-                visuals.alpha * materialProgress.value
-            } else {
-                visuals.alpha
-            }
-        }
-    }
 
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         backdrop = menuBackdrop,
         sizing = sizing,
         visuals = visuals,
-        shadowAlpha = shadowAlpha,
         panelLayer = {
             alpha = panelAlpha()
             transformOrigin = TransformOrigin(
@@ -235,7 +226,7 @@ fun BoxScope.GlassTransformPopup(
                 endRadius = GlassPopupDefaults.CornerRadius,
             )
         },
-        contentLayer = { end, _ ->
+        contentLayer = { end ->
             val width = startRect.width + (end.width - startRect.width) * geometryProgress()
             val scale = if (end.width > 0f) (width / end.width).coerceAtLeast(0f) else 1f
             scaleX = scale
