@@ -5,7 +5,6 @@ package com.chaners.guiyuan.ui.glass
 
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupSizing
-import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
@@ -65,14 +64,14 @@ fun BoxScope.GlassIconDropdownMenu(
     anchorContent: @Composable () -> Unit,
     entries: List<DropdownEntry>,
     backdrop: Backdrop?,
-    modifier: Modifier = Modifier,
-    secondaryBackdrop: Backdrop? = backdrop,
-    sizing: GlassPopupSizing = GlassPopupSizing(),
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
-    visuals: GlassPopupVisuals = GlassPopupDefaults.visuals(),
     collapseOnSelection: Boolean = entries.size <= 1,
     onDismissFinished: (() -> Unit)? = null,
 ) {
+    val modifier = Modifier // All existing menu callers use the unmodified primary surface.
+    val secondaryBackdrop = backdrop // The menu has no separate scene source.
+    val sizing = GlassPopupSizing()
+    val visuals = GlassPopupDefaults.visuals()
     val density = LocalDensity.current
     var submenu by remember { mutableStateOf(false) }
     // Primary leaf rows and submenu leaves share the same commit/dismiss order.
