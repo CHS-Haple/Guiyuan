@@ -14,7 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.util.fastCoerceAtLeast
 import androidx.compose.ui.util.fastCoerceIn
 import top.yukonga.miuix.kmp.blur.Backdrop
@@ -30,12 +29,9 @@ import com.chaners.guiyuan.ui.glass.internal.buildColorBlendEffect
 import top.yukonga.miuix.kmp.material.GlassColorBlendMode
 import top.yukonga.miuix.kmp.material.GlassColorLayer
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
-import top.yukonga.miuix.kmp.material.drawGlassEdge
 import top.yukonga.miuix.kmp.material.drawGlassMask
-import top.yukonga.miuix.kmp.material.drawGlassRim
 import top.yukonga.miuix.kmp.material.drawGlassShadow
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
-import com.chaners.guiyuan.ui.glass.internal.glassEffect
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
@@ -61,86 +57,57 @@ internal fun Modifier.glassOnActionBar(
         glassShape = shape,
         style = style,
         alpha = alpha,
-        tint = Color.Unspecified,
         material = material,
         underlayMaterial = underlayMaterial,
-        noiseCoefficient = GlassDefaults.NoiseCoefficient,
         stroke = stroke,
-        shading = false,
     ),
     contentBlendMode = BlendMode.SrcOver,
     enabled = enabled,
 )
 /**
  * Glass pipeline as a value: equal inputs keep the backdrop node, so a recomposition no longer
- * rebuilds the blur, colour and shading passes.
+ * rebuilds the blur and colour passes. This local action-bar pipeline never adds a rim.
  */
 private class GlassPipeline(
     private val glassShape: GlassShape,
     private val style: GlassStyle,
     private val alpha: Float,
-    private val tint: Color,
     private val material: GlassMaterial?,
-    private val underlayMaterial: GlassMaterial?,
-    private val noiseCoefficient: Float,
+    private val underlayMaterial: GlassMaterial,
     private val stroke: EdgeStroke?,
-    private val shading: Boolean,
 ) : BackdropPipeline {
 
     private var cachedUnderlayBlendEffect: RenderEffect? = null
     private var cachedMaterialBlendEffect: RenderEffect? = null
     private val edgeBrushCache = ShaderBrushCache()
-    private val rimBrushCache = ShaderBrushCache()
     private val maskBrushCache = ShaderBrushCache()
 
     override val shape: Shape get() = glassShape
 
     override fun configureEffects(scope: BackdropEffectScope) {
         with(scope) {
-            noiseDither(noiseCoefficient)
+            noiseDither(GlassDefaults.NoiseCoefficient)
             val radius = material?.blurRadius?.value ?: (style.blur.small / GlassDefaults.SourceDensity)
             blur(radius.fastCoerceIn(0f, BlurDefaults.MaxBlurRadius) * density)
-            if (underlayMaterial != null) {
-                val underlay = cachedUnderlayBlendEffect ?: buildColorBlendEffect(
-                    underlayMaterial,
-                    1f,
-                    "${GLASS_COLOR_BLEND_SHADER_KEY}ActionBar",
-                )?.also { cachedUnderlayBlendEffect = it }
-                if (underlay != null) effect(underlay)
-            }
+            val underlay = cachedUnderlayBlendEffect ?: buildColorBlendEffect(
+                underlayMaterial,
+                1f,
+                "${GLASS_COLOR_BLEND_SHADER_KEY}ActionBar",
+            )?.also { cachedUnderlayBlendEffect = it }
+            if (underlay != null) effect(underlay)
             if (material != null) {
                 val blend = cachedMaterialBlendEffect ?: buildColorBlendEffect(material, alpha)
                     ?.also { cachedMaterialBlendEffect = it }
                 if (blend != null) effect(blend)
             }
-            if (shading) glassEffect(style, glassShape, alpha, tint)
         }
     }
 
     override fun drawFront(scope: DrawScope) {
         with(scope) {
-            // Stroke and rim share one silhouette pass; the mask trims it afterwards.
-            val current = stroke
-            val fuse = current != null && shading &&
-                current.width.value > 0f &&
-                current.blendMode == BlendMode.Plus
-            if (current != null && fuse) {
-                drawGlassEdge(
-                    shape = glassShape,
-                    stroke = current,
-                    style = style,
-                    surface = if (tint.isSpecified) tint else style.inner.tint,
-                    alpha = alpha,
-                    brushCache = edgeBrushCache,
-                )
-                drawGlassMask(glassShape, brushCache = maskBrushCache)
-            } else {
-                if (current != null) drawEdgeStroke(glassShape, current, alpha, brushCache = edgeBrushCache)
-                drawGlassMask(glassShape, brushCache = maskBrushCache)
-                if (shading) {
-                    drawGlassRim(glassShape, style, if (tint.isSpecified) tint else style.inner.tint, alpha, brushCache = rimBrushCache)
-                }
-            }
+            // The action-bar underlay already supplies the material; only stroke and mask remain.
+            stroke?.let { drawEdgeStroke(glassShape, it, alpha, brushCache = edgeBrushCache) }
+            drawGlassMask(glassShape, brushCache = maskBrushCache)
         }
     }
 
@@ -148,11 +115,8 @@ private class GlassPipeline(
         other.glassShape == glassShape &&
         other.style == style &&
         other.alpha == alpha &&
-        other.tint == tint &&
         other.material == material &&
-        other.underlayMaterial == underlayMaterial &&
-        other.noiseCoefficient == noiseCoefficient &&
-        other.shading == shading
+        other.underlayMaterial == underlayMaterial
 
     override fun equals(other: Any?): Boolean = other is GlassPipeline &&
         hasSameBackdropEffects(other) &&
@@ -162,12 +126,9 @@ private class GlassPipeline(
         var result = glassShape.hashCode()
         result = 31 * result + style.hashCode()
         result = 31 * result + alpha.hashCode()
-        result = 31 * result + tint.hashCode()
         result = 31 * result + material.hashCode()
         result = 31 * result + underlayMaterial.hashCode()
-        result = 31 * result + noiseCoefficient.hashCode()
         result = 31 * result + stroke.hashCode()
-        result = 31 * result + shading.hashCode()
         return result
     }
 

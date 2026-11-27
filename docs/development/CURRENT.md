@@ -148,9 +148,10 @@ reference, not this public repository.
   MIUIX APIs. Source-matched and published-Maven builds remain independent.
 - Glass shape, material, style, shadow and stroke presets reuse the pinned
   upstream Material API. The #479 fused rim/stroke pass is enabled only under
-  its upstream shading, width and additive-blend conditions; Guiyuan retains
-  the adapted backdrop/refraction and its own popup, button and Back lifecycle
-  boundaries.
+  its upstream shading, width and additive-blend conditions. Published MIUIX
+  owns refraction; the local action-bar pipeline retains only the required
+  underlay colour blending, and Guiyuan owns its popup, button and Back
+  lifecycle boundaries.
 - Dynamic color follows the pinned ThemeController and style-first example:
   system palette delegates to MIUIX; custom style uses the existing wallpaper
   seed, exposes every ThemePaletteStyle, and displays the effective fixed
