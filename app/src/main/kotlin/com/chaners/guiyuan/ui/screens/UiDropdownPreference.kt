@@ -17,12 +17,9 @@ internal fun UiDropdownPreference(
     modifier: Modifier = Modifier,
     summary: String? = null,
     startAction: @Composable (() -> Unit)? = null,
-    bottomAction: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
-    showValue: Boolean = true,
     insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
     maxHeight: Dp? = null,
-    onExpandedChange: ((Boolean) -> Unit)? = null,
     onSelectedIndexChange: ((Int) -> Unit)? = null,
 ) {
     GlassDropdownPreference(
@@ -33,12 +30,10 @@ internal fun UiDropdownPreference(
         modifier = modifier,
         summary = summary,
         startAction = startAction,
-        bottomAction = bottomAction,
         enabled = enabled,
-        showValue = showValue,
+        showValue = true,
         insideMargin = insideMargin,
         sizing = GlassPopupSizing(maxHeight = maxHeight ?: GlassPopupSizing().maxHeight),
-        onExpandedChange = onExpandedChange,
         onSelectedIndexChange = { onSelectedIndexChange?.invoke(it) },
     )
 }
