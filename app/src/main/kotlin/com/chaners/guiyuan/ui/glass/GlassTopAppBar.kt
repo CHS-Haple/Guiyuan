@@ -76,8 +76,6 @@ import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassMaterials
 import top.yukonga.miuix.kmp.material.GlassShape
-import top.yukonga.miuix.kmp.material.GlassStyle
-import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShadows
 
@@ -160,17 +158,12 @@ private class TopAppBarFixedFadeBrush(
 }
 
 internal data class GlassTopAppBarContext(
-    val backdrop: Backdrop?,
     val buttonBackdrop: Backdrop?,
     val material: GlassMaterial,
-    val underlayMaterial: GlassMaterial?,
     val buttonUnderlayMaterial: GlassMaterial?,
     val floating: Boolean,
-    val alpha: Float,
     val materialProgress: State<Float>,
     val keepMaterial: Boolean,
-    val style: GlassStyle,
-    val size: Dp,
     val shape: GlassShape,
     val fill: Color,
     val stroke: EdgeStroke?,
@@ -207,9 +200,7 @@ internal fun GlassTopAppBar(
     val bandPalette = MiuixTheme.colorScheme.surface.let { surface ->
         remember(surface) { TopAppBarBandPalette(surface) }
     }
-    val style = GlassDefaults.Style
     val material = GlassTopAppBarDefaults.buttonMaterial()
-    val alpha = 1f
     val buttonSize = GlassTopAppBarDefaults.ButtonSize
     val buttonShape = remember(buttonSize) { GlassShape(buttonSize / 2) }
     val fill = GlassTopAppBarDefaults.buttonFill()
@@ -379,17 +370,12 @@ internal fun GlassTopAppBar(
         }
         val consumerChangeCallback = if (progressiveBackdrop != null) onButtonBackdropConsumerChange else null
         val topBarContext = remember(
-            rawBackdrop,
             buttonBackdrop,
             resolvedMaterial,
-            underlayMaterial,
             buttonUnderlay,
             contentScrolled,
-            alpha,
             materialProgress,
             keepMaterial,
-            style,
-            buttonSize,
             buttonShape,
             fill,
             stroke,
@@ -397,17 +383,12 @@ internal fun GlassTopAppBar(
             consumerChangeCallback,
         ) {
             GlassTopAppBarContext(
-                backdrop = rawBackdrop,
                 buttonBackdrop = buttonBackdrop,
                 material = resolvedMaterial,
-                underlayMaterial = underlayMaterial,
                 buttonUnderlayMaterial = buttonUnderlay,
                 floating = contentScrolled,
-                alpha = alpha,
                 materialProgress = materialProgress,
                 keepMaterial = keepMaterial,
-                style = style,
-                size = buttonSize,
                 shape = buttonShape,
                 fill = fill,
                 stroke = stroke,
