@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
-import top.yukonga.miuix.kmp.material.withUnderlayBlur
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.material.drawGlassMask
 import top.yukonga.miuix.kmp.material.EdgeStroke
@@ -53,41 +52,32 @@ import kotlinx.coroutines.withContext
  * [GlassTransformPopup]'s collapsed endpoint. The panel blends into its own material as it grows.
  *
  * @param onClick Called when the button is tapped.
- * @param inheritTopBarMaterial Whether to use the parent top bar's resolved progressive backdrop.
- * @param material Optional button material over the resolved parent underlay.
  * @param backdrop Optional [Backdrop] behind the glass. Inside [GlassTopAppBar] the button inherits
- *   the bar's backdrop and effective blur; elsewhere `null` gives the traditional [fill].
+ *   the bar's backdrop and effective blur; elsewhere `null` gives the traditional fill.
  * @param modifier The modifier applied to the button.
- * @param surfaceAlpha Opacity of the pill. Inside [GlassTopAppBar], leave this at its default.
  * @param enabled Whether the button receives interaction.
  * @param holdDownState Keeps press feedback while a long-running action is active.
- * @param style Compatibility style forwarded to the renderer.
  * @param size Diameter of the button.
- * @param shape The button's silhouette. Defaults to a circle of [size].
- * @param shadow The shadow under the button. `null` removes it.
- * @param stroke Optional bloom stroke along the rim.
  * @param content The icon inside.
  */
 @Composable
-fun GlassIconButton(
+internal fun GlassIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     onLongClickLabel: String? = null,
-    inheritTopBarMaterial: Boolean = true,
     backdrop: Backdrop? = null,
-    surfaceAlpha: Float = 1f,
     enabled: Boolean = true,
     holdDownState: Boolean = false,
-    style: GlassStyle = LocalGlassTopAppBarContext.current?.style ?: GlassDefaults.Style,
-    material: GlassMaterial? = null,
     size: Dp = LocalGlassTopAppBarContext.current?.size ?: GlassTopAppBarDefaults.ButtonSize,
-    shape: GlassShape = LocalGlassTopAppBarContext.current?.shape ?: remember(size) { GlassShape(size / 2) },
-    fill: Color = LocalGlassTopAppBarContext.current?.fill ?: GlassTopAppBarDefaults.buttonFill(),
-    stroke: EdgeStroke? = LocalGlassTopAppBarContext.current.let { if (it != null) it.stroke else GlassTopAppBarDefaults.buttonStroke() },
-    shadow: GlassShadow? = LocalGlassTopAppBarContext.current.let { if (it != null) it.shadow else GlassShadows.Regular },
     content: @Composable () -> Unit,
 ) {
+    val topBarContext = LocalGlassTopAppBarContext.current
+    val style = topBarContext?.style ?: GlassDefaults.Style
+    val shape = topBarContext?.shape ?: remember(size) { GlassShape(size / 2) }
+    val fill = topBarContext?.fill ?: GlassTopAppBarDefaults.buttonFill()
+    val stroke = if (topBarContext != null) topBarContext.stroke else GlassTopAppBarDefaults.buttonStroke()
+    val shadow = if (topBarContext != null) topBarContext.shadow else GlassShadows.Regular
     val interactionSource = remember { MutableInteractionSource() }
     LaunchedEffect(interactionSource, holdDownState, enabled) {
         if (holdDownState && enabled) {
@@ -100,30 +90,24 @@ fun GlassIconButton(
             }
         }
     }
-    val topBarContext = LocalGlassTopAppBarContext.current
-    val usesTopBarButtonBackdrop = topBarContext?.onButtonBackdropConsumerChange != null &&
-        (inheritTopBarMaterial || backdrop == null)
-    DisposableEffect(topBarContext, usesTopBarButtonBackdrop) {
-        val callback = if (usesTopBarButtonBackdrop) topBarContext.onButtonBackdropConsumerChange else null
+    DisposableEffect(topBarContext) {
+        val callback = topBarContext?.onButtonBackdropConsumerChange
         callback?.invoke(1)
         onDispose { callback?.invoke(-1) }
     }
-    val materialContext = topBarContext.takeIf { inheritTopBarMaterial }
-    val resolvedSurfaceAlpha = surfaceAlpha * (if (enabled) 1f else 0.38f) * (topBarContext?.alpha ?: 1f)
+    val resolvedSurfaceAlpha = (if (enabled) 1f else 0.38f) * (topBarContext?.alpha ?: 1f)
     val topBarProgress = topBarContext?.materialProgress
     val shadowAlpha = remember(resolvedSurfaceAlpha, topBarProgress) {
         { resolvedSurfaceAlpha * (topBarProgress?.value ?: 1f) }
     }
     GlassButtonSurface(
-        backdrop = materialContext?.buttonBackdrop ?: backdrop ?: topBarContext?.buttonBackdrop,
+        backdrop = topBarContext?.buttonBackdrop ?: backdrop,
         topBarContext = topBarContext,
         surfaceAlpha = resolvedSurfaceAlpha,
         shadowAlpha = shadowAlpha,
         style = style,
-        material = remember(material, materialContext?.buttonUnderlayMaterial) {
-            material?.withUnderlayBlur(materialContext?.buttonUnderlayMaterial)
-        } ?: materialContext?.material ?: GlassTopAppBarDefaults.buttonMaterial(),
-        underlayMaterial = materialContext?.buttonUnderlayMaterial,
+        material = topBarContext?.material ?: GlassTopAppBarDefaults.buttonMaterial(),
+        underlayMaterial = topBarContext?.buttonUnderlayMaterial,
         shape = shape,
         size = size,
         fill = fill,
