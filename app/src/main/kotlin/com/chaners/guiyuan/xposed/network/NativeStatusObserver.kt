@@ -3,7 +3,6 @@ package com.chaners.guiyuan.xposed.network
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.graphics.drawable.Icon
 import com.chaners.guiyuan.xposed.SysUiFatal.rethrow as rethrowFatal
 import com.chaners.guiyuan.xposed.NativeParticipantAccess
@@ -18,7 +17,6 @@ import io.github.libxposed.api.XposedInterface.HookHandle
 import io.github.libxposed.api.XposedInterface.Hooker
 import io.github.libxposed.api.XposedModule
 import java.lang.ref.WeakReference
-import java.lang.reflect.Field
 import java.lang.reflect.Method
 
 // Native slot identities are shared by the observer and its tint resolver.
@@ -77,13 +75,12 @@ internal object NativeStatusObserver {
         @Synchronized get() = installedHandles.size
 
     private fun bindSinks(
-        onEvent: ((String) -> Unit)?,
-        isDetailedDiagnosticsEnabled: () -> Boolean,
+        diagnostics: HookDiagnostics,
         onObservationAttached: ((String) -> Unit)?,
         onStatusPresentationChanged: ((PresentationStore.StatusIconPresentation) -> Unit)?,
     ) {
-        eventSink = onEvent
-        diagnosticsEnabled = isDetailedDiagnosticsEnabled
+        eventSink = diagnostics.onEvent
+        diagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         observationAttachedSink = onObservationAttached
         statusPresentationSink = onStatusPresentationChanged
     }
@@ -185,11 +182,9 @@ internal object NativeStatusObserver {
         onStatusPresentationChanged:
             ((PresentationStore.StatusIconPresentation) -> Unit)? = null,
     ): String? {
-        val onEvent = diagnostics.onEvent
-        val isDetailedDiagnosticsEnabled = diagnostics.isDetailedDiagnosticsEnabled
         if (installIncomplete) return "partial-hook-state"
         if (installedHandles.isNotEmpty()) {
-            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
+            bindSinks(diagnostics, onObservationAttached, onStatusPresentationChanged)
             return null
         }
 
@@ -217,11 +212,11 @@ internal object NativeStatusObserver {
             installedHandles.clear()
             installedHandles.addAll(created)
             installIncomplete = false
-            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
+            bindSinks(diagnostics, onObservationAttached, onStatusPresentationChanged)
             null
         }.getOrElse { error ->
             rollbackInstall(created)
-            bindSinks(onEvent, isDetailedDiagnosticsEnabled, onObservationAttached, onStatusPresentationChanged)
+            bindSinks(diagnostics, onObservationAttached, onStatusPresentationChanged)
             rethrowFatal(error)
             val reason = error.message ?: error.javaClass.simpleName
             if (installIncomplete) "$reason-hook-cleanup-failed" else reason
@@ -386,7 +381,7 @@ internal object NativeStatusObserver {
                 if (manager?.javaClass?.name == HOME_MANAGER_CLASS) {
                     synchronized(this) {
                         val pendingHost = pendingObservationHost?.get()
-                        val pendingSource = pendingObservationSource
+                        val pendingSource = pendingObservationSource ?: HOME_MANAGER_REGISTERED_SOURCE
                         if (
                             pendingHost != null &&
                             NativeParticipantAccess.managerFor(pendingHost) === manager
@@ -395,23 +390,23 @@ internal object NativeStatusObserver {
                                 val state =
                                     attachObserver(
                                         host = pendingHost,
-                                        source = pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE,
+                                        source = pendingSource,
                                     )
                             ) {
                                 is Result.Active -> {
                                     observationAttachedSink?.invoke(
-                                        pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE,
+                                        pendingSource,
                                     )
                                     reportEvent {
                                         "statusIconObservation ready source=" +
-                                            (pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE) +
+                                            pendingSource +
                                             " trigger=homeManagerRegistered"
                                     }
                                 }
                                 is Result.Failure ->
                                     reportEvent {
                                         "statusIconObservation unavailable " +
-                                            "source=" + (pendingSource ?: HOME_MANAGER_REGISTERED_SOURCE) +
+                                            "source=" + pendingSource +
                                             " reason=" + state.reason
                                     }
                                 is Result.Pending,
@@ -445,13 +440,10 @@ internal object NativeStatusObserver {
         }
 
     @Synchronized
-    fun currentAppliedStatusIconTint(anchorView: View? = null): Int? {
+    fun currentAppliedStatusIconTint(): Int? {
         val group = activeGroup?.get()
         val peerTint = group?.let(::resolveAppliedStatusIconTint)
-        val resolvedAnchor =
-            anchorView
-                ?.takeIf(NativeStatusTintResolver::isTintAuthorityCandidate)
-                ?: group?.let(NativeStatusTintResolver::resolveTintAnchorView)
+        val resolvedAnchor = group?.let(NativeStatusTintResolver::resolveTintAnchorView)
         val locationAwareTint =
             NativeStatusTintResolver.resolveLocationAwareManagerTint(
                 manager = activeManager,
