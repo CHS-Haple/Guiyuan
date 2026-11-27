@@ -224,31 +224,21 @@ private fun DiagToolbarMenu(
     }
 }
 
+@StringRes
+private fun DiagLevel.labelRes(): Int =
+    if (this == DiagLevel.Detailed) R.string.diagnostics_mode_detailed else R.string.diagnostics_mode_basic
+
 @Composable
 private fun diagLevelEntry(
     diagnosticsLevel: DiagLevel,
     canChangeLevel: Boolean,
     onDiagLevelChange: (DiagLevel) -> Unit,
 ): DropdownEntry {
-    val currentLevelLabel =
-        stringResource(
-            if (diagnosticsLevel == DiagLevel.Detailed) {
-                R.string.diagnostics_mode_detailed
-            } else {
-                R.string.diagnostics_mode_basic
-            },
-        )
+    val currentLevelLabel = stringResource(diagnosticsLevel.labelRes())
     val levelItems =
         DiagLevel.entries.map { level ->
             DropdownItem(
-                text =
-                    stringResource(
-                        if (level == DiagLevel.Detailed) {
-                            R.string.diagnostics_mode_detailed
-                        } else {
-                            R.string.diagnostics_mode_basic
-                        },
-                    ),
+                text = stringResource(level.labelRes()),
                 selected = diagnosticsLevel == level,
                 enabled = canChangeLevel,
                 onClick = { onDiagLevelChange(level) },
