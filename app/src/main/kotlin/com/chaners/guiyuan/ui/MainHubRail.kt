@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -72,11 +71,6 @@ internal fun useNativeRailFor(
         safePadding.calculateTopPadding() + safePadding.calculateBottomPadding(),
     )
 }
-
-internal data class MainNavItem(
-    val label: String,
-    val icon: ImageVector,
-)
 
 /** Map app destinations to the MIUIX-native rail; no parallel press or selected lens. */
 @Composable

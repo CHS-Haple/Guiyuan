@@ -16,17 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.LiquidMode
 import com.chaners.guiyuan.settings.Appearance
 import com.chaners.guiyuan.settings.NavContent
 import com.chaners.guiyuan.settings.NavStyle
-import com.chaners.guiyuan.ui.MainNavItem
+import com.chaners.guiyuan.ui.rememberMainNavItems
 import com.chaners.guiyuan.ui.components.NavContentItem
 import com.chaners.guiyuan.ui.components.floatingNavBlur
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavBar
@@ -46,10 +44,6 @@ import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Home
-import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val MiniNavigationViewportHeight = 76.dp
@@ -123,7 +117,7 @@ private fun MiniGlassNavigationPreview(content: NavContent, miuixBackdrop: Layer
         Column(modifier = Modifier.fillMaxWidth()) {
             Spacer(modifier = Modifier.height(20.dp))
             GlassNavigationBar(
-                items = miniNavItems().map { item ->
+                items = rememberMainNavItems().map { item ->
                     GlassNavigationItem(item.icon, item.label.takeIf { content == NavContent.IconAndText })
                 },
                 selectedIndex = 2,
@@ -182,7 +176,7 @@ private fun MiniLiquidNavigationPreview(
     dark: Boolean,
     liquidBackdrop: LayerBackdrop,
 ) {
-    val items = miniNavItems()
+    val items = rememberMainNavItems()
     LiquidNavBar(
         selectedIndex = { 2 },
         onSelected = {},
@@ -228,7 +222,7 @@ private fun MiniFloatingNavigationPreview(
             },
         defaultWindowInsetsPadding = true,
     ) {
-        miniNavItems().forEachIndexed { index, item ->
+        rememberMainNavItems().forEachIndexed { index, item ->
             NavContentItem(
                 content = content,
                 selected = index == 2,
@@ -248,9 +242,9 @@ private fun MiniStandardNavigationPreview(content: NavContent, glassNavigation: 
         showDivider = true,
         defaultWindowInsetsPadding = false,
     ) {
-        MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Home, showLabel = showLabel)
-        MiniStandardNavigationItem(selected = false, icon = MiuixIcons.Normal.Tune, showLabel = showLabel)
-        MiniStandardNavigationItem(selected = true, icon = MiuixIcons.Normal.Settings, showLabel = showLabel)
+        rememberMainNavItems().forEachIndexed { index, item ->
+            MiniStandardNavigationItem(selected = index == 2, icon = item.icon, showLabel = showLabel)
+        }
     }
 }
 
@@ -283,13 +277,6 @@ private fun MiniNavViewport(
         }
     }
 }
-
-@Composable
-private fun miniNavItems(): List<MainNavItem> = listOf(
-    MainNavItem(stringResource(R.string.nav_home), MiuixIcons.Normal.Home),
-    MainNavItem(stringResource(R.string.nav_features), MiuixIcons.Normal.Tune),
-    MainNavItem(stringResource(R.string.nav_settings), MiuixIcons.Normal.Settings),
-)
 
 @Composable
 private fun MiniNavLabelBar(selected: Boolean) {
