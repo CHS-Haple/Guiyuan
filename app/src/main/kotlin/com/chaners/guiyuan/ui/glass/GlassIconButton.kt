@@ -32,12 +32,8 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.material.drawEdgeStroke
 import top.yukonga.miuix.kmp.material.drawGlassMask
-import top.yukonga.miuix.kmp.material.EdgeStroke
-import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShape
-import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
-import top.yukonga.miuix.kmp.material.GlassShadow
 import top.yukonga.miuix.kmp.material.GlassShadows
 import top.yukonga.miuix.kmp.interfaces.HoldDownInteraction
 import top.yukonga.miuix.kmp.utils.MiuixIndication
@@ -69,15 +65,10 @@ internal fun GlassIconButton(
     backdrop: Backdrop? = null,
     enabled: Boolean = true,
     holdDownState: Boolean = false,
-    size: Dp = LocalGlassTopAppBarContext.current?.size ?: GlassTopAppBarDefaults.ButtonSize,
+    size: Dp = GlassTopAppBarDefaults.ButtonSize,
     content: @Composable () -> Unit,
 ) {
     val topBarContext = LocalGlassTopAppBarContext.current
-    val style = topBarContext?.style ?: GlassDefaults.Style
-    val shape = topBarContext?.shape ?: remember(size) { GlassShape(size / 2) }
-    val fill = topBarContext?.fill ?: GlassTopAppBarDefaults.buttonFill()
-    val stroke = if (topBarContext != null) topBarContext.stroke else GlassTopAppBarDefaults.buttonStroke()
-    val shadow = if (topBarContext != null) topBarContext.shadow else GlassShadows.Regular
     val interactionSource = remember { MutableInteractionSource() }
     LaunchedEffect(interactionSource, holdDownState, enabled) {
         if (holdDownState && enabled) {
@@ -95,24 +86,11 @@ internal fun GlassIconButton(
         callback?.invoke(1)
         onDispose { callback?.invoke(-1) }
     }
-    val resolvedSurfaceAlpha = (if (enabled) 1f else 0.38f) * (topBarContext?.alpha ?: 1f)
-    val topBarProgress = topBarContext?.materialProgress
-    val shadowAlpha = remember(resolvedSurfaceAlpha, topBarProgress) {
-        { resolvedSurfaceAlpha * (topBarProgress?.value ?: 1f) }
-    }
     GlassButtonSurface(
-        backdrop = topBarContext?.buttonBackdrop ?: backdrop,
+        backdrop = backdrop,
         topBarContext = topBarContext,
-        surfaceAlpha = resolvedSurfaceAlpha,
-        shadowAlpha = shadowAlpha,
-        style = style,
-        material = topBarContext?.material ?: GlassTopAppBarDefaults.buttonMaterial(),
-        underlayMaterial = topBarContext?.buttonUnderlayMaterial,
-        shape = shape,
+        enabled = enabled,
         size = size,
-        fill = fill,
-        stroke = stroke,
-        shadow = shadow,
         interactionSource = interactionSource,
         modifier = modifier.glassButtonClick(
             onClick = onClick,
@@ -132,20 +110,19 @@ internal fun GlassIconButton(
 private fun GlassButtonSurface(
     backdrop: Backdrop?,
     topBarContext: GlassTopAppBarContext?,
-    surfaceAlpha: Float,
-    shadowAlpha: () -> Float,
-    style: GlassStyle,
-    material: GlassMaterial,
-    underlayMaterial: GlassMaterial?,
-    fill: Color,
-    shape: GlassShape,
+    enabled: Boolean,
     size: Dp,
-    stroke: EdgeStroke?,
-    shadow: GlassShadow?,
     modifier: Modifier,
     interactionSource: InteractionSource,
     content: @Composable () -> Unit,
 ) {
+    val style = GlassDefaults.Style
+    val shape = topBarContext?.shape ?: remember(size) { GlassShape(size / 2) }
+    val fill = topBarContext?.fill ?: GlassTopAppBarDefaults.buttonFill()
+    val stroke = if (topBarContext != null) topBarContext.stroke else GlassTopAppBarDefaults.buttonStroke()
+    val shadow = if (topBarContext != null) topBarContext.shadow else GlassShadows.Regular
+    val material = topBarContext?.material ?: GlassTopAppBarDefaults.buttonMaterial()
+    val underlayMaterial = topBarContext?.buttonUnderlayMaterial
     val popupAnchor = modifier.foldIn<GlassPopupAnchor?>(null) { found, element ->
         if (element is GlassPopupAnchorElement) element.anchor else found
     }
@@ -156,8 +133,11 @@ private fun GlassButtonSurface(
     val floating = topBarContext?.floating ?: true
     val progress = topBarContext?.materialProgress
     val keepMaterial = topBarContext?.keepMaterial ?: true
-    val opacity = surfaceAlpha.coerceIn(0f, 1f)
-    val effectiveBackdrop = backdrop?.takeIf { isRuntimeShaderSupported() }
+    val opacity = if (enabled) 1f else 0.38f
+    val shadowAlpha = remember(opacity, progress) {
+        { opacity * (progress?.value ?: 1f) }
+    }
+    val effectiveBackdrop = (topBarContext?.buttonBackdrop ?: backdrop)?.takeIf { isRuntimeShaderSupported() }
     val anchorSurface = if (popupAnchor != null) {
         remember(effectiveBackdrop, style, material, underlayMaterial, stroke, fill, shadow) {
             GlassAnchorSurface(effectiveBackdrop, style, material, underlayMaterial, stroke, fill, shadow)
