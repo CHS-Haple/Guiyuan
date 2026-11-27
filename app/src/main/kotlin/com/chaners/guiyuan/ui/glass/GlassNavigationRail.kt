@@ -189,72 +189,12 @@ private fun RailNavigationWindow(
     BoxWithConstraints(
         modifier = modifier.fillMaxSize().windowInsetsPadding(windowInsets),
     ) {
-        val expanded = request.state.expanded
-        val capsule = railCapsuleGeometry(maxWidth, widths.slots, request.showToggle)
-        val tabWidths = remember(widths.slots, capsule.widthRatio) {
-            widths.slots.map { it * capsule.widthRatio }
-        }
-        val collapsedHeight = GlassNavigationRailDefaults.CollapsedHeight
-        // The published MIUIX Glass capsule animates changed label/window widths;
-        // Liquid continues using the single native state.morph for its own surface.
-        val nativeAnimatedWidth by animateDpAsState(
-            capsule.width, RailMorphDpMotion, label = "railCapsuleWidth",
-        )
-        val currentCollapsedWidth = if (request.materialOverride == null) {
-            nativeAnimatedWidth
-        } else capsule.width
-        val collapsedStart = (maxWidth - capsule.width) / 2
-        val density = LocalDensity.current
         val actionProgress = animateFloatAsState(
             targetValue = if (request.trailingAction != null) 1f else 0f,
             animationSpec = GlassMotion.navShowHide(),
             label = "railSearchActionVisibility",
         )
-        val expandedTop = GlassNavigationRailDefaults.CollapsedTop
-        val expandedHeight = (maxHeight - expandedTop - GlassNavigationRailDefaults.Margin)
-            .coerceAtLeast(collapsedHeight)
-        val panelHeight = rememberRailMotion(
-            target = if (expanded) expandedHeight else collapsedHeight,
-            expanded = expanded,
-        ) { expanding -> railHeightMotion(expanding, expandedHeight - collapsedHeight) }
-        // Liquid's surface width is already driven by state.progress. Moving its
-        // whole capsule on a separate rebound spring makes a collapsing panel
-        // shrink at the left before it arrives at the centred bar destination.
-        // Keep the upstream Glass spring; Liquid shares the single morph clock.
-        val nativePanelStart = if (request.materialOverride == null) {
-            rememberRailMotion(
-                target = if (expanded) GlassNavigationRailDefaults.Margin else collapsedStart,
-                expanded = expanded,
-                targetChangeSpec = RailMorphDpMotion,
-            ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
-        } else null
-        val iconAlphaProvider = remember(animation.iconAlpha) { { animation.iconAlpha.value } }
-        val placement = RailPlacement(
-                geometry = RailPanelGeometry(
-                    tabWidths = tabWidths,
-                    labelWidths = widths.labels,
-                    contentStart = capsule.contentStart,
-                    endpoints = RailPanelEndpoints(currentCollapsedWidth, GlassNavigationRailDefaults.ExpandedWidth,
-                        GlassNavigationRailDefaults.CollapsedTop, expandedTop),
-                ),
-                motion = RailPanelMotion(animation.rows, iconAlphaProvider,
-                    {
-                        val start = nativePanelStart?.value ?: railLiquidPanelStart(
-                            collapsedStart,
-                            GlassNavigationRailDefaults.Margin,
-                            request.state.progress,
-                        )
-                        start + with(density) {
-                            railCollapsedVisualCenterOffset(
-                                progress = request.state.progress,
-                                actionFraction = actionProgress.value,
-                                collapsedWidth = currentCollapsedWidth,
-                                panelHeight = panelHeight.value,
-                                liquid = animation.liquid.takeIf { request.materialOverride != null },
-                            )
-                        }
-                    }, { panelHeight.value }, animation.liquid),
-        )
+        val placement = rememberRailWindowPlacement(request, widths, animation, actionProgress)
         RailWindowPanel(request = request, placement = placement)
         RailWindowTrailingAction(
             action = request.trailingAction,
@@ -264,6 +204,91 @@ private fun RailNavigationWindow(
             actionProgress = actionProgress,
         )
     }
+}
+
+
+/** Upstream capsule width motion runs even when Liquid draws its own surface. */
+@Composable
+private fun rememberCollapsedRailWidth(capsuleWidth: Dp, liquid: Boolean): Dp {
+    val animated by animateDpAsState(
+        capsuleWidth, RailMorphDpMotion, label = "railCapsuleWidth",
+    )
+    return if (liquid) capsuleWidth else animated
+}
+
+/** Native Glass owns the panel rebound; Liquid continues using the existing morph clock. */
+@Composable
+private fun rememberNativeRailPanelStart(
+    expanded: Boolean,
+    collapsedStart: Dp,
+    liquid: Boolean,
+): Animatable<Dp, AnimationVector1D>? =
+    if (liquid) null else rememberRailMotion(
+        target = if (expanded) GlassNavigationRailDefaults.Margin else collapsedStart,
+        expanded = expanded,
+        targetChangeSpec = RailMorphDpMotion,
+    ) { expanding -> if (expanding) RailMorphDpMotion else RailReboundMotion }
+
+/** Resolve one measured rail placement without changing row, rail or search action ownership. */
+@Composable
+private fun androidx.compose.foundation.layout.BoxWithConstraintsScope.rememberRailWindowPlacement(
+    request: RailWindowRequest,
+    widths: RailSourceWidths,
+    animation: RailAnimationState,
+    actionProgress: State<Float>,
+): RailPlacement {
+    val expanded = request.state.expanded
+    val capsule = railCapsuleGeometry(maxWidth, widths.slots, request.showToggle)
+    val tabWidths = remember(widths.slots, capsule.widthRatio) {
+        widths.slots.map { it * capsule.widthRatio }
+    }
+    val collapsedHeight = GlassNavigationRailDefaults.CollapsedHeight
+    // The published MIUIX Glass capsule animates changed label/window widths;
+    // Liquid continues using the single native state.morph for its own surface.
+    val currentCollapsedWidth = rememberCollapsedRailWidth(capsule.width, request.materialOverride != null)
+    val collapsedStart = (maxWidth - capsule.width) / 2
+    val density = LocalDensity.current
+    val expandedTop = GlassNavigationRailDefaults.CollapsedTop
+    val expandedHeight = (maxHeight - expandedTop - GlassNavigationRailDefaults.Margin)
+        .coerceAtLeast(collapsedHeight)
+    val panelHeight = rememberRailMotion(
+        target = if (expanded) expandedHeight else collapsedHeight,
+        expanded = expanded,
+    ) { expanding -> railHeightMotion(expanding, expandedHeight - collapsedHeight) }
+    // Liquid's surface width is already driven by state.progress. Moving its
+    // whole capsule on a separate rebound spring makes a collapsing panel
+    // shrink at the left before it arrives at the centred bar destination.
+    // Keep the upstream Glass spring; Liquid shares the single morph clock.
+    val nativePanelStart = rememberNativeRailPanelStart(expanded, collapsedStart, request.materialOverride != null)
+    val iconAlphaProvider = remember(animation.iconAlpha) { { animation.iconAlpha.value } }
+    val placement = RailPlacement(
+            geometry = RailPanelGeometry(
+                tabWidths = tabWidths,
+                labelWidths = widths.labels,
+                contentStart = capsule.contentStart,
+                endpoints = RailPanelEndpoints(currentCollapsedWidth, GlassNavigationRailDefaults.ExpandedWidth,
+                    GlassNavigationRailDefaults.CollapsedTop, expandedTop),
+            ),
+            motion = RailPanelMotion(animation.rows, iconAlphaProvider,
+                {
+                    val start = nativePanelStart?.value ?: railLiquidPanelStart(
+                        collapsedStart,
+                        GlassNavigationRailDefaults.Margin,
+                        request.state.progress,
+                    )
+                    start + with(density) {
+                        railCollapsedVisualCenterOffset(
+                            progress = request.state.progress,
+                            actionFraction = actionProgress.value,
+                            collapsedWidth = currentCollapsedWidth,
+                            panelHeight = panelHeight.value,
+                            liquid = animation.liquid.takeIf { request.materialOverride != null },
+                        )
+                    }
+                }, { panelHeight.value }, animation.liquid),
+    )
+
+    return placement
 }
 
 /** This action is not a rail destination and never owns the rail's pointer recognizer. */
