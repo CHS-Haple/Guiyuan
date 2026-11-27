@@ -15,7 +15,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -41,26 +39,22 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.settings.FeatureCfg
-import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.ui.components.StatusPreview
 import com.chaners.guiyuan.ui.components.PreviewSummary
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.layout.pageScrollEffects
+import com.chaners.guiyuan.ui.layout.rememberPageOverscrollCallback
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import com.chaners.guiyuan.ui.navigation.AppRoute
@@ -115,10 +109,7 @@ private fun HomeScreenScrollingContent(
     padding: PaddingValues,
 ) {
     val canScroll = frame.scrollState.canScrollBackward || frame.scrollState.canScrollForward
-    val glassOverscroll = canScroll
-    val onOverscrollChanged: (Float) -> Unit = remember(frame.scrollBehavior) {
-        { offset -> frame.scrollBehavior.state.overscrollOffset = offset }
-    }
+    val onOverscrollChanged = rememberPageOverscrollCallback(frame.scrollBehavior)
     val contentPadding = pageContentPadding(
         innerPadding = padding,
         outerBottomPadding = contents.layout.bottomContentPadding,
@@ -128,10 +119,8 @@ private fun HomeScreenScrollingContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .then(if (canScroll) Modifier.scrollEndHaptic() else Modifier)
-                .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                .nestedScroll(frame.scrollBehavior.nestedScrollConnection)
-                .verticalScroll(frame.scrollState, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
+                .pageScrollEffects(frame.scrollBehavior, canScroll, canScroll, onOverscrollChanged)
+                .verticalScroll(frame.scrollState, overscrollEffect = if (canScroll) null else rememberOverscrollEffect())
                 .padding(contentPadding),
         ) {
             HomeRuntimeCardEntry(contents.runtime, contents.actions, contents.sources)

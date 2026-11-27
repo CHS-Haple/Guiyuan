@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -82,21 +83,32 @@ internal fun NavContentItem(
                     .size(FloatingNavigationBarDefaults.IconSize),
             tint = contentColor,
         )
-        val labelModifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
-        if (previewLabel != null) {
-            Box(
-                modifier = labelModifier.height(14.dp),
-                contentAlignment = Alignment.Center,
-            ) { previewLabel() }
-        } else {
-            Text(
-                text = item.label,
-                modifier = labelModifier,
-                color = contentColor,
-                textAlign = TextAlign.Center,
-                fontSize = NavigationBarDefaults.LabelFontSize,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            )
-        }
+        NavItemCaption(item.label, contentColor, selected, previewLabel)
+    }
+}
+
+/** Preview bars replace only the caption; both variants retain the same insets. */
+@Composable
+private fun NavItemCaption(
+    label: String,
+    contentColor: Color,
+    selected: Boolean,
+    previewLabel: (@Composable () -> Unit)?,
+) {
+    val labelModifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp)
+    if (previewLabel != null) {
+        Box(
+            modifier = labelModifier.height(14.dp),
+            contentAlignment = Alignment.Center,
+        ) { previewLabel() }
+    } else {
+        Text(
+            text = label,
+            modifier = labelModifier,
+            color = contentColor,
+            textAlign = TextAlign.Center,
+            fontSize = NavigationBarDefaults.LabelFontSize,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+        )
     }
 }

@@ -25,13 +25,10 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassRailProgress
@@ -39,6 +36,8 @@ import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
+import com.chaners.guiyuan.ui.layout.pageScrollEffects
+import com.chaners.guiyuan.ui.layout.rememberPageOverscrollCallback
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -48,8 +47,6 @@ import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TopAppBarDefaults
-import top.yukonga.miuix.kmp.utils.overScrollVertical
-import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 internal data class SettingsPullToRefresh(
     val refreshing: Boolean,
@@ -82,9 +79,7 @@ internal fun SettingsPage(
     val scrollState = if (scrollContent != null) columnState ?: rememberScrollState() else null
     val topBarBackdrop = rememberTopBarBackdrop()
     val railProgress = LocalGlassRailProgress.current
-    val onOverscrollChanged: (Float) -> Unit = remember(scrollBehavior) {
-        { offset -> scrollBehavior.state.overscrollOffset = offset }
-    }
+    val onOverscrollChanged = rememberPageOverscrollCallback(scrollBehavior)
     val navigationIcon: @Composable () -> Unit = {
         UiTopBarNavigationIcon(onBack = onBack, navigationActions = navigationActions)
     }
@@ -143,9 +138,7 @@ internal fun SettingsPage(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .then(if (allowEdgeHaptic && canScroll) Modifier.scrollEndHaptic() else Modifier)
-                            .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                            .pageScrollEffects(scrollBehavior, allowEdgeHaptic && canScroll, glassOverscroll, onOverscrollChanged),
                     contentPadding = contentPadding,
                     content = content,
                 )
@@ -156,9 +149,7 @@ internal fun SettingsPage(
                 val glassOverscroll = userScrollEnabled && canScroll
                 Column(
                     modifier = Modifier.fillMaxSize()
-                        .then(if (glassOverscroll) Modifier.scrollEndHaptic() else Modifier)
-                        .then(if (glassOverscroll) Modifier.overScrollVertical(onOffsetChanged = onOverscrollChanged) else Modifier)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .pageScrollEffects(scrollBehavior, glassOverscroll, glassOverscroll, onOverscrollChanged)
                         .verticalScroll(scrollState, enabled = userScrollEnabled, overscrollEffect = if (glassOverscroll) null else rememberOverscrollEffect())
                         .padding(contentPadding),
                     content = { scrollContent(contentPadding) },
