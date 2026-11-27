@@ -1,16 +1,14 @@
 package com.chaners.guiyuan.settings
 
 import android.content.Context
-import android.content.SharedPreferences
 import kotlinx.coroutines.flow.Flow
 
-internal class VisualRepo(private val preferences: SharedPreferences) {
-    constructor(context: Context) : this(
+internal class VisualRepo(context: Context) {
+    private val preferences =
         context.applicationContext.getSharedPreferences(
             COMBINED_STATUS_VISUAL_PREFS_NAME,
             Context.MODE_PRIVATE,
-        ),
-    )
+        )
 
     init {
         migrateVisualPrefsIfNeeded(preferences)
@@ -270,49 +268,15 @@ internal class VisualRepo(private val preferences: SharedPreferences) {
         )
     }
 
-    fun backup(): VisualBackup {
-        val layout = preferences.readLayout()
-        return VisualBackup(
-            singleLayout = layout,
-            dualLayout = layout,
-            dualEnabled = preferences.dualSignalEnabled(),
-            dualInitialized = preferences.getBoolean(DUAL_PROFILES_INITIALIZED_KEY, false),
-            profiles = listOf(false, true).flatMap { dual ->
-                ContentLayout.entries.map { layout ->
-                    preferences.readVisualCfg(dual = dual, layoutOverride = layout)
-                }
-            },
-        )
-    }
+    fun backup(): VisualBackup = preferences.readVisualBackup()
 
     fun backupSnapshot(): Map<String, Any?> = preferences.backupVisualSnapshot()
 
     fun rollbackBackup(snapshot: Map<String, Any?>): Boolean =
         preferences.rollbackBackupVisuals(snapshot)
 
-    fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean {
-        val editor = preferences.editBackupVisuals()
-        val activeProfiles = backup.profiles.filter { it.dualSignal == backup.dualEnabled }
-        activeProfiles.forEach { editor.putVisualCfg(it) }
-        val active = activeProfiles.first()
-        editor.putBatteryColors(active)
-        editor.putBoolean(BATTERY_FILL_FOLLOWS_RETRACT_ENDPOINT_KEY, active.fillFollowsRetract)
-            .putBoolean(CONTROL_CENTER_TINT_TRANSITION_ENABLED_KEY, active.ccTintTransition)
-        val applied = library.matchingKey(active) ?: library.activeSchemeKey
-        writeBatterySchemeLibrary(editor, library.copy(activeSchemeKey = applied))
-        val activeLayout = if (backup.dualEnabled) backup.dualLayout else backup.singleLayout
-        editor.putString(CONTENT_LAYOUT_KEY, activeLayout.persistedValue)
-        // Shared visual profiles require no separate dual-bank initialization.
-        // Even a valid legacy backup with dualInitialized=false must be ready
-        // for toggling dual mode and exporting a new backup.
-        editor.putBoolean(DUAL_PROFILES_INITIALIZED_KEY, true)
-        editor.putBoolean(DUAL_SIGNAL_ENABLED_KEY, backup.dualEnabled)
-        editor.putInt(SIGNAL_DOT_ARRANGEMENT_SCHEMA_KEY, 4)
-        editor.putInt(SHARED_LAYOUT_VISUAL_SCHEMA_KEY, 1)
-        editor.putInt(MOBILE_SIGNAL_DOT_OFFSET_SCHEMA_KEY, 1)
-        // Restored physical charging scales use the current reference.
-        return editor.commit()
-    }
+    fun restore(backup: VisualBackup, library: BatteryColorSchemeLibrary): Boolean =
+        preferences.restoreVisualBackup(backup, library)
 
     fun resetToDefaults() {
         resetVisualPreferences(preferences, BatterySchemeRepo(preferences).current())
