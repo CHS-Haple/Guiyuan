@@ -80,7 +80,6 @@ fun BoxScope.GlassSecondaryPopup(
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         sizing = sizing,
-        visuals = resolvedVisuals,
         panelLayer = {},
         overlay = {},
         frame = { end, windowBounds ->

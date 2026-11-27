@@ -142,7 +142,6 @@ internal fun rememberGlassWindowBounds(): IntRect {
  *
  * @param onDismissRequest Called when a tap outside should close the menu.
  * @param sizing Panel size limits and window margin.
- * @param visuals Panel surface appearance.
  * @param surface Background layers, drawn behind the rows inside the panel silhouette.
  * @param panelLayer Layer properties applied to the whole panel.
  * @param overlay Drawn over the panel and its rows, inside the silhouette.
@@ -159,7 +158,6 @@ internal fun rememberGlassWindowBounds(): IntRect {
 internal fun GlassPopupSurface(
     onDismissRequest: () -> Unit,
     sizing: GlassPopupSizing,
-    visuals: GlassPopupVisuals,
     panelLayer: GraphicsLayerScope.() -> Unit,
     overlay: DrawScope.() -> Unit,
     frame: Density.(end: Size, windowBounds: Rect) -> GlassPopupFrame,
@@ -170,6 +168,9 @@ internal fun GlassPopupSurface(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
+    // The primary and secondary both use MIUIX popup defaults for the panel shadow.
+    // Each caller still owns its live background material and anchor crossfade.
+    val panelVisuals = GlassPopupDefaults.visuals()
     val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
     val windowBounds = rememberGlassWindowBounds()
     val windowRect = remember(windowBounds) {
@@ -205,8 +206,8 @@ internal fun GlassPopupSurface(
     )
 
     val density = LocalDensity.current
-    val shadowOutsets = remember(visuals.shadow, density) {
-        with(density) { popupShadowOutsets(visuals.shadow) }
+    val shadowOutsets = remember(panelVisuals.shadow, density) {
+        with(density) { popupShadowOutsets(panelVisuals.shadow) }
     }
     val measured = remember { MeasuredPanel() }
     // Intrinsics depend on popup content and constraints, not the current animation frame.
@@ -235,7 +236,7 @@ internal fun GlassPopupSurface(
                 // Include shadow pixels in the offscreen buffer used when alpha is below one.
                 outsets = shadowOutsets
             }
-            .glassShadow(shape, visuals.shadow) { visuals.alpha }
+            .glassShadow(shape, panelVisuals.shadow) { panelVisuals.alpha }
             .clip(shape)
             .drawWithContent {
                 drawContent()
