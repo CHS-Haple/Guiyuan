@@ -31,6 +31,9 @@ class GlassTransformPopupTest {
         )
         progress.floatValue = 0f
         assertEquals(0f, anchor.surfaceVisibility, 0f)
+        // A standalone anchor has no header animation clock.
+        anchor.surfaceProgress = null
+        assertEquals(1f, anchor.surfaceVisibility, 0f)
     }
 
     @Test
