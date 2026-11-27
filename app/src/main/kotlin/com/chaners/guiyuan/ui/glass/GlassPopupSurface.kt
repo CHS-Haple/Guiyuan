@@ -150,7 +150,7 @@ internal fun rememberGlassWindowBounds(): IntRect {
  * @param overlay Drawn over the panel and its rows, inside the silhouette.
  * @param frame Current panel bounds and corner radius, given the final panel size and the window
  *   safe area. Bounds use window coordinates; the surface maps them into its own host.
- * @param contentLayer Row layer properties, given the final panel size and current window bounds.
+ * @param contentLayer Row layer properties, given the final panel size.
  * @param onMeasured Called with the final panel size on each measurement.
  * @param interactive Whether the panel's rows can receive input and accessibility actions.
  * @param content The rows.
