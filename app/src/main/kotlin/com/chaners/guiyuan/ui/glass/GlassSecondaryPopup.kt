@@ -62,7 +62,6 @@ fun BoxScope.GlassSecondaryPopup(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val contentPadding = PaddingValues(vertical = GlassPopupDefaults.ContentPaddingVertical)
-    val visuals = GlassPopupDefaults.visuals()
     val state = remember { MutableTransitionState(false) }
     state.targetState = show
     val transition = rememberTransition(state, label = "glassSecondaryPopup")
@@ -76,7 +75,7 @@ fun BoxScope.GlassSecondaryPopup(
     if (!active) return
     val direction = LocalLayoutDirection.current
     val source = materialAnchor.surface
-    val resolvedVisuals = materialAnchor.popupVisuals ?: visuals
+    val resolvedVisuals = materialAnchor.popupVisuals ?: GlassPopupDefaults.visuals()
     GlassPopupSurface(
         onDismissRequest = onDismissRequest,
         sizing = sizing,
