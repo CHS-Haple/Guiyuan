@@ -9,6 +9,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlin.math.PI
 import kotlin.math.abs
@@ -53,6 +55,14 @@ private fun flowRadius(progress: Float, angle: Float, diameter: Float, phase: Fl
     val shift = diameter * 0.025f * progress
     return radius + shift * cos(angle - (phase - 0.55f * progress))
 }
+
+/** Keep the original theme-aware glint across both About and first-run brand surfaces. */
+internal fun brandWaveGlintColor(surface: Color, accent: Color): Color =
+    if (surface.luminance() < 0.5f) {
+        lerp(accent, Color.Black, 0.35f)
+    } else {
+        lerp(accent, Color.White, 0.70f)
+    }
 
 // Two-tone refraction stays inside the text strokes and follows the same displaced front.
 internal fun Modifier.waveGlint(
