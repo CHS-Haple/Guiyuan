@@ -211,36 +211,16 @@ internal object SceneAodBoundaryPolicy {
         homePresentationOwned: Boolean,
         aodEnabled: Boolean,
     ): KeyguardAodProjection? {
-        if (steadySourceScene == SourceScene.HOME) {
-            return if (
-                lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
-                homePresentationOwned &&
-                aodEnabled
-            ) {
-                // Home -> AOD is the only transition without a prior stable
-                // Keyguard/AOD child. A latched AOD/Keyguard origin instead
-                // means we are leaving that family for Home and must not
-                // reverse-prearm AOD during the outgoing animation.
-                KeyguardAodProjection.AOD
-            } else {
-                KeyguardAodProjection.NATIVE
-            }
+        // Only an unlatched family can use Home ownership as prearm evidence.
+        // A latched family means the outgoing animation must not reverse-prearm.
+        val canPrearm = lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
+            homePresentationOwned && aodEnabled
+        return when (steadySourceScene) {
+            SourceScene.HOME -> if (canPrearm) KeyguardAodProjection.AOD else KeyguardAodProjection.NATIVE
+            // Home -> AOD can briefly expose KEYGUARD ancestry before the native callback catches up.
+            SourceScene.KEYGUARD -> if (canPrearm) KeyguardAodProjection.AOD else null
+            SourceScene.UNKNOWN -> null
         }
-
-        if (
-            steadySourceScene == SourceScene.KEYGUARD &&
-            lastStableFamilyScene == StableKeyguardAodScene.UNKNOWN &&
-            homePresentationOwned &&
-            aodEnabled
-        ) {
-            // Home -> AOD can briefly expose KEYGUARD ancestry before the AOD
-            // callback catches up. Only an UNKNOWN family origin may use Home
-            // ownership as prearm evidence. A latched AOD/Keyguard origin is
-            // stronger and must not be overridden by stale Home ownership.
-            return KeyguardAodProjection.AOD
-        }
-
-        return null
     }
 
     // Native status-icon alpha is the visual endpoint, not battery AOD alpha.
