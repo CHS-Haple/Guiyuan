@@ -82,4 +82,22 @@ class CcNativePeerMotionTest {
             ),
         )
     }
+
+    @Test
+    fun nativePeerMotionRejectsEachNonFiniteGeometryInput() {
+        for (invalid in floatArrayOf(Float.NaN, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY)) {
+            for (index in 0..4) {
+                val inputs = floatArrayOf(0f, 0f, 1100f, 925f, 1f)
+                inputs[index] = invalid
+                assertNull(
+                    CcTransitionSpatialPolicy.nativePeerTranslationX(
+                        baselineX = inputs[0], appliedX = inputs[1],
+                        fakePeerRootX = inputs[2], finalPeerRootX = inputs[3],
+                        localToRootScaleX = inputs[4], progress = 0.5f,
+                    ),
+                )
+            }
+        }
+    }
+
 }

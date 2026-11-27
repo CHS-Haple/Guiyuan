@@ -41,9 +41,9 @@ internal object CcTransitionSpatialPolicy {
         localToRootScaleX: Float,
         progress: Float,
     ): Float? {
-        if (!listOf(
-                baselineX, appliedX, fakePeerRootX, finalPeerRootX, localToRootScaleX,
-            ).all(Float::isFinite) || kotlin.math.abs(localToRootScaleX) < 0.0001f
+        if (!baselineX.isFinite() || !appliedX.isFinite() ||
+            !fakePeerRootX.isFinite() || !finalPeerRootX.isFinite() ||
+            !localToRootScaleX.isFinite() || kotlin.math.abs(localToRootScaleX) < 0.0001f
         ) return null
         val originalRootX =
             fakePeerRootX - (appliedX - baselineX) * localToRootScaleX

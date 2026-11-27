@@ -271,9 +271,7 @@ internal object SysUiNetworkSource {
 
     private class WifiHooks(
         val wifiBindMethod: Method,
-        val wifiIconEmitMethod: Method,
-        val wifiIconImageField: Field,
-        val wifiIconClassIdField: Field,
+        val emitter: EmitterHooks,
         val seedContract: WifiSeedContract,
     )
 
@@ -328,9 +326,7 @@ internal object SysUiNetworkSource {
             )
         return WifiHooks(
             wifiBindMethod = wifiBindMethod,
-            wifiIconEmitMethod = emitter.emitMethod,
-            wifiIconImageField = emitter.imageField,
-            wifiIconClassIdField = emitter.classIdField,
+            emitter = emitter,
             seedContract = seedContract,
         )
     }
@@ -365,9 +361,7 @@ internal object SysUiNetworkSource {
 
     private class MobileHooks(
         val mobileBindMethod: Method,
-        val mobileSignalEmitMethod: Method,
-        val mobileImageField: Field,
-        val mobileClassIdField: Field,
+        val emitter: EmitterHooks,
         val subscriptionIdMethod: Method,
     )
 
@@ -407,9 +401,7 @@ internal object SysUiNetworkSource {
             }
         return MobileHooks(
             mobileBindMethod = mobileBindMethod,
-            mobileSignalEmitMethod = emitter.emitMethod,
-            mobileImageField = emitter.imageField,
-            mobileClassIdField = emitter.classIdField,
+            emitter = emitter,
             subscriptionIdMethod = subscriptionIdMethod,
         )
     }
@@ -472,13 +464,12 @@ internal object SysUiNetworkSource {
             created +=
                 atStage("wifi.hook.iconEmit") {
                     module
-                        .hook(hooks.wifiIconEmitMethod)
+                        .hook(hooks.emitter.emitMethod)
                         .setId(WIFI_ICON_HOOK_ID)
                         .intercept(
                             wifiIconHooker(
                                 active = active,
-                                wifiImageField = hooks.wifiIconImageField,
-                                wifiClassIdField = hooks.wifiIconClassIdField,
+                                emitterHooks = hooks.emitter,
                                 seedContract = hooks.seedContract,
                                 sinks = sinks,
                                 diagnostics = diagnostics,
@@ -560,13 +551,12 @@ internal object SysUiNetworkSource {
             created +=
                 atStage("mobile.hook.signalEmit") {
                     module
-                        .hook(hooks.mobileSignalEmitMethod)
+                        .hook(hooks.emitter.emitMethod)
                         .setId(MOBILE_SIGNAL_HOOK_ID)
                         .intercept(
                             mobileSignalHooker(
                                 active = active,
-                                mobileImageField = hooks.mobileImageField,
-                                mobileClassIdField = hooks.mobileClassIdField,
+                                emitterHooks = hooks.emitter,
                                 sinks = sinks,
                                 diagnostics = diagnostics,
                             ),
@@ -611,6 +601,7 @@ internal object SysUiNetworkSource {
                     isAccessible = true
                 }
         }
+        val visibility = MobileVisibilityContract(nativeBindingField, nativeShouldVisibleMethod)
         // Both native activity collectors are required for the verified OS4
         // replacement. If either cannot be hooked, roll back the mobile
         // branch rather than announcing an incomplete native state owner.
@@ -624,8 +615,7 @@ internal object SysUiNetworkSource {
                     mobileActivityResourceHooker(
                         active = active,
                         activityField = activityField,
-                        nativeBindingField = nativeBindingField,
-                        nativeShouldVisibleMethod = nativeShouldVisibleMethod,
+                        visibility = visibility,
                         sinks = sinks,
                         diagnostics = diagnostics,
                     ),
@@ -640,16 +630,16 @@ internal object SysUiNetworkSource {
             )
             val imageField = collector.getDeclaredField("\$satellite").apply { isAccessible = true }
             val classIdField = collector.getDeclaredField(COLLECTOR_CLASS_ID_FIELD_NAME).apply { isAccessible = true }
-            val method = resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME)
-            module.hook(method)
+            val emitter = EmitterHooks(
+                resolveEmitterMethod(collector, MOBILE_SIGNAL_EMIT_METHOD_NAME), imageField, classIdField,
+            )
+            module.hook(emitter.emitMethod)
                 .setId(MOBILE_ACTIVITY_VISIBILITY_HOOK_ID)
                 .intercept(
                     mobileActivityVisibilityHooker(
                         active = active,
-                        imageField = imageField,
-                        classIdField = classIdField,
-                        nativeBindingField = nativeBindingField,
-                        nativeShouldVisibleMethod = nativeShouldVisibleMethod,
+                        emitter = emitter,
+                        visibility = visibility,
                         sinks = sinks,
                         diagnostics = diagnostics,
                     ),
@@ -706,8 +696,7 @@ internal object SysUiNetworkSource {
     private fun mobileActivityResourceHooker(
         active: AtomicBoolean,
         activityField: Field,
-        nativeBindingField: Field,
-        nativeShouldVisibleMethod: Method,
+        visibility: MobileVisibilityContract,
         sinks: Sinks,
         diagnostics: Diagnostics,
     ): Hooker {
@@ -725,9 +714,7 @@ internal object SysUiNetworkSource {
                             if (onEvent != null && isDetailedDiagnosticsEnabled()) {
                                 optionalNativeRead { NetworkNativeEvidence.nativeActivityObservation(image, result) }
                             } else null
-                        val rootVisible = nativeMobileRootVisible(
-                            binding.root, nativeBindingField, nativeShouldVisibleMethod,
-                        )
+                        val rootVisible = visibility.read(binding.root)
                         // A hidden Home scene or CombinedStatus's native
                         // visual mask can make isShown=false even when
                         // the OEM binding and child both allow the icon.
@@ -772,10 +759,8 @@ internal object SysUiNetworkSource {
     @Suppress("TooGenericExceptionCaught")
     private fun mobileActivityVisibilityHooker(
         active: AtomicBoolean,
-        imageField: Field,
-        classIdField: Field,
-        nativeBindingField: Field,
-        nativeShouldVisibleMethod: Method,
+        emitter: EmitterHooks,
+        visibility: MobileVisibilityContract,
         sinks: Sinks,
         diagnostics: Diagnostics,
     ): Hooker {
@@ -785,19 +770,17 @@ internal object SysUiNetworkSource {
             val result = chain.proceed()
             if (
                 active.get() &&
-                optionalNativeRead { classIdField.getInt(chain.thisObject) } ==
+                optionalNativeRead { emitter.classIdField.getInt(chain.thisObject) } ==
                 MOBILE_ACTIVITY_VISIBILITY_CLASS_ID
             ) {
                 // The OEM has already applied the Flow's Pair to its
                 // View. Read its authoritative Home binding and child
                 // visibility instead of casting a host Kotlin Pair
                 // through the module's ClassLoader.
-                val image = optionalNativeRead { imageField.get(chain.thisObject) as? ImageView }
+                val image = optionalNativeRead { emitter.imageField.get(chain.thisObject) as? ImageView }
                 val binding = image?.let(::findNativeHomeMobileBinding)
                 val rootVisible = binding?.let { owner ->
-                    nativeMobileRootVisible(
-                        owner.root, nativeBindingField, nativeShouldVisibleMethod,
-                    )
+                    visibility.read(owner.root)
                 }
                 val childVisible = image?.visibility == View.VISIBLE
                 val effectiveVisible = nativeMobileActivityShown(
@@ -835,17 +818,18 @@ internal object SysUiNetworkSource {
         }
     }
 
-    // Read the exact OEM visibility value from the current root after native proceed.
-    private fun nativeMobileRootVisible(
-        root: ViewGroup,
-        bindingField: Field,
-        visibilityMethod: Method,
-    ): Boolean? =
-        optionalNativeRead {
-            bindingField.get(root)?.let { binding ->
-                visibilityMethod.invoke(binding) as? Boolean
+    // Both activity collectors read the same verified native root contract after proceed.
+    private class MobileVisibilityContract(
+        private val bindingField: Field,
+        private val visibilityMethod: Method,
+    ) {
+        fun read(root: ViewGroup): Boolean? =
+            optionalNativeRead {
+                bindingField.get(root)?.let { binding ->
+                    visibilityMethod.invoke(binding) as? Boolean
+                }
             }
-        }
+    }
 
     private fun nativeMobileActivityResourceId(image: ImageView): Int? =
         (image.tag as? Number)?.toInt()?.takeIf { id ->
@@ -1418,8 +1402,7 @@ internal object SysUiNetworkSource {
     @Suppress("TooGenericExceptionCaught")
     private fun wifiIconHooker(
         active: AtomicBoolean,
-        wifiImageField: Field,
-        wifiClassIdField: Field,
+        emitterHooks: EmitterHooks,
         seedContract: WifiSeedContract,
         sinks: Sinks,
         diagnostics: Diagnostics,
@@ -1448,7 +1431,7 @@ internal object SysUiNetworkSource {
             }
         val classId =
             optionalNativeRead {
-                wifiClassIdField.getInt(emitter)
+                emitterHooks.classIdField.getInt(emitter)
             } ?: -1
 
         if (classId != WIFI_ICON_COLLECTOR_CLASS_ID) {
@@ -1457,7 +1440,7 @@ internal object SysUiNetworkSource {
 
         val image =
             optionalNativeRead {
-                wifiImageField.get(emitter) as? ImageView
+                emitterHooks.imageField.get(emitter) as? ImageView
             }
         val semantic =
             image
@@ -1811,8 +1794,7 @@ internal object SysUiNetworkSource {
     @Suppress("TooGenericExceptionCaught")
     private fun mobileSignalHooker(
         active: AtomicBoolean,
-        mobileImageField: Field,
-        mobileClassIdField: Field,
+        emitterHooks: EmitterHooks,
         sinks: Sinks,
         diagnostics: Diagnostics,
     ): Hooker = Hooker { chain ->
@@ -1829,10 +1811,10 @@ internal object SysUiNetworkSource {
                 return@Hooker result
             }
         val image = optionalNativeRead {
-            mobileImageField.get(emitter) as? ImageView
+            emitterHooks.imageField.get(emitter) as? ImageView
         }
         val classId = optionalNativeRead {
-            mobileClassIdField.getInt(emitter)
+            emitterHooks.classIdField.getInt(emitter)
         } ?: -1
         val value =
             try {
