@@ -31,16 +31,21 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 // Shared with the normal Settings page and first-run OOBE. SettingsEntryPrefs
 // remains the only persistent entry writer; the framework owns scope grants.
-internal class AppSettingsEntryState(
-    val config: SettingsEntryCfg,
-    val busy: Boolean,
-    val pending: SettingsEntry?,
-    val failed: Boolean,
+/** Commands belong to the same SettingsEntryPrefs writer, not to the state snapshot. */
+internal class AppSettingsEntryActions(
     val selectEntry: (SettingsEntry) -> Unit,
     val selectIcon: (SettingsEntryIcon) -> Unit,
     val dismissPending: () -> Unit,
     val confirmPending: () -> Unit,
     val dismissFailed: () -> Unit,
+)
+
+internal class AppSettingsEntryState(
+    val config: SettingsEntryCfg,
+    val busy: Boolean,
+    val pending: SettingsEntry?,
+    val failed: Boolean,
+    val actions: AppSettingsEntryActions,
 )
 
 @Composable
@@ -75,41 +80,43 @@ internal fun rememberAppSettingsEntryState(runtimeBusy: Boolean): AppSettingsEnt
         busy = busy,
         pending = pending,
         failed = failed,
-        selectEntry = { selected ->
-            if (!busy && selected != config.entry) {
-                if (selected == SettingsEntry.Disabled || app.settingsInScope()) {
-                    saveEntry(selected)
-                } else {
-                    pending = selected
-                }
-            }
-        },
-        selectIcon = { icon -> if (!busy) saveIcon(icon) },
-        dismissPending = { pending = null },
-        confirmPending = {
-            val selected = pending
-            pending = null
-            if (selected != null && !busy) {
-                val previous = SettingsEntryPrefs.get(context)
-                applying = selected
-                val accepted = app.requestSettingsScope { approved ->
-                    if (applying == selected) {
-                        applying = null
-                        if (approved) {
-                            // A newer setting takes precedence over a delayed scope grant.
-                            if (SettingsEntryPrefs.get(context) == previous) saveEntry(selected)
-                        } else {
-                            failed = true
-                        }
+        actions = AppSettingsEntryActions(
+                selectEntry = { selected ->
+                if (!busy && selected != config.entry) {
+                    if (selected == SettingsEntry.Disabled || app.settingsInScope()) {
+                        saveEntry(selected)
+                    } else {
+                        pending = selected
                     }
                 }
-                if (!accepted) {
-                    applying = null
-                    failed = true
+            },
+            selectIcon = { icon -> if (!busy) saveIcon(icon) },
+            dismissPending = { pending = null },
+            confirmPending = {
+                val selected = pending
+                pending = null
+                if (selected != null && !busy) {
+                    val previous = SettingsEntryPrefs.get(context)
+                    applying = selected
+                    val accepted = app.requestSettingsScope { approved ->
+                        if (applying == selected) {
+                            applying = null
+                            if (approved) {
+                                // A newer setting takes precedence over a delayed scope grant.
+                                if (SettingsEntryPrefs.get(context) == previous) saveEntry(selected)
+                            } else {
+                                failed = true
+                            }
+                        }
+                    }
+                    if (!accepted) {
+                        applying = null
+                        failed = true
+                    }
                 }
-            }
-        },
-        dismissFailed = { failed = false },
+            },
+                dismissFailed = { failed = false },
+        ),
     )
 }
 
@@ -184,7 +191,7 @@ internal fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
         ),
         showValue = true,
         onSelectedIndexChange = { index ->
-            SettingsEntry.entries.getOrNull(index)?.let(entryState.selectEntry)
+            SettingsEntry.entries.getOrNull(index)?.let(entryState.actions.selectEntry)
         },
     )
     AnimatedPreferenceGroup(visible = entryState.config.entry != SettingsEntry.Disabled) {
@@ -202,7 +209,7 @@ internal fun AppSettingsEntryRows(entryState: AppSettingsEntryState) {
             summary = stringResource(R.string.settings_entry_icon_summary),
             showValue = true,
             onSelectedIndexChange = { index ->
-                SettingsEntryIcon.entries.getOrNull(index)?.let(entryState.selectIcon)
+                SettingsEntryIcon.entries.getOrNull(index)?.let(entryState.actions.selectIcon)
             },
         )
     }
@@ -214,7 +221,7 @@ internal fun AppSettingsEntryDialogs(entryState: AppSettingsEntryState) {
         title = stringResource(R.string.settings_entry_scope_title),
         summary = stringResource(R.string.settings_entry_scope_summary),
         show = entryState.pending != null,
-        onDismissRequest = entryState.dismissPending,
+        onDismissRequest = entryState.actions.dismissPending,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -223,7 +230,7 @@ internal fun AppSettingsEntryDialogs(entryState: AppSettingsEntryState) {
             UiDialogButton(
                 text = stringResource(R.string.cancel),
                 modifier = Modifier.weight(1f),
-                onClick = entryState.dismissPending,
+                onClick = entryState.actions.dismissPending,
             )
             Spacer(Modifier.width(dialogActionGap()))
             UiDialogButton(
@@ -231,7 +238,7 @@ internal fun AppSettingsEntryDialogs(entryState: AppSettingsEntryState) {
                 modifier = Modifier.weight(1f),
                 role = GlassDialogButtonRole.Primary,
                 enabled = !entryState.busy,
-                onClick = entryState.confirmPending,
+                onClick = entryState.actions.confirmPending,
             )
         }
     }
@@ -239,12 +246,12 @@ internal fun AppSettingsEntryDialogs(entryState: AppSettingsEntryState) {
         title = stringResource(R.string.settings_entry_failed_title),
         summary = stringResource(R.string.settings_entry_failed_summary),
         show = entryState.failed,
-        onDismissRequest = entryState.dismissFailed,
+        onDismissRequest = entryState.actions.dismissFailed,
     ) {
         UiDialogButton(
             text = stringResource(R.string.confirm),
             modifier = Modifier.fillMaxWidth(),
-            onClick = entryState.dismissFailed,
+            onClick = entryState.actions.dismissFailed,
         )
     }
 }
