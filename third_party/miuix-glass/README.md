@@ -56,11 +56,12 @@ stroke and shadow definitions directly; local Material type/factory bridges
 and stroke aliases have been retired.
 The app renders strokes, rim, masks and shadows via Material; the accepted
 #479 fused edge pass runs only when shading, positive stroke width and additive
-blend mode allow it. Refraction now embeds upstream `MaterialAgsl` silhouette
-and rim fragments and delegates shape uniforms to `setSilhouetteUniforms`;
-no local copy of either shared implementation remains. App-specific backdrop
-refraction/color blending and popup/Back lifecycles stay locally owned. Do not
-copy shared shaders into the app or add a second Material model.
+blend mode allow it. Refraction is owned by the published MIUIX implementation.
+The app-local action-bar underlay pipeline has no shading/refraction caller;
+its unused refraction shader and uniform bindings are retired. It retains
+only the colour-blend shader for the app-specific two-layer underlay, with
+published Material stroke and mask drawing. Popup/Back lifecycles stay locally
+owned. Do not copy shared shaders into the app or add a second Material model.
 
 ## Live app-specific boundaries
 
@@ -124,8 +125,8 @@ touch-extension and pointer selection owner.
 
 The remaining app-local Glass files preserve the accepted navigation/rail,
 noninteractive preview and touch exclusion, controlled search, popup anchor
-and Back lifecycle, long-press/held-state button, title slots and custom
-refraction/material ownership where upstream does not expose an equivalent
+and Back lifecycle, long-press/held-state button, title slots and action-bar
+underlay colour blending where upstream does not expose an equivalent
 public entrypoint. These are app-specific adapters, not a second complete MIUIX
 module implementation.
 The work-branch trial links the published `miuix-glass-android` module and
@@ -135,7 +136,7 @@ same-package JVM class collisions but does not itself prove public API parity,
 correct upstream runtime behavior, or safe removal of app-owned interaction
 and lifecycle implementations. Do not modify upstream source in CI.
 
-For later upstream alignment, preserve adapted backdrop/refraction and
+For later upstream alignment, preserve adapted backdrop/underlay and
 popup, Back/scrim and navigation ownership. Validate both source-matched and
 published-Maven builds; for rendering changes review relevant navigation choices,
 capability fallbacks, light/dark rims, alpha transitions, title clipping and
