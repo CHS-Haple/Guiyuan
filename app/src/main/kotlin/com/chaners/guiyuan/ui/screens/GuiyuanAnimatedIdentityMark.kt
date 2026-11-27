@@ -35,7 +35,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import top.yukonga.miuix.kmp.anim.folmeSpring
@@ -43,6 +42,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.PI
+
+internal val IdentityMarkSize = 100.dp
 
 private data class MarkOrbitMotion(
     val speed: State<Float>,
@@ -72,7 +73,6 @@ internal fun rememberMarkPressMotion(): MarkPressMotion {
 
 @Composable
 internal fun GuiyuanAnimatedIdentityMark(
-    markSize: Dp = 64.dp,
     wave: Animatable<Float, AnimationVector1D>,
     wavePhase: Float,
     onWaveRelease: (Float) -> Unit,
@@ -109,13 +109,13 @@ internal fun GuiyuanAnimatedIdentityMark(
         }
     } else Modifier
     Box(
-        modifier = Modifier.size(markSize).then(pressModifier).graphicsLayer {
+        modifier = Modifier.size(IdentityMarkSize).then(pressModifier).graphicsLayer {
             scaleX = pressScale
             scaleY = pressScale
         },
         contentAlignment = Alignment.Center,
     ) {
-        if (renderWave) IdentityMarkWave(markSize, wave, wavePhase, effectModifier)
+        if (renderWave) IdentityMarkWave(wave, wavePhase, effectModifier)
         IdentityMarkArtwork(effectModifier, rotation.value)
     }
 }
@@ -163,7 +163,6 @@ private fun TriggerMarkWave(
 
 @Composable
 internal fun IdentityMarkWave(
-    markSize: Dp,
     wave: Animatable<Float, AnimationVector1D>,
     wavePhase: Float,
     effectModifier: Modifier,
@@ -173,9 +172,9 @@ internal fun IdentityMarkWave(
     val tint = MiuixTheme.colorScheme.onSurfaceContainer
     val airflow = lerp(tint, MiuixTheme.colorScheme.primary, 0.55f)
     // Radius + feather + drift peaks at 1.995 mark diameters.
-    Canvas(Modifier.requiredSize(markSize * 4f).then(modifier).then(effectModifier)) {
+    Canvas(Modifier.requiredSize(IdentityMarkSize * 4f).then(modifier).then(effectModifier)) {
         val progress = wave.value
-        val diameter = markSize.toPx()
+        val diameter = IdentityMarkSize.toPx()
         drawWave(airflow, progress, 0.46f, diameter, wavePhase)
         drawWave(airflow, (progress - 0.2f) / 0.8f, 0.10f, diameter, wavePhase)
     }

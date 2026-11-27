@@ -202,11 +202,8 @@ internal class NavigationRailInteraction(
 
 /** The captured state references are remembered by the caller; no gesture is restarted on a morph. */
 private class RailGestureControl(
-    val interaction: NavigationRailInteraction,
+    val pointer: RailPanelPointer,
     val layoutDirection: LayoutDirection,
-    val expanded: State<Boolean>,
-    val headerBottom: State<() -> Float>,
-    val onSelect: State<(Int) -> Unit>,
     val liquid: Boolean,
     val verticalScrollAvailable: State<Boolean>,
 )
@@ -229,15 +226,12 @@ private class RailGestureRun(
 
 /** A stable recognizer: morph frames and the expanded target never replace an in-flight press. */
 internal fun Modifier.navigationRailGestures(
-    interaction: NavigationRailInteraction,
+    pointer: RailPanelPointer,
     layoutDirection: LayoutDirection,
-    expanded: State<Boolean>,
-    headerBottom: State<() -> Float>,
-    onSelect: State<(Int) -> Unit>,
-    liquid: Boolean = false,
+    liquid: Boolean,
     verticalScrollAvailable: State<Boolean>,
-): Modifier = pointerInput(interaction, layoutDirection, liquid) {
-    val control = RailGestureControl(interaction, layoutDirection, expanded, headerBottom, onSelect, liquid, verticalScrollAvailable)
+): Modifier = pointerInput(pointer.interaction, layoutDirection, liquid) {
+    val control = RailGestureControl(pointer, layoutDirection, liquid, verticalScrollAvailable)
     awaitEachGesture { performRailGesture(control, viewConfiguration.touchSlop) }
 }
 
@@ -245,27 +239,29 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.per
     control: RailGestureControl,
     touchSlop: Float,
 ) {
+    val pointer = control.pointer
+    val interaction = pointer.interaction
     val down = awaitFirstDown()
     fun logicalX(position: Offset): Float =
         if (control.layoutDirection == LayoutDirection.Rtl) size.width - position.x else position.x
-    if (down.position.y < control.headerBottom.value()) return
-    val initial = control.interaction.indexAt(logicalX(down.position), down.position.y)
+    if (down.position.y < pointer.headerBottom.value()) return
+    val initial = interaction.indexAt(logicalX(down.position), down.position.y)
     if (initial < 0) return
-    val horizontal = !control.expanded.value
-    val position = control.interaction.positionAt(initial, logicalX(down.position))
+    val horizontal = !pointer.expanded.value
+    val position = interaction.positionAt(initial, logicalX(down.position))
     val run = RailGestureRun(
-        initial, position, position - control.interaction.start(initial),
-        horizontal, control.interaction.rowInteractions[initial],
+        initial, position, position - interaction.start(initial),
+        horizontal, interaction.rowInteractions[initial],
     )
     val liquidExpanded = control.liquid && !horizontal
     run.rowPress = if (horizontal || liquidExpanded) null else PressInteraction.Press(down.position)
-    if (horizontal || liquidExpanded) control.interaction.press(initial)
+    if (horizontal || liquidExpanded) interaction.press(initial)
     else run.source.tryEmit(checkNotNull(run.rowPress))
     try {
         trackRailPointer(control, down, run, touchSlop)
     } finally {
         if (horizontal || liquidExpanded) {
-            control.interaction.release()
+            interaction.release()
         } else {
             run.rowPress?.let { press ->
                 run.source.tryEmit(if (run.committed) PressInteraction.Release(press) else PressInteraction.Cancel(press))
@@ -281,22 +277,24 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.tra
     run: RailGestureRun,
     touchSlop: Float,
 ) {
+    val pointer = control.pointer
+    val interaction = pointer.interaction
     while (true) {
         val event = awaitPointerEvent()
         val change = event.changes.firstOrNull { it.id == down.id } ?: break
         if (change.isConsumed) break
         val physicalDelta = change.position - change.previousPosition
-        val dragScale = control.interaction.widths[run.current] /
-            control.interaction.slots[run.current].width.coerceAtLeast(1f)
+        val dragScale = interaction.widths[run.current] /
+            interaction.slots[run.current].width.coerceAtLeast(1f)
         val delta = railLogicalDelta(physicalDelta.x, dragScale, control.layoutDirection)
         run.movementX += physicalDelta.x
         run.movementY += physicalDelta.y
         run.position += delta
         if (!change.pressed) {
             if (change.changedToUp()) {
-                control.onSelect.value(
+                pointer.onSelect.value(
                     when {
-                        run.horizontal -> control.interaction.indexAt(run.position)
+                        run.horizontal -> interaction.indexAt(run.position)
                         control.liquid && run.dragging -> run.current
                         else -> run.initial
                     },
@@ -321,11 +319,11 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.tra
         }
         if (run.dragging) {
             if (control.liquid && !run.horizontal) {
-                control.interaction.dragExpanded(change.position.y)
-                run.current = control.interaction.pressedIndex
+                interaction.dragExpanded(change.position.y)
+                run.current = interaction.pressedIndex
             } else {
-                control.interaction.drag(run.position, run.grabOffset, delta, run.current)
-                run.current = control.interaction.indexAt(run.position)
+                interaction.drag(run.position, run.grabOffset, delta, run.current)
+                run.current = interaction.indexAt(run.position)
             }
             change.consume()
         } else {
