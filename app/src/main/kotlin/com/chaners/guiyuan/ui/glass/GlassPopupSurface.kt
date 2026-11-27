@@ -334,7 +334,6 @@ internal fun BoxScope.GlassPopupBackground(
                 Modifier.glassOnActionBar(
                     backdrop = backdrop,
                     shape = shape,
-                    style = visuals.style,
                     alpha = visuals.alpha,
                     material = visuals.material,
                     underlayMaterial = underlayMaterial,

@@ -171,7 +171,6 @@ private fun GlassButtonSurface(
                             Modifier.glassOnActionBar(
                                 backdrop = effectiveBackdrop,
                                 shape = shape,
-                                style = style,
                                 alpha = opacity,
                                 material = material,
                                 underlayMaterial = underlayMaterial,

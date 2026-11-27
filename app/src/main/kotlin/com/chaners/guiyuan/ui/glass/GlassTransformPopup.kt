@@ -7,7 +7,6 @@ import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupSizing
 
 import top.yukonga.miuix.kmp.glass.GlassMotion
-import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import androidx.compose.animation.core.SpringSpec
 
@@ -141,7 +140,6 @@ fun BoxScope.GlassTransformPopup(
     val anchorSurface = anchor.surface
     val anchorVisuals = anchorSurface?.let {
         visuals.copy(
-            style = GlassDefaults.Style,
             material = it.material,
             stroke = it.stroke,
             containerColor = it.fill.copy(alpha = it.fill.alpha * anchor.surfaceMaterialAlpha),

@@ -36,7 +36,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassShape
-import top.yukonga.miuix.kmp.material.GlassStyle
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.ShaderBrushCache
 import top.yukonga.miuix.kmp.material.GlassShadow
@@ -45,7 +44,6 @@ import top.yukonga.miuix.kmp.material.GlassShadow
 internal fun Modifier.glassOnActionBar(
     backdrop: Backdrop,
     shape: GlassShape,
-    style: GlassStyle,
     alpha: Float,
     material: GlassMaterial?,
     underlayMaterial: GlassMaterial,
@@ -55,7 +53,6 @@ internal fun Modifier.glassOnActionBar(
     backdrop = backdrop,
     pipeline = GlassPipeline(
         glassShape = shape,
-        style = style,
         alpha = alpha,
         material = material,
         underlayMaterial = underlayMaterial,
@@ -70,7 +67,6 @@ internal fun Modifier.glassOnActionBar(
  */
 private class GlassPipeline(
     private val glassShape: GlassShape,
-    private val style: GlassStyle,
     private val alpha: Float,
     private val material: GlassMaterial?,
     private val underlayMaterial: GlassMaterial,
@@ -87,7 +83,7 @@ private class GlassPipeline(
     override fun configureEffects(scope: BackdropEffectScope) {
         with(scope) {
             noiseDither(GlassDefaults.NoiseCoefficient)
-            val radius = material?.blurRadius?.value ?: (style.blur.small / GlassDefaults.SourceDensity)
+            val radius = material?.blurRadius?.value ?: (GlassDefaults.Style.blur.small / GlassDefaults.SourceDensity)
             blur(radius.fastCoerceIn(0f, BlurDefaults.MaxBlurRadius) * density)
             val underlay = cachedUnderlayBlendEffect ?: buildColorBlendEffect(
                 underlayMaterial,
@@ -113,7 +109,6 @@ private class GlassPipeline(
 
     override fun hasSameBackdropEffects(other: BackdropPipeline): Boolean = other is GlassPipeline &&
         other.glassShape == glassShape &&
-        other.style == style &&
         other.alpha == alpha &&
         other.material == material &&
         other.underlayMaterial == underlayMaterial
@@ -124,7 +119,6 @@ private class GlassPipeline(
 
     override fun hashCode(): Int {
         var result = glassShape.hashCode()
-        result = 31 * result + style.hashCode()
         result = 31 * result + alpha.hashCode()
         result = 31 * result + material.hashCode()
         result = 31 * result + underlayMaterial.hashCode()

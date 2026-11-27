@@ -18,7 +18,6 @@ import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassShadows
 import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
-import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import com.chaners.guiyuan.ui.glass.glassOnActionBar
 import com.chaners.guiyuan.ui.glass.glassShadow
@@ -61,7 +60,6 @@ internal fun Os4SearchSurface(
                     .glassOnActionBar(
                         backdrop = backdrop,
                         shape = shape,
-                        style = GlassDefaults.Style,
                         alpha = 1f,
                         material = material,
                         underlayMaterial = underlayMaterial,
