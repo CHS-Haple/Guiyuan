@@ -76,8 +76,6 @@ import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
 import top.yukonga.miuix.kmp.material.GlassMaterials
 import top.yukonga.miuix.kmp.material.GlassShape
-import top.yukonga.miuix.kmp.material.GlassShadow
-import top.yukonga.miuix.kmp.material.GlassShadows
 
 /** Default values for [GlassTopAppBar] and [GlassIconButton]. */
 object GlassTopAppBarDefaults {
@@ -167,7 +165,6 @@ internal data class GlassTopAppBarContext(
     val shape: GlassShape,
     val fill: Color,
     val stroke: EdgeStroke?,
-    val shadow: GlassShadow?,
     val onButtonBackdropConsumerChange: ((Int) -> Unit)? = null,
 )
 
@@ -205,7 +202,6 @@ internal fun GlassTopAppBar(
     val buttonShape = remember(buttonSize) { GlassShape(buttonSize / 2) }
     val fill = GlassTopAppBarDefaults.buttonFill()
     val stroke = GlassTopAppBarDefaults.buttonStroke()
-    val buttonShadow = GlassShadows.Regular
     val contentScrolled by remember(isContentScrolled, scrollBehavior) {
         derivedStateOf {
             isContentScrolled || (scrollBehavior?.state?.overscrollOffset ?: 0f) < -1f
@@ -373,7 +369,6 @@ internal fun GlassTopAppBar(
             buttonShape,
             fill,
             stroke,
-            buttonShadow,
             consumerChangeCallback,
         ) {
             GlassTopAppBarContext(
@@ -386,7 +381,6 @@ internal fun GlassTopAppBar(
                 shape = buttonShape,
                 fill = fill,
                 stroke = stroke,
-                shadow = buttonShadow,
                 onButtonBackdropConsumerChange = consumerChangeCallback,
             )
         }

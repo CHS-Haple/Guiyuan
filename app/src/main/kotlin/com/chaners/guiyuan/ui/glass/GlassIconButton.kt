@@ -120,7 +120,7 @@ private fun GlassButtonSurface(
     val shape = topBarContext?.shape ?: remember(size) { GlassShape(size / 2) }
     val fill = topBarContext?.fill ?: GlassTopAppBarDefaults.buttonFill()
     val stroke = if (topBarContext != null) topBarContext.stroke else GlassTopAppBarDefaults.buttonStroke()
-    val shadow = if (topBarContext != null) topBarContext.shadow else GlassShadows.Regular
+    val shadow = GlassShadows.Regular
     val material = topBarContext?.material ?: GlassTopAppBarDefaults.buttonMaterial()
     val underlayMaterial = topBarContext?.buttonUnderlayMaterial
     val popupAnchor = modifier.foldIn<GlassPopupAnchor?>(null) { found, element ->
@@ -139,8 +139,8 @@ private fun GlassButtonSurface(
     }
     val effectiveBackdrop = (topBarContext?.buttonBackdrop ?: backdrop)?.takeIf { isRuntimeShaderSupported() }
     val anchorSurface = if (popupAnchor != null) {
-        remember(effectiveBackdrop, style, material, underlayMaterial, stroke, fill, shadow) {
-            GlassAnchorSurface(effectiveBackdrop, style, material, underlayMaterial, stroke, fill, shadow)
+        remember(effectiveBackdrop, material, underlayMaterial, stroke, fill) {
+            GlassAnchorSurface(effectiveBackdrop, material, underlayMaterial, stroke, fill)
         }
     } else {
         null

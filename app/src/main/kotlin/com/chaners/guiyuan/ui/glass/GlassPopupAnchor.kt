@@ -40,8 +40,6 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassPopupVisuals
 import top.yukonga.miuix.kmp.material.EdgeStroke
 import top.yukonga.miuix.kmp.material.GlassMaterial
-import top.yukonga.miuix.kmp.material.GlassShadow
-import top.yukonga.miuix.kmp.material.GlassStyle
 
 /**
  * Anchor geometry and appearance for a [GlassTransformPopup] or [GlassDropdownPopup].
@@ -206,12 +204,10 @@ class GlassPopupAnchor {
 /** The button's sampling and colour treatment at the collapsed endpoint of its menu. */
 internal data class GlassAnchorSurface(
     val backdrop: Backdrop?,
-    val style: GlassStyle,
     val material: GlassMaterial,
     val underlayMaterial: GlassMaterial?,
     val stroke: EdgeStroke?,
     val fill: Color,
-    val shadow: GlassShadow?,
 )
 
 /** Marks the button's modifier so its renderer can publish the actual surface to this anchor. */

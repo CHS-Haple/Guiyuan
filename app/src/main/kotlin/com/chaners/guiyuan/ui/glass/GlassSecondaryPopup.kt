@@ -99,7 +99,7 @@ fun BoxScope.GlassSecondaryPopup(
                 GlassPopupDefaults.CornerRadius,
             )
         },
-        contentLayer = { _, _ -> },
+        contentLayer = {},
         interactive = show,
         content = content,
     )

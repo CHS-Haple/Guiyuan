@@ -166,8 +166,7 @@ internal fun GlassPopupSurface(
     panelLayer: GraphicsLayerScope.() -> Unit,
     overlay: DrawScope.() -> Unit,
     frame: Density.(end: Size, windowBounds: Rect) -> GlassPopupFrame,
-    contentLayer: GraphicsLayerScope.(end: Size, rect: Rect) -> Unit,
-    shadowAlpha: () -> Float = { visuals.alpha },
+    contentLayer: GraphicsLayerScope.(end: Size) -> Unit,
     surface: (@Composable BoxScope.(GlassShape) -> Unit)? = null,
     onMeasured: ((Size) -> Unit)? = null,
     interactive: Boolean = true,
@@ -239,7 +238,7 @@ internal fun GlassPopupSurface(
                 // Include shadow pixels in the offscreen buffer used when alpha is below one.
                 outsets = shadowOutsets
             }
-            .glassShadow(shape, visuals.shadow, shadowAlpha)
+            .glassShadow(shape, visuals.shadow) { visuals.alpha }
             .clip(shape)
             .drawWithContent {
                 drawContent()
@@ -313,7 +312,7 @@ internal fun GlassPopupSurface(
             background.place(0, 0)
             foreground.placeWithLayer(0, 0) {
                 transformOrigin = TransformOrigin(0f, 0f)
-                contentLayer(measured.end, measured.rect)
+                contentLayer(measured.end)
                 // Use this frame's bounds, including the scroll viewport, without rounding its motion.
                 translationX = localLeft - localLeft.fastRoundToInt()
                 translationY = localTop - localTop.fastRoundToInt()
