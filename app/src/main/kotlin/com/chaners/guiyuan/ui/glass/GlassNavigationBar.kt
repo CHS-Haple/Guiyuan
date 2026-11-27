@@ -56,8 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -72,7 +70,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import top.yukonga.miuix.kmp.basic.BadgedBox
@@ -101,13 +98,9 @@ import top.yukonga.miuix.kmp.material.GlassShadows
  * @param onSelect Commits on normal pointer release; keyboard/accessibility activates immediately.
  * @param backdrop The [Backdrop] supplying the content behind the glass.
  * @param modifier The modifier applied to the bar.
- * @param defaultWindowInsetsPadding Whether to apply the bottom floating margin and Android
- *   navigation/caption-bar insets. Disable for caller-managed layout and miniature previews.
  * @param style The glass material.
  * @param shape The bar's silhouette. Defaults to a capsule of [height].
  * @param alpha Opacity multiplier for the material.
- * @param visible Whether the bar is on screen. Turning it off does not simply hide it: the bar
- *   shrinks, fades and blurs itself away together, and comes back after a short delay.
  * @param stroke Optional bloom stroke along the rim.
  * @param shadow The shadow the floating capsule casts. `null` removes it.
  * @param height Minimum bar height. Content can grow for two-line or large-font captions.
@@ -126,7 +119,7 @@ import top.yukonga.miuix.kmp.material.GlassShadows
  * @param interactive Whether destination gestures, keyboard actions and accessibility actions are enabled.
  *   Noninteractive is for a visual preview, not for the real bottom navigation.
  * @param trailingAction Optional independent action outside the glass capsule. It owns its size
- *   and material, and shares the bar's show/hide transition. Adding or removing it animates its
+ *   and material. Adding or removing it animates its
  *   size, opacity and reserved space. Use [GlassIconButton] for a round action.
  */
 @Composable
@@ -136,11 +129,9 @@ fun GlassNavigationBar(
     onSelect: (Int) -> Unit,
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
-    defaultWindowInsetsPadding: Boolean = true,
     style: GlassStyle = GlassDefaults.Style,
     shape: GlassShape = GlassShape(CornerSize(50), CornerSize(50), CornerSize(50), CornerSize(50)),
     alpha: Float = 1f,
-    visible: Boolean = true,
     stroke: EdgeStroke? = GlassNavigationBarDefaults.stroke(),
     shadow: GlassShadow? = GlassShadows.Float,
     height: Dp = GlassNavigationBarDefaults.Height,
@@ -172,20 +163,7 @@ fun GlassNavigationBar(
     val dragging = remember { mutableStateOf(false) }
     var settleGeneration by remember { mutableIntStateOf(0) }
 
-    val showScale = remember { Animatable(if (visible) 1f else GlassMotion.NAV_HIDE_SCALE) }
-    var interactionEnabled by remember { mutableStateOf(visible) }
-    LaunchedEffect(visible) {
-        if (visible) {
-            interactionEnabled = true
-            delay(GlassMotion.NAV_SHOW_DELAY_MS)
-            showScale.animateTo(1f, GlassMotion.navShowHide())
-        } else {
-            showScale.animateTo(GlassMotion.NAV_HIDE_SCALE, GlassMotion.navShowHide())
-            interactionEnabled = false
-        }
-    }
-
-    val inputEnabled = interactionEnabled && interactive
+    // The hub mounts/unmounts the bar; a mounted preview differs only in input.
     val scope = rememberCoroutineScope()
     val left = remember { Animatable(0f) }
     val right = remember { Animatable(0f) }
@@ -222,46 +200,38 @@ fun GlassNavigationBar(
     }
 
     val onSelectState by rememberUpdatedState(onSelect)
-    val bottomPadding = if (defaultWindowInsetsPadding) {
-        val navigationBarBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
-        val captionBarBottom = with(density) { WindowInsets.captionBar.getBottom(this).toDp() }
-        val animatedCaptionBarHeight by animateDpAsState(
-            targetValue = captionBarBottom.coerceAtLeast(0.dp),
-            animationSpec = tween(durationMillis = 300),
-            label = "glassNavigationCaptionBarHeight",
-        )
-        // Use upstream's maximum effective system inset, not the old additive
-        // inset that doubled bottom whitespace when caption and navigation coexist.
-        val systemBottom = maxOf(navigationBarBottom, animatedCaptionBarHeight)
-        when {
-            systemBottom <= 16.dp -> 20.dp
-            systemBottom >= 28.dp -> systemBottom
-            else -> 12.dp + systemBottom
-        }
-    } else {
-        0.dp
+    val navigationBars = WindowInsets.navigationBars
+    val navigationBarBottom = with(density) { navigationBars.getBottom(this).toDp() }
+    val captionBarBottom = with(density) { WindowInsets.captionBar.getBottom(this).toDp() }
+    val animatedCaptionBarHeight by animateDpAsState(
+        targetValue = captionBarBottom.coerceAtLeast(0.dp),
+        animationSpec = tween(durationMillis = 300),
+        label = "glassNavigationCaptionBarHeight",
+    )
+    // Use upstream's maximum effective system inset, not the old additive
+    // inset that doubled bottom whitespace when caption and navigation coexist.
+    val systemBottom = maxOf(navigationBarBottom, animatedCaptionBarHeight)
+    val bottomPadding = when {
+        systemBottom <= 16.dp -> 20.dp
+        systemBottom >= 28.dp -> systemBottom
+        else -> 12.dp + systemBottom
     }
 
-    val horizontalInsetsModifier = if (defaultWindowInsetsPadding) {
-        val cutout = WindowInsets.displayCutout
-        val navigationBars = WindowInsets.navigationBars
-        val horizontalInsets = remember(cutout, navigationBars) {
-            cutout.union(navigationBars).only(WindowInsetsSides.Horizontal)
-        }
-        Modifier.windowInsetsPadding(horizontalInsets)
-    } else {
-        Modifier
+    val cutout = WindowInsets.displayCutout
+    val horizontalInsets = remember(cutout, navigationBars) {
+        cutout.union(navigationBars).only(WindowInsetsSides.Horizontal)
     }
-    val wrappedTrailingAction: (@Composable () -> Unit)? = remember(trailingAction, inputEnabled) {
+    val horizontalInsetsModifier = Modifier.windowInsetsPadding(horizontalInsets)
+    val wrappedTrailingAction: (@Composable () -> Unit)? = remember(trailingAction, interactive) {
         trailingAction?.let { action ->
             {
                 Box(
                     modifier = Modifier
-                        .then(if (inputEnabled) Modifier else Modifier.clearAndSetSemantics { })
+                        .then(if (interactive) Modifier else Modifier.clearAndSetSemantics { })
                         .layout { measurable, constraints ->
                             val placeable = measurable.measure(constraints)
                             layout(placeable.width, placeable.height) {
-                                if (inputEnabled) placeable.placeRelative(0, 0)
+                                if (interactive) placeable.placeRelative(0, 0)
                             }
                         },
                 ) { action() }
@@ -274,7 +244,7 @@ fun GlassNavigationBar(
             .then(modifier)
             .fillMaxWidth()
             .then(
-                if (touchExtension && inputEnabled && defaultWindowInsetsPadding &&
+                if (touchExtension && interactive &&
                     (trailingAction == null || trailingActionTouchExclusion > 0.dp)
                 ) {
                     Modifier.navTouchExtension(
@@ -302,17 +272,7 @@ fun GlassNavigationBar(
                     Modifier
                 },
             )
-            .padding(bottom = bottomPadding)
-            .graphicsLayer {
-                val show = showScale.value
-                val visibility = ((show - GlassMotion.NAV_HIDE_SCALE) / (1f - GlassMotion.NAV_HIDE_SCALE))
-                    .coerceIn(0f, 1f)
-                scaleX = show
-                scaleY = show
-                this.alpha = visibility
-                val blurPx = ((1f - visibility) * GlassMotion.NAV_HIDE_BLUR_DP).dp.toPx()
-                renderEffect = if (blurPx > 0.5f) BlurEffect(blurPx, blurPx, TileMode.Decal) else null
-            },
+            .padding(bottom = bottomPadding),
         trailingAction = wrappedTrailingAction,
     ) {
         Box(
@@ -331,7 +291,7 @@ fun GlassNavigationBar(
                 )
                 .onSizeChanged { barWidthState.intValue = it.width }
                 .then(
-                    if (inputEnabled) {
+                    if (interactive) {
                         Modifier.pointerInput(items.size, contentInset, overhang, layoutDirection) {
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false)
@@ -464,7 +424,7 @@ fun GlassNavigationBar(
                             unselectedColor = unselectedColor,
                             labelSize = labelSize,
                             height = height,
-                            interactionEnabled = inputEnabled,
+                            interactionEnabled = interactive,
                             onSelect = onSelectState,
                             previewLabel = previewLabel,
                         )
