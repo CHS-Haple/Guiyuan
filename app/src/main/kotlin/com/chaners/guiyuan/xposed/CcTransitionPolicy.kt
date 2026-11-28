@@ -110,33 +110,4 @@ internal object CcTransitionPolicy {
         )
     }
 
-
-    fun interpolateCarriedSourceToRootTarget(
-        source: FloatArray,
-        target: FloatArray,
-        sourceCarrier: FloatArray,
-        currentCarrier: FloatArray,
-        progress: Float,
-        scalePolicy: StatusPainter.TransitionScalePolicy,
-    ): FloatArray {
-        require(
-            source.size == 6 &&
-                target.size == 6 &&
-                sourceCarrier.size == 6 &&
-                currentCarrier.size == 6,
-        )
-        val carriedSource =
-            CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
-                source = source,
-                sourceCarrier = sourceCarrier,
-                currentCarrier = currentCarrier,
-            )
-        return CcTransitionMorphPolicy.interpolateSimilarityGeometry(
-            source = carriedSource,
-            target = target,
-            progress = geometryProgress(progress),
-            scalePolicy = scalePolicy,
-        )
-    }
-
 }

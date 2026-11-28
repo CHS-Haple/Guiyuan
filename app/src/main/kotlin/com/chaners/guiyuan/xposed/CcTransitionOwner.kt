@@ -2363,16 +2363,8 @@ internal object CcTransitionOwner {
             progress: Float,
             carrierFrames: CarrierFrames?,
         ): FloatArray =
-            carrierFrames?.let { frames ->
-                CcCarrierGeometryPolicy.interpolateCarriedSourceToRootTargetExact(
-                    source = source,
-                    target = target,
-                    sourceCarrier = frames.source,
-                    currentCarrier = frames.current,
-                    progress = progress,
-                )
-            } ?: CcTransitionMorphPolicy.interpolateGeometry(
-                source = source,
+            CcTransitionMorphPolicy.interpolateGeometry(
+                source = if (carrierFrames != null) carriedSourceGeometry(source, carrierFrames) else source,
                 target = target,
                 progress = CcTransitionPolicy.geometryProgress(progress),
             )
@@ -2384,17 +2376,8 @@ internal object CcTransitionOwner {
             scalePolicy: StatusPainter.TransitionScalePolicy,
             carrierFrames: CarrierFrames?,
         ): FloatArray =
-            carrierFrames?.let { frames ->
-                CcTransitionPolicy.interpolateCarriedSourceToRootTarget(
-                    source = source,
-                    target = target,
-                    sourceCarrier = frames.source,
-                    currentCarrier = frames.current,
-                    progress = progress,
-                    scalePolicy = scalePolicy,
-                )
-            } ?: CcTransitionMorphPolicy.interpolateSimilarityGeometry(
-                source = source,
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
+                source = if (carrierFrames != null) carriedSourceGeometry(source, carrierFrames) else source,
                 target = target,
                 progress = CcTransitionPolicy.geometryProgress(progress),
                 scalePolicy = scalePolicy,

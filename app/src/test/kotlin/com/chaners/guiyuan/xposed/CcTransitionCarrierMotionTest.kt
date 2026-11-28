@@ -17,20 +17,43 @@ class CcTransitionCarrierMotionTest {
             floatArrayOf(130f, 120f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransitionPolicy
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
+                source = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
                     source = source,
-                    target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
-                    progress = 0.5f,
-                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
-                )
+                ),
+                target = target,
+                progress = CcTransitionPolicy.geometryProgress(0.5f),
+                scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
+            )
 
         assertEquals(195f, result[0], 0.0001f)
         assertEquals(145f, result[1], 0.0001f)
         assertEquals(15f, result[2], 0.0001f)
         assertEquals(15f, result[5], 0.0001f)
+    }
+
+    @Test
+    fun carriedExactGeometryPreservesIndependentTargetAxes() {
+        val source = floatArrayOf(75f, 70f, 10f, 0f, 0f, 10f)
+        val target = floatArrayOf(235f, 150f, 20f, 0f, 0f, 40f)
+        val sourceCarrier = floatArrayOf(50f, 50f, 100f, 0f, 0f, 100f)
+        val currentCarrier = floatArrayOf(130f, 120f, 140f, 0f, 0f, 169f)
+        val carried = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
+            source = source,
+            sourceCarrier = sourceCarrier,
+            currentCarrier = currentCarrier,
+        )
+        val result = CcTransitionMorphPolicy.interpolateGeometry(
+            source = carried,
+            target = target,
+            progress = CcTransitionPolicy.geometryProgress(0.5f),
+        )
+        assertEquals(195f, result[0], 0.0001f)
+        assertEquals(145f, result[1], 0.0001f)
+        assertEquals(15f, result[2], 0.0001f)
+        assertEquals(25f, result[5], 0.0001f)
     }
 
     @Test
@@ -45,15 +68,16 @@ class CcTransitionCarrierMotionTest {
             floatArrayOf(60f, 65f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransitionPolicy
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
+                source = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
                     source = source,
-                    target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
-                    progress = 0f,
-                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
-                )
+                ),
+                target = target,
+                progress = CcTransitionPolicy.geometryProgress(0f),
+                scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
+            )
 
         assertEquals(85f, result[0], 0.0001f)
         assertEquals(85f, result[1], 0.0001f)
@@ -73,15 +97,16 @@ class CcTransitionCarrierMotionTest {
             floatArrayOf(60f, 58f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransitionPolicy
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
+                source = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
                     source = source,
-                    target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
-                    progress = 0f,
-                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
-                )
+                ),
+                target = target,
+                progress = CcTransitionPolicy.geometryProgress(0f),
+                scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
+            )
 
         assertEquals(85f, result[0], 0.0001f)
         assertEquals(58f, result[1], 0.0001f)
@@ -101,15 +126,16 @@ class CcTransitionCarrierMotionTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransitionPolicy
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
+                source = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
                     source = source,
-                    target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
-                    progress = 1f,
-                    scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
-                )
+                ),
+                target = target,
+                progress = CcTransitionPolicy.geometryProgress(1f),
+                scalePolicy = StatusPainter.TransitionScalePolicy.TARGET,
+            )
 
         assertEquals(target[0], result[0], 0.0001f)
         assertEquals(target[1], result[1], 0.0001f)
@@ -129,15 +155,16 @@ class CcTransitionCarrierMotionTest {
             floatArrayOf(154f, 136f, 140f, 0f, 0f, 169f)
 
         val result =
-            CcTransitionPolicy
-                .interpolateCarriedSourceToRootTarget(
+            CcTransitionMorphPolicy.interpolateSimilarityGeometry(
+                source = CcCarrierGeometryPolicy.rebaseSourceToCurrentCarrier(
                     source = source,
-                    target = target,
                     sourceCarrier = sourceCarrier,
                     currentCarrier = currentCarrier,
-                    progress = 1f,
-                    scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
-                )
+                ),
+                target = target,
+                progress = CcTransitionPolicy.geometryProgress(1f),
+                scalePolicy = StatusPainter.TransitionScalePolicy.SHRINK_ONLY,
+            )
 
         assertEquals(target[0], result[0], 0.0001f)
         assertEquals(target[1], result[1], 0.0001f)
