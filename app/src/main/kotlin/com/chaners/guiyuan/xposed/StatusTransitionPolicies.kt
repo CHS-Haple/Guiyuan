@@ -121,39 +121,19 @@ internal object MobileSignalMorphPolicy {
         return maxOf(1f - trim.coerceIn(0f, 1f), restored)
     }
 
-    // The final interpolation stage is row spread for X, bar progress for Y.
-    fun dotCoordinate(
-        source: Float,
-        sourceAnchor: Float,
-        targetAnchor: Float,
-        target: Float,
-        trim: Float,
-        move: Float,
-        spread: Float,
-    ): Float {
-        val packed = source + (sourceAnchor - source) * trim
+    // Split-layout dots shrink in place until invisible; other dots pack continuously.
+    fun packDot(source: Float, anchor: Float, trim: Float, holdUntilInvisible: Boolean = false): Float =
+        if (holdUntilInvisible) {
+            if (trim >= 1f) anchor else source
+        } else {
+            source + (anchor - source) * trim
+        }
+
+    // The final stage is row spread for X, bar progress for split-layout Y.
+    fun moveDot(packed: Float, targetAnchor: Float, target: Float, move: Float, spread: Float): Float {
         val moved = packed + (targetAnchor - packed) * move
         return moved + (target - moved) * spread
     }
-
-    // In the left/right split arrangement, an outgoing dot shrinks at its
-    // current X. Only after it becomes fully invisible may it join the
-    // surviving dot's X. This prevents an opposite-direction visible detour
-    // without removing the collapse -> travel -> spread phases.
-    fun bothSidesDotX(
-        source: Float,
-        sourceAnchor: Float,
-        targetAnchor: Float,
-        target: Float,
-        trim: Float,
-        move: Float,
-        spread: Float,
-    ): Float {
-        val packed = if (trim >= 1f) sourceAnchor else source
-        val moved = packed + (targetAnchor - packed) * move
-        return moved + (target - moved) * spread
-    }
-
 
 }
 

@@ -34,13 +34,23 @@ class MobileSignalMorphPolicyTest {
         // The shrinking outer dot remains in place while visible; it is
         // packed into the survivor's anchor only once its radius has gone to zero.
         for (step in 0..99) {
-            assertEquals(-90f, morph.bothSidesDotX(
-                -90f, -40f, -130f, -150f, step / 100f, 0f, 0f,
+            assertEquals(-90f, morph.moveDot(
+                morph.packDot(-90f, -40f, step / 100f, holdUntilInvisible = true),
+                -130f, -150f, 0f, 0f,
             ), 0f)
         }
-        assertEquals(-40f, morph.bothSidesDotX(-90f, -40f, -130f, -150f, 1f, 0f, 0f), 0f)
-        assertEquals(-130f, morph.bothSidesDotX(-90f, -40f, -130f, -150f, 1f, 1f, 0f), 0f)
-        assertEquals(-150f, morph.bothSidesDotX(-90f, -40f, -130f, -150f, 1f, 1f, 1f), 0f)
+        assertEquals(-40f, morph.moveDot(
+            morph.packDot(-90f, -40f, 1f, holdUntilInvisible = true),
+            -130f, -150f, 0f, 0f,
+        ), 0f)
+        assertEquals(-130f, morph.moveDot(
+            morph.packDot(-90f, -40f, 1f, holdUntilInvisible = true),
+            -130f, -150f, 1f, 0f,
+        ), 0f)
+        assertEquals(-150f, morph.moveDot(
+            morph.packDot(-90f, -40f, 1f, holdUntilInvisible = true),
+            -130f, -150f, 1f, 1f,
+        ), 0f)
     }
 
     @Test
@@ -49,29 +59,44 @@ class MobileSignalMorphPolicyTest {
         val upperY = 11f
         val lowerY = 33f
         for (source in listOf(-40f, 40f)) {
-            assertEquals(aggregateX, morph.bothSidesDotX(
-                source, source, aggregateX, aggregateX, 0f, 1f, 0f,
+            assertEquals(aggregateX, morph.moveDot(
+                morph.packDot(source, source, 0f, holdUntilInvisible = true),
+                aggregateX, aggregateX, 1f, 0f,
             ), 0f)
         }
         for (step in 0..20) {
             val spread = step / 20f
             // The per-dot target Y may differ: that must not tilt the spread.
             for (targetY in listOf(5f, 22f, 45f)) {
-                assertEquals(upperY, morph.dotCoordinate(
-                    8f, 8f, upperY, targetY, 0f, 1f, 0f,
+                assertEquals(upperY, morph.moveDot(
+                    morph.packDot(8f, 8f, 0f),
+                    upperY, targetY, 1f, 0f,
                 ), 0f)
-                assertEquals(lowerY, morph.dotCoordinate(
-                    36f, 36f, lowerY, targetY, 0f, 1f, 0f,
+                assertEquals(lowerY, morph.moveDot(
+                    morph.packDot(36f, 36f, 0f),
+                    lowerY, targetY, 1f, 0f,
                 ), 0f)
             }
             assertEquals(aggregateX + (70f - aggregateX) * spread,
-                morph.bothSidesDotX(-40f, -40f, aggregateX, 70f, 0f, 1f, spread), 0.0001f)
+                morph.moveDot(
+                    morph.packDot(-40f, -40f, 0f, holdUntilInvisible = true),
+                    aggregateX, 70f, 1f, spread,
+                ), 0.0001f)
         }
         // Native final ink may have different Y; match it only as bars morph.
-        assertEquals(22f, morph.dotCoordinate(8f, 8f, upperY, 22f, 0f, 1f, 1f), 0f)
+        assertEquals(22f, morph.moveDot(
+            morph.packDot(8f, 8f, 0f),
+            upperY, 22f, 1f, 1f,
+        ), 0f)
         // Separate SIM targets retain independent anchors, no shared-X coercion.
-        assertEquals(-60f, morph.bothSidesDotX(-40f, -40f, -60f, -75f, 0f, 1f, 0f), 0f)
-        assertEquals(60f, morph.bothSidesDotX(40f, 40f, 60f, 75f, 0f, 1f, 0f), 0f)
+        assertEquals(-60f, morph.moveDot(
+            morph.packDot(-40f, -40f, 0f, holdUntilInvisible = true),
+            -60f, -75f, 1f, 0f,
+        ), 0f)
+        assertEquals(60f, morph.moveDot(
+            morph.packDot(40f, 40f, 0f, holdUntilInvisible = true),
+            60f, 75f, 1f, 0f,
+        ), 0f)
     }
 
     @Test
@@ -115,15 +140,24 @@ class MobileSignalMorphPolicyTest {
         // Position and radius use the same local trim; untouched dots stay still.
         assertEquals(
             40f,
-            morph.dotCoordinate(70f, 10f, 100f, 130f, morph.dotTrim(3, first), 0f, 0f),
+            morph.moveDot(
+                morph.packDot(70f, 10f, morph.dotTrim(3, first)),
+                100f, 130f, 0f, 0f,
+            ),
             0.0001f,
         )
         assertEquals(
             70f,
-            morph.dotCoordinate(70f, 10f, 100f, 130f, morph.dotTrim(2, first), 0f, 0f),
+            morph.moveDot(
+                morph.packDot(70f, 10f, morph.dotTrim(2, first)),
+                100f, 130f, 0f, 0f,
+            ),
             0f,
         )
-        assertEquals(10f, morph.dotCoordinate(10f, 10f, 100f, 100f, 0f, 0f, 0f), 0f)
+        assertEquals(10f, morph.moveDot(
+            morph.packDot(10f, 10f, 0f),
+            100f, 100f, 0f, 0f,
+        ), 0f)
     }
 
     @Test
@@ -152,11 +186,9 @@ class MobileSignalMorphPolicyTest {
             val (source, sourceAnchor, targetAnchor, target) = row
             val expected = listOf(source, sourceAnchor, targetAnchor, target)
             val actual = phases.map { progress ->
-                morph.dotCoordinate(
-                    source, sourceAnchor, targetAnchor, target,
-                    stages.trimProgress(progress),
-                    stages.moveProgress(progress),
-                    stages.rowProgress(progress),
+                morph.moveDot(
+                    morph.packDot(source, sourceAnchor, stages.trimProgress(progress)),
+                    targetAnchor, target, stages.moveProgress(progress), stages.rowProgress(progress),
                 )
             }
             expected.zip(actual).forEach { (value, position) ->
@@ -170,8 +202,14 @@ class MobileSignalMorphPolicyTest {
 
     @Test
     fun oneDotMovesThenExpandsBeforeBarsGrow() {
-        assertEquals(100f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 1f, 0f), 0f)
-        assertEquals(130f, morph.dotCoordinate(70f, 10f, 100f, 130f, 1f, 1f, 1f), 0f)
+        assertEquals(100f, morph.moveDot(
+            morph.packDot(70f, 10f, 1f),
+            100f, 130f, 1f, 0f,
+        ), 0f)
+        assertEquals(130f, morph.moveDot(
+            morph.packDot(70f, 10f, 1f),
+            100f, 130f, 1f, 1f,
+        ), 0f)
         for (i in 0..3) assertEquals(1f, morph.dotScale(i, 1f, 1f), 0f)
         assertTrue(morph.dotScale(1, 1f, 0.2f) > morph.dotScale(2, 1f, 0.2f))
         assertEquals(0f, stages.handoffProgress(Float.NaN), 0f)
@@ -187,7 +225,10 @@ class MobileSignalMorphPolicyTest {
         stageVectors.forEachIndexed { index, (trim, move, spread) ->
             assertEquals(
                 expected[index],
-                morph.dotCoordinate(70f, 10f, 100f, 130f, trim, move, spread),
+                morph.moveDot(
+                    morph.packDot(70f, 10f, trim),
+                    100f, 130f, move, spread,
+                ),
                 0.0001f,
             )
         }
