@@ -46,6 +46,9 @@ import top.yukonga.miuix.kmp.icon.symbol.Refresh
 import top.yukonga.miuix.kmp.icon.symbol.Search
 import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
+/** Match the 28dp intrinsic size of B1985's Glass.Regular Search/Refresh vectors. */
+private val NavigationActionIconSize = 28.dp
+
 /** Both page actions share one callback owner and the same busy-state checks. */
 internal class NavigationActionSurface(
     val backdrop: Backdrop,
@@ -135,7 +138,7 @@ private fun LiquidNavigationAction(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            painter = rememberSymbolPainter(icon),
+            painter = rememberSymbolPainter(icon, defaultSize = NavigationActionIconSize),
             contentDescription = label,
             tint = if (enabled) MiuixTheme.colorScheme.onBackground
                 else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
@@ -176,7 +179,7 @@ internal fun NavigationTrailingAction(
                 holdDownState = holdDown,
             ) {
                 Icon(
-                    painter = rememberSymbolPainter(icon),
+                    painter = rememberSymbolPainter(icon, defaultSize = NavigationActionIconSize),
                     contentDescription = label,
                     tint = if (enabled) MiuixTheme.colorScheme.onSurface
                         else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
