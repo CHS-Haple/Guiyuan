@@ -137,7 +137,7 @@ internal object SysUiKeyguardHostResolver {
         return null
     }
 
-    private fun readView(
+    internal fun readView(
         owner: Any,
         fieldName: String,
     ): View? =
