@@ -27,11 +27,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SearchClearButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.Search
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 /** Search field geometry follows PR #423's GlassSearchOverlay; surface belongs to the parent bar. */
 @Composable
@@ -104,9 +106,9 @@ private fun SearchDecoration(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
-            Os4GlassSearch,
+            painter = rememberSymbolPainter(MiuixIcons.Symbol.Search),
             contentDescription = null,
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(20.dp),
             tint = colors.disabledOnSurface,
         )
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {

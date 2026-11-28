@@ -12,10 +12,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -81,19 +80,20 @@ private fun AgreementScreen(document: AgreementDocument, onBack: () -> Unit) {
 
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
-internal fun AgreementSheetBody(document: AgreementDocument, contentPadding: PaddingValues) {
-    key(document) {
-        val scrollState = rememberScrollState()
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.fillMaxWidth().verticalScroll(scrollState).padding(contentPadding)) {
-                AgreementArticle(document)
-            }
-            VerticalScrollBar(
-                adapter = rememberScrollBarAdapter(scrollState),
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-                trackPadding = contentPadding,
-            )
+internal fun AgreementSheetBody(
+    document: AgreementDocument,
+    contentPadding: PaddingValues,
+    scrollState: ScrollState,
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().verticalScroll(scrollState).padding(contentPadding)) {
+            AgreementArticle(document)
         }
+        VerticalScrollBar(
+            adapter = rememberScrollBarAdapter(scrollState),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+            trackPadding = contentPadding,
+        )
     }
 }
 

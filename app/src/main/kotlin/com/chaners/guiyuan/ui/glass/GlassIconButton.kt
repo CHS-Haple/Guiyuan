@@ -40,6 +40,7 @@ import top.yukonga.miuix.kmp.utils.MiuixIndication
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 
 /**
  * A round glass button for a bar's leading or trailing controls.

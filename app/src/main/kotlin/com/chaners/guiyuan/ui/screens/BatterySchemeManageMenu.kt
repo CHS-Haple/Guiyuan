@@ -20,10 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.icons.Os4GlassMore
-import com.chaners.guiyuan.ui.icons.Os4GlassEdit
-import com.chaners.guiyuan.ui.icons.Os4GlassCopy
-import com.chaners.guiyuan.ui.icons.Os4GlassDelete
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -32,9 +28,6 @@ import top.yukonga.miuix.kmp.basic.IconButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Copy
-import top.yukonga.miuix.kmp.icon.extended.Delete
-import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import com.chaners.guiyuan.ui.glass.GlassTransformPopup
@@ -45,6 +38,12 @@ import com.chaners.guiyuan.ui.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.glass.GlassPopupDefaults
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.DialogLayout
+import top.yukonga.miuix.kmp.icon.symbol.Copy
+import top.yukonga.miuix.kmp.icon.symbol.Delete
+import top.yukonga.miuix.kmp.icon.symbol.Edit
+import top.yukonga.miuix.kmp.icon.symbol.More
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
+import top.yukonga.miuix.kmp.symbol.toImageVector
 
 @Composable
 internal fun BatterySchemeManageMenu(
@@ -117,7 +116,7 @@ private fun BatterySchemeGlassManageMenu(
             anchor = anchor,
             backdrop = backdrop,
             anchorContent = {
-                Icon(imageVector = Os4GlassMore, contentDescription = null)
+                Icon(painter = rememberSymbolPainter(MiuixIcons.Symbol.More), contentDescription = null)
             },
         ) {
             GlassManageMenuItems(
@@ -171,7 +170,7 @@ private fun GlassManageMenuTrigger(
             modifier = modifier,
         ) {
             Icon(
-                imageVector = Os4GlassMore,
+                painter = rememberSymbolPainter(MiuixIcons.Symbol.More),
                 contentDescription = stringResource(R.string.battery_custom_scheme_manage),
                 modifier = anchorContent,
             )
@@ -214,12 +213,12 @@ private fun GlassManageMenuItems(
 ) {
     GlassPopupItem(
         text = stringResource(R.string.battery_custom_scheme_rename),
-        icon = Os4GlassEdit,
+        icon = remember { MiuixIcons.Symbol.Edit.toImageVector() },
         onClick = onRename,
     )
     GlassPopupItem(
         text = stringResource(R.string.battery_custom_scheme_copy),
-        icon = Os4GlassCopy,
+        icon = remember { MiuixIcons.Symbol.Copy.toImageVector() },
         enabled = canCopy,
         onClick = onCopy,
     )
@@ -232,7 +231,7 @@ private fun GlassManageMenuItems(
     )
     GlassPopupItem(
         text = stringResource(R.string.battery_custom_scheme_delete),
-        icon = Os4GlassDelete,
+        icon = remember { MiuixIcons.Symbol.Delete.toImageVector() },
         onClick = onDelete,
     )
 }
@@ -253,7 +252,7 @@ private fun BatterySchemeNativeManageMenu(
             modifier = modifier,
         ) {
             Icon(
-                imageVector = Os4GlassMore,
+                painter = rememberSymbolPainter(MiuixIcons.Symbol.More),
                 contentDescription = stringResource(R.string.battery_custom_scheme_manage),
             )
         }
@@ -273,7 +272,7 @@ private fun BatterySchemeNativeEntry(
                     text = stringResource(R.string.battery_custom_scheme_rename),
                     icon = { modifier ->
                         Icon(
-                            imageVector = MiuixIcons.Edit,
+                            painter = rememberSymbolPainter(MiuixIcons.Symbol.Edit),
                             contentDescription = null,
                             modifier = modifier,
                         )
@@ -284,7 +283,7 @@ private fun BatterySchemeNativeEntry(
                     text = stringResource(R.string.battery_custom_scheme_copy),
                     icon = { modifier ->
                         Icon(
-                            imageVector = MiuixIcons.Copy,
+                            painter = rememberSymbolPainter(MiuixIcons.Symbol.Copy),
                             contentDescription = null,
                             modifier = modifier,
                         )
@@ -296,7 +295,7 @@ private fun BatterySchemeNativeEntry(
                     text = stringResource(R.string.battery_custom_scheme_delete),
                     icon = { modifier ->
                         Icon(
-                            imageVector = MiuixIcons.Delete,
+                            painter = rememberSymbolPainter(MiuixIcons.Symbol.Delete),
                             contentDescription = null,
                             modifier = modifier,
                         )

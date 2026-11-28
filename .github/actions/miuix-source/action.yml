@@ -35,7 +35,7 @@ runs:
         test -f miuix-upstream/miuix-core/build.gradle.kts
         test -f miuix-upstream/miuix-preference/build.gradle.kts
         test -f miuix-upstream/miuix-glass/build.gradle.kts
-        test -f miuix-upstream/miuix-glass-icons/build.gradle.kts
+        test -f miuix-upstream/miuix-icons-symbol/build.gradle.kts
         test -f app/src/main/kotlin/com/chaners/guiyuan/ui/glass/GlassNavigationBar.kt
         test -f app/src/main/kotlin/com/chaners/guiyuan/ui/glass/GlassIconButton.kt
         echo "MIUIX_SOURCE_REVISION=$expected" >> "$GITHUB_ENV"

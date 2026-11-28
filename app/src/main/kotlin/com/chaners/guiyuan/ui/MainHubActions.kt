@@ -34,16 +34,20 @@ import com.chaners.guiyuan.ui.components.liquid.LiquidNavSpec
 import com.chaners.guiyuan.ui.components.liquid.LiquidNavPressLink
 import com.chaners.guiyuan.ui.components.liquid.LiquidFeedbackSpec
 import com.chaners.guiyuan.ui.components.liquid.liquidRailSurface
-import com.chaners.guiyuan.ui.icons.Os4GlassSearch
-import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassMotion
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.Refresh
+import top.yukonga.miuix.kmp.icon.symbol.Search
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
+
+/** Match the 28dp intrinsic size of B1985's Glass.Regular Search/Refresh vectors. */
+private val NavigationActionIconSize = 28.dp
 
 /** Both page actions share one callback owner and the same busy-state checks. */
 internal class NavigationActionSurface(
@@ -80,7 +84,7 @@ private fun LiquidNavigationAction(
 ) {
     val isReload = action == NavigationAction.HotReload
     val label = stringResource(if (isReload) R.string.hot_reload else R.string.feature_search)
-    val icon = if (isReload) Os4GlassRefresh else Os4GlassSearch
+    val icon = if (isReload) MiuixIcons.Symbol.Refresh else MiuixIcons.Symbol.Search
     val enabled = !isReload || controls.hotReloadEnabled
     val holdDown = isReload && controls.hotReloadInProgress
     val onClick = controls.callbackFor(action)
@@ -134,7 +138,7 @@ private fun LiquidNavigationAction(
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = icon,
+            painter = rememberSymbolPainter(icon, defaultSize = NavigationActionIconSize),
             contentDescription = label,
             tint = if (enabled) MiuixTheme.colorScheme.onBackground
                 else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
@@ -152,7 +156,7 @@ internal fun NavigationTrailingAction(
 ) {
     val reload = action == NavigationAction.HotReload
     val label = stringResource(if (reload) R.string.hot_reload else R.string.feature_search)
-    val icon = if (reload) Os4GlassRefresh else Os4GlassSearch
+    val icon = if (reload) MiuixIcons.Symbol.Refresh else MiuixIcons.Symbol.Search
     val enabled = !reload || controls.hotReloadEnabled
     val holdDown = reload && controls.hotReloadInProgress
     val onClick = controls.callbackFor(action)
@@ -175,7 +179,7 @@ internal fun NavigationTrailingAction(
                 holdDownState = holdDown,
             ) {
                 Icon(
-                    icon,
+                    painter = rememberSymbolPainter(icon, defaultSize = NavigationActionIconSize),
                     contentDescription = label,
                     tint = if (enabled) MiuixTheme.colorScheme.onSurface
                         else MiuixTheme.colorScheme.disabledOnSecondaryVariant,

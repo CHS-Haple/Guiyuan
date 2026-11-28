@@ -146,10 +146,7 @@ internal fun LiquidMode.params(): LiquidParams =
 
 @Composable
 internal fun rememberLiquidNavBackdrop(surfaceColor: Color): LayerBackdrop =
-    rememberLayerBackdrop {
-        drawRect(surfaceColor)
-        drawContent()
-    }
+    rememberLayerBackdrop(onDrawUnderlay = { drawRect(surfaceColor) })
 
 internal fun BackdropEffectScope.vibrancy() {
     colorControls(brightness = 0f, contrast = 1f, saturation = 1.5f)

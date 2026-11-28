@@ -6,9 +6,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Home
-import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.icon.symbol.AppSettings
+import top.yukonga.miuix.kmp.icon.symbol.HomeScreen
+import top.yukonga.miuix.kmp.icon.symbol.Tune
+import top.yukonga.miuix.kmp.symbol.toImageVector
 
 internal data class MainNavItem(
     val label: String,
@@ -23,9 +24,9 @@ internal fun rememberMainNavItems(): List<MainNavItem> {
     val settingsLabel = stringResource(R.string.nav_settings)
     return remember(homeLabel, featuresLabel, settingsLabel) {
         listOf(
-            MainNavItem(homeLabel, MiuixIcons.Normal.Home),
-            MainNavItem(featuresLabel, MiuixIcons.Normal.Tune),
-            MainNavItem(settingsLabel, MiuixIcons.Normal.Settings),
+            MainNavItem(homeLabel, MiuixIcons.Symbol.HomeScreen.toImageVector()),
+            MainNavItem(featuresLabel, MiuixIcons.Symbol.Tune.toImageVector()),
+            MainNavItem(settingsLabel, MiuixIcons.Symbol.AppSettings.toImageVector()),
         )
     }
 }

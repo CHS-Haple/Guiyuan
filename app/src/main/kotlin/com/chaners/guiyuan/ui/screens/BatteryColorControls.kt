@@ -132,10 +132,7 @@ internal fun BatteryColorBottomSheet(
     // First backdrop is captured by the parent sheet, not the overlaid popup.
     val sheetColor = MiuixTheme.colorScheme.background
     val sheetBackdrop = if (isRuntimeShaderSupported()) {
-        rememberLayerBackdrop {
-            drawRect(sheetColor)
-            drawContent()
-        }
+        rememberLayerBackdrop(onDrawUnderlay = { drawRect(sheetColor) })
     } else null
     val environment = BatterySheetEnvironment(
         show = show,
@@ -148,10 +145,7 @@ internal fun BatteryColorBottomSheet(
     // Nested sheet samples the first backdrop; its popup samples the second.
     val detailBackdrop = if (sheetBackdrop != null) {
         val surface = MiuixTheme.colorScheme.surface
-        rememberLayerBackdrop {
-            drawRect(surface)
-            drawContent()
-        }
+        rememberLayerBackdrop(onDrawUnderlay = { drawRect(surface) })
     } else null
     CompositionLocalProvider(LocalGlassBackdrop provides sheetBackdrop) {
         BatteryColorDetailSheet(environment, state, detailBackdrop)

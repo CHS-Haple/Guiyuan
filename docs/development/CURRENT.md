@@ -105,6 +105,12 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
+The MIUIX 0485ae81 work-branch migration replaces both legacy icon modules
+with the published Symbol API, adopts the public backdrop underlay and mask
+APIs, and aligns progressive blur and popup bounds. The following accepted
+baseline records remain historical evidence, not acceptance of this candidate;
+see the work-branch PR and exact-source checks before promotion.
+
 - The pinned MIUIX `bc1024d7` graph retains the verified native and Glass
   sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the
@@ -135,10 +141,12 @@ reference, not this public repository.
   The public GlassBottomSheet header
   consumes actual current-page scroll offset in the battery scheme deck;
   content padding follows the measured header, with the existing dot rail
-  in the fixed header slot. The detail Back button inherits upstream header
-  context and the agreement/colour editor scroll containers consume the
-  supplied padding. Dynamic glass fills and modal/overscroll fixes follow
-  upstream defaults.
+  in the fixed header slot. The colour detail editor also opts into the
+  progressive header, sharing its request-scoped ScrollState with the header
+  and scrollbar; the Back action inherits the upstream scroll-linked material.
+  The agreement/colour editor scroll containers consume the supplied padding.
+  Agreement sheets also expose their document-scoped ScrollState to the header.
+  Dynamic glass fills and modal/overscroll fixes follow upstream defaults.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
   uses app-local Glass adapters. Do not adopt upstream changes or
@@ -176,13 +184,19 @@ reference, not this public repository.
   only where they represent actual features.
 - Progressive top-bar material and menu/popup ownership follow the pinned
   implementation, retaining native title slots and popup Back lifecycle.
-  The progressive-blur switch applies to app bars, including onboarding.
+  The progressive-blur switch applies to app bars and eligible Sheet headers,
+  including onboarding. All three Sheet callers opt in because their content
+  scrolls; the wrapper gates header layout and action material with the same
+  preference. Fixed headers use native ordinary actions. The card More
+  remains ordinary regardless of the setting.
   Eligible scrollable lists feed MIUIX's explicit elastic offset into the bar
   without a second overscroll engine; refresh/Sheet retain their owners.
   Battery Colors uses upstream `GlassCard` defaults inside `GlassBottomSheet`
   and preserves the scheme/editor hierarchy. Its custom-scheme More control
   uses upstream `basic.IconButton` without the floating glass shadow.
-  Separate Glass back controls retain the source-matched `Regular` shadow.
+  Progressive Sheet header Glass actions inherit the scroll-linked material
+  and shadow; fixed non-overlay Sheet headers use ordinary actions as in the
+  pinned upstream half-sheet example.
 - Single-interface migration and battery color controls received focused
   B1952 device acceptance in [#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866);
   the integrated source tree matched that candidate and dev CI passed. This

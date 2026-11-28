@@ -122,7 +122,6 @@ fun BoxScope.GlassTransformPopup(
                 center.value > TransformVisibilityThreshold
         }
     }
-    val travel = rememberTransformTravel(show, active, anchor, bounds, center)
     val backProgress = rememberGlassPopupBackProgress(
         show = show,
         active = active,
@@ -130,6 +129,7 @@ fun BoxScope.GlassTransformPopup(
         resetSpec = GlassMotion.transformBounds(true),
         onDismissRequest = onDismissRequest,
     )
+    val travel = rememberTransformTravel(show, active, anchor, bounds, center, backProgress)
     SideEffect { anchor.popupVisuals = visuals }
     DisposableEffect(anchor) {
         onDispose { anchor.popupVisuals = null }
@@ -305,6 +305,7 @@ private fun rememberTransformTravel(
     anchor: GlassPopupAnchor,
     bounds: State<Float>,
     center: State<Float>,
+    backProgress: State<Float>,
 ): TransformTravel {
     val currentShow by rememberUpdatedState(show)
     val closeVelocity = remember { CloseVelocityTracker() }
@@ -339,7 +340,7 @@ private fun rememberTransformTravel(
             anchor.contentHidden = false
             // The root host retires as soon as the anchor is restored; do not hand off twice.
             if (active && !currentShow) {
-                anchor.handoffCloseRebound(travel, bounds, center, closeVelocity)
+                anchor.handoffCloseRebound(travel, bounds, center, closeVelocity, backProgress.value)
             }
         }
     }
@@ -352,6 +353,7 @@ private fun GlassPopupAnchor.handoffCloseRebound(
     bounds: State<Float>,
     center: State<Float>,
     closeVelocity: CloseVelocityTracker,
+    backProgress: Float,
 ) {
     val anchorRect = containerBounds
     val scaleXFactor = if (anchorRect.width > 0f && travel.endWidth > anchorRect.width) {
@@ -366,11 +368,12 @@ private fun GlassPopupAnchor.handoffCloseRebound(
     }
     val offsetX = if (anchorRect.width > 0f) travel.endCenterX - anchorRect.center.x else 0f
     val offsetY = if (anchorRect.height > 0f) travel.endCenterY - anchorRect.center.y else 0f
+    val momentum = kotlin.math.sqrt(1f - backProgress.coerceIn(0f, 1f))
     startCloseRebound(
-        boundsValue = bounds.value,
-        boundsVelocity = closeVelocity.boundsVelocity,
-        centerValue = center.value,
-        centerVelocity = closeVelocity.centerVelocity,
+        boundsValue = popupFractionWithBack(bounds.value, backProgress),
+        boundsVelocity = closeVelocity.boundsVelocity * momentum,
+        centerValue = popupFractionWithBack(center.value, backProgress),
+        centerVelocity = closeVelocity.centerVelocity * momentum,
         scaleXFactor = scaleXFactor,
         scaleYFactor = scaleYFactor,
         offsetX = offsetX,

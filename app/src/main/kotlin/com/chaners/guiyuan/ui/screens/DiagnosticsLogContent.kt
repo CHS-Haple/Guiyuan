@@ -25,12 +25,15 @@ import com.chaners.guiyuan.system.DiagSnapshot
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.Report
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.runtime.remember
+import top.yukonga.miuix.kmp.icon.symbol.Info
+import top.yukonga.miuix.kmp.icon.symbol.Report
+import top.yukonga.miuix.kmp.symbol.SymbolWeights
+import top.yukonga.miuix.kmp.symbol.toImageVector
 
 /** Existing list-rise, pixel translation and placement share one animation lifecycle. */
 internal class DiagnosticsLogMotion(
@@ -145,7 +148,7 @@ private fun LazyListScope.diagnosticsEmptyItems(
                         stringResource(R.string.diagnostics_root_unavailable_export),
                         view.captureStatus.integrityNotice.takeIf(String::isNotEmpty),
                     ).joinToString("\n"),
-                    icon = MiuixIcons.Medium.Report,
+                    icon = remember { MiuixIcons.Symbol.Report.toImageVector(weight = SymbolWeights.Medium) },
                 ),
                 busy = view.loading,
                 onRetry = onRetry,
@@ -171,7 +174,7 @@ private fun LazyListScope.diagnosticsEmptyItems(
                         },
                     ),
                     note = null,
-                    icon = MiuixIcons.Info,
+                    icon = remember { MiuixIcons.Symbol.Info.toImageVector() },
                 ),
                 busy = view.loading,
                 onRetry = onRetry,

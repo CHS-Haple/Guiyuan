@@ -29,9 +29,11 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.symbol.Help
+import top.yukonga.miuix.kmp.icon.symbol.Ok
+import top.yukonga.miuix.kmp.symbol.SymbolWeights
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 internal data class GuidePermissionDisplay(
     @DrawableRes val iconRes: Int,
@@ -69,7 +71,7 @@ internal fun GuidePermissionItem(
 private fun GuidePermissionStatus(checked: Boolean, status: String) {
     if (checked) {
         Icon(
-            imageVector = MiuixIcons.Basic.Check,
+            painter = rememberSymbolPainter(MiuixIcons.Symbol.Ok, weight = SymbolWeights.Max),
             contentDescription = status,
             modifier = Modifier.size(26.dp),
             tint = MiuixTheme.colorScheme.primary,
@@ -108,7 +110,7 @@ private fun GuidePermissionTitle(title: String, onToggleDetails: () -> Unit) {
                     cornerRadius = 16.dp,
                 ) {
                     Icon(
-                        imageVector = MiuixIcons.Regular.Help,
+                        painter = rememberSymbolPainter(MiuixIcons.Symbol.Help),
                         contentDescription = detailsLabel,
                         modifier = Modifier.size(20.dp),
                         tint = MiuixTheme.colorScheme.onSurfaceVariantActions,

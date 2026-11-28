@@ -14,10 +14,7 @@ internal fun rememberTopBarBackdrop(): LayerBackdrop? {
     if (!isRuntimeShaderSupported()) return null
 
     val surface = MiuixTheme.colorScheme.surface
-    return rememberLayerBackdrop {
-        drawRect(surface)
-        drawContent()
-    }
+    return rememberLayerBackdrop(onDrawUnderlay = { drawRect(surface) })
 }
 
 internal fun Modifier.topBarBackdropSource(backdrop: LayerBackdrop?): Modifier =

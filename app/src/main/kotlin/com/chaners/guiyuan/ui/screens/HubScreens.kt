@@ -48,7 +48,6 @@ import com.chaners.guiyuan.ui.TopLevelPageSearch
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.LocalGlassRailProgress
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.icons.Os4GlassSearch
 import com.chaners.guiyuan.ui.components.rememberTopBarBackdrop
 import com.chaners.guiyuan.ui.components.topBarBackdropSource
 import com.chaners.guiyuan.ui.layout.pageContentPadding
@@ -61,11 +60,14 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.GlassMotion
-import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import top.yukonga.miuix.kmp.material.GlassShadows
 import com.chaners.guiyuan.ui.glass.popupShadowOutsets
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.Search
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 @Composable
 internal fun AnimatedPreferenceGroup(
@@ -152,7 +154,7 @@ internal fun HubPage(
                 ) {
                     GlassIconButton(onClick = { if (ready) { revealTitleOnExit = false; search.open() } }) {
                         Icon(
-                            Os4GlassSearch,
+                            painter = rememberSymbolPainter(MiuixIcons.Symbol.Search),
                             contentDescription = label,
                         )
                     }

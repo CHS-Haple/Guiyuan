@@ -29,10 +29,11 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.glass.GlassCard
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import top.yukonga.miuix.kmp.icon.symbol.Add
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 @Composable
 internal fun BatteryAddSchemePage(
@@ -138,7 +139,7 @@ private fun BatteryAddSchemeCreationGlyph(enabled: Boolean) {
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = MiuixIcons.Add,
+                    painter = rememberSymbolPainter(MiuixIcons.Symbol.Add),
                     contentDescription = stringResource(
                         if (enabled) R.string.battery_custom_scheme_new
                         else R.string.battery_custom_scheme_limit,

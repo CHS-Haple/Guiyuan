@@ -62,10 +62,7 @@ internal fun MiniNavigationPreview(
     val surfaceColor = MiuixTheme.colorScheme.surface
     val miuixBackdrop =
         if (miuixMaterialActive) {
-            rememberLayerBackdrop {
-                drawRect(surfaceColor)
-                drawContent()
-            }
+            rememberLayerBackdrop(onDrawUnderlay = { drawRect(surfaceColor) })
         } else {
             null
         }

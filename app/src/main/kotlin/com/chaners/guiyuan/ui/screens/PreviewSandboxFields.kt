@@ -137,7 +137,7 @@ internal fun UiTabRow(
         // A tab inside the scrolling page must not sample the page's own
         // backdrop: that recorder also contains this tab. Record only its base.
         val surface = if (inCard) MiuixTheme.colorScheme.surfaceContainer else MiuixTheme.colorScheme.background
-        val backdrop = rememberLayerBackdrop { drawRect(surface) }
+        val backdrop = rememberLayerBackdrop(onDrawUnderlay = { drawRect(surface) })
         Box(modifier = modifier) {
             Box(Modifier.matchParentSize().layerBackdrop(backdrop))
             ScrollAwareGlassSegmentedTabRow(

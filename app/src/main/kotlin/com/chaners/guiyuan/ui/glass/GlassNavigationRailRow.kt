@@ -224,7 +224,7 @@ private fun RailRowContent(
                 Icon(
                     painter = rememberVectorPainter(identity.item.icon),
                     contentDescription = null,
-                    modifier = Modifier.size(RailIconSize).graphicsLayer {
+                    modifier = Modifier.size(RailSideIconSize).graphicsLayer {
                         scaleX = liquidScale
                         scaleY = liquidScale
                     },

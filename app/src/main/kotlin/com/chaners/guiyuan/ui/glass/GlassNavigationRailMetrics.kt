@@ -28,6 +28,7 @@ import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import top.yukonga.miuix.kmp.glass.GlassNavigationBarDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 
 /** Deterministic capsule width and slot compression; does not own motion or touch state. */
 internal class RailCapsuleGeometry(
@@ -129,6 +130,7 @@ internal val RailIconEnterMotion = tween<Float>(durationMillis = 200, easing = R
 internal val RailIconExitMotion = tween<Float>(durationMillis = 120, easing = RailMorphEasing)
 
 internal val RailIconSize = 24.dp
+internal val RailSideIconSize = RailIconSize + 4.dp
 internal val RailIconColumnWidth = RailIconSize + 12.dp
 internal val RailItemContentPadding = 12.dp
 internal val RailItemHorizontalMargin = 12.dp

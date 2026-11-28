@@ -166,9 +166,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:$dataStorePreferencesVersion")
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
-    implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
-    // Glass icons resolve from the same pinned MIUIX graph.
-    implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:$miuixVersion")
+    implementation("top.yukonga.miuix.kmp:miuix-icons-symbol-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-glass-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
