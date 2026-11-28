@@ -49,11 +49,4 @@ class KeyguardRenderSessionTest {
         )
     }
 
-    @Test
-    fun readinessRequiresCompleteAttachedKeyguardSurface() {
-        assertTrue(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, sceneEligible = true))
-        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, false, true, sceneEligible = true))
-        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, false, sceneEligible = true))
-        assertFalse(KeyguardRenderSession.resolveOwnerReady(true, true, true, true, true, sceneEligible = false))
-    }
 }

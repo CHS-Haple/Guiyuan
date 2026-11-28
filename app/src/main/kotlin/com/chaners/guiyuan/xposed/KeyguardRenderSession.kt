@@ -240,18 +240,6 @@ internal object KeyguardRenderSession {
     ): Boolean =
         featureEnabled && !nativeHandoffActive && sceneEligible
 
-    internal fun resolveOwnerReady(
-        featureEnabled: Boolean,
-        modelReady: Boolean,
-        tintReady: Boolean,
-        layoutReady: Boolean,
-        hostAttached: Boolean,
-        sceneEligible: Boolean,
-    ): Boolean =
-        ProjectionReadinessPolicy.structuralReady(
-            featureEnabled, modelReady, tintReady, layoutReady, hostAttached,
-        ) && sceneEligible
-
     private enum class Scene(
         val logPrefix: String,
         val aodOwned: Boolean,
@@ -750,13 +738,12 @@ internal object KeyguardRenderSession {
             force: Boolean = false,
         ) {
             val ready =
-                resolveOwnerReady(
+                ProjectionReadinessPolicy.structuralReady(
                     featureEnabled = featureEnabled,
                     modelReady = modelReady,
                     tintReady = tintReady,
                     layoutReady = layoutReady,
                     hostAttached = systemIcons.get()?.isAttachedToWindow == true,
-                    sceneEligible = true,
                 )
             if (!force && ready == lastPresentationReady) return
             lastPresentationReady = ready
