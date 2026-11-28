@@ -3885,37 +3885,29 @@ internal object CcTransitionOwner {
                 ?: NativeStatusSlots.findResourceView(battery, "battery_icon_container")
         }
 
-        private fun readViewField(
-            target: Any,
-            fieldName: String,
-        ): View? =
+        // One subclass-first native field lookup, with typed readers retaining their own failure gate.
+        private fun nativeField(target: Any, fieldName: String): Field? =
             generateSequence(target.javaClass) { clazz -> clazz.superclass }
                 .mapNotNull { clazz ->
                     clazz.declaredFields.firstOrNull { field -> field.name == fieldName }
                 }
                 .firstOrNull()
-                ?.let { field ->
-                    readOrNull {
-                        field.isAccessible = true
-                        field.get(target) as? View
-                    }
-                }
 
-        private fun readIntField(
-            target: Any,
-            fieldName: String,
-        ): Int? =
-            generateSequence(target.javaClass) { clazz -> clazz.superclass }
-                .mapNotNull { clazz ->
-                    clazz.declaredFields.firstOrNull { field -> field.name == fieldName }
+        private fun readViewField(target: Any, fieldName: String): View? =
+            nativeField(target, fieldName)?.let { field ->
+                readOrNull {
+                    field.isAccessible = true
+                    field.get(target) as? View
                 }
-                .firstOrNull()
-                ?.let { field ->
-                    readOrNull {
-                        field.isAccessible = true
-                        field.getInt(target)
-                    }
+            }
+
+        private fun readIntField(target: Any, fieldName: String): Int? =
+            nativeField(target, fieldName)?.let { field ->
+                readOrNull {
+                    field.isAccessible = true
+                    field.getInt(target)
                 }
+            }
 
         private fun resolveSingleIconOpticalTarget(root: View): ImageView? {
             val candidates = ArrayList<ImageView>(2)
