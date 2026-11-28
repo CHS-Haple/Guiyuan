@@ -1522,6 +1522,9 @@ internal class StatusPainter(
     ): BatteryTopArcPolicy.Gap {
         // Preserve disconnected visible shapes (notably Wi-Fi arcs) instead of
         // reserving the empty corners of their union rectangle.
+        val ring = BatteryTopArcPolicy.RingCircle(
+            batteryRing.centerX(), batteryRing.centerY(), batteryRing.width() / 2f,
+        )
         val gaps =
             avoidance.components
                 .ifEmpty { listOf(avoidance.bounds) }
@@ -1530,9 +1533,7 @@ internal class StatusPainter(
                         content = BatteryTopArcPolicy.ContentBounds(
                             component.left, component.top, component.right, component.bottom,
                         ),
-                        ring = BatteryTopArcPolicy.RingCircle(
-                            batteryRing.centerX(), batteryRing.centerY(), batteryRing.width() / 2f,
-                        ),
+                        ring = ring,
                         ringStroke = ringStroke,
                         visualClearance = visualClearance,
                         startDegrees = startDegrees,
