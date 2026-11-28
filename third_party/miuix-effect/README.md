@@ -19,11 +19,17 @@ Shader parameters, drawing and animation jobs remain MIUIX-owned.
 The source contains upstream's unused OS2 option solely to keep the snapshot
 easy to compare; it does not add HyperOS 2 or 3 runtime support to Guiyuan.
 
-When PR #321 is merged and the effect API is officially published and
-compatible,
-replace the entire source copy with its published dependency atomically.
-Retain only the app-owned `GyBgEffect` adapter, and remove the vendored classes
-and this snapshot record. Validate Android/Compose ABI and OS3/OS4 *UI styles*,
-the About collapse/restore, Onboarding resume, theme changes and Backdrop
-capture.
-This is an isolated experimental migration, not the accepted dependency graph.
+On 2026-11-28, upstream PR #321 was **closed without merging**. No
+`miuix-effect` module appears in upstream main's module inventory. The
+pinned snapshot remains an experimental, app-compiled source integration,
+not a published MIUIX contract. The closure provided no stated replacement
+or reason in the upstream PR discussion; do not remove or alter these
+classes solely to satisfy historical parameter-count Codacy findings.
+
+If a maintained, published effect API becomes available, assess that
+implementation and its compatibility independently. Only then replace
+the source copy atomically, retain the app-owned `GyBgEffect` adapter,
+and remove the vendored classes and this snapshot record. Validate
+Android/Compose ABI, OS3/OS4 *UI styles*, About collapse/restore,
+Onboarding resume, theme changes and Backdrop capture. This remains an
+isolated experimental migration outside the accepted dependency graph.
