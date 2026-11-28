@@ -7,9 +7,9 @@ import org.junit.Test
 
 class HomeRenderSessionTest {
     @Test
-    fun ownerReadinessDependsOnlyOnStructuralHomeRequirements() {
+    fun ownerReadinessRequiresAllStructuralEvidence() {
         assertTrue(
-            HomeRenderSession.resolveOwnerReady(
+            ProjectionReadinessPolicy.structuralReady(
                 featureEnabled = true,
                 modelReady = true,
                 tintReady = true,
@@ -18,7 +18,7 @@ class HomeRenderSessionTest {
             ),
         )
         assertFalse(
-            HomeRenderSession.resolveOwnerReady(
+            ProjectionReadinessPolicy.structuralReady(
                 featureEnabled = false,
                 modelReady = true,
                 tintReady = true,
@@ -27,7 +27,7 @@ class HomeRenderSessionTest {
             ),
         )
         assertFalse(
-            HomeRenderSession.resolveOwnerReady(
+            ProjectionReadinessPolicy.structuralReady(
                 featureEnabled = true,
                 modelReady = true,
                 tintReady = true,
@@ -35,11 +35,29 @@ class HomeRenderSessionTest {
                 hostAttached = true,
             ),
         )
+        assertFalse(
+            ProjectionReadinessPolicy.structuralReady(
+                featureEnabled = true,
+                modelReady = false,
+                tintReady = true,
+                layoutReady = true,
+                hostAttached = true,
+            ),
+        )
+        assertFalse(
+            ProjectionReadinessPolicy.structuralReady(
+                featureEnabled = true,
+                modelReady = true,
+                tintReady = false,
+                layoutReady = true,
+                hostAttached = true,
+            ),
+        )
     }
 
     @Test
     fun detachedHomeCarrierCannotBeReady() {
-        assertFalse(HomeRenderSession.resolveOwnerReady(
+        assertFalse(ProjectionReadinessPolicy.structuralReady(
             featureEnabled = true,
             modelReady = true,
             tintReady = true,
