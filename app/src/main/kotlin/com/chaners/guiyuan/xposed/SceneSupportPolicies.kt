@@ -235,12 +235,9 @@ internal object SceneAodBoundaryPolicy {
         // layer in both directions. Alpha 1 belongs to the Keyguard endpoint;
         // alpha 0 belongs to the AOD endpoint. Battery AOD alpha is a separate
         // native animation and is not a whole-combined-scene lifetime signal.
-        val alpha = keyguardStatusIconsAlpha
-        if (
-            keyguardEnabled &&
-            !aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD &&
-            alpha != null &&
+        if (steadySourceScene != SourceScene.KEYGUARD) return null
+        val alpha = keyguardStatusIconsAlpha ?: return null
+        if (keyguardEnabled && !aodEnabled &&
             lastStableFamilyScene != StableKeyguardAodScene.UNKNOWN
         ) {
             return if (alpha > 0f) {
@@ -249,12 +246,7 @@ internal object SceneAodBoundaryPolicy {
                 KeyguardAodProjection.NATIVE
             }
         }
-        if (
-            !keyguardEnabled &&
-            aodEnabled &&
-            steadySourceScene == SourceScene.KEYGUARD &&
-            alpha != null
-        ) {
+        if (!keyguardEnabled && aodEnabled) {
             when (lastStableFamilyScene) {
                 StableKeyguardAodScene.AOD ->
                     if (alpha > 0f) return KeyguardAodProjection.NATIVE
