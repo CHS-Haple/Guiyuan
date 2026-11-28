@@ -190,25 +190,6 @@ internal object KeyguardRenderSession {
     ): Boolean =
         featureEnabled && if (sceneIsAod) aodEnabled else keyguardEnabled
 
-    private fun readViewField(
-        owner: Any,
-        name: String,
-    ): View? {
-        var type: Class<*>? = owner.javaClass
-        while (type != null) {
-            val current = type
-            val field =
-                SysUiPresentationRuntime.optionalNativeRead {
-                    current.getDeclaredField(name).apply { isAccessible = true }
-                }
-            if (field != null) {
-                return SysUiPresentationRuntime.optionalNativeRead { field.get(owner) as? View }
-            }
-            type = current.superclass
-        }
-        return null
-    }
-
     private fun visualChainSummary(view: View?): String {
         if (view == null) return "none"
         var current: View? = view
@@ -564,7 +545,7 @@ internal object KeyguardRenderSession {
                     " contentVisual={" +
                     visualChainSummary(
                         host.get()?.let { owner ->
-                            readViewField(owner, "mKeyguardStatusBarContent")
+                            SysUiKeyguardHostResolver.readView(owner, "mKeyguardStatusBarContent")
                         },
                     ) + "}" +
                     " systemIconsVisual={" + visualChainSummary(systemIcons.get()) + "}"
