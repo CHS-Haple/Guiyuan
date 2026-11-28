@@ -97,32 +97,6 @@ internal object CcCarrierGeometryPolicy {
         )
     }
 
-    fun interpolateCarriedSourceToRootTargetExact(
-        source: FloatArray,
-        target: FloatArray,
-        sourceCarrier: FloatArray,
-        currentCarrier: FloatArray,
-        progress: Float,
-    ): FloatArray {
-        require(
-            source.size == 6 &&
-                target.size == 6 &&
-                sourceCarrier.size == 6 &&
-                currentCarrier.size == 6,
-        )
-        val carriedSource =
-            rebaseSourceToCurrentCarrier(
-                source = source,
-                sourceCarrier = sourceCarrier,
-                currentCarrier = currentCarrier,
-            )
-        return CcTransitionMorphPolicy.interpolateGeometry(
-            source = carriedSource,
-            target = target,
-            progress = CcTransitionPolicy.geometryProgress(progress),
-        )
-    }
-
     fun rebaseSourceToCurrentCarrier(
         source: FloatArray,
         sourceCarrier: FloatArray,
