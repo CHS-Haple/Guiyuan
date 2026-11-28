@@ -123,10 +123,10 @@ Navigation destinations and `GlassNavigationBarDefaults` now also use the upstre
 The identical `GlassNavigationRailDefaults` object is likewise taken from upstream; app-specific rail state remains local because it uses a private morph clock and supports a trailing action absent from the public upstream Rail API.
 The public glass surface and constant-alpha shadow modifiers now resolve to MIUIX's published API; only app-specific action-bar underlay and state-driven shadow helpers remain local.
 Integer and custom-scheme create/rename dialogs use published `GlassTextField` directly. Scheme names use its native placeholder mode; card-embedded HEX/RGB fields in the battery color Glass sheet use the same glass input defaults with persistent channel labels. Keep existing input validation and keyboard behavior.
-Local Glass rendering keeps Guiyuan's action-bar underlay but now caches
-the colour-blend RenderEffects and edge/rim/mask brushes using the upstream
-material/blur APIs; it lets the backdrop node reuse effects when only the
-foreground stroke changes. Local button press feedback uses the upstream
+Local Glass rendering retains Guiyuan's action-bar underlay and reusable
+edge/rim/mask brush caches from the upstream Material APIs. Colour-blend
+RenderEffects are rebuilt by the upstream blur node on state/resource
+invalidation rather than cached independently by the app-local pipeline. Local button press feedback uses the upstream
 `MiuixIndication`, with explicit Guiyuan long-press, disabled and held-state
 bridges. The transformed popup anchor tracks attached Compose coordinates via
 upstream-style Modifier Nodes and releases them on detach; obsolete local
