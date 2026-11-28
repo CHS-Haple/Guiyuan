@@ -27,6 +27,7 @@ internal object SysUiPresentationRuntime {
     internal inline fun emitPassiveDiagnostic(
         warned: AtomicBoolean,
         tag: String,
+        warningMessage: String = "Diagnostic failed",
         block: () -> Unit,
     ) {
         try {
@@ -34,7 +35,7 @@ internal object SysUiPresentationRuntime {
         } catch (error: Throwable) {
             throwIfFatal(error)
             if (warned.compareAndSet(false, true)) {
-                emitPassiveDiagnostic { Log.w(tag, "Diagnostic failed", error) }
+                emitPassiveDiagnostic { Log.w(tag, warningMessage, error) }
             }
         }
     }
@@ -289,17 +290,9 @@ internal object SysUiPresentationRuntime {
     ): KeyguardSourceHooks {
         val onEvent = diagnostics.onEvent
         val warned = AtomicBoolean(false)
-        @Suppress("TooGenericExceptionCaught")
         fun reportAodFailure(message: String) {
-            try {
+            emitPassiveDiagnostic(warned, "Guiyuan[Aod]", "Install diagnostic failed") {
                 onEvent?.invoke(message)
-            } catch (error: Throwable) {
-                throwIfFatal(error)
-                if (warned.compareAndSet(false, true)) {
-                    emitPassiveDiagnostic {
-                        Log.w("Guiyuan[Aod]", "Install diagnostic failed", error)
-                    }
-                }
             }
         }
         val request = KeyguardHookInstallRequest(
