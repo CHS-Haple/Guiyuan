@@ -208,17 +208,21 @@ class CcTransitionMorphGeometryTest {
             val move = MobileSignalStagePolicy.moveProgress(p)
             val spread = MobileSignalStagePolicy.rowProgress(p)
             return floatArrayOf(
-                MobileSignalMorphPolicy.dotCoordinate(
-                    sourceX, sourceX, anchors[0], anchors[0], 0f, move, spread,
+                MobileSignalMorphPolicy.moveDot(
+                    MobileSignalMorphPolicy.packDot(sourceX, sourceX, 0f),
+                    anchors[0], anchors[0], move, spread,
                 ),
-                MobileSignalMorphPolicy.dotCoordinate(
-                    upperY, upperY, anchors[1], anchors[1], 0f, move, spread,
+                MobileSignalMorphPolicy.moveDot(
+                    MobileSignalMorphPolicy.packDot(upperY, upperY, 0f),
+                    anchors[1], anchors[1], move, spread,
                 ),
-                MobileSignalMorphPolicy.dotCoordinate(
-                    sourceX, sourceX, anchors[0], anchors[0], 0f, move, spread,
+                MobileSignalMorphPolicy.moveDot(
+                    MobileSignalMorphPolicy.packDot(sourceX, sourceX, 0f),
+                    anchors[0], anchors[0], move, spread,
                 ),
-                MobileSignalMorphPolicy.dotCoordinate(
-                    lowerY, lowerY, anchors[2], anchors[2], 0f, move, spread,
+                MobileSignalMorphPolicy.moveDot(
+                    MobileSignalMorphPolicy.packDot(lowerY, lowerY, 0f),
+                    anchors[2], anchors[2], move, spread,
                 ),
             )
         }
