@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -206,15 +208,18 @@ internal fun GuidePolicyDocumentSheet(
     onDismissRequest: () -> Unit,
     onDismissFinished: () -> Unit,
 ) {
+    val scrollState = key(document) { rememberScrollState() }
+    val scrollOffset = remember(scrollState) { { scrollState.value.toFloat() } }
     UiOverlayBottomSheet(
         show = visible,
         modifier = Modifier.fillMaxHeight(0.85f),
         title = stringResource((document ?: AgreementDocument.Privacy).titleRes()),
         backgroundColor = MiuixTheme.colorScheme.background,
         progressiveBlur = true,
+        scrollOffset = scrollOffset,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
     ) { innerPadding ->
-        document?.let { AgreementSheetBody(it, innerPadding) }
+        document?.let { AgreementSheetBody(it, innerPadding, scrollState) }
     }
 }

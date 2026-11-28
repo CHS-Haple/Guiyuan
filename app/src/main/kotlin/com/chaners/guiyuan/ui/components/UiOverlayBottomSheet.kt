@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
+import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 
 @Composable
@@ -16,7 +17,7 @@ internal fun UiOverlayBottomSheet(
     modifier: Modifier,
     title: String?,
     backgroundColor: Color,
-    startAction: @Composable (() -> Unit)? = null,
+    startAction: @Composable ((Boolean) -> Unit)? = null,
     enableWindowDim: Boolean = true,
     allowDismiss: Boolean = true,
     defaultWindowInsetsPadding: Boolean = true,
@@ -27,14 +28,15 @@ internal fun UiOverlayBottomSheet(
     progressiveBlur: Boolean = false,
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val useProgressiveBlur = progressiveBlur && LocalTopBarProgressiveBlur.current
     GlassBottomSheet(
         show = show,
         modifier = modifier,
         title = title,
-        progressiveBlur = progressiveBlur,
+        progressiveBlur = useProgressiveBlur,
         containerColor = backgroundColor,
         insideMargin = DpSize(0.dp, 0.dp),
-        startAction = startAction,
+        startAction = startAction?.let { action -> { action(useProgressiveBlur) } },
         enableWindowDim = enableWindowDim,
         allowDismiss = allowDismiss,
         defaultWindowInsetsPadding = defaultWindowInsetsPadding,

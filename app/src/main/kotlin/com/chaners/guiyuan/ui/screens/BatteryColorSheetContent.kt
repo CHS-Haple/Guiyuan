@@ -27,6 +27,7 @@ import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
 import com.chaners.guiyuan.settings.customSchemeKey
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.TooltipBox
@@ -175,9 +176,9 @@ internal fun BatteryColorDetailSheet(
         enableWindowDim = false,
         progressiveBlur = true,
         scrollOffset = scrollOffset,
-        startAction = {
+        startAction = { progressive ->
             Box(Modifier.padding(start = BottomSheetDefaults.insideMargin.width)) {
-                BatteryColorDetailBackAction(state)
+                BatteryColorDetailBackAction(state, progressive)
             }
         },
         onDismissRequest = { state.showDetail = false },
@@ -214,19 +215,24 @@ internal fun BatteryColorDetailSheet(
 @Composable
 private fun BatteryColorDetailBackAction(
     state: BatteryColorSheetState,
+    progressive: Boolean,
 ) {
     val layoutDirection = LocalLayoutDirection.current
+    val onBack = { state.showDetail = false }
+    val icon: @Composable () -> Unit = {
+        Icon(
+            painter = rememberSymbolPainter(MiuixIcons.Symbol.ChevronBackward),
+            contentDescription = stringResource(R.string.back),
+            modifier = Modifier.size(28.dp).graphicsLayer {
+                if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+            },
+        )
+    }
     TooltipBox(text = stringResource(R.string.back)) {
-        GlassIconButton(
-            onClick = { state.showDetail = false },
-        ) {
-            Icon(
-                painter = rememberSymbolPainter(MiuixIcons.Symbol.ChevronBackward),
-                contentDescription = stringResource(R.string.back),
-                modifier = Modifier.size(28.dp).graphicsLayer {
-                    if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
-                },
-            )
+        if (progressive) {
+            GlassIconButton(onClick = onBack, content = icon)
+        } else {
+            IconButton(onClick = onBack, content = icon)
         }
     }
 

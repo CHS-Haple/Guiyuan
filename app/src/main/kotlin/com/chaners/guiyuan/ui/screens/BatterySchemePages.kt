@@ -138,7 +138,7 @@ internal fun BatterySchemeOverview(
             .then(if (sheetBackdrop != null) Modifier.layerBackdrop(sheetBackdrop) else Modifier),
         title = stringResource(R.string.battery_colors),
         backgroundColor = MiuixTheme.colorScheme.background,
-        startAction = {
+        startAction = { _ ->
             Spacer(Modifier.size(width = IconButtonDefaults.MinWidth, height = IconButtonDefaults.MinHeight))
         },
         allowDismiss = allowDismiss,

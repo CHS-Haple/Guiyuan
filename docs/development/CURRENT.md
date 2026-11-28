@@ -144,8 +144,9 @@ see the work-branch PR and exact-source checks before promotion.
   in the fixed header slot. The colour detail editor also opts into the
   progressive header, sharing its request-scoped ScrollState with the header
   and scrollbar; the Back action inherits the upstream scroll-linked material.
-  The agreement/colour editor scroll containers consume the supplied padding. Dynamic glass fills and modal/overscroll fixes follow
-  upstream defaults.
+  The agreement/colour editor scroll containers consume the supplied padding.
+  Agreement sheets also expose their document-scoped ScrollState to the header.
+  Dynamic glass fills and modal/overscroll fixes follow upstream defaults.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
   uses app-local Glass adapters. Do not adopt upstream changes or
@@ -183,7 +184,11 @@ see the work-branch PR and exact-source checks before promotion.
   only where they represent actual features.
 - Progressive top-bar material and menu/popup ownership follow the pinned
   implementation, retaining native title slots and popup Back lifecycle.
-  The progressive-blur switch applies to app bars, including onboarding.
+  The progressive-blur switch applies to app bars and eligible Sheet headers,
+  including onboarding. All three Sheet callers opt in because their content
+  scrolls; the wrapper gates header layout and action material with the same
+  preference. Fixed headers use native ordinary actions. The card More
+  remains ordinary regardless of the setting.
   Eligible scrollable lists feed MIUIX's explicit elastic offset into the bar
   without a second overscroll engine; refresh/Sheet retain their owners.
   Battery Colors uses upstream `GlassCard` defaults inside `GlassBottomSheet`

@@ -302,6 +302,13 @@ entrypoint is available.
   scroll offset rather than accumulating another scroll position. The pinned
   `0485ae81` half-sheet example uses ordinary IconButton for fixed headers;
   the progressive example uses GlassIconButton with inherited material.
+  All three current Sheet call sites contain long or potentially scrollable
+  content and opt into the header contract. `UiOverlayBottomSheet` gates it
+  with the existing top-bar progressive-blur preference and supplies that
+  same effective mode to its action slot. With the option off, the fixed
+  header uses ordinary IconButton; card menus keep their existing native
+  anchor, and no new preference or shadow override is introduced. Agreement
+  sheets share their document-scoped ScrollState with the header and scrollbar.
   No additional local Sheet effect is needed. The new GlassScrollableTabRow
   is an independent scrolling pill row, not a replacement for fixed
   segmented tabs. No current caller warrants migration; the segmented
