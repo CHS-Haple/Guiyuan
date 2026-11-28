@@ -215,35 +215,26 @@ internal object BatteryTopArcPolicy {
             }
         }
 
-        if (!gapStart.isFinite() || !gapEnd.isFinite() || gapEnd <= gapStart) {
-            return Gap(TOP_DEGREES, 0f)
-        }
-        // Preserve one intentional top notch even when separate glyph parts
-        // intersect both shoulders, rather than drawing a third arc above Wi-Fi.
-        return Gap(
-            centerDegrees = (gapStart + gapEnd) / 2f,
-            sweepDegrees = gapEnd - gapStart,
-        )
+        // Preserve one intentional notch even when separate glyph parts
+        // intersect both shoulders, rather than drawing an extra arc.
+        return gapFromBounds(gapStart, gapEnd)
     }
 
-    fun mergeGaps(
-        gaps: List<Gap>,
-    ): Gap {
-        val visible =
-            gaps.filter { gap ->
-                gap.centerDegrees.isFinite() &&
-                    gap.sweepDegrees.isFinite() &&
-                    gap.sweepDegrees > 0f
-            }
-        if (visible.isEmpty()) return Gap(TOP_DEGREES, 0f)
-
+    fun mergeGaps(gaps: List<Gap>): Gap {
         var start = Float.POSITIVE_INFINITY
         var end = Float.NEGATIVE_INFINITY
-        visible.forEach { gap ->
+        for (gap in gaps) {
+            if (!gap.centerDegrees.isFinite() || !gap.sweepDegrees.isFinite() ||
+                gap.sweepDegrees <= 0f
+            ) continue
             val half = gap.sweepDegrees / 2f
             start = kotlin.math.min(start, gap.centerDegrees - half)
             end = kotlin.math.max(end, gap.centerDegrees + half)
         }
+        return gapFromBounds(start, end)
+    }
+
+    private fun gapFromBounds(start: Float, end: Float): Gap {
         if (!start.isFinite() || !end.isFinite() || end <= start) {
             return Gap(TOP_DEGREES, 0f)
         }
@@ -350,7 +341,6 @@ internal object BatteryTopArcPolicy {
     )
 
     private const val TOP_DEGREES = 270f
-    private const val HALF_TURN_DEGREES = 180f
     private const val FULL_TURN_DEGREES = 360f
     private const val ANGLE_EPSILON = 0.0001f
     private const val POSITION_EPSILON = 0.0001f

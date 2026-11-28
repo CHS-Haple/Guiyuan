@@ -311,6 +311,25 @@ class BatteryTopArcEnvelopeClearanceTest {
     }
 
     @Test
+    fun gapMergeIgnoresInvalidAndEmptyComponentsWithoutLosingValidBounds() {
+        val invalid = listOf(
+            BatteryTopArcPolicy.Gap(Float.NaN, 15f),
+            BatteryTopArcPolicy.Gap(270f, Float.POSITIVE_INFINITY),
+            BatteryTopArcPolicy.Gap(270f, 0f),
+            BatteryTopArcPolicy.Gap(270f, -10f),
+        )
+        val none = BatteryTopArcPolicy.Gap(270f, 0f)
+        assertEquals(none, BatteryTopArcPolicy.mergeGaps(emptyList()))
+        assertEquals(none, BatteryTopArcPolicy.mergeGaps(invalid))
+        val first = BatteryTopArcPolicy.Gap(260f, 20f)
+        val second = BatteryTopArcPolicy.Gap(280f, 10f)
+        assertEquals(
+            BatteryTopArcPolicy.Gap(267.5f, 35f),
+            BatteryTopArcPolicy.mergeGaps(invalid + first + second),
+        )
+    }
+
+    @Test
     fun asymmetricVisibleEnvelopeMovesGapCenterInsteadOfAddingDeadPadding() {
         val result =
             gapFor(
