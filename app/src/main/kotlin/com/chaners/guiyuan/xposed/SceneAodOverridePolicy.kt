@@ -30,9 +30,8 @@ internal object SceneAodOverridePolicy {
         val feature = input.feature
         val scene = input.scene
         val boundary = input.boundary
-        val nativeTarget = input.signal.nativeToLockScreenTarget
-        if (boundary.fullAodVisualBoundary && boundary.fullAodTargetSourceReady &&
-            nativeTarget == true && scene.steadySourceScene == SourceScene.KEYGUARD &&
+        if (!boundary.fullAodTargetSourceReady || input.signal.nativeToLockScreenTarget != true) return null
+        if (boundary.fullAodVisualBoundary && scene.steadySourceScene == SourceScene.KEYGUARD &&
             scene.lastStableFamilyScene == StableKeyguardAodScene.AOD &&
             feature.keyguardEnabled && !feature.aodEnabled
         ) {
@@ -40,8 +39,7 @@ internal object SceneAodOverridePolicy {
             return KeyguardAodProjection.KEYGUARD
         }
         if (feature.aodEnabled && !feature.keyguardEnabled &&
-            boundary.outgoingAodOwned && boundary.fullAodTargetSourceReady &&
-            nativeTarget == true && (feature.toAod || feature.isAodAnimate)
+            boundary.outgoingAodOwned && (feature.toAod || feature.isAodAnimate)
         ) {
             // A canceled callback can precede the new Keyguard battery mode.
             return KeyguardAodProjection.AOD

@@ -109,6 +109,35 @@ class SceneAodNativeBoundaryTest {
     }
 
     @Test
+    fun nativeBoundaryOverridesRequireReadySourceAndExplicitLockscreenTarget() {
+        val input = ScenePolicy.KeyguardAodProjectionInputs(
+            feature = ScenePolicy.AodFeatureFlags(true, true, false, true, true),
+            scene = ScenePolicy.AodSceneEvidence(
+                SourceScene.KEYGUARD, ScenePolicy.StableKeyguardAodScene.AOD,
+            ),
+            signal = ScenePolicy.AodNativeSignalEvidence(nativeToLockScreenTarget = true),
+            boundary = ScenePolicy.AodNativeBoundaryEvidence(
+                fullAodTargetSourceReady = true,
+                fullAodVisualBoundary = true,
+                outgoingAodOwned = true,
+            ),
+        )
+        val aodOnly = input.copy(feature = input.feature.copy(keyguardEnabled = false, aodEnabled = true))
+        assertEquals(ScenePolicy.KeyguardAodProjection.KEYGUARD, SceneAodOverridePolicy.nativeAodBoundaryOverride(input))
+        assertEquals(ScenePolicy.KeyguardAodProjection.AOD, SceneAodOverridePolicy.nativeAodBoundaryOverride(aodOnly))
+        for (candidate in listOf(input, aodOnly)) {
+            assertEquals(null, SceneAodOverridePolicy.nativeAodBoundaryOverride(
+                candidate.copy(boundary = candidate.boundary.copy(fullAodTargetSourceReady = false)),
+            ))
+            for (target in listOf(null, false)) {
+                assertEquals(null, SceneAodOverridePolicy.nativeAodBoundaryOverride(
+                    candidate.copy(signal = candidate.signal.copy(nativeToLockScreenTarget = target)),
+                ))
+            }
+        }
+    }
+
+    @Test
     fun keyguardOnlyProjectionTracksNativeIconBoundary() {
         val flags = ScenePolicy.AodFeatureFlags(
             featureEnabled = true,
