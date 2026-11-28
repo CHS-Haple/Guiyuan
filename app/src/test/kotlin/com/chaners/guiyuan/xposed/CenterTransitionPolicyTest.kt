@@ -138,6 +138,28 @@ class CenterTransitionPolicyTest {
     }
 
     @Test
+    fun runningTransitionSnapsWhenEitherEndpointIsAbsent() {
+        val target = CenterIndicator.Airplane
+        assertEquals(
+            CenterTransitionPolicy.Decision.SNAP,
+            CenterTransitionPolicy.decide(null, target, CenterIndicator.Empty, true),
+        )
+        assertEquals(
+            CenterTransitionPolicy.Decision.SNAP,
+            CenterTransitionPolicy.decide(target, null, CenterIndicator.Empty, true),
+        )
+    }
+
+    @Test
+    fun runningTransitionWithSameSourceAndTargetFamilySnaps() {
+        val wifi = CenterIndicator.Wifi(segments = 3, internet = InternetState.VALIDATED)
+        assertEquals(
+            CenterTransitionPolicy.Decision.SNAP,
+            CenterTransitionPolicy.decide(wifi, wifi, wifi, true),
+        )
+    }
+
+    @Test
     fun noSimIsItsOwnNativeCenterFamily() {
         val noSim =
             CenterIndicator.NoSim(

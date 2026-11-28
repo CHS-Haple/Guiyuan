@@ -262,10 +262,7 @@ internal class RenderView(
             )
         ) {
             CenterTransitionPolicy.Decision.START ->
-                startCenterTransition(
-                    previous = checkNotNull(previous),
-                    current = checkNotNull(current),
-                )
+                startCenterTransition(checkNotNull(previous))
 
             CenterTransitionPolicy.Decision.KEEP ->
                 invalidate()
@@ -275,10 +272,7 @@ internal class RenderView(
         }
     }
 
-    private fun startCenterTransition(
-        previous: CenterIndicator,
-        current: CenterIndicator,
-    ) {
+    private fun startCenterTransition(previous: CenterIndicator) {
         centerTransitionAnimator?.cancel()
         previousCenterIndicator = previous
         centerTransitionFraction = 0f
