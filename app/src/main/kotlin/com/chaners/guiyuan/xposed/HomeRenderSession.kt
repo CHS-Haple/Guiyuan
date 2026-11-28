@@ -197,17 +197,6 @@ internal object HomeRenderSession {
             controlCenterAllowsHome &&
             !nativeHandoffActive
 
-    internal fun resolveOwnerReady(
-        featureEnabled: Boolean,
-        modelReady: Boolean,
-        tintReady: Boolean,
-        layoutReady: Boolean,
-        hostAttached: Boolean,
-    ): Boolean =
-        ProjectionReadinessPolicy.structuralReady(
-            featureEnabled, modelReady, tintReady, layoutReady, hostAttached,
-        )
-
     // A child onLayout can run before SystemUI's parent finishes its traversal.
     // Retire an already verified Home owner only on actual detach, or at the
     // complete native pre-draw boundary after pending layout has settled.
@@ -297,9 +286,9 @@ internal object HomeRenderSession {
                     if (
                         !homeFrameDrawnAfterPanel &&
                         HomeRenderSession.current === this &&
-                        featureEnabled &&
-                        controlCenterAllowsHome &&
-                        !nativeHandoffActive &&
+                        resolveOverlayVisible(
+                            featureEnabled, controlCenterAllowsHome, nativeHandoffActive,
+                        ) &&
                         modelReady &&
                         tintReady &&
                         layoutReady &&
@@ -467,14 +456,12 @@ internal object HomeRenderSession {
         fun updateControlCenterHomeEligibility(
             homeEligible: Boolean,
             source: String,
-            detail: String = "",
         ) {
             if (Looper.myLooper() !== Looper.getMainLooper()) {
                 host.get()?.post {
                     updateControlCenterHomeEligibility(
                         homeEligible = homeEligible,
                         source = source,
-                        detail = detail,
                     )
                 }
                 return
@@ -491,7 +478,6 @@ internal object HomeRenderSession {
             emitEvent {
                 "homeRenderControlCenterEligibility" +
                     " source=" + source +
-                    detail +
                     " homeEligible=" + controlCenterAllowsHome +
                     " visible=" + visible
             }
@@ -501,9 +487,7 @@ internal object HomeRenderSession {
         fun isOverlayShown(): Boolean = probeView.isShown
 
         fun canDrawHome(): Boolean =
-            featureEnabled &&
-                controlCenterAllowsHome &&
-                !nativeHandoffActive &&
+            resolveOverlayVisible(featureEnabled, controlCenterAllowsHome, nativeHandoffActive) &&
                 modelReady &&
                 tintReady &&
                 layoutReady &&
@@ -785,7 +769,7 @@ internal object HomeRenderSession {
 
         private fun dispatchPresentationReadiness(source: String) {
             val ownerReady =
-                resolveOwnerReady(
+                ProjectionReadinessPolicy.structuralReady(
                     featureEnabled = featureEnabled,
                     modelReady = modelReady,
                     tintReady = tintReady,
