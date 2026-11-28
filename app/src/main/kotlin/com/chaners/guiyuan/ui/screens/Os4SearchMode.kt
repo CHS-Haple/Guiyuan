@@ -52,7 +52,6 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.ui.icons.Os4GlassClose
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -61,6 +60,9 @@ import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
 import kotlin.math.sqrt
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.Close1
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 // Map one second of spring motion onto the 400ms search transition.
 internal val SearchModeEasing: Easing = run {
@@ -228,7 +230,7 @@ private fun BoxScope.Os4SearchCancelAction(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        Os4GlassClose,
+                        painter = rememberSymbolPainter(MiuixIcons.Symbol.Close1),
                         contentDescription = label,
                         modifier = Modifier.size(28.dp),
                         tint = MiuixTheme.colorScheme.onSurface,

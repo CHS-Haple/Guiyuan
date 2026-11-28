@@ -68,9 +68,11 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.symbol.Next
+import top.yukonga.miuix.kmp.symbol.SymbolWeights
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 private data class HomeScreenContents(
     val layout: HomeScreenLayout,
@@ -273,7 +275,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.HomePreviewSandboxHea
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
             Icon(
-                imageVector = MiuixIcons.Basic.ArrowRight,
+                painter = rememberSymbolPainter(MiuixIcons.Symbol.Next, weight = SymbolWeights.Light),
                 contentDescription = null,
                 tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                 modifier =

@@ -17,7 +17,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
 import top.yukonga.miuix.kmp.basic.DropdownEntry
-import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.ui.glass.GlassIconDropdownMenu
 import com.chaners.guiyuan.ui.glass.glassPopupAnchor

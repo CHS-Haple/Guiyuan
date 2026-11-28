@@ -5,12 +5,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.res.stringResource
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.ui.glass.LocalGlassTopAppBarContext
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.Refresh
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 @Composable
 internal fun HotReloadAction(
@@ -34,7 +36,7 @@ internal fun HotReloadAction(
                 holdDownState = inProgress,
             ) {
                 Icon(
-                    imageVector = Os4GlassRefresh,
+                    painter = rememberSymbolPainter(MiuixIcons.Symbol.Refresh),
                     contentDescription = label,
                     tint = if (enabled) MiuixTheme.colorScheme.onSurface
                         else MiuixTheme.colorScheme.disabledOnSecondaryVariant,

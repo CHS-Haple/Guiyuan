@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalGlassBackdrop
-import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import com.chaners.guiyuan.settings.BATTERY_COLOR_SCHEME_HYPEROS_KEY
 import com.chaners.guiyuan.settings.BatteryColorSchemeLibrary
 import com.chaners.guiyuan.settings.BatterySchemeRepo
@@ -31,6 +30,12 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import com.chaners.guiyuan.ui.components.UiOverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.ChevronBackward
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 
 
 /** One temporary UI owner for the parent/child sheet and modal dismissal lifecycle. */
@@ -201,14 +206,17 @@ internal fun BatteryColorDetailSheet(
 private fun BatteryColorDetailBackAction(
     state: BatteryColorSheetState,
 ) {
+    val layoutDirection = LocalLayoutDirection.current
     TooltipBox(text = stringResource(R.string.back)) {
         GlassIconButton(
             onClick = { state.showDetail = false },
         ) {
             Icon(
-                imageVector = Os4GlassBack,
+                painter = rememberSymbolPainter(MiuixIcons.Symbol.ChevronBackward),
                 contentDescription = stringResource(R.string.back),
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(28.dp).graphicsLayer {
+                    if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                },
             )
         }
     }

@@ -11,7 +11,6 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.util.fastCoerceAtLeast
@@ -39,6 +38,8 @@ import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassDefaults
 import top.yukonga.miuix.kmp.material.ShaderBrushCache
 import top.yukonga.miuix.kmp.material.GlassShadow
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.Density
 
 /** Applies a child material over the action bar's already blurred and colour-treated surface. */
 internal fun Modifier.glassOnActionBar(
@@ -73,8 +74,6 @@ private class GlassPipeline(
     private val stroke: EdgeStroke?,
 ) : BackdropPipeline {
 
-    private var cachedUnderlayBlendEffect: RenderEffect? = null
-    private var cachedMaterialBlendEffect: RenderEffect? = null
     private val edgeBrushCache = ShaderBrushCache()
     private val maskBrushCache = ShaderBrushCache()
 
@@ -85,25 +84,29 @@ private class GlassPipeline(
             noiseDither(GlassDefaults.NoiseCoefficient)
             val radius = material?.blurRadius?.value ?: (GlassDefaults.Style.blur.small / GlassDefaults.SourceDensity)
             blur(radius.fastCoerceIn(0f, BlurDefaults.MaxBlurRadius) * density)
-            val underlay = cachedUnderlayBlendEffect ?: buildColorBlendEffect(
+            val underlay = buildColorBlendEffect(
                 underlayMaterial,
                 1f,
                 "${GLASS_COLOR_BLEND_SHADER_KEY}ActionBar",
-            )?.also { cachedUnderlayBlendEffect = it }
+            )
             if (underlay != null) effect(underlay)
             if (material != null) {
-                val blend = cachedMaterialBlendEffect ?: buildColorBlendEffect(material, alpha)
-                    ?.also { cachedMaterialBlendEffect = it }
+                val blend = buildColorBlendEffect(material, alpha)
                 if (blend != null) effect(blend)
             }
         }
     }
 
+    override fun requiresOffscreenCompositing(size: Size, density: Density): Boolean =
+        glassShape.requiresContinuousMask(size, density)
+
     override fun drawFront(scope: DrawScope) {
         with(scope) {
             // The action-bar underlay already supplies the material; only stroke and mask remain.
             stroke?.let { drawEdgeStroke(glassShape, it, alpha, brushCache = edgeBrushCache) }
-            drawGlassMask(glassShape, brushCache = maskBrushCache)
+            if (glassShape.requiresContinuousMask(size, this)) {
+                drawGlassMask(glassShape, brushCache = maskBrushCache)
+            }
         }
     }
 

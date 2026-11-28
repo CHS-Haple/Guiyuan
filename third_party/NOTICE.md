@@ -41,7 +41,7 @@ Resolved dependency versions come from Gradle, not this document.
 - **Embedded Material Symbols:**
   [Material Symbols](https://github.com/google/material-design-icons),
   Apache-2.0; original attribution is retained in local vector assets.
-  MIUIX Glass icons provided by the dependency retain MIUIX attribution.
+  MIUIX variable Symbol icons provided by the dependency retain MIUIX attribution.
 
 Original copyright/SPDX annotations remain in adapted source and vector
 assets. Guiyuan itself is [GPL-3.0-only](../LICENSE); that license does

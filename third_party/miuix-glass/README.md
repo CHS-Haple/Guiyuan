@@ -7,21 +7,32 @@ source checkout in `.github/actions/miuix-source/action.yml`.
 
 ## Source and licensing
 
-- The migration candidate source and Maven graph target
-  `0.9.5-bc1024d7-SNAPSHOT` at
-  `bc1024d78a154f5167efff262ae5ed66264c481e`. This revision is
-  **not yet accepted**: validate upstream publication and Guiyuan's independent
-  published-Maven and source-substituted CI before advancing protected branches.
-  The previously accepted signed B1975 source used
-  `0.9.5-588d029f-SNAPSHOT` at
-  `588d029f2b0747a0a8710db0858ed0957d78b122`
-  ([publication](https://github.com/compose-miuix-ui/miuix/actions/runs/45748501062)).
-  The candidate changes blur shader handoff and sharp-band decay, lowers the
-  progressive blur radius from 80dp to 32dp and default overhang from 32dp to
-  10dp, and anchors the progressive ramp to measured `bottomContent`.
-  Example-only changes are reviewed but need no duplicate runtime code.
-  Local title clipping and action controls remain Guiyuan-owned until the
-  public API covers those differences.
+- The work-branch candidate targets `0.9.5-0485ae81-SNAPSHOT` at
+  `0485ae81bc26d8df0a189a110e63f4f75c3fb5b8`.
+  Upstream [Publish #46154551491](https://github.com/compose-miuix-ui/miuix/actions/runs/46154551491)
+  completed successfully, including the Android Symbol publication. The
+  candidate remains subject to independent published-Maven and exact-source
+  Guiyuan CI plus focused device acceptance. The pre-migration dev baseline
+  is `bc1024d78a154f5167efff262ae5ed66264c481e`; a newer main commit without
+  matching publication is not an interchangeable artifact.
+- Use published `miuix-icons-symbol-android` for MIUIX navigation and action
+  glyphs. The former regular and Glass icon artifacts and namespaces are
+  removed upstream. Render through `rememberSymbolPainter`, using
+  `toImageVector` only for APIs that require a vector; the old local Glass
+  aliases, fixed-canvas test and Rail toggle vector copies are retired.
+  Embedded Material Symbols used for semantic settings-row icons are separate.
+- Consume the public backdrop underlay API for capture-only backgrounds, keeping
+  the same surface/host owner. Public shape mask classification is used in the
+  retained action-bar pipeline; its local RenderEffect caches are removed so
+  the upstream node can recreate effects on resource invalidation. Progressive
+  blur uses upstream's current curve and scrim without the old extra tint.
+  Popup constraints are measured against the same window/host safe area used
+  for placement. Predictive Back rebound follows the visible gesture fraction.
+  Constant shadow alpha uses the public upstream shadow modifier.
+- The public top-bar defaults are used directly. The remaining app-specific
+  underlay, deferred-alpha shadow, unclipped title/action slots, held and
+  long-press interactions, local popup host exit and Rail/Liquid ownership
+  are retained because their matching upstream hooks are internal or absent.
 - `app/src/main/kotlin/com/chaners/guiyuan/ui/glass/` contains an adapted,
   app-compiled subset of the upstream
   [MIUIX Glass implementation](https://github.com/compose-miuix-ui/miuix/pull/423).
@@ -189,7 +200,7 @@ ShaderBrushCache for deferred alpha. Upstream's public stroke-provider
 overloads remain in the library; the app-specific action-bar underlay does
 not acquire another duplicate without a real caller.
 
-The separate experimental MIUIX effect PR #321 is still open at
+The separate experimental MIUIX effect PR #321 was closed unmerged on 2026-11-28 at
 `73bdd49b4ea965dc7822e276b0a6ce29a5564f54`; all seven
 `app/src/main/kotlin/top/yukonga/miuix/kmp/effect/bg/` files were compared
 against that exact PR source. Four match byte-for-byte. The Background and
@@ -199,12 +210,10 @@ restart/cancellation fix. The library remains unpublished and must not
 be replaced with a nonexistent Maven dependency. See
 `third_party/miuix-effect/README.md`.
 
-Regular Glass icons already resolve through upstream
-`miuix-glass-icons-android` via `MiuixIcons.Glass.Regular`, rather than
-locally maintained vector paths. No alternate vendor resource pack was
-found in the live app source set. Non-public rail, popup and native-title
-behavior remains adapted because it has no behavior-equivalent published
-entrypoint.
+MIUIX icons now resolve through the published variable Symbol module. Native
+settings-row Material Symbols remain separate. Non-public Rail, popup and
+native-title behavior stays adapted only where no behavior-equivalent public
+entrypoint is available.
 
 ## Upstream alignment and optional API decisions
 

@@ -99,10 +99,7 @@ internal fun MainHub(
     // The root dialog needs a clean page source even with native/hidden navigation.
     val miuixBackdrop =
         if (shaderSupported) {
-            rememberLayerBackdrop {
-                drawRect(surfaceColor)
-                drawContent()
-            }
+            rememberLayerBackdrop(onDrawUnderlay = { drawRect(surfaceColor) })
         } else {
             null
         }

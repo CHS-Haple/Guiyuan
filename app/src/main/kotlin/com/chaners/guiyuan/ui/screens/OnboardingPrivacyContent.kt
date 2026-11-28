@@ -46,9 +46,10 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.symbol.ChevronForward
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 @Composable
 internal fun GuideAgreementCard(
@@ -70,7 +71,7 @@ internal fun GuideAgreementCard(
                 ) {
                     if (required) Badge(modifier = Modifier.size(8.dp))
                     Icon(
-                        imageVector = MiuixIcons.Regular.ChevronForward,
+                        painter = rememberSymbolPainter(MiuixIcons.Symbol.ChevronForward),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,

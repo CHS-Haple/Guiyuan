@@ -8,11 +8,13 @@ import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.components.UiTopBarNavigationIcon
 import com.chaners.guiyuan.ui.glass.GlassIconButton
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
-import com.chaners.guiyuan.ui.icons.Os4GlassRefresh
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.Refresh
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 internal data class GuideStageBarFrame(
     val step: Int,
@@ -54,7 +56,7 @@ private fun GuideStageRefreshAction(onRefresh: () -> Unit) {
     TooltipBox(text = label) {
         GlassIconButton(onClick = onRefresh) {
             Icon(
-                imageVector = Os4GlassRefresh,
+                painter = rememberSymbolPainter(MiuixIcons.Symbol.Refresh),
                 contentDescription = label,
             )
         }

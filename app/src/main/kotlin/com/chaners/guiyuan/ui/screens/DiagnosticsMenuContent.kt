@@ -11,9 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
-import com.chaners.guiyuan.ui.icons.Os4GlassFilter
-import com.chaners.guiyuan.ui.icons.Os4GlassMore
-import com.chaners.guiyuan.ui.icons.Os4GlassShare
 import com.chaners.guiyuan.settings.DiagLevel
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BadgedBox
@@ -24,6 +21,11 @@ import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.menu.WindowIconCascadingDropdownMenu
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.Filter
+import top.yukonga.miuix.kmp.icon.symbol.More
+import top.yukonga.miuix.kmp.icon.symbol.Share
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
 
 internal const val LEVEL_INFO = 1 shl 0
 internal const val LEVEL_WARN = 1 shl 1
@@ -167,7 +169,7 @@ internal fun LogFilterMenu(
             },
         ) {
             Icon(
-                imageVector = Os4GlassFilter,
+                painter = rememberSymbolPainter(MiuixIcons.Symbol.Filter),
                 contentDescription = title,
                 modifier = Modifier.size(28.dp),
             )
@@ -300,7 +302,7 @@ internal fun DiagMenu(
 
     val icon: @Composable () -> Unit = {
         Icon(
-            imageVector = Os4GlassMore,
+            painter = rememberSymbolPainter(MiuixIcons.Symbol.More),
             contentDescription = title,
             modifier = Modifier.size(28.dp),
         )
@@ -323,7 +325,7 @@ internal fun DiagnosticsReportAction(
         enabled = enabled,
     ) {
         Icon(
-            imageVector = Os4GlassShare,
+            painter = rememberSymbolPainter(MiuixIcons.Symbol.Share),
             contentDescription = stringResource(R.string.export_diagnostic_report),
             modifier = Modifier.size(28.dp),
         )

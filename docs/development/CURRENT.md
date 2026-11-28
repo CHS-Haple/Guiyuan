@@ -105,6 +105,12 @@ reference, not this public repository.
 
 ## Current UI integration boundaries
 
+The MIUIX 0485ae81 work-branch migration replaces both legacy icon modules
+with the published Symbol API, adopts the public backdrop underlay and mask
+APIs, and aligns progressive blur and popup bounds. The following accepted
+baseline records remain historical evidence, not acceptance of this candidate;
+see the work-branch PR and exact-source checks before promotion.
+
 - The pinned MIUIX `bc1024d7` graph retains the verified native and Glass
   sheet motion,
   Slider/ColorPicker interaction, Squircle rendering, top-bar state and the

@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.settings.VisualCfg
 import com.chaners.guiyuan.ui.glass.GlassIconButton
-import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import com.chaners.guiyuan.xposed.RenderModel
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text

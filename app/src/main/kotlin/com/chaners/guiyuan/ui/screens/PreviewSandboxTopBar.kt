@@ -16,14 +16,19 @@ import androidx.compose.ui.unit.dp
 import com.chaners.guiyuan.R
 import com.chaners.guiyuan.ui.LocalTopBarProgressiveBlur
 import com.chaners.guiyuan.ui.glass.GlassTopAppBar
-import com.chaners.guiyuan.ui.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import com.chaners.guiyuan.ui.glass.GlassIconButton
-import com.chaners.guiyuan.ui.icons.Os4GlassBack
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.symbol.ChevronBackward
+import top.yukonga.miuix.kmp.symbol.rememberSymbolPainter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 
 internal data class SandboxTopBarFrame(
     val backdrop: LayerBackdrop?,
@@ -70,9 +75,16 @@ internal fun PreviewSandboxTopBar(
 private fun SandboxTopBackAction(
     onBack: () -> Unit,
 ) {
+    val layoutDirection = LocalLayoutDirection.current
     TooltipBox(text = stringResource(R.string.back)) {
         GlassIconButton(onClick = onBack) {
-            Icon(Os4GlassBack, contentDescription = stringResource(R.string.back))
+            Icon(
+                painter = rememberSymbolPainter(MiuixIcons.Symbol.ChevronBackward),
+                contentDescription = stringResource(R.string.back),
+                modifier = Modifier.size(28.dp).graphicsLayer {
+                    if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                },
+            )
         }
     }
 }

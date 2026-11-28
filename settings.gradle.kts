@@ -67,12 +67,11 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
         "miuix-ui",
         "miuix-blur",
         "miuix-preference",
-        "miuix-icons",
+        "miuix-icons-symbol",
         "miuix-nav",
         "miuix-material",
         "miuix-squircle",
         "miuix-glass",
-        "miuix-glass-icons",
     )
     val missingSourceModules = requiredSourceModules.filterNot { module ->
         miuix.resolve("$module/build.gradle.kts").isFile
@@ -89,8 +88,7 @@ providers.gradleProperty("gy.os4.miuixDir").orNull?.takeIf(String::isNotBlank)?.
             substitute(module("top.yukonga.miuix.kmp:miuix-ui-android")).using(project(":miuix-ui"))
             substitute(module("top.yukonga.miuix.kmp:miuix-blur-android")).using(project(":miuix-blur"))
             substitute(module("top.yukonga.miuix.kmp:miuix-preference-android")).using(project(":miuix-preference"))
-            substitute(module("top.yukonga.miuix.kmp:miuix-icons-android")).using(project(":miuix-icons"))
-            substitute(module("top.yukonga.miuix.kmp:miuix-glass-icons-android")).using(project(":miuix-glass-icons"))
+            substitute(module("top.yukonga.miuix.kmp:miuix-icons-symbol-android")).using(project(":miuix-icons-symbol"))
             substitute(module("top.yukonga.miuix.kmp:miuix-glass-android")).using(project(":miuix-glass"))
             substitute(module("top.yukonga.miuix.kmp:miuix-nav-android")).using(project(":miuix-nav"))
         }
