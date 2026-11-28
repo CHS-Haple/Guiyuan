@@ -1,5 +1,6 @@
 package com.chaners.guiyuan.ui.screens
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableFloatState
@@ -93,11 +93,11 @@ internal fun BatteryCustomModeEditor(
     custom: BatteryCustomColorScheme,
     slot: BatteryColorSlot,
     contentPadding: PaddingValues,
+    scrollState: ScrollState,
     onSourceChange: (BatteryColorSchemeSource) -> Unit,
     onColorChange: (Int) -> Unit,
 ) {
     val state = rememberColorEditorState(custom, slot)
-    val scrollState = rememberScrollState()
     val canScroll = scrollState.canScrollBackward || scrollState.canScrollForward
     Box(Modifier.fillMaxSize()) {
         Column(

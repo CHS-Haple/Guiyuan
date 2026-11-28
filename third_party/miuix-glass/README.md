@@ -95,7 +95,9 @@ owned. Do not copy shared shaders into the app or add a second Material model.
   sample. Glass icon canvas and displayed navigation icon size differ.
 - Battery Colors preserves its outer/inner card hierarchy in Glass sheets,
   using upstream `GlassCard` translucent fill and 20 dp corner without custom
-  alpha. Retain regular glass button and popup shadow behavior.
+  alpha. Card-embedded actions retain native IconButton; progressive Sheet
+  header actions inherit upstream material and shadow. Preserve existing
+  popup and floating-action shadow behavior.
 - Prefer native MIUIX progress, material, shape and motion; do not introduce
   ad-hoc geometry, z-order, shader, seam or delayed-animation workarounds.
   Reproduce an actual deviation before changing native ownership.
@@ -278,8 +280,10 @@ entrypoint is available.
   The battery overview places its existing dot rail in `headerBottomContent`,
   shares the pager and keyed page scroll states for the native header's
   `scrollOffset`, and retains the deck until upstream dismissal completes.
-  The detail and agreement sheets keep one scroll container each. Use the
-  public header-inheriting GlassIconButton for detail Back; retain local
+  The detail and agreement sheets keep one scroll container each. The detail
+  sheet enables the progressive header and shares its actual request-scoped
+  ScrollState with the header and scrollbar. Its public GlassIconButton
+  inherits the header's backdrop and floating material; retain local
   top-bar context only where its internal motion, touch or hold contracts
   remain necessary. No second blur engine, custom alpha or new preference.
   The updated top-bar BandOverhang and GlassCard, GlassTextField and
@@ -293,8 +297,11 @@ entrypoint is available.
   The shared GlassBottomSheet wrapper explicitly selects a
   non-overlay default, now matching the pinned upstream default. The battery overview and long-form Terms/Privacy
   readers explicitly opt into progressive blur and apply header padding
-  to their scroll content and native scrollbar. The battery detail editor
-  uses the normal non-overlay header and its supplied zero header padding.
+  to their scroll content and native scrollbar. The long battery detail
+  editor also uses that progressive header contract, sharing the live editor
+  scroll offset rather than accumulating another scroll position. The pinned
+  `0485ae81` half-sheet example uses ordinary IconButton for fixed headers;
+  the progressive example uses GlassIconButton with inherited material.
   No additional local Sheet effect is needed. The new GlassScrollableTabRow
   is an independent scrolling pill row, not a replacement for fixed
   segmented tabs. No current caller warrants migration; the segmented

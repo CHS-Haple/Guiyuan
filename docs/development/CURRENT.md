@@ -141,9 +141,10 @@ see the work-branch PR and exact-source checks before promotion.
   The public GlassBottomSheet header
   consumes actual current-page scroll offset in the battery scheme deck;
   content padding follows the measured header, with the existing dot rail
-  in the fixed header slot. The detail Back button inherits upstream header
-  context and the agreement/colour editor scroll containers consume the
-  supplied padding. Dynamic glass fills and modal/overscroll fixes follow
+  in the fixed header slot. The colour detail editor also opts into the
+  progressive header, sharing its request-scoped ScrollState with the header
+  and scrollbar; the Back action inherits the upstream scroll-linked material.
+  The agreement/colour editor scroll containers consume the supplied padding. Dynamic glass fills and modal/overscroll fixes follow
   upstream defaults.
 
 - The `dev` MIUIX source/dependency graph includes `miuix-material` and
@@ -188,7 +189,9 @@ see the work-branch PR and exact-source checks before promotion.
   Battery Colors uses upstream `GlassCard` defaults inside `GlassBottomSheet`
   and preserves the scheme/editor hierarchy. Its custom-scheme More control
   uses upstream `basic.IconButton` without the floating glass shadow.
-  Separate Glass back controls retain the source-matched `Regular` shadow.
+  Progressive Sheet header Glass actions inherit the scroll-linked material
+  and shadow; fixed non-overlay Sheet headers use ordinary actions as in the
+  pinned upstream half-sheet example.
 - Single-interface migration and battery color controls received focused
   B1952 device acceptance in [#1866](https://github.com/CHS-Haple/Guiyuan/pull/1866);
   the integrated source tree matched that candidate and dev CI passed. This

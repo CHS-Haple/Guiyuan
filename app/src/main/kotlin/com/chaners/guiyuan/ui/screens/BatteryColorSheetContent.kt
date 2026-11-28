@@ -2,6 +2,7 @@ package com.chaners.guiyuan.ui.screens
 
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -10,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -150,8 +153,11 @@ internal fun BatteryColorDetailSheet(
     val show = environment.show
     val library = environment.library
     val repository = environment.repository
-    val detailCustom = state.detailRequest?.let { request -> library.customById(request.customId) }
-    val detailSlot = state.detailRequest?.slot
+    val request = state.detailRequest
+    val detailCustom = request?.let { library.customById(it.customId) }
+    val detailSlot = request?.slot
+    val scrollState = key(request) { rememberScrollState() }
+    val scrollOffset = remember(scrollState) { { scrollState.value.toFloat() } }
     val detailVisible = show && state.showDetail && detailCustom != null && detailSlot != null
     val latestShowDetail = rememberUpdatedState(state.showDetail)
     UiOverlayBottomSheet(
@@ -167,6 +173,8 @@ internal fun BatteryColorDetailSheet(
             },
         backgroundColor = MiuixTheme.colorScheme.surface,
         enableWindowDim = false,
+        progressiveBlur = true,
+        scrollOffset = scrollOffset,
         startAction = {
             Box(Modifier.padding(start = BottomSheetDefaults.insideMargin.width)) {
                 BatteryColorDetailBackAction(state)
@@ -189,6 +197,7 @@ internal fun BatteryColorDetailSheet(
                     custom = detailCustom,
                     slot = detailSlot,
                     contentPadding = innerPadding,
+                    scrollState = scrollState,
                     onSourceChange = { source ->
                         repository.setCustomSource(detailCustom.id, detailSlot, source)
                     },
