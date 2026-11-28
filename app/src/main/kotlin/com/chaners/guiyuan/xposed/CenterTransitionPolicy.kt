@@ -52,7 +52,7 @@ internal object CenterTransitionPolicy {
             return Decision.SNAP
         }
 
-        if (previousFamily == currentFamily && sourceFamily != currentFamily) {
+        if (previousFamily == currentFamily) {
             return Decision.KEEP
         }
 
