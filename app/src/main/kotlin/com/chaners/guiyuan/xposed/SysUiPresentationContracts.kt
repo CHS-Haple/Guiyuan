@@ -7,11 +7,20 @@ import java.lang.reflect.Method
 // Hook installation and rollback remain entirely in SysUiPresentationOwner.
 internal object SysUiPresentationContracts {
     fun ignoredSlotsField(containerClass: Class<*>): Field? =
-        generateSequence(containerClass) { clazz -> clazz.superclass }
+        inheritedField(containerClass, "ignoredSlots") { type ->
+            List::class.java.isAssignableFrom(type)
+        }
+
+    // Retain subclass-first matching, but ignore a mismatched shadow before walking to its parent.
+    private fun inheritedField(
+        type: Class<*>,
+        name: String,
+        acceptsType: (Class<*>) -> Boolean,
+    ): Field? =
+        generateSequence(type) { clazz -> clazz.superclass }
             .mapNotNull { clazz ->
-                clazz.declaredFields.firstOrNull { candidate ->
-                    candidate.name == "ignoredSlots" &&
-                        List::class.java.isAssignableFrom(candidate.type)
+                clazz.declaredFields.firstOrNull { field ->
+                    field.name == name && acceptsType(field.type)
                 }
             }
             .firstOrNull()
@@ -32,15 +41,9 @@ internal object SysUiPresentationContracts {
             ?.apply { isAccessible = true }
 
     fun batteryHideField(batteryContainerClass: Class<*>): Field? =
-        generateSequence(batteryContainerClass) { clazz -> clazz.superclass }
-            .mapNotNull { clazz ->
-                clazz.declaredFields.firstOrNull { candidate ->
-                    candidate.name == "mIsHideBattery" &&
-                        candidate.type == java.lang.Boolean.TYPE
-                }
-            }
-            .firstOrNull()
-            ?.apply { isAccessible = true }
+        inheritedField(batteryContainerClass, "mIsHideBattery") { type ->
+            type == java.lang.Boolean.TYPE
+        }
 
     fun batteryHideMethod(batteryContainerClass: Class<*>): Method? =
         batteryContainerClass.declaredMethods

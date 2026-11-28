@@ -47,6 +47,16 @@ private class TestBatteryHost : TestBatteryParent() {
     fun setPrivacyState(state: MiuiHomePrivacyController.PrivacyState?) {}
 }
 
+private class ShadowedSlotsHost : TestSlotsParent() {
+    @Suppress("unused")
+    private val ignoredSlots = setOf<String>()
+}
+
+private class ShadowedBatteryHost : TestBatteryParent() {
+    @Suppress("unused")
+    private var mIsHideBattery = "not-a-native-boolean"
+}
+
 private class WrongSlotsHost {
     @Suppress("unused")
     private val ignoredSlots = setOf<String>()
@@ -93,6 +103,18 @@ class SysUiPresentationContractsTest {
         assertEquals(
             "setPrivacyState",
             SysUiPresentationContracts.privacyMethod(source, requireNotNull(field))?.name,
+        )
+    }
+
+    @Test
+    fun mismatchedChildFieldsDoNotMaskAnInheritedValidNativeContract() {
+        assertEquals(
+            TestSlotsParent::class.java,
+            SysUiPresentationContracts.ignoredSlotsField(ShadowedSlotsHost::class.java)?.declaringClass,
+        )
+        assertEquals(
+            TestBatteryParent::class.java,
+            SysUiPresentationContracts.batteryHideField(ShadowedBatteryHost::class.java)?.declaringClass,
         )
     }
 
